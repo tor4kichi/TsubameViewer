@@ -805,18 +805,36 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
                         _this.PlayerContainer.Opacity = 1;
 
+                        await Task.Delay(1000);
+
                         // 字幕の表示設定を反映
                         if (_this.MediaPlayer.Source is MediaPlaybackItem item)
                         {
-                            uint index = 0;
                             HashSet<string> _enabeldTracks = [];
-                            foreach (var subtitle in item.TimedMetadataTracks)
+                            foreach (var (index, subtitle) in item.TimedMetadataTracks.AsValueEnumerable().Index())
+                            {
+                                var key = subtitle.Id;
+                                if (string.IsNullOrEmpty(key)) { continue; }
+                                if (_enabeldTracks.Contains(key)) { continue; }
+
+                                var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
+                                item.TimedMetadataTracks.SetPresentationMode((uint)index,
+                                    isEnabeld
+                                    ? TimedMetadataTrackPresentationMode.PlatformPresented
+                                    : TimedMetadataTrackPresentationMode.Hidden);
+                                if (isEnabeld)
+                                {
+                                    _enabeldTracks.Add(_this.GetSubtitleKey(subtitle));
+                                }
+                            }
+
+                            foreach (var (index, subtitle) in item.TimedMetadataTracks.AsValueEnumerable().Index())
                             {
                                 var key = _this.GetSubtitleKey(subtitle);
                                 if (_enabeldTracks.Contains(key)) { continue; }
 
                                 var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
-                                item.TimedMetadataTracks.SetPresentationMode(index,
+                                item.TimedMetadataTracks.SetPresentationMode((uint)index,
                                     isEnabeld
                                     ? TimedMetadataTrackPresentationMode.PlatformPresented
                                     : TimedMetadataTrackPresentationMode.Hidden);
@@ -824,7 +842,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                                 {
                                     _enabeldTracks.Add(key);
                                 }
-                                index++;
                             }
                         }
                     });
@@ -2877,6 +2894,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     if (mode == TimedMetadataTrackPresentationMode.PlatformPresented)
                     {
                         playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
+                        if (!string.IsNullOrEmpty(timed.Id))
+                        {
+                            _vm.PageSettings.SetSubtitleLanguageEnabled(timed.Id, false);
+                        }
                         _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(timed), false);
                     }
                 }
@@ -2891,7 +2912,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         var nextMode = mode == TimedMetadataTrackPresentationMode.PlatformPresented
                             ? TimedMetadataTrackPresentationMode.Hidden
                             : TimedMetadataTrackPresentationMode.PlatformPresented;
-                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, nextMode);                        
+                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, nextMode);
+                        if (!string.IsNullOrEmpty(timed.Id))
+                        {
+                            _vm.PageSettings.SetSubtitleLanguageEnabled(timed.Id, nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
+                        }
                         _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(subtitle), nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
                         break;
                     }
@@ -2901,8 +2926,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
                     {
-                        if (timed.Language == subtitle.Language
-                            && timed.Id != subtitle.Id)
+                        if (timed.Id != subtitle.Id)
                         {
                             playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
                         }

@@ -137,7 +137,8 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
 
     public void SetSubtitleLanguageEnabled(string language, bool isEnabled)
     {
-        _subtitleEnabledByLanguage[language] = isEnabled;
+        var lower = language.ToLowerInvariant();
+        _subtitleEnabledByLanguage[lower] = isEnabled;
         Save(_subtitleEnabledByLanguage, "SubtitleEnabledByLanguage");
     }
 
