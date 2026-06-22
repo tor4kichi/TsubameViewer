@@ -1,4 +1,5 @@
-﻿using FFmpegInteropX;
+﻿using CommunityToolkit.Diagnostics;
+using FFmpegInteropX;
 using LiteDB;
 using Microsoft.Graphics.Canvas;
 using Microsoft.IO;
@@ -21,6 +22,7 @@ using System.IO.Compression;
 using System.IO.Pipes;
 using System.Linq;
 using System.Numerics;
+using System.Reactive.Disposables;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -68,7 +70,8 @@ public sealed class ThumbnailImageManager
     private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly static AsyncLock _fileReadWriteLock = new(Math.Max(1, Environment.ProcessorCount));
-    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;    
+    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+    private readonly ILiteCollection<ThumbnailGenerationIssueEntry> _thumnailGenerationIssueCollection;
 
     private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
     {
@@ -209,6 +212,7 @@ public sealed class ThumbnailImageManager
         _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(temporaryDb);
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+        _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();        
 
         _canvasDevice = new CanvasDevice();
     }
@@ -1266,13 +1270,21 @@ public sealed class ThumbnailImageManager
         }
         catch
         {
-            ThumbnailOptions options = ThumbnailOptions.None;
+            try
             {
-                await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
-                {
-                    return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
-                }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
                 return true;
+            }
+            catch
+            {
+                ThumbnailOptions options = ThumbnailOptions.None;
+                {
+                    await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
+                    {
+                        return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
+                    }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    return true;
+                }
             }
         }
     }
@@ -1286,21 +1298,31 @@ public sealed class ThumbnailImageManager
         using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
         fg.DecodePixelHeight = (int)requestedSize;
 
-        using CancellationTokenSource cts = new CancellationTokenSource(3000);
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, ct);
-        var linkedCt = linkedCts.Token;
-        try
-        {
-            using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(linkedCt);
-            await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(linkedCt);
-        }
-        catch
+        if (GetThumbnailGenerationStatus(fg.CurrentVideoStream.CodecName) == ThumbnailGenerationStatus.Failed)
         {
             using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
             await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
-        }        
-        
-        return true;
+            return true;
+        }
+        else
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource(3000);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, ct);
+            var linkedCt = linkedCts.Token;
+            try
+            {
+                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(linkedCt);
+                await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(linkedCt);
+            }
+            catch
+            {
+                ThumbnailGenerationFailed(fg.CurrentVideoStream.CodecName);
+                using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
+                await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
+            }
+
+            return true;
+        }
     }
 
 
@@ -1412,6 +1434,93 @@ public sealed class ThumbnailImageManager
 
 
     #endregion
+
+
+
+    public class ThumbnailGenerationIssueEntry
+    {
+        [BsonId]
+        public string CodecName { get; set; }
+
+        public ThumbnailGenerationStatus Status { get; set; } = ThumbnailGenerationStatus.NotChecked;
+    }
+
+    public enum ThumbnailGenerationStatus
+    {
+        NotChecked,
+        ProgressChecking,
+        Checked_FFmpeg,
+        Checked_MediaComposition,
+        Failed,
+    }
+
+    public ThumbnailGenerationIssueEntry GetEnsureThumbnailGenerationIssueEntry(string codecName)
+    {
+        Guard.IsNotNullOrWhiteSpace(codecName);
+        var entry = _thumnailGenerationIssueCollection.FindById(codecName);
+        if (entry == null)
+        {
+            entry = new ThumbnailGenerationIssueEntry() { CodecName = codecName };
+        }
+        return entry;
+    }
+
+    public ThumbnailGenerationStatus GetThumbnailGenerationStatus(string codecName)
+    {
+        var entry = _thumnailGenerationIssueCollection.FindById(codecName);
+        return entry?.Status ?? ThumbnailGenerationStatus.NotChecked;
+    }
+
+    public void SetThumbnailGenerationProgress(string codecName)
+    {
+        var entry = GetEnsureThumbnailGenerationIssueEntry(codecName);
+        entry.Status = ThumbnailGenerationStatus.ProgressChecking;
+        _thumnailGenerationIssueCollection.Upsert(entry);
+    }
+
+    public void SetThumbnailGenerationCheckedFFmpeg(string codecName)
+    {
+        var entry = GetEnsureThumbnailGenerationIssueEntry(codecName);
+        entry.Status = ThumbnailGenerationStatus.Checked_FFmpeg;
+        _thumnailGenerationIssueCollection.Upsert(entry);
+    }
+
+    public void SetThumbnailGenerationCheckedMediaComposition(string codecName)
+    {
+        var entry = GetEnsureThumbnailGenerationIssueEntry(codecName);
+        entry.Status = ThumbnailGenerationStatus.Checked_MediaComposition;
+        _thumnailGenerationIssueCollection.Upsert(entry);
+    }
+
+
+    public ThumbnailGenerationStatus GetThumbanilGenerationStatusIfProgressAsFailed(string codecName, out bool nowFailed)
+    {
+        var entry = GetEnsureThumbnailGenerationIssueEntry(codecName);
+        nowFailed = false;
+        if (entry == null) 
+        {
+            return ThumbnailGenerationStatus.NotChecked; 
+        }
+        if (entry.Status == ThumbnailGenerationStatus.ProgressChecking)
+        {
+            nowFailed = true;
+            entry.Status = ThumbnailGenerationStatus.Failed;
+            _thumnailGenerationIssueCollection.Upsert(entry);
+        }
+        return entry.Status;
+    }
+
+    public void ThumbnailGenerationFailed(string codecName)
+    {
+        var entry = GetEnsureThumbnailGenerationIssueEntry(codecName);
+        entry.Status= ThumbnailGenerationStatus.Failed;
+        _thumnailGenerationIssueCollection.Upsert(entry);
+    }
+
+    public void ClearThumbnailGenerationIssue(string codecName)
+    {
+        _thumnailGenerationIssueCollection.Delete(codecName);
+    }
 
 
     #region Secondary Tile

@@ -360,10 +360,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         if (Images?.Any() ?? false)
         {
-            foreach (var itemVM in Images)
-            {
-                (itemVM as IDisposable)?.Dispose();
-            }
             _nowCurrenImageIndexChanging = true;
             Images = null;
             _nowCurrenImageIndexChanging = false;
@@ -1088,6 +1084,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         return (requestIndex, isHeadTailJump);
     }
 
+
+    public async ValueTask<IImageSource> GetImageSourceWithCacheAsync(int requestIndex, CancellationToken ct)
+    {
+        var image = Images[requestIndex] is { } cachedImage
+                ? cachedImage
+                : Images[requestIndex] = await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType, ct);
+        if (image == null)
+        {
+            throw new InvalidOperationException();
+        }
+
+        return image;
+    }
     async ValueTask<int> SetDisplayImagesAsync(PrefetchIndexType indexType, IndexMoveDirection direction, int requestIndex, bool requestDoubleView, CancellationToken ct)
     {
         bool canNotSwapping = indexType != PrefetchIndexType.Current;
@@ -1255,12 +1264,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            var image = await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType, ct);
-            if (image == null)
-            {
-                throw new InvalidOperationException();
-            }
-
+            var image = await GetImageSourceWithCacheAsync(requestIndex, ct);
             if (direction == IndexMoveDirection.Backward)
             {
                 if (canNotSwapping || !TryDisplayImagesSwapBackward(image))

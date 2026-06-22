@@ -2,7 +2,6 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using DryIoc.FastExpressionCompiler.LightExpression;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Uwp.UI;
@@ -934,6 +933,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
         {
             var folderQuery = parentFolder.CreateFolderQuery();
+            Folders.Add(parentFolder);
+            Folders.Add(null!);
             await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
             {
                 ct.ThrowIfCancellationRequested();
@@ -943,7 +944,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 }
                 Folders.Add(folder);
 
-                if (Folders.Count <= 1)
+                if (Folders.Count >= 1)
                 {
                     ToggleDisplaySiblingFoldersButton.IsEnabled = true;
                 }

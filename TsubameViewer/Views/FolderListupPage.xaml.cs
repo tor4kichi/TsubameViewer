@@ -346,6 +346,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
                 {
                     var folderQuery = parentFolder.CreateFolderQuery();
+                    Folders.Add(parentFolder);
+                    Folders.Add(null!);
                     await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
                     {
                         ct.ThrowIfCancellationRequested();
@@ -355,7 +357,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                         }
                         Folders.Add(folder);
 
-                        if (Folders.Count <= 1)
+                        if (Folders.Count >= 1)
                         {
                             ToggleDisplaySiblingFoldersButton.IsEnabled = true;
                         }

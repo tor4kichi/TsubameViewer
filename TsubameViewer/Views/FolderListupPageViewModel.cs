@@ -924,12 +924,7 @@ public sealed partial class FolderListupPageViewModel
             {
                 FileItemsView.SortDescriptions.Add(sort);
             }
-        }
-
-        _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
-            path,
-            fileSort
-            );
+        }        
     }
 
     [RelayCommand]

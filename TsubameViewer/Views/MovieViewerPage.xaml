@@ -521,6 +521,7 @@
                   Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
                   ValueChanged="VideoPositionSlider_ValueChanged"
                   ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
+                  IsThumbToolTipEnabled="False"
                   TickFrequency="1"
                   StepFrequency="1"
                   Padding="0"
@@ -529,7 +530,8 @@
                   AccessKey="B"
                   IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                   KeyboardAcceleratorPlacementMode="Hidden"
-                  KeyTipPlacementMode="Hidden">
+                  KeyTipPlacementMode="Hidden"
+                  uwpUIExtensions:FrameworkElementExtensions.Cursor="Hand">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>
@@ -675,7 +677,15 @@
 
               <Button.Flyout>
                 <MenuFlyout Opened="MenuFlyout_Opened"
-                            Closed="MenuFlyout_Closed">
+                            Closed="MenuFlyout_Closed"
+                            Opening="TracksAndSubtitleSelectFlyout_Opening"
+                            Placement="TopEdgeAlignedRight">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_NotSupportedCodec_OnceClear}"
+                                  Command="{x:Bind ClearThumnailGenerationIssueCommand}"
+                                  x:Name="NotSupportedCodec_OnceClear_MenuItem"
+                                  Visibility="Collapsed">
+                  </MenuFlyoutItem>
+
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=NowPlayingWithFFmpegMediaSource}"
                                         IsChecked="{x:Bind NowPlayingWithFFmpegMediaSource, Mode=OneWay}"
                                   IsEnabled="False" />
@@ -683,6 +693,7 @@
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_DisplayShortcutKeysGuide}"
                                   Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}" />
                   <MenuFlyoutSeparator />
+                  
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=SetThumbnailImage}"
                                   Command="{x:Bind SetThumbnailImageCommand}"
                                   AccessKey="T">
@@ -726,6 +737,14 @@
                   </MenuFlyoutSubItem>
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                  <MenuFlyoutSeparator />
+                  <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />
+                  <MenuFlyoutSubItem x:Name="AudioTracksMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_AudioTrack}" />
+                  <MenuFlyoutSubItem x:Name="SubtitlesMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_Subtitles}" />
+
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
@@ -986,5 +1005,47 @@
         </uwpControls:WrapPanel>
       </uwpControls:DockPanel>
     </uwpControls:InAppNotification>
+
+    <Grid x:Name="MovieSeekbarTooltipContainer" 
+          Visibility="Collapsed"
+          IsHitTestVisible="False"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          Width="200"
+          Height="200"
+          RenderTransformOrigin="0.5, 0.5">
+      <Grid.RenderTransform>
+        <CompositeTransform x:Name="MovieSeekbarTooltipContainerTransform" />
+      </Grid.RenderTransform>
+      <Grid CornerRadius="4"
+              Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              BorderThickness="1"
+              BorderBrush="{ThemeResource SystemChromeWhiteColor}"
+              Translation="0, 0, 8">
+        <Grid.Shadow>
+          <ThemeShadow />
+        </Grid.Shadow>
+        <Image x:Name="MovieSeekbarTooltipImage"               
+               Stretch="None"/>
+        <TextBlock x:Name="MovieSeekbarTooltipNotSupported"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Opacity="0.7"
+                   TextWrapping="Wrap"
+                   Margin="8 8 8 28"
+                   Visibility="Collapsed"
+                   />
+      </Grid>
+      <Border Background="{ThemeResource SystemAltMediumColor}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Padding="4 0"
+              CornerRadius="4 4 0 0">
+        <TextBlock x:Name="MovieSeekbarTooltipText"
+                   Text="{x:Bind SeekbarFrameTime, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}"
+                   FontSize="18" />
+      </Border>
+    </Grid>
   </Grid>
 </Page>

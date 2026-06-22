@@ -113,7 +113,8 @@
                     SelectionMode="Single"
                     x:Name="MoveToFolderTargetSelector"
                     Padding="0 0 0 48"
-                    uwpUIExtensions:ListViewExtensions.AlternateColor="{ThemeResource SystemBaseLowColor}">
+                    uwpUIExtensions:ListViewExtensions.AlternateColor="{ThemeResource SystemBaseLowColor}"
+                    FlowDirection="RightToLeft">
             <ListView.ItemTemplate>
               <DataTemplate x:DataType="storage:StorageFolder">
                 <TextBlock Text="{x:Bind Name}" />

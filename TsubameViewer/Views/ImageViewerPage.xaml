@@ -118,14 +118,14 @@
 
     
 
-    <MenuFlyout x:Key="DesktopViewManagementFlyout">
+    <!--<MenuFlyout x:Key="DesktopViewManagementFlyout">
       <MenuFlyoutItem Command="{x:Bind _vm.ToggleFullScreenCommand}"
                       x:Name="SwitchFullScreeMenuItem"
                       Visibility="Collapsed"
                       >
         
       </MenuFlyoutItem>
-    </MenuFlyout>
+    </MenuFlyout>-->
 
     <!-- 動画ビューアでXキーが使えない問題が生じるため使わない -->
     <!--<XamlUICommand x:Key="ZoomResetUICommand" Command="{x:Bind ZoomResetCommand}"
@@ -234,7 +234,6 @@
   -->
   <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
         IsHitTestVisible="True" Background="Transparent"
-        ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
         >
     
     <i:Interaction.Behaviors>
@@ -889,27 +888,22 @@
           </ComboBox.KeyboardAccelerators>
         </ComboBox>
 
-
-        <Slider x:Name="PageSelector" uwpControls:DockPanel.Dock="Bottom"
-                Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+        <Slider x:Name="PageSelector"
+                uwpControls:DockPanel.Dock="Bottom"
+                Value="{Binding CurrentImageIndex, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                 Minimum="0"
                 Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
                 ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
                 TickFrequency="1"
                 StepFrequency="1"
-                Padding="0"     
-                Margin="0 0"       
+                Padding="0"
+                Margin="0 0"
                 XYFocusDown="{x:Bind PageFolderNamesSelector}"
                 FlowDirection="RightToLeft"
                 AccessKey="4"
+                IsThumbToolTipEnabled="False"
                 KeyboardAcceleratorPlacementMode="Hidden"
                 KeyTipPlacementMode="Hidden">
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="ValueChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
           <Slider.KeyboardAccelerators>
             <KeyboardAccelerator Key="4" />
           </Slider.KeyboardAccelerators>
@@ -999,7 +993,39 @@
               HorizontalAlignment="Right"
               Background="{ThemeResource SystemAccentColor}" />
     </Grid>
-    
+
+    <Grid x:Name="PageSelectorTooltipContainer"
+          Visibility="Collapsed"
+          IsHitTestVisible="False"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          CornerRadius="4"
+          Width="200"
+          Height="200">
+      <Border CornerRadius="4"
+              Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              BorderThickness="1"
+              BorderBrush="{ThemeResource SystemChromeWhiteColor}"
+              Translation="0, 0, 8">
+        <Border.Shadow>
+          <ThemeShadow />
+        </Border.Shadow>
+        <Image x:Name="MovieSeekbarTooltipImage"       
+               Stretch="Uniform"               
+               />
+      </Border>
+      <Border Background="{ThemeResource SystemAltMediumColor}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Padding="4 0"
+              CornerRadius="4 4 0 0">
+        <TextBlock x:Name="PageSelectorTooltipText"
+                   FontSize="18" />
+      </Border>
+    </Grid>
+
     <VisualStateManager.VisualStateGroups>
 
       <!-- 画像読み込み中の画面演出 -->

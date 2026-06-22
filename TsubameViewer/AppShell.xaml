@@ -439,7 +439,7 @@
             IsHitTestVisible="False"            
             >
       <ContentControl x:Name="NotificationContentControl"
-                      Foreground="{ThemeResource SystemColorButtonFaceBrush}"
+                      Foreground="{ThemeResource ApplicationForegroundThemeBrush}"
                       IsHitTestVisible="False"
                       IsTabStop="False"                      
                       FontSize="16"
@@ -448,7 +448,7 @@
       </ContentControl>
 
       <TextBlock x:Name="NotificationTextBlock"
-                      Foreground="{ThemeResource SystemColorButtonFaceBrush}"
+                      Foreground="{ThemeResource ApplicationForegroundThemeBrush}"
                       IsHitTestVisible="False"
                       FontSize="16"
                       MaxWidth="320"

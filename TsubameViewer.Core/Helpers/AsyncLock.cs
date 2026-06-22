@@ -34,9 +34,9 @@ public sealed class AsyncLock
     public async Task<IDisposable> LockAsync(CancellationToken ct)
     {
         await _semaphore.WaitAsync(ct);
-        return Disposable.Create(delegate
+        return Disposable.Create(_semaphore, s => 
         {
-            _semaphore.Release();
+            s.Release();
         });
     }
 }

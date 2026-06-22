@@ -4,16 +4,18 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
-using DryIoc.ImTools;
 using FFmpegInteropX;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.VisualBasic;
 using PDFtoImage;
 using R3;
 using R3.Extensions;
 using SharpCompress.Common;
+using SharpCompress.Compressors.Xz;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,6 +28,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -38,7 +41,9 @@ using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics.DirectX;
 using Windows.Graphics.Display;
+using Windows.Media.Audio;
 using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
@@ -48,6 +53,7 @@ using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Windows.System;
 using Windows.System.Display;
+using Windows.UI;
 using Windows.UI.Composition;
 using Windows.UI.Core;
 using Windows.UI.Notifications;
@@ -60,8 +66,10 @@ using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
+using static TsubameViewer.Core.Models.FolderItemListing.ThumbnailImageManager;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -85,6 +93,207 @@ public sealed class ShortcutKeyInfo
     }
 }
 
+
+interface IFrameExtracter
+{
+    string CodecName { get; }
+    Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct);
+    Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct);
+    ImageSource Source { get; }
+}
+
+public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
+{
+    public string CodecName => _frameGrabber.CurrentVideoStream.CodecName;
+    public ImageSource Source => _source.Source;
+    private CanvasVirtualImageSource _source;
+    public static async Task<FFmpegFrameGrabberFrameExtracter> CreateAsync(StorageFile movieFile, int decodeHeight)
+    {
+        var stream = await movieFile.OpenReadAsync();
+        var fg = await FrameGrabber.CreateFromStreamAsync(stream);
+        
+        return new FFmpegFrameGrabberFrameExtracter(stream, fg, decodeHeight);
+    }
+
+    private readonly IRandomAccessStreamWithContentType _movieStream;
+    private readonly FrameGrabber _frameGrabber;
+    private readonly int _decodeHeight;
+
+    public FFmpegFrameGrabberFrameExtracter(IRandomAccessStreamWithContentType movieStream, FrameGrabber frameGrabber, int decodeHeight)
+    {
+        _movieStream = movieStream;
+        _frameGrabber = frameGrabber;
+        _decodeHeight = decodeHeight;
+        _source = new CanvasVirtualImageSource(
+                CanvasDevice.GetSharedDevice(),
+                1,
+                1,
+                DisplayInformation.GetForCurrentView().LogicalDpi);
+    }
+
+    bool _isDisposed;
+    public void Dispose()
+    {
+        if (_isDisposed) { return; }
+        _isDisposed = true;
+        _frameGrabber.Dispose();
+        _movieStream.Dispose();
+        _canvasBitmap?.Dispose();
+    }
+
+    public async Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        try
+        {
+            using (var cts = new CancellationTokenSource(timeout))
+            {
+                using var frame = await _frameGrabber.ExtractVideoFrameAsync(TimeSpan.FromSeconds(1), true).AsTask(cts.Token);                
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+    CanvasBitmap? _canvasBitmap;
+    TimeSpan _lastFrameTime;
+    public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
+    {
+        if (_canvasBitmap == null)
+        {
+            using (var sample = await _frameGrabber.ExtractVideoFrameAsync(time).AsTask(ct))
+            {
+                float imageWidth;
+                float imageHeight;
+                float videoWidth = sample.DisplayWidth; // = DAR(Display Aspect Ratio) frame.PixelWidth = PAR (Pixel Aspect Ratio)
+                float videoHeight = sample.DisplayHeight;
+                if (videoWidth > videoHeight)
+                {
+                    // 横長
+                    imageWidth = _decodeHeight;
+                    imageHeight = (float)Math.Ceiling(videoHeight * (imageWidth / videoWidth));
+                }
+                else
+                {
+                    // 縦長
+                    imageHeight = _decodeHeight;
+                    imageWidth = (float)Math.Ceiling(videoWidth * (imageHeight / videoHeight));
+                }
+
+                _frameGrabber.DecodePixelWidth = (int)imageWidth;
+                _frameGrabber.DecodePixelHeight = (int)imageHeight;
+
+                _source.Resize(imageWidth, imageHeight);
+            }
+        }
+
+        using var frame = await _frameGrabber.ExtractVideoFrameAsync(time, true, (int)Math.Round(_frameGrabber.CurrentVideoStream.FramesPerSecond) * 1).AsTask(ct);
+        if (_canvasBitmap == null)
+        {
+            _canvasBitmap = CanvasBitmap.CreateFromBytes(
+                CanvasDevice.GetSharedDevice(),
+                frame.PixelData,
+                (int)_frameGrabber.DecodePixelWidth,
+                (int)_frameGrabber.DecodePixelHeight,
+                DirectXPixelFormat.B8G8R8A8UIntNormalized);
+        }
+        else
+        {
+            if (_lastFrameTime == time)
+            {
+                return _source.Size;
+            }
+            _lastFrameTime = time;
+            _canvasBitmap.SetPixelBytes(frame.PixelData);
+        }
+
+        // Note: ここでキャンセル対応しないと表示反映されずグレーアウトするケースが頻発する
+        ct.ThrowIfCancellationRequested();
+        using (var ds = _source.CreateDrawingSession(Colors.Transparent, _source.Size.ToRect()))
+        {
+            ds.Transform = Matrix3x2.CreateScale((float)(_source.Size.Width / _canvasBitmap.Size.Width));
+            ds.DrawImage(_canvasBitmap);
+        }
+
+        return _source.Size;
+    }
+}
+
+
+public class MediaCompositionFrameExtracter : IFrameExtracter, IDisposable
+{
+    public string CodecName { get; }    
+    public ImageSource Source => _imageSource;
+    private BitmapImage _imageSource;
+    public double ImageWidth => _imageSource.DecodePixelWidth;
+    public double ImageHeight => _imageSource.DecodePixelHeight;
+    public static async Task<MediaCompositionFrameExtracter> CreateAsync(StorageFile movieFile, int decodeHeight)
+    {
+        var mc = new MediaComposition();
+        var clip = await MediaClip.CreateFromFileAsync(movieFile);        
+        mc.Clips.Add(clip);        
+        return new MediaCompositionFrameExtracter(mc, clip, decodeHeight);
+    }
+
+    private readonly MediaComposition _mc;
+    private readonly MediaClip _clip;
+    private readonly int _decodeHeight;
+    private readonly int _decodeWidth;
+
+    public MediaCompositionFrameExtracter(MediaComposition mc, MediaClip clip, int decodeHeight)
+    {
+        _mc = mc;
+        _clip = clip;
+        var props = _clip.GetVideoEncodingProperties();
+        if (props.Width > props.Height)
+        {
+            _decodeWidth = decodeHeight;
+            _decodeHeight = 0;
+        }
+        else
+        {
+            _decodeWidth = 0;
+            _decodeHeight = decodeHeight;        
+        }
+        _imageSource = new BitmapImage();
+        CodecName = _clip.GetVideoEncodingProperties().Subtype.ToLowerInvariant();
+    }
+
+
+    bool _isDisposed;
+    public void Dispose()
+    {
+        if (_isDisposed) { return; }
+        _isDisposed = true;
+    }
+
+    public async Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        try
+        {
+            using (var cts = new CancellationTokenSource(timeout))
+            {
+                using var frame = await _mc.GetThumbnailAsync(TimeSpan.FromSeconds(1), 0, _decodeHeight, VideoFramePrecision.NearestFrame);
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+    public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
+    {
+        using var frame = await _mc.GetThumbnailAsync(time, _decodeWidth, _decodeHeight, VideoFramePrecision.NearestFrame);
+        await _imageSource.SetSourceAsync(frame).AsTask(ct);
+        return new(_imageSource.PixelWidth, _imageSource.PixelHeight);
+    }
+}
+
+
 [ObservableObject]
 public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 {
@@ -99,6 +308,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     internal readonly MovieViewerPageViewModel _vm;
+    private readonly ThumbnailImageManager _thumbanilManager;
     readonly IMessenger _messenger;
 
     public MediaPlayer MediaPlayer => MyMediaPlayerElement.MediaPlayer;
@@ -109,6 +319,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     bool? _nextIsDisplayControlUI;
     DispatcherQueueTimer? _mouseCursorAutoHideTimer;
 
+    MediaPlayer _audioPlayer = new();
+   
     void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pt = e.GetCurrentPoint(null);
@@ -185,12 +397,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         this.InitializeComponent();
 
         DataContext = _vm = Ioc.Default.GetRequiredService<MovieViewerPageViewModel>();
+        _thumbanilManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
-
+        _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
+
     DirectConnectedAnimationConfiguration _animConfig = new();
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
@@ -198,6 +412,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         async Task d()
         {
             MediaPlayer.Pause();
+            _audioPlayer.Pause();
 
             bool isRotate = _vm.PageSettings.IsPlayerRotateEnabled && MediaPlayer.PlaybackSession.PlaybackRotation is MediaRotation.Clockwise90Degrees or MediaRotation.Clockwise270Degrees;
             bool isStretchAsFill = MyMediaPlayerElement.Stretch is Stretch.Fill or Stretch.UniformToFill;
@@ -229,6 +444,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _mouseCursorAutoHideTimer = null;
             ShowMouseCursor();
             MediaPlayer.Source = null;
+            _audioPlayer.Source = null;
 
             base.OnNavigatingFrom(e);
         }
@@ -238,13 +454,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
+        Window.Current.CoreWindow.PointerMoved -= CoreWindow_VideoPositionSlider_PointerMoved;
 
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         MediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
 
         _playbackResources?.Dispose();
-        _playbackResources = null;
+        _playbackResources = null;        
+
+        ClearExternalAudioTracks();
 
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
@@ -304,7 +523,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
-
+        Window.Current.CoreWindow.PointerMoved += CoreWindow_VideoPositionSlider_PointerMoved;
+        MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
         DisposableBuilder db = new();
         
         var mediaPlayer = MyMediaPlayerElement.MediaPlayer;
@@ -368,9 +588,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 var isLastPlaying = s.PlayerState == MediaPlaybackState.Playing;
                 var lastPlayPosition = s.VideoPosition;
                 s.MediaPlayer.Source = null;
-
+                s._audioPlayer.Source = null;
+                s._frameGrabber = null;
                 if (x == null) { return; }
-                if (s.MediaPlayer == null) { return; }
 
                 bool isFirstPlay = s._playbackResources == null;
                 
@@ -406,12 +626,88 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                             await s.OpenMediaWithFFmpegAsync(x, db, ct);
                             s.NowPlayingWithFFmpegMediaSource = true;
                         }
-                    }
+                    }                    
                 }
                 catch
                 {
                     db.Dispose();
                     throw;
+                }
+
+                string codecName = "";
+                bool nowFailed = false;
+                try
+                {
+                    var ffmepgExt = await FFmpegFrameGrabberFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
+                    codecName = ffmepgExt.CodecName;
+                    var status = s._thumbanilManager.GetThumbanilGenerationStatusIfProgressAsFailed(ffmepgExt.CodecName, out nowFailed);
+                    Debug.WriteLine($"ThumbnailGenerationStatus: {status }");
+                    if (status == ThumbnailGenerationStatus.Checked_FFmpeg)
+                    {
+                        s._frameGrabber = ffmepgExt;
+                        db.Add(ffmepgExt);                        
+                    }
+                    else if (status == ThumbnailGenerationStatus.Checked_MediaComposition)
+                    {
+                        ffmepgExt.Dispose();
+                        var mcExt = await MediaCompositionFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
+                        s._frameGrabber = mcExt;
+                        db.Add(mcExt);
+                        s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        s._thumbanilManager.SetThumbnailGenerationProgress(ffmepgExt.CodecName);
+                        if (await ffmepgExt.CanExtractFrameAsync(TimeSpan.FromSeconds(1), ct))
+                        {
+                            s._thumbanilManager.SetThumbnailGenerationCheckedFFmpeg(ffmepgExt.CodecName);
+                            s._frameGrabber = ffmepgExt;
+                            db.Add(ffmepgExt);                              
+                            Debug.WriteLine("ThumbGeneration use FFmpegFrameGrabber");
+                        }
+                        else
+                        {
+                            ffmepgExt.Dispose();
+                            var mcExt = await MediaCompositionFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
+                            if (await mcExt.CanExtractFrameAsync(TimeSpan.FromSeconds(3), ct))
+                            {
+                                Guard.IsEqualTo(mcExt.CodecName.ToLowerInvariant(), ffmepgExt.CodecName.ToLowerInvariant());
+                                s._thumbanilManager.SetThumbnailGenerationCheckedMediaComposition(ffmepgExt.CodecName);
+                                s._frameGrabber = mcExt;                                
+                                db.Add(mcExt);
+                                Debug.WriteLine("ThumbGeneration use MediaComposition");
+                                s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                Debug.WriteLine("ThumbGeneration not supported");
+                                mcExt.Dispose();
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                if (s._frameGrabber == null)
+                {
+                    if (!string.IsNullOrEmpty(codecName))
+                    {
+                        s._thumbanilManager.ThumbnailGenerationFailed(codecName);
+                        string notifyText = $"MovieViewer_NotSupportedCodec".Translate(codecName);
+                        if (nowFailed)
+                        {
+                            s._messenger.SendShowTextNotificationMessage(notifyText);
+                        }
+                        s.MovieSeekbarTooltipNotSupported.Text = notifyText;
+                    }
+                    s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    s.MovieSeekbarTooltipNotSupported.Visibility = Visibility.Visible;
+                    s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
+                    s.MovieSeekbarTooltipImage.Source = null;
+                }
+                else
+                {
+                    s.MovieSeekbarTooltipImage.Source = s._frameGrabber.Source;
                 }
 
                 ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
@@ -487,10 +783,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                                 ts = lastPlayPosition;
                             }
                             _this.MediaPlayer.PlaybackSession.Position = ts;
+                            _this._audioPlayer.PlaybackSession.Position = ts;
                         }
 
                         // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
                         _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
+                        _this._audioPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
                         if (_this.NowPlayingWithFFmpegMediaSource)
@@ -501,10 +799,53 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         {
                             _this._nowRequestPlayStart = false;
                             _this.MediaPlayer.Play();
+                            _this._audioPlayer.Play();
                         }
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
                         _this.PlayerContainer.Opacity = 1;
+
+                        // 字幕の表示設定を反映
+                        if (_this.MediaPlayer.Source is MediaPlaybackItem item)
+                        {
+                            HashSet<string> _enabeldTracks = [];
+                            foreach (var (index, subtitle) in item.TimedMetadataTracks.AsValueEnumerable().Index())
+                            {
+                                var key = subtitle.Id;
+                                if (string.IsNullOrEmpty(key)) { continue; }
+                                if (_enabeldTracks.Contains(key)) { continue; }
+
+                                var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
+                                item.TimedMetadataTracks.SetPresentationMode((uint)index,
+                                    isEnabeld
+                                    ? TimedMetadataTrackPresentationMode.PlatformPresented
+                                    : TimedMetadataTrackPresentationMode.Hidden);
+                                if (isEnabeld)
+                                {
+                                    _enabeldTracks.Add(key);
+                                    if (!string.IsNullOrEmpty(subtitle.Language))
+                                    {
+                                        _enabeldTracks.Add(subtitle.Language);
+                                    }
+                                }
+                            }
+
+                            foreach (var (index, subtitle) in item.TimedMetadataTracks.AsValueEnumerable().Index())
+                            {
+                                var key = _this.GetSubtitleKey(subtitle);
+                                if (_enabeldTracks.Contains(key)) { continue; }
+
+                                var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
+                                item.TimedMetadataTracks.SetPresentationMode((uint)index,
+                                    isEnabeld
+                                    ? TimedMetadataTrackPresentationMode.PlatformPresented
+                                    : TimedMetadataTrackPresentationMode.Hidden);
+                                if (isEnabeld)
+                                {
+                                    _enabeldTracks.Add(key);
+                                }
+                            }
+                        }
                     });
             })
             .AddTo(ref db);
@@ -583,6 +924,68 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        AnimationBuilder fadeInAnim = AnimationBuilder.Create()
+            .Opacity(1, duration: TimeSpan.FromMilliseconds(16 * 5));
+        AnimationBuilder fadeOutAnim = AnimationBuilder.Create()
+            .Opacity(0.5, duration: TimeSpan.FromMilliseconds(16 * 5));        
+        this.ObservePropertyChanged(x => x.SeekbarFrameTime, false)
+            .DistinctUntilChanged()
+            .Debounce(TimeSpan.FromMilliseconds(10))
+            .IgnoreOnErrorResume()
+            .SubscribeAwait((this, new AsyncLock(), fadeInAnim, fadeOutAnim), static async (videoPos, state, ct) =>
+            {
+                var (s, asyncLock, fadeInAnim, fadeOutAnim) = state;
+                using var _ = await asyncLock.LockAsync(ct);
+
+                if (s._frameGrabber == null) 
+                {
+                    s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    return; 
+                }
+                if (s._lastPointerDeviceType == PointerDeviceType.Touch)
+                {
+                    s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    return; 
+                }
+
+                using CancellationTokenSource timeoutCts = new CancellationTokenSource(5000);
+                using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, ct);
+                var linkedCt = linkedCts.Token;
+
+                try
+                {
+                    if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
+                    {
+                        long ts = TimeProvider.System.GetTimestamp();
+                        linkedCt.ThrowIfCancellationRequested();
+                        var size = await s._frameGrabber.RenderFrameToSourceAsync(pos, linkedCt);
+
+                        // Note: Width=1920の映像が元は1440となっているケースに対応する
+                        s.MovieSeekbarTooltipImage.Width = size.Width;
+                        s.MovieSeekbarTooltipImage.Height = size.Height;
+                        Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
+                    }
+                }
+                catch (OperationCanceledException) 
+                {
+                }                
+                catch
+                {
+                    s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    s._thumbanilManager.ThumbnailGenerationFailed(s._frameGrabber.CodecName);
+                    throw;
+                }
+           }, onCompleted: static async (x, state) => 
+            {
+                var (s, asyncLock, _, _) = state;
+                using (await asyncLock.LockAsync(default))
+                {                    
+                    s._frameGrabber = null;
+                }
+            },  AwaitOperation.Drop) // Switchだと応答性が悪く見える。Dropなら先行する描画処理を優先できてGood           
+            .AddTo(ref db);
+
+
         HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
@@ -595,9 +998,39 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         var mediaSource = MediaSource.CreateFromStorageFile(x);
         db.Add(mediaSource);
+        
         var playbackItem = new MediaPlaybackItem(mediaSource);
+        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
+        // 字幕の追加        
+        foreach (var subsFile in await LoadSameNameSubtitleFilesAsync(x))
+        {
+            try
+            {
+                using (var stream = await subsFile.OpenReadAsync())
+                {
+                    var parser = await FFmpegInteropX.SubtitleParser.ReadSubtitleAsync(stream, subsFile.Name, null, null);                    
+                    mediaSource.ExternalTimedMetadataTracks.Add(parser.SubtitleTrack.SubtitleTrack);
+                    db.Add(parser);
+                }
+            }
+            catch { }
+        }
+
         MediaPlayer.Source = playbackItem;
         ct.ThrowIfCancellationRequested();
+
+        var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
+        if (playbackItem.AudioTracks.Count == 0)
+        {
+            Debug.WriteLine($"video NO AUDIO. TRY find alt audio source.");
+            _audioPlayer.Source = extenrnalAudio;
+            Debug.WriteLine($"vidoe ALT AUDIO: {_audioPlayer.Source != null}");
+        }
+        else
+        {
+            _audioPlayer.Source = null;
+        }
+        
 
         var props = playbackItem.GetDisplayProperties();
         props.Type = Windows.Media.MediaPlaybackType.Video;
@@ -617,13 +1050,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
         }
         catch { }
+
         playbackItem.ApplyDisplayProperties(props);
     }
+
 
     [ObservableProperty]
     bool _nowPlayingWithFFmpegMediaSource;
 
     TimeSpan _oneFrameTime;
+
+    string? _currentCodecName;
 
     async Task OpenMediaWithFFmpegAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
     {
@@ -632,6 +1069,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         // Note: PlaybackSession 設定するとむしろ壊れる
         //ms.PlaybackSession = MediaPlayer.PlaybackSession;
         db.Add(ms);
+
+        // 字幕の追加
+        foreach (var subsFile in await LoadSameNameSubtitleFilesAsync(x))
+        {
+            try
+            {
+                using (var stream = await subsFile.OpenReadAsync())
+                {
+                    await ms.AddExternalSubtitleAsync(stream, subsFile.Name);
+                }
+            }
+            catch { }
+        }
+        var playbackItem = ms.CreateMediaPlaybackItem();
+        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
         await ms.OpenWithMediaPlayerAsync(MediaPlayer);
         try
         {
@@ -640,8 +1092,91 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
         catch { }
 
+        var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
+        if (ms.AudioStreams.Count == 0 && ms.Duration != TimeSpan.Zero && ms.Duration != TimeSpan.MaxValue)
+        {
+            Debug.WriteLine($"video NO AUDIO. TRY find alt audio source.");
+            _audioPlayer.Source = extenrnalAudio;
+            Debug.WriteLine($"vidoe ALT AUDIO: {_audioPlayer.Source != null}");
+        }
+        else
+        {
+            _audioPlayer.Source = null;
+        }
+
         _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);
     }
+
+    void ClearExternalAudioTracks()
+    {
+        foreach (var (item, file) in _externalAudioTrackFiles)
+        {
+            (item.Source as IDisposable)?.Dispose();
+        }
+        _externalAudioTrackFiles.Clear();
+    }
+
+    List<(MediaPlaybackItem PlaybackItem, StorageFile SourceFile)> _externalAudioTrackFiles = [];
+    async Task<MediaPlaybackItem?> LoadSameNameAudioTrackAsync(
+        StorageFile videoFile,
+        ICollection<IDisposable> db)
+    {
+        try
+        {
+            var folder = await videoFile.GetParentAsync();
+            string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
+            var query = folder.CreateFileQueryWithOptions(
+                new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+            var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+            ClearExternalAudioTracks();
+            foreach (var audioFile in (await query.GetFilesAsync()).Where(audioFile => audioFile.Name.StartsWith(fileName, StringComparison.Ordinal)))
+            {
+                try
+                {
+                    var audioMediaSource = MediaSource.CreateFromStorageFile(audioFile);
+                    db.Add(audioMediaSource);
+                    Debug.WriteLine($"video ALT AUDIO use: {audioFile.Name}");
+                    _externalAudioTrackFiles.Add((new MediaPlaybackItem(audioMediaSource), audioFile));
+                }
+                catch
+                {
+                    try
+                    {
+                        var fileStream = await audioFile.OpenReadAsync();
+                        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+                        _externalAudioTrackFiles.Add((ms.CreateMediaPlaybackItem(), audioFile));
+                    }
+                    catch { }
+                }
+            }
+
+            return _externalAudioTrackFiles.ElementAtOrDefault(0).PlaybackItem;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    async Task<List<StorageFile>> LoadSameNameSubtitleFilesAsync(
+        StorageFile videoFile)
+    {
+        try
+        {
+            var folder = await videoFile.GetParentAsync();
+            string[] fileTypes = [".srt", ".vtt", ".ass", ".ssa", ".txt", ".lrc"];
+            var query = folder.CreateFileQueryWithOptions(
+                new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+            var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+            return (await query.GetFilesAsync()).Where(subsFile => subsFile.Name.StartsWith(fileName, StringComparison.Ordinal)).ToList();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+
 
     void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
     {
@@ -657,6 +1192,82 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             PlayerContainer, 
             PageRoot);
     }
+
+    [RelayCommand]
+    async Task ClearThumnailGenerationIssue()
+    {
+        if (_vm.MovieFile == null) { return; }
+        if (_frameGrabber is FFmpegFrameGrabberFrameExtracter) { return; }
+
+        _messenger.SendShowTextNotificationMessage("MovieViewer_NotSupportedCodec_OnceClear".Translate());
+        var ct = this.GetCancellationTokenOnUnloaded();
+        var ffmepgExt = await FFmpegFrameGrabberFrameExtracter.CreateAsync(_vm.MovieFile, _vm.PageSettings.VideoFrameThumbnailSize);
+        CompositeDisposable cd = new();
+        try
+        {
+            var codecName = ffmepgExt.CodecName;
+            _thumbanilManager.SetThumbnailGenerationProgress(codecName);
+            if (await ffmepgExt.CanExtractFrameAsync(TimeSpan.FromSeconds(3), ct))
+            {
+                _frameGrabber = ffmepgExt;
+                _thumbanilManager.SetThumbnailGenerationCheckedFFmpeg(codecName);
+            }
+            else
+            {
+                cd.Add(ffmepgExt);
+                var mcExt = await MediaCompositionFrameExtracter.CreateAsync(_vm.MovieFile, _vm.PageSettings.VideoFrameThumbnailSize);
+                try
+                {
+                    if (await mcExt.CanExtractFrameAsync(TimeSpan.FromSeconds(3), ct))
+                    {
+                        Guard.IsEqualTo(mcExt.CodecName, ffmepgExt.CodecName);
+                        _thumbanilManager.SetThumbnailGenerationCheckedMediaComposition(ffmepgExt.CodecName);
+                        _frameGrabber = mcExt;
+                    }
+                    else
+                    {
+                        _thumbanilManager.ThumbnailGenerationFailed(codecName);
+                        cd.Add(mcExt);
+                    }
+                }
+                catch
+                {
+                    cd.Add(mcExt);
+                    throw;
+                }
+            }
+        }
+        finally
+        {
+            cd.Dispose();
+        }
+
+        if (_frameGrabber != null)
+        {
+            if (_playbackResources is CompositeDisposable disposable)
+            {
+                (_frameGrabber as IDisposable)?.AddTo(disposable);
+            }
+            else
+            {
+                (_frameGrabber as IDisposable)?.RegisterTo(ct);
+            }
+            MovieSeekbarTooltipImage.Source = _frameGrabber.Source;
+            MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+            MovieSeekbarTooltipNotSupported.Visibility = Visibility.Collapsed;
+            if (_frameGrabber is FFmpegFrameGrabberFrameExtracter)
+            {
+                NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Collapsed;
+            }
+            _messenger.SendShowTextNotificationMessage("MovieViewer_CheckCodec_ReEnabled".Translate());
+        }
+        else
+        {
+            string notifyText = $"MovieViewer_NotSupportedCodec".Translate(ffmepgExt.CodecName);
+            _messenger.SendShowTextNotificationMessage(notifyText);
+        }
+    }
+
 
     void RefreshPlayerContainerSize(MediaPlayer mediaPlayer, 
         Grid container, 
@@ -832,10 +1443,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 ps.Position = TimeSpan.Zero;
             }
             MediaPlayer.Play();
+            _audioPlayer.Play();
+            _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         }
         else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
         {
             MediaPlayer.Pause();
+            _audioPlayer.Pause();
+            _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         }
     }
 
@@ -921,44 +1536,124 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void VideoPositionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
-        if (((FrameworkElement)sender).IsLoaded == false) { return; }
-        if (_videoPositionChangingFromCode) 
-        {
-            return; 
-        }
+        //if (((FrameworkElement)sender).IsLoaded == false) { return; }
+        //if (_videoPositionChangingFromCode) 
+        //{
+        //    return; 
+        //}
 
-        var ts = TimeSpan.FromSeconds((double)e.NewValue);
-        _videoPositionChangingFromCode = true;
-        MediaPlayer.PlaybackSession.Position = ts;
+        //var ts = TimeSpan.FromSeconds((double)e.NewValue);
+        //_videoPositionChangingFromCode = true;
+        //MediaPlayer.PlaybackSession.Position = ts;
+        //_audioPlayer.PlaybackSession.Position = ts;
     }
 
+
+    void RefreshSeekbarThumbnailContainerPosition(Vector2 pos)
+    {
+        var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+        var offset = ts.TransformPoint(new Point()).ToVector2();
+        var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+        var videoPos = VideoDuration * posRatio;
+        var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+        if (SeekbarFrameTime == videoPosAligned) { return; }
+
+        MovieSeekbarTooltipContainerTransform.TranslateX = pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f;
+        MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight;
+
+        MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+        if (_videoPositionsliderPointerPressed)
+        {
+            _videoPositionChangingFromCode = true;
+            MediaPlayer.PlaybackSession.Position = videoPos;
+            _audioPlayer.PlaybackSession.Position = videoPos;
+            VideoPosition = videoPos;
+        }
+
+        SeekbarFrameTime = videoPosAligned;
+        _lastPointerPosition = pos;
+    }
+
+    IFrameExtracter? _frameGrabber;
+    private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
+    {
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
+            && IsDisplayControlUI)
+        {
+            _mouseCursorAutoHideTimer?.Stop();
+            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+
+            RefreshSeekbarThumbnailContainerPosition(pos);
+        }
+        else
+        {
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    Vector2 _lastPointerPosition;
+    [ObservableProperty]
+    TimeSpan? _seekbarFrameTime;
+
     bool _prevPlaying;
+    bool _videoPositionsliderPointerPressed;
+    PointerDeviceType _lastPointerDeviceType;
     void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos))
         {
+            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
             MediaPlayer.Pause();
+            _audioPlayer.Pause();
+            _videoPositionsliderPointerPressed = true;
+
+            RefreshSeekbarThumbnailContainerPosition(pos);
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            _videoPositionsliderPointerPressed = false;
         }
     }
 
     void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
         {
             if (_prevPlaying)
             {
                 _prevPlaying = false;
                 MediaPlayer.Play();
+                _audioPlayer.Play();
             }
             else
             {
                 // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
                 //MediaPlayer.StepBackwardOneFrame();
                 MediaPlayer.StepForwardOneFrame();
+                _audioPlayer.PlaybackSession.Position += _oneFrameTime;                
+            }
+
+            if (_videoPositionsliderPointerPressed)
+            {
+                var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+                var offset = ts.TransformPoint(new Point()).ToVector2();
+                var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+                var videoPos = VideoDuration * posRatio;
+                //var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+                _videoPositionChangingFromCode = true;
+                MediaPlayer.PlaybackSession.Position = videoPos;
+                _audioPlayer.PlaybackSession.Position = videoPos;
+                VideoPosition = videoPos;
             }
         }
+
+        MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+        _videoPositionsliderPointerPressed = false;
     }
 
     [RelayCommand]
@@ -966,6 +1661,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (MediaPlayer == null) { return; }
         MediaPlayer.StepBackwardOneFrame();
+        _audioPlayer.Pause();
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
     }
 
@@ -973,12 +1670,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void ForwardOneFrame()
     {
         MediaPlayer.StepForwardOneFrame();
+        _audioPlayer.Pause();
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
 
     void SeekPlaybackPosition(TimeSpan relativeTime)
     {
-        MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + relativeTime;
+        var time = MediaPlayer.PlaybackSession.Position + relativeTime;
+        MediaPlayer.PlaybackSession.Position = time;
+        _audioPlayer.PlaybackSession.Position = time;
     }
 
     void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
@@ -990,13 +1691,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (args.X != 0)
         {
             bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-            var ts = TimeSpan.FromSeconds(args.X);
-            MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + ts;
+            var ts = MediaPlayer.PlaybackSession.Position + TimeSpan.FromSeconds(args.X);
+            MediaPlayer.PlaybackSession.Position = ts;
+            _audioPlayer.PlaybackSession.Position = ts;
 
             // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
             if (!isPlaying)
             {
                 MediaPlayer.StepForwardOneFrame();
+                _audioPlayer.Pause();
+                _audioPlayer.PlaybackSession.Position += _oneFrameTime;
             }
         }
         if (args.Y != 0)
@@ -1038,7 +1742,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SetPlaybackPositionWithPercent(double videoPositionInPercent)
     {
         if (!IsDurationAvairable) { return; }
-        MediaPlayer.PlaybackSession.Position = (VideoDuration * (videoPositionInPercent * 0.01));        
+        var ts = (VideoDuration * (videoPositionInPercent * 0.01));
+        MediaPlayer.PlaybackSession.Position = ts;
+        _audioPlayer.PlaybackSession.Position = ts;
     }
 
 
@@ -1081,6 +1787,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         SetPlaybackRateFromCode((double)e.NewValue);
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
 
@@ -1089,6 +1797,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         SetPlaybackRateFromCode(d);
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
     [RelayCommand]
@@ -1099,6 +1809,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var nextRate = Math.Min(roundedRate + 0.25f, _maxPlaybackRate);
         SetPlaybackRateFromCode(nextRate);
         MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = nextRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
     void Button_Tapped(object sender, TappedRoutedEventArgs e)
@@ -1115,6 +1827,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var prevRate = Math.Max(roundedRate - 0.25f, _minPlaybackRate);
         SetPlaybackRateFromCode(prevRate);
         MediaPlayer.PlaybackSession.PlaybackRate = prevRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = prevRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
     #endregion
@@ -1139,6 +1853,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         SetSoundVolume(_vm.PageSettings.SoundVolume, _vm.PageSettings.IsMuted);
         MediaPlayer.Volume = 0;
+        _audioPlayer.Volume = 0;
         float increaseVolumeUnit = (float)_vm.PageSettings.SoundVolume / 30f; // 0.5秒
         var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(16);
@@ -1148,11 +1863,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             if (nextVolume > _vm.PageSettings.SoundVolume)
             {
                 MediaPlayer.Volume = _vm.PageSettings.SoundVolume;
+                _audioPlayer.Volume = _vm.PageSettings.SoundVolume;
                 s.Stop();                
             }
             else
             {                
                 MediaPlayer.Volume += increaseVolumeUnit;
+                _audioPlayer.Volume = MediaPlayer.Volume;
             }
 
             //Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
@@ -1169,6 +1886,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this), (x, s) =>
             {
                 s.MediaPlayer.Volume = x;
+                s._audioPlayer.Volume = x;
                 s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);                
             })
             .AddTo(ref db);
@@ -1201,6 +1919,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         _vm.PageSettings.IsMuted = !_vm.PageSettings.IsMuted;
         MediaPlayer.IsMuted = _vm.PageSettings.IsMuted;
+        _audioPlayer.IsMuted = _vm.PageSettings.IsMuted;
         if (_vm.PageSettings.IsMuted)
         {
             SetSoundVolume(0, true);
@@ -1228,6 +1947,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
 
             MediaPlayer.IsMuted = isMute;
+            _audioPlayer.IsMuted = isMute;
         }
         finally
         {
@@ -1259,6 +1979,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             SoundVolume_Display = volume;            
             MediaPlayer.Volume = volume;
             MediaPlayer.IsMuted = isMute;
+            _audioPlayer.Volume = volume;
+            _audioPlayer.IsMuted = isMute;
             _vm.PageSettings.IsMuted = isMute;
         }
         finally
@@ -1303,6 +2025,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void BackNavigationRequest()
     {
         MediaPlayer.Pause();
+        _audioPlayer.Pause();
         _messenger.Send(new BackNavigationRequestMessage());
     }
 
@@ -1985,6 +2708,268 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         await Launcher.LaunchFolderPathAsync(
             Path.GetDirectoryName(SavedVideoFrameFile.Path),
             new () { ItemsToSelect = { SavedVideoFrameFile } });
+    }
+
+
+    string? _initializeForFilePath;
+
+    private void TracksAndSubtitleSelectFlyout_Opening(object sender, object e)
+    {
+        if (_vm.MovieFile == null) { return; }
+        if (MediaPlayer.Source is not MediaPlaybackItem playbackItem) { return; }
+        if (_initializeForFilePath != null && _initializeForFilePath == _vm.MovieFile.Path) 
+        {
+            foreach (var (index, menuItem) in VideoTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            {
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.VideoTracks.SelectedIndex == index;
+            }
+
+            foreach (var (index, menuItem) in AudioTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            {
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.AudioTracks.SelectedIndex == index 
+                    ||  _audioPlayer.Source == menuItem.DataContext;
+            }
+
+            bool anySubstitleDisplay = false;
+            foreach (var (index, menuItem) in SubtitlesMenuSubItem.Items.Skip(1).SkipLast(2).AsValueEnumerable().Index())
+            {
+                var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = mode == TimedMetadataTrackPresentationMode.PlatformPresented;
+                anySubstitleDisplay |= mode == TimedMetadataTrackPresentationMode.PlatformPresented;
+            }
+
+            return; 
+        }
+
+        _initializeForFilePath = _vm.MovieFile.Path;
+        VideoTracksMenuSubItem.Items.Clear();
+        AudioTracksMenuSubItem.Items.Clear();
+        SubtitlesMenuSubItem.Items.Clear();
+
+        // 動画ファイル内の映像
+        foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
+        {
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = !string.IsNullOrWhiteSpace(videoTrack.Language) ? $"{videoTrack.Id}. {videoTrack.Name} ({videoTrack.Language})" : $"{videoTrack.Id}. {videoTrack.Name}",
+                DataContext = videoTrack,
+                IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
+                Command = SetVideoTrackCommand,
+                CommandParameter = videoTrack,
+            };
+
+            VideoTracksMenuSubItem.Items.Add(menuItem);
+        }
+
+        VideoTracksMenuSubItem.Text = "MovieViewer_VideoTrack".Translate(VideoTracksMenuSubItem.Items.Count);
+
+        bool isVideoTracksChangeEnabled = VideoTracksMenuSubItem.Items.Count >= 2;
+        foreach (var menuItem in VideoTracksMenuSubItem.Items)
+        {
+            menuItem.IsEnabled = isVideoTracksChangeEnabled;
+        }
+        
+        // 動画ファイル内の音声
+        foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
+        {
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{audioTrack.Id}. {audioTrack.Name} ({audioTrack.Language})" : $"{audioTrack.Id}. {audioTrack.Name}",
+                DataContext = audioTrack,
+                IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
+                Command = SetAudioTrackCommand,
+                CommandParameter = audioTrack,
+            };
+
+            AudioTracksMenuSubItem.Items.Add(menuItem);
+        }
+
+        // 外部音声
+        foreach (var (audioItem, file) in _externalAudioTrackFiles)
+        {
+            var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = $"{file.Name}",
+                DataContext = audioItem,
+                IsChecked = _audioPlayer.Source == audioItem,
+                Command = SetExternalAudioTrackCommand,
+                CommandParameter = audioItem,
+            };
+
+            AudioTracksMenuSubItem.Items.Add(menuItem);
+        }
+
+        bool isAudioTracksChangeEnabled = AudioTracksMenuSubItem.Items.Count >= 2;
+        foreach (var menuItem in AudioTracksMenuSubItem.Items)
+        {
+            menuItem.IsEnabled = isAudioTracksChangeEnabled;
+        }
+
+        AudioTracksMenuSubItem.Text = "MovieViewer_AudioTrack".Translate(playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count);
+
+        // 字幕
+        var noSubtitlesMenuItem = new MenuFlyoutItem()
+        {
+            Text = "MovieViewer_Subtitles_HideAll".Translate(),          
+            Command = SetTimedMetadataTrackCommand,
+            CommandParameter = null,
+        };
+        SubtitlesMenuSubItem.Items.Add(noSubtitlesMenuItem);
+        foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+        {            
+            var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
+                DataContext = subtitle,
+                IsChecked = mode == TimedMetadataTrackPresentationMode.PlatformPresented,
+                Command = SetTimedMetadataTrackCommand,
+                CommandParameter = subtitle,
+            };
+
+            SubtitlesMenuSubItem.Items.Add(menuItem);
+        }
+        
+        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutSeparator());
+        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutItem()
+        {
+            Text = "MovieViewer_Subtitles_OpenSettings".Translate(),
+            Command = OpenSubstitleSettingsCommand,
+        });
+
+        SubtitlesMenuSubItem.Text = "MovieViewer_Subtitles".Translate(playbackItem.TimedMetadataTracks.Count);
+    }
+
+    [RelayCommand]
+    void SetVideoTrack(VideoTrack videoTrack)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
+        {
+            var index = playbackItem.VideoTracks.AsValueEnumerable().Index().FirstOrDefault(x => x.Item.Id == videoTrack.Id).Index;
+            playbackItem.VideoTracks.SelectedIndex = index;
+            _messenger.SendShowTextNotificationMessage("MovieViewer_VideoTrackChanged".Translate($"{index+1}. {videoTrack.Name}"));
+        }
+    }
+
+    [RelayCommand]
+    void SetAudioTrack(AudioTrack audioTrack)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
+        {
+            _audioPlayer.Source = null;
+            var index = playbackItem.AudioTracks.AsValueEnumerable().Index().FirstOrDefault(x => x.Item.Id == audioTrack.Id).Index;
+            playbackItem.AudioTracks.SelectedIndex = index;
+            _messenger.SendShowTextNotificationMessage("MovieViewer_AudioTrackChanged".Translate($"{index+1}. {audioTrack.Name}"));
+        }
+    }
+
+    [RelayCommand]
+    void SetExternalAudioTrack(MediaPlaybackItem audioPlaybackItem)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem
+            && playbackItem.AudioTracks.SelectedIndex >= 0)
+        {
+            playbackItem.AudioTracks.SelectedIndex = -1;
+        }
+        _audioPlayer.Source = audioPlaybackItem;
+        _audioPlayer.Volume = 0;
+        if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+        {
+            _audioPlayer.Play();
+        }
+        
+        if (_externalAudioTrackFiles.FirstOrDefault(x => x.PlaybackItem == audioPlaybackItem).SourceFile is { } file)
+        _messenger.SendShowTextNotificationMessage($"音声トラックを変更：{file.Name}");
+    }
+
+    private void SyncPlayingPosition_PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+    {
+        if (sender.PlaybackState == MediaPlaybackState.Playing)
+        {
+            Observable.NextFrame()
+                .Subscribe((this, sender), (_, s) =>
+                {
+                    s.Item1._audioPlayer.PlaybackSession.PlaybackRate = s.Item1.MediaPlayer.PlaybackSession.PlaybackRate;
+                    s.sender.Position = s.Item1.MediaPlayer.PlaybackSession.Position;
+                    s.Item1._audioPlayer.Volume = s.Item1.MediaPlayer.Volume;
+                });
+        }
+    }
+
+
+    [RelayCommand]
+    void SetTimedMetadataTrack(TimedMetadataTrack? subtitle)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
+        {
+            if (subtitle == null)
+            {
+                foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+                {
+                    var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                    if (mode == TimedMetadataTrackPresentationMode.PlatformPresented)
+                    {
+                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
+                        if (!string.IsNullOrEmpty(timed.Id))
+                        {
+                            _vm.PageSettings.SetSubtitleLanguageEnabled(timed.Id, false);
+                        }
+                        _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(timed), false);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+                {
+                    if (subtitle.Id == timed.Id)
+                    {
+                        var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                        var nextMode = mode == TimedMetadataTrackPresentationMode.PlatformPresented
+                            ? TimedMetadataTrackPresentationMode.Hidden
+                            : TimedMetadataTrackPresentationMode.PlatformPresented;
+                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, nextMode);
+                        if (!string.IsNullOrEmpty(timed.Id))
+                        {
+                            _vm.PageSettings.SetSubtitleLanguageEnabled(timed.Id, nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
+                        }
+                        _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(subtitle), nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(subtitle.Language))
+                {
+                    foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+                    {
+                        if (timed.Id != subtitle.Id)
+                        {
+                            playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    string GetSubtitleKey(TimedMetadataTrack subtitle)
+    {
+        return !string.IsNullOrEmpty(subtitle.Language) ? subtitle.Language : subtitle.Id;
+    }
+
+    private void PlaybackItem_TimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
+    {
+        if (sender.TimedMetadataTracks.Count > 0)
+        {
+        }
+    }
+
+    [RelayCommand]
+    async Task OpenSubstitleSettingsAsync()
+    {
+        var uri = new Uri("ms-settings:easeofaccess-closedcaptioning");
+        await Launcher.LaunchUriAsync(uri);        
     }
 }
 
