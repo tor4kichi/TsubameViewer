@@ -204,6 +204,15 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     string? _displayCurrentArchiveFolderName;
 
+    [ObservableProperty]
+    bool _requireRefresh;
+
+    [RelayCommand]
+    void RefreshPage()
+    {
+        _messenger.Send(new RefreshNavigationRequestMessage());
+    }
+
     DateTimeOffset _sourceItemLastUpdatedTime;
     CancellationToken _navigationCt;
 
@@ -316,8 +325,9 @@ public sealed partial class FolderListupPageViewModel
         CurrentFolderItem = null;
         _itemsDisposable?.Dispose();
         _itemsDisposable = null;
-
+        
         DisplayCurrentArchiveFolderName = null;
+        RequireRefresh = false;
     }
 
     public IStorageItemViewModel? GetLastIntractItem()
@@ -376,6 +386,7 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
+                RequireRefresh = false;
                 if (mode == NavigationMode.Refresh || await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
                     if (_imageCollectionContext is FolderImageCollectionContext context
@@ -452,44 +463,26 @@ public sealed partial class FolderListupPageViewModel
 
 
 
-        // Note: IsSupportFolderOrArchiveFilesIndexAccess == trueの際、
-        // 意図しないFileChangedが発生し無駄更新が掛かるため変更監視を無効にしている
-        if (_imageCollectionContext != null
-            && _imageCollectionContext.IsSupportedFolderContentsChanged
-            && IsIndexAccessListingEnabled is false
-            )
+        // アプリ内部操作も含めて変更を検知する
+        // FolderItemsQueryは動作不安定を確認したため使っていない
+        if (_imageCollectionContext != null)
         {
-            // アプリ内部操作も含めて変更を検知する
-            bool requireRefresh = false;
-            _imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
-                .ToObservable()
-                .Subscribe(async _ =>
-                {
-                    if (Window.Current.Visible)
-                    {
-                        requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                    }
-                    else
-                    {
-                        requireRefresh = true;
-                    }
-
-                    Debug.WriteLine("Folder/Archive Update required. " + _currentImageSource?.Name ?? string.Empty);
-                })
-                .AddTo(ref db);
-
             Window.Current.WindowActivationStateChanged()
-                .Subscribe(async visible =>
-                {
-                    if (visible && requireRefresh && _imageCollectionContext is not null)
+                    .ToObservable()
+                    .Debounce(TimeSpan.FromSeconds(1))
+                    .SubscribeAwait(this, static async (visible, s, ct) =>
                     {
-                        requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                        Debug.WriteLine("Folder/Archive Updated. " + _currentImageSource?.Name ?? string.Empty);
-                    }
-                })
-                .AddTo(ref db);
+                        if (visible && !s.RequireRefresh)
+                        {
+                            if (s._imageCollectionContext is FolderImageCollectionContext folderContext
+                                && await folderContext.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                            {
+                                s.RequireRefresh = true;
+                                s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
+                            }
+                        }
+                    }, AwaitOperation.Drop)
+                    .AddTo(ref db);
         }
 
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 

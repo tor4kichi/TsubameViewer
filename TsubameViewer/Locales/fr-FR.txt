@@ -158,6 +158,8 @@ StorageItemSettings_IsDisplayFolderItemsCount_Desc = Dans la liste des dossiers,
 StorageItemSettings_ReadingFinishedThresholdForImageViewer = Seuil de détermination de la fin de lecture pour la visionneuse d'images
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Seuil de détermination de la fin de lecture pour la visionneuse de romans
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermination de la fin de lecture pour la visionneuse de vidéos
+ListupPage_DetectContentsChanged = Le contenu a été modifié. Vous pouvez actualiser la page.
+
 
 
 #### History Page

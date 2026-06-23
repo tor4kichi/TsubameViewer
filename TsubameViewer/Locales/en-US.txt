@@ -158,6 +158,8 @@ StorageItemSettings_IsDisplayFolderItemsCount_Desc = For each folder item in the
 StorageItemSettings_ReadingFinishedThresholdForImageViewer = Threshold for determining completion in the image viewer
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Threshold for determining completion in the novel viewer
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Threshold for determining completion in the movie viewer
+ListupPage_DetectContentsChanged = The content has been changed. You can refresh the page.
+
 
 
 #### History Page

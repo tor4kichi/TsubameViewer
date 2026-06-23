@@ -158,6 +158,8 @@ StorageItemSettings_IsDisplayFolderItemsCount_Desc = 在文件夹列表的文件
 StorageItemSettings_ReadingFinishedThresholdForImageViewer = 图片查看器的“已读”判定阈值
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = 小说查看器的“已读”判定阈值
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = 视频查看器的“已读”判定阈值
+ListupPage_DetectContentsChanged = 内容已更改，您可以刷新页面。
+
 
 
 #### History Page

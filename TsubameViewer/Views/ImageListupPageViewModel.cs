@@ -20,6 +20,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
@@ -30,6 +31,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -235,6 +237,14 @@ public sealed partial class ImageListupPageViewModel
         Core.Models.FolderItemListing.FileDisplayMode.Line,
     };
 
+    [ObservableProperty]
+    bool _requireRefresh;
+
+    [RelayCommand]
+    void RefreshPage()
+    {
+        _messenger.Send(new RefreshNavigationRequestMessage());
+    }
 
     public string FoldersManagementPageName => AppShell.HomePageName;
     private CancellationToken _navigationCt;
@@ -345,6 +355,11 @@ public sealed partial class ImageListupPageViewModel
 
     async ValueTask<bool> IsRequireUpdateAsync(string newPath, string pageName, CancellationToken ct)
     {
+        if (RequireRefresh)
+        {
+            return true;
+        }
+
         if (newPath != _currentImageSource?.Path)
         {
             return true;
@@ -381,6 +396,7 @@ public sealed partial class ImageListupPageViewModel
                 (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                 if (await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
+                    RequireRefresh = false;
                     await ResetContentWithStorageItem(newPath, pageName, ct);
                 }
                 else
@@ -482,6 +498,28 @@ public sealed partial class ImageListupPageViewModel
                 .Debounce(TimeSpan.FromSeconds(1))
                 .Subscribe(_ => FileItemsView.RefreshFilter())
                 .AddTo(ref db);
+
+            // アプリ内部操作も含めて変更を検知する
+            // FolderItemsQueryは動作不安定を確認したため使っていない
+            if (_imageCollectionContext is FolderImageCollectionContext)
+            {
+                Window.Current.WindowActivationStateChanged()
+                    .ToObservable()
+                    .Debounce(TimeSpan.FromSeconds(1))
+                    .SubscribeAwait(this, static async (visible, s, ct) =>
+                    {
+                        if (visible && !s.RequireRefresh)
+                        {
+                            if (s._imageCollectionContext is FolderImageCollectionContext folderContext
+                                && await folderContext.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
+                            {
+                                s.RequireRefresh = true;
+                                s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
+                            }
+                        }
+                    }, AwaitOperation.Drop)
+                    .AddTo(ref db);
+            }
 
             db.Build().RegisterTo(ct);
         }

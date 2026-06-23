@@ -158,6 +158,8 @@ StorageItemSettings_IsDisplayFolderItemsCount_Desc = フォルダ一覧のフォ
 StorageItemSettings_ReadingFinishedThresholdForImageViewer = 画像ビューアの読了判定のしきい値
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = 小説ビューアの読了判定のしきい値
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = 動画ビューアの読了判定のしきい値
+ListupPage_DetectContentsChanged = コンテンツが変更されました。ページを更新できます
+
 
 
 #### History Page
