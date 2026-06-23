@@ -38,6 +38,8 @@ public record FolderAndArchiveChildFileDisplaySettingEntry
     public string Path { get; init; } = "";
 
     public FileSortType? ChildItemDefaultSort { get; set; }
+
+    public DefaultFolderOrArchiveOpenMode ChildImagesFolderOpenMode { get; set; } = DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
 }
 
 public record AlbamDisplaySettingEntry
@@ -50,6 +52,7 @@ public record AlbamDisplaySettingEntry
 
 public sealed class DisplaySettingsByPathRepository
 {
+    public static readonly DefaultFolderOrArchiveOpenMode DefaultChildImagesFolderOpenMode = DefaultFolderOrArchiveOpenMode.Viewer;
     public sealed class InternalFolderAndArchiveDisplaySettingsByPathRepository : LiteDBServiceBase<FolderAndArchiveDisplaySettingEntry>
     {
         public InternalFolderAndArchiveDisplaySettingsByPathRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
@@ -209,6 +212,14 @@ public sealed class DisplaySettingsByPathRepository
         var entry = _internalChildFileRepository.FindById(path)
             ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
         entry.ChildItemDefaultSort = sort;
+        _internalChildFileRepository.UpdateItem(entry);
+    }
+
+    public void SetParentFolderImagesOpenMode(string path, DefaultFolderOrArchiveOpenMode openMode)
+    {
+        var entry = _internalChildFileRepository.FindById(path)
+            ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
+        entry.ChildImagesFolderOpenMode = openMode;
         _internalChildFileRepository.UpdateItem(entry);
     }
 

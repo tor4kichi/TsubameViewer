@@ -126,8 +126,11 @@ FileSortType.UpdateTimeDecending = 新しい順
 Sort_InheritancePath = 並び替え継承元
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子フォルダ内アイテムの並び順
+ChildImagesFolderOpenMode = 子フォルダ（画像）の開き方
 OpenImageViewer = ビューアで開く
 OpenFolderListup = ファイルを一覧表示
+DefaultFolderOrArchiveOpenMode.Viewer = ビューアで開く
+DefaultFolderOrArchiveOpenMode.Listup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
 OpenWithExternalApplication = 別アプリで開く
 AddSecondaryTile = スタートにピン留めする
@@ -155,6 +158,8 @@ StorageItemSettings_IsDisplayFolderItemsCount_Desc = フォルダ一覧のフォ
 StorageItemSettings_ReadingFinishedThresholdForImageViewer = 画像ビューアの読了判定のしきい値
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = 小説ビューアの読了判定のしきい値
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = 動画ビューアの読了判定のしきい値
+ListupPage_DetectContentsChanged = コンテンツが変更されました。ページを更新できます
+
 
 
 #### History Page
@@ -260,7 +265,6 @@ MovieViewer_Subtitles_Avairable = 字幕あり
 MovieViewer_NotSupportedCodec = 動画コーデック {0} はプレビュー画像が表示できません
 MovieViewer_NotSupportedCodec_OnceClear = プレビュー画像の表示を再試行
 MovieViewer_CheckCodec_ReEnabled = プレビュー画像が利用可能です
-
 
 #### SearchResult
 SearchResultWith = "{0}"の検索結果

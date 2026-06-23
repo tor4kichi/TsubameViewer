@@ -343,18 +343,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
+        _navigationDisposables?.Dispose();
+
+        _navigaitonCts?.Cancel();
+        _navigaitonCts?.Dispose();
+        _navigaitonCts = null;
+
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        _messenger.Unregister<ImageLoadedMessage>(this);
+
         d().FireAndForgetSafe();
         async Task d()
         {
-            _navigationDisposables?.Dispose();
-
-            _navigaitonCts?.Cancel();
-            _navigaitonCts?.Dispose();
-            _navigaitonCts = null;
-
-            _messenger.Unregister<BackNavigationRequestingMessage>(this);
-            _messenger.Unregister<ImageLoadedMessage>(this);
-
             if (!_vm.NowDoubleImageView
                 && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
             {

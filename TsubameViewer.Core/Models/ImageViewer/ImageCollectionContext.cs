@@ -503,7 +503,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         int count = 200;
         await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
         {            
-            if (isInitial || !cached.Remove(file.Path, out var entry))
+            if (!cached.Remove(file.Path, out var entry) || isInitial)
             {
                 ct.ThrowIfCancellationRequested();
                 entry = _repo.AddOrUpdateItem(file);
@@ -555,7 +555,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         int count = 200;
         await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
         {
-            if (isInitial || !cached.Remove(file.Path, out var entry))
+            if (!cached.Remove(file.Path, out var entry) || isInitial)
             {
                 ct.ThrowIfCancellationRequested();
                 entry = _repo.AddOrUpdateItem(file);
@@ -673,6 +673,24 @@ public sealed class FolderStructureCacheContext : IDisposable
         Debug.WriteLine($"{Folder.Name} COMPLETE structure cache update.");
         return true;
     }
+
+    public void ForceUpdateRequestForNotImages(string path)
+    {
+        if (_updateMap.TryGetValue(path,  out var info))
+        {
+            info.IsRequireUpdate = true;
+            info.CachedNotImagesCount = 0;            
+        }
+    }
+    public void ForceUpdateRequestForImages(string path)
+    {
+        if (_updateMap.TryGetValue(path, out var info))
+        {
+            info.IsRequireUpdate = true;
+            info.CachedImagesCount = 0;
+        }
+    }
+
 
     public async Task<bool> UpdateNotImagesCacheIfCountNotSameAsync(CancellationToken ct)
     {

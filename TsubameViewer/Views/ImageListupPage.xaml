@@ -859,6 +859,18 @@
 
             <uwpControls:WrapPanel uwpControls:DockPanel.Dock="Right"
                                    VerticalSpacing="4">
+              <Button Command="{x:Bind _vm.RefreshPageCommand}"
+                      Visibility="{x:Bind _vm.RequireRefresh, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                      Style="{ThemeResource AccentButtonStyle}"
+                      Margin="8 0 16 0">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="4">
+                  <SymbolIcon Symbol="Refresh"
+                              Style="{StaticResource TitlebarSymbolIcon}" />
+                  <TextBlock Text="{i18nExt:Localize Key=Refresh}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
               <Border Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
                       Margin="8 0 16 0">
                 <winUIControls:Segmented SelectionMode="Single"

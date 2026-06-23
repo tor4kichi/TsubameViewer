@@ -112,29 +112,40 @@ public sealed class OpenFolderItemCommand : CommandBase
             else if (type == StorageItemTypes.Folder)
             {
                 var folder = (StorageFolder)((StorageItemImageSource)imageSource.FlattenAlbamItemInnerImageSource()).StorageItem;
-                var setting = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(folder.Path);
-                if (setting?.ListupMode is { } listupMode)
+                var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(folder.Path);
+                var openMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+                if (openMode == DefaultFolderOrArchiveOpenMode.Viewer
+                    && await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableImagesAsync(folder, ct), CancellationToken.None))
                 {
-                    if (listupMode == DefaultFolderListupMode.FolderOrContents)
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                }
+                else
+                {
+                    var setting = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(folder.Path);
+                    if (setting?.ListupMode is { } listupMode)
                     {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                        if (listupMode == DefaultFolderListupMode.FolderOrContents)
+                        {
+                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                            var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                        }
+                        else
+                        {
+                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                        }
                     }
-                    else
+                    else if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableImagesAsync(folder, ct), CancellationToken.None))
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
-                }
-                else if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
-                {
-                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                }                                        
-                else
-                {
-                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                    else
+                    {
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                    }
                 }
             }
             else if (type == StorageItemTypes.EBook)

@@ -274,18 +274,38 @@
                 </Button.Content>
 
                 <Button.Flyout>
-                  <Flyout Placement="Bottom">
+                  <Flyout Placement="Bottom"
+                          x:Name="ChildFolderSettingsFlyout"
+                          Opened="ChildFolderSettingsFlyout_Opened">
                     <StackPanel Spacing="8">
+
+                      <TextBlock x:Name="ChildImageFolderOpenModeButtonHeaderText"
+                                 Text="{i18nExt:Localize Key=ChildImagesFolderOpenMode}"
+                                 Visibility="Collapsed" />
+
+                      <winUIControls:Segmented x:Name="ChildImageFolderOpenModeButton"
+                                               Background="Transparent"
+                                               Visibility="Collapsed"
+                                               CornerRadius="4"
+                                               ItemsSource="{x:Bind _vm.ChildImagesFolderOpenModeItems}"
+                                               SelectedItem="{x:Bind _vm.SelectedChildImagesFolderOpenMode, Mode=OneWay}"
+                                               SelectionChanged="ChildImageFolderOpenModeButton_SelectionChanged"
+                                               ItemTemplate="{StaticResource LocalizeTextTemplate}">
+                      </winUIControls:Segmented>
+
                       <TextBlock x:Name="ChildFolderSortButtonHeaderText"
                                  Text="{i18nExt:Localize Key=Sort_DefaultChildItemSort}"
                                  Visibility="Collapsed" />
                       <DropDownButton x:Name="ChildFolderSortButton"
-                                      Content="{x:Bind _vm.SelectedChildFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                                      Content="{x:Bind _vm.SelectedChildFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}, FallbackValue=''}"
                                       Background="Transparent"
                                       Visibility="Collapsed"
-                                      CornerRadius="4">
+                                      CornerRadius="4"
+                                      MinHeight="32"
+                                      HorizontalAlignment="Stretch"
+                                      HorizontalContentAlignment="Left">
                         <DropDownButton.Flyout>
-                          <MenuFlyout Placement="RightEdgeAlignedTop">
+                          <MenuFlyout Placement="Bottom">
                             <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
                                             Command="{x:Bind _vm.ChangeChildFileSortCommand}"
                                             CommandParameter="{x:Null}">
@@ -335,7 +355,16 @@
             <StackPanel Orientation="Horizontal"
                         Margin="8 0"
                         uwpControls:DockPanel.Dock="Right">
-
+              <Button Command="{x:Bind _vm.RefreshPageCommand}"
+                      Visibility="{x:Bind _vm.RequireRefresh, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                      Style="{ThemeResource AccentButtonStyle}"
+                      Margin="8 0 16 0">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <SymbolIcon Symbol="Refresh" Style="{StaticResource TitlebarSymbolIcon}" />
+                  <TextBlock Text="{i18nExt:Localize Key=Refresh}"
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
               <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
                       uwpControls:DockPanel.Dock="Right"
                       Margin="8 0 16 0">
@@ -475,6 +504,8 @@
           <VisualState.Setters>
             <Setter Target="ChildFolderSortButton.Visibility" Value="Visible" />
             <Setter Target="ChildFolderSortButtonHeaderText.Visibility" Value="Visible" />
+            <Setter Target="ChildImageFolderOpenModeButton.Visibility" Value="Visible" />
+            <Setter Target="ChildImageFolderOpenModeButtonHeaderText.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

@@ -22,14 +22,17 @@ public sealed class OpenSecondaryListupCommand : CommandBase
 {
     readonly IMessenger _messenger;
     readonly FolderContainerTypeManager _folderContainerTypeManager;
+    private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
 
     public OpenSecondaryListupCommand(
         IMessenger messenger,
-        FolderContainerTypeManager folderContainerTypeManager
+        FolderContainerTypeManager folderContainerTypeManager,
+        DisplaySettingsByPathRepository displaySettingsByPathRepository
         )
     {
         _messenger = messenger;
         _folderContainerTypeManager = folderContainerTypeManager;
+        _displaySettingsByPathRepository = displaySettingsByPathRepository;
     }
 
     public override bool CanExecute(object parameter)

@@ -166,6 +166,14 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     FileSortType? _selectedChildFileSortType;
     [ObservableProperty]
+    DefaultFolderOrArchiveOpenMode _selectedChildImagesFolderOpenMode;
+    public DefaultFolderOrArchiveOpenMode[] ChildImagesFolderOpenModeItems { get; } = 
+        [
+            DefaultFolderOrArchiveOpenMode.Viewer,
+            DefaultFolderOrArchiveOpenMode.Listup,
+        ];
+
+    [ObservableProperty]
     string? _displaySortTypeInheritancePath;
     [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
@@ -195,6 +203,15 @@ public sealed partial class FolderListupPageViewModel
 
     [ObservableProperty]
     string? _displayCurrentArchiveFolderName;
+
+    [ObservableProperty]
+    bool _requireRefresh;
+
+    [RelayCommand]
+    void RefreshPage()
+    {
+        _messenger.Send(new RefreshNavigationRequestMessage());
+    }
 
     DateTimeOffset _sourceItemLastUpdatedTime;
     CancellationToken _navigationCt;
@@ -308,8 +325,9 @@ public sealed partial class FolderListupPageViewModel
         CurrentFolderItem = null;
         _itemsDisposable?.Dispose();
         _itemsDisposable = null;
-
+        
         DisplayCurrentArchiveFolderName = null;
+        RequireRefresh = false;
     }
 
     public IStorageItemViewModel? GetLastIntractItem()
@@ -368,8 +386,14 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
-                if (await IsRequireUpdateAsync(newPath, pageName, ct))
+                RequireRefresh = false;
+                if (mode == NavigationMode.Refresh || await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
+                    if (_imageCollectionContext is FolderImageCollectionContext context
+                        && context.Folder.Path == newPath)
+                    {
+                        context.Context.ForceUpdateRequestForNotImages(newPath);
+                    }
                     await ResetContent(newPath, pageName, ct);
                 }
                 else
@@ -433,44 +457,32 @@ public sealed partial class FolderListupPageViewModel
             .Subscribe(_ => FileItemsView.RefreshFilter())
             .AddTo(ref db);
 
-        // Note: IsSupportFolderOrArchiveFilesIndexAccess == trueの際、
-        // 意図しないFileChangedが発生し無駄更新が掛かるため変更監視を無効にしている
-        if (_imageCollectionContext != null
-            && _imageCollectionContext.IsSupportedFolderContentsChanged
-            && IsIndexAccessListingEnabled is false
-            )
+        this.ObservePropertyChanged(x => x.SelectedChildImagesFolderOpenMode, false)
+            .Subscribe((_displaySettingsByPathRepository, _currentImageSource!.Path), (x, s) => s._displaySettingsByPathRepository.SetParentFolderImagesOpenMode(s.Path, x))
+            .AddTo(ref db);
+
+
+
+        // アプリ内部操作も含めて変更を検知する
+        // FolderItemsQueryは動作不安定を確認したため使っていない
+        if (_imageCollectionContext != null)
         {
-            // アプリ内部操作も含めて変更を検知する
-            bool requireRefresh = false;
-            _imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
-                .ToObservable()
-                .Subscribe(async _ =>
-                {
-                    if (Window.Current.Visible)
-                    {
-                        requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                    }
-                    else
-                    {
-                        requireRefresh = true;
-                    }
-
-                    Debug.WriteLine("Folder/Archive Update required. " + _currentImageSource?.Name ?? string.Empty);
-                })
-                .AddTo(ref db);
-
             Window.Current.WindowActivationStateChanged()
-                .Subscribe(async visible =>
-                {
-                    if (visible && requireRefresh && _imageCollectionContext is not null)
+                    .ToObservable()
+                    .Debounce(TimeSpan.FromSeconds(1))
+                    .SubscribeAwait(this, static async (visible, s, ct) =>
                     {
-                        requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                        Debug.WriteLine("Folder/Archive Updated. " + _currentImageSource?.Name ?? string.Empty);
-                    }
-                })
-                .AddTo(ref db);
+                        if (visible && !s.RequireRefresh)
+                        {
+                            if (s._imageCollectionContext is FolderImageCollectionContext folderContext
+                                && await folderContext.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                            {
+                                s.RequireRefresh = true;
+                                s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
+                            }
+                        }
+                    }, AwaitOperation.Drop)
+                    .AddTo(ref db);
         }
 
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
@@ -595,7 +607,9 @@ public sealed partial class FolderListupPageViewModel
             }
         }
 
-        SelectedChildFileSortType = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path)?.ChildItemDefaultSort;
+        var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path);
+        SelectedChildImagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+        SelectedChildFileSortType = parentSettings?.ChildItemDefaultSort;
 
         try
         {
@@ -716,7 +730,7 @@ public sealed partial class FolderListupPageViewModel
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
                 Func<FolderStructureFileEntry, IStorageItem?, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry, file) =>
-                {
+                {                   
                     return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, new StorageItemImageSource(file), _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
@@ -759,7 +773,7 @@ public sealed partial class FolderListupPageViewModel
                                 Selection);
                         }));
 
-                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        if (FolderItems.Count == 0 || await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
                             await col.Context.HandleDiffNotImages(
                                     (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
@@ -944,6 +958,26 @@ public sealed partial class FolderListupPageViewModel
 
         SelectedChildFileSortType = sortType;
         _displaySettingsByPathRepository.SetParentFolderImagesSortSettings(_currentImageSource.Path, sortType);
+    }
+
+
+    [RelayCommand]
+    void ChangeChildImagesFolderOpenMode(object sort)
+    {
+        if (_currentImageSource == null) { throw new NullReferenceException(nameof(_currentImageSource.Path)); }
+
+        DefaultFolderOrArchiveOpenMode openMode = DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+        if (sort is int num)
+        {
+            openMode = (DefaultFolderOrArchiveOpenMode)num;
+        }
+        else if (sort is DefaultFolderOrArchiveOpenMode mode)
+        {
+            openMode = mode;
+        }
+
+        SelectedChildImagesFolderOpenMode = openMode;
+        _displaySettingsByPathRepository.SetParentFolderImagesOpenMode(_currentImageSource.Path, openMode);
     }
 
     #endregion

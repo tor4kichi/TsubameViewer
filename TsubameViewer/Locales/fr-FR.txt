@@ -126,8 +126,11 @@ FileSortType.UpdateTimeDecending = Date d'ajout (Du plus récent au plus vieux)
 Sort_InheritancePath = Tri des sources d'héritage
 Sort_Unselected = Non spécifier
 Sort_DefaultChildItemSort = Ordre de tri des éléments dans un sous-dossier
+ChildImagesFolderOpenMode = Comment ouvrir un sous-dossier (images)
 OpenImageViewer = Ouvrir dans le visualiseur
-OpenFolderListup = Lister les fichiers
+OpenFolderListup = Liste des fichiers
+DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le visualiseur
+DefaultFolderOrArchiveOpenMode.Listup = Liste des fichiers
 OpenWithExplorer = Ouvrir dans l'explorateur de fichiers
 OpenWithExternalApplication = Ouvrir avec
 AddSecondaryTile = Épingler au menu de démarrage
@@ -155,6 +158,8 @@ StorageItemSettings_IsDisplayFolderItemsCount_Desc = Dans la liste des dossiers,
 StorageItemSettings_ReadingFinishedThresholdForImageViewer = Seuil de détermination de la fin de lecture pour la visionneuse d'images
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Seuil de détermination de la fin de lecture pour la visionneuse de romans
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermination de la fin de lecture pour la visionneuse de vidéos
+ListupPage_DetectContentsChanged = Le contenu a été modifié. Vous pouvez actualiser la page.
+
 
 
 #### History Page
@@ -260,7 +265,6 @@ MovieViewer_Subtitles_Avairable = Sous-titres disponibles
 MovieViewer_NotSupportedCodec = Le codec vidéo {0} ne peut pas afficher les images d'aperçu.
 MovieViewer_NotSupportedCodec_OnceClear = Réessayez d'afficher l'image d'aperçu.
 MovieViewer_CheckCodec_ReEnabled = Des images d'aperçu sont disponibles.
-
 
 #### SearchResult
 SearchResultWith = Résultats de la recherche pour {0}

@@ -23,6 +23,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Numerics;
 using System.Reactive.Disposables;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -1077,6 +1078,10 @@ public sealed class ThumbnailImageManager
         {
             throw new NotSupportedImageFormatException(Path.GetExtension(path));
         }
+        catch (COMException)
+        {
+            throw new NotSupportedImageFormatException(Path.GetExtension(path));
+        }        
     }
 
     async Task TranscodeWithGPUAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
@@ -1131,10 +1136,10 @@ public sealed class ThumbnailImageManager
             ct.ThrowIfCancellationRequested();
 
             ZipArchiveEntry? entry = null;
-            if (GetTitlePriorityRegex() is not null and Regex regex)
-            {
-                entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
-            }
+            //if (GetTitlePriorityRegex() is not null and Regex regex)
+            //{
+            //    entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
+            //}
 
             entry ??= zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
             if (entry == null) { return false; }
@@ -1150,10 +1155,10 @@ public sealed class ThumbnailImageManager
         using (var rarArchive = RarArchive.OpenArchive(fileStream))
         {
             RarArchiveEntry? entry = null;
-            if (GetTitlePriorityRegex() is not null and Regex regex)
-            {
-                entry = (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
-            }
+            //if (GetTitlePriorityRegex() is not null and Regex regex)
+            //{
+            //    entry = (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+            //}
 
             entry ??= (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
             if (entry == null) { return default; }
@@ -1169,10 +1174,10 @@ public sealed class ThumbnailImageManager
         using (var archive = SevenZipArchive.OpenArchive(fileStream))
         {
             SevenZipArchiveEntry? entry = null;
-            if (GetTitlePriorityRegex() is not null and Regex regex)
-            {
-                entry = (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
-            }
+            //if (GetTitlePriorityRegex() is not null and Regex regex)
+            //{
+            //    entry = (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+            //}
 
             entry ??= (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
             if (entry == null) { return default; }
@@ -1188,10 +1193,10 @@ public sealed class ThumbnailImageManager
         using (var archive = TarArchive.OpenArchive(fileStream))
         {
             TarArchiveEntry? entry = null;
-            if (GetTitlePriorityRegex() is not null and Regex regex)
-            {
-                entry = (TarArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
-            }
+            //if (GetTitlePriorityRegex() is not null and Regex regex)
+            //{
+            //    entry = (TarArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+            //}
 
             entry ??= (TarArchiveEntry)archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
             if (entry == null) { return default; }
