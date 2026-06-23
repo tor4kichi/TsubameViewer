@@ -432,7 +432,7 @@ public sealed partial class FolderListupPageViewModel
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();                    
-                    lastIntractItemVM.InitializeAsync(ct).FireAndForgetSafe();
+                    lastIntractItemVM.InitializeAsync(ct).FireAndForgetSafe("lastIntractItemVM.InitializeAsync");
                     FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else

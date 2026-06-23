@@ -156,6 +156,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     IDisposable? _lodingTaskMonitor;
     void StartLoadingTaskMonitor(CancellationToken ct)
     {
+        _priorityLoadPendingItems.Clear();
+        _loadPendingItems.Clear();
+
         StopLoadingTaskMonitor();
         _lastVerticalOffset = 0;
         DisposableBuilder db = new();
@@ -182,17 +185,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 try
                 {
                     using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
-                    var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
-                    int count = tasks.Count;
-                    while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
+                    foreach (var item in items.ArraySegment)
                     {
-                        tasks.RemoveAt(index);
-                        count--;
-                        if (count <= 0)
-                        {
-                            Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
-                            break;
-                        }
+                        await item.InitializeAsync(ct);
                     }
 
                     _priorityLoadPendingItems.Clear();
@@ -328,6 +323,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _navigationCts?.Cancel();
         _navigationCts?.Dispose();
+        _navigationCts = null;
 
         ClearSelection();
 
@@ -335,15 +331,27 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
 
-        d().FireAndForgetSafe();
+        d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
         async Task d()
         {
             _navigationCts = new CancellationTokenSource();
             var ct = _navigationCt = _navigationCts.Token;
+
+            Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
+            await _vm.ObservePropertyChanged(x => x.NowProcessing)
+                .Where(x => x)
+                .Take(1)
+                .WaitAsync(ct);
+            Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
+            await _vm.ObservePropertyChanged(x => x.NowProcessing)
+                .Where(x => !x)
+                .Take(1)
+                .WaitAsync(ct);
+            Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
 
             StartLoadingTaskMonitor(ct);
 
@@ -388,7 +396,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             catch (OperationCanceledException) { }
 
             UpdateVisibleRangeItemInitialize();
-            InitializeMoveToFolders(ct).FireAndForgetSafe();
+            InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
         }
     }
@@ -517,7 +525,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _realizedItems.Add(fe);
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
-                itemVM.EnsureImageSizeRatioAsync(_navigationCt).FireAndForgetSafe();
+                itemVM.EnsureImageSizeRatioAsync(_navigationCt).FireAndForgetSafe("EnsureImageSizeRatioAsync");
             }
         }
     }

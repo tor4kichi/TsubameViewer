@@ -380,7 +380,6 @@ public sealed partial class ImageListupPageViewModel
             return true;
         }
 
-
         return false;
     }
 
@@ -615,8 +614,7 @@ public sealed partial class ImageListupPageViewModel
         }
 
         FilterText = "";
-
-        await SetSort(SelectedFileSortType, ct);        
+        
         await ReloadItemsAsync(_imageCollectionContext, ct);
 
         HasFileItem = ImageFileItems.Any();
@@ -683,6 +681,7 @@ public sealed partial class ImageListupPageViewModel
             var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
             using (FileItemsView.DeferRefresh())
             {
+                await SetSort(SelectedFileSortType, ct);
                 IsFavoriteFilteredDisplayEnabled = false;
                 ImageFileItems.Clear();
                 // 削除アイテム
@@ -772,6 +771,7 @@ public sealed partial class ImageListupPageViewModel
 
                 using (FileItemsView.DeferRefresh())
                 {
+                    await SetSort(SelectedFileSortType, ct);
                     IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
                     ImageFileItems.AddRange(col.Context.GetCacheImages().Select(entry =>
@@ -800,6 +800,7 @@ public sealed partial class ImageListupPageViewModel
                 Guard.IsNotNull(_imageCollectionContext);
                 using (FileItemsView.DeferRefresh())
                 {
+                    await SetSort(SelectedFileSortType, ct);
                     IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
                     var count = await imageCollectionContext.GetImageFileCountAsync(ct);                    

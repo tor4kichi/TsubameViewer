@@ -166,7 +166,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
-        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+        ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
     }
 
     public bool IsInitialized { get; private set; } = false;
@@ -182,8 +182,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             if (_disposed) { return; }
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
-
-            // ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, rootCt)).RatioWH;
 
             using var d = await _asyncLock.LockAsync(rootCt);
 

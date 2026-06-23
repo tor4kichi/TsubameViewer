@@ -14,11 +14,11 @@ public static class TaskExtensions
     /// <summary>
     /// 例外をキャッチし、同期文脈またはスレッドプールを通じてUnhandledExceptionへ伝播させます。
     /// </summary>
-    public static async void FireAndForgetSafe(this Task task)
+    public static async void FireAndForgetSafe(this Task task, string name = "")
     {
         try
         {
-            await task;
+            await task.ConfigureAwait(true);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -38,11 +38,11 @@ public static class TaskExtensions
     /// <summary>
     /// 例外をキャッチし、同期文脈またはスレッドプールを通じてUnhandledExceptionへ伝播させます。
     /// </summary>
-    public static async void FireAndForgetSafe(this ValueTask task)
+    public static async void FireAndForgetSafe(this ValueTask task, string name = "")
     {
         try
         {
-            await task;
+            await task.ConfigureAwait(true);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -59,11 +59,11 @@ public static class TaskExtensions
         }
     }
 
-    public static async void FireAndForgetSafe<T>(this IAsyncOperation<T> task)
+    public static async void FireAndForgetSafe<T>(this IAsyncOperation<T> task, string name = "")
     {
         try
         {
-            await task;
+            await task.AsTask().ConfigureAwait(true);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

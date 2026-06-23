@@ -275,7 +275,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public async ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
     {
         await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
-        return await Task.Run(Context.GetCachedImagesCount);
+        return Context.GetCachedImagesCount();
         //return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct); ;
     }
 
