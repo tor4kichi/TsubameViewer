@@ -123,6 +123,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -192,8 +193,11 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = bitmapImage;
+                    using (var l = await _imageLoadingLock.LockAsync(ct))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = bitmapImage;
+                    }
                 }
                 
                 //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
