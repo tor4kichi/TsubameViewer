@@ -282,11 +282,17 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
-        //await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
         if (Context.GetEntryFromIndex(index, sort) is not { } entry
             || await Folder.GetFileAsync(entry.Name) is not { } file)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
+            Context.ForceUpdateRequestForImages();
+            await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
+            if (Context.GetEntryFromIndex(index, sort) is not { } altEntry
+                || await Folder.GetFileAsync(altEntry.Name) is not { } altFile)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
+            }
+            return new StorageItemImageSource(altFile);
         }
 
         return new StorageItemImageSource(file);
@@ -675,17 +681,17 @@ public sealed class FolderStructureCacheContext : IDisposable
         return true;
     }
 
-    public void ForceUpdateRequestForNotImages(string path)
+    public void ForceUpdateRequestForNotImages()
     {
-        if (_updateMap.TryGetValue(path,  out var info))
+        if (_updateMap.TryGetValue(Folder.Path,  out var info))
         {
             info.IsRequireUpdate = true;
             info.CachedNotImagesCount = 0;            
         }
     }
-    public void ForceUpdateRequestForImages(string path)
+    public void ForceUpdateRequestForImages()
     {
-        if (_updateMap.TryGetValue(path, out var info))
+        if (_updateMap.TryGetValue(Folder.Path, out var info))
         {
             info.IsRequireUpdate = true;
             info.CachedImagesCount = 0;
@@ -806,7 +812,8 @@ public sealed class FolderStructureFilesRepository : IDisposable
         {
             Path = file.Path,
             DateCreated = file.DateCreated,
-            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
+            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false,
+            ParentFolderPathHash = HashHelper.CalculateFNV1a64(Path.GetDirectoryName(file.Path))
         };
         _collection.Upsert(entry);
         ClearCache();
@@ -819,7 +826,8 @@ public sealed class FolderStructureFilesRepository : IDisposable
         {
             Path = file.Path,
             DateCreated = file.DateCreated,
-            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
+            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false,
+            ParentFolderPathHash = HashHelper.CalculateFNV1a64(Path.GetDirectoryName(file.Path))
         }));
         ClearCache();
     }

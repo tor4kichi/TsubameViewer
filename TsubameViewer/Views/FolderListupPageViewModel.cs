@@ -392,7 +392,7 @@ public sealed partial class FolderListupPageViewModel
                     if (_imageCollectionContext is FolderImageCollectionContext context
                         && context.Folder.Path == newPath)
                     {
-                        context.Context.ForceUpdateRequestForNotImages(newPath);
+                        context.Context.ForceUpdateRequestForNotImages();
                     }
                     await ResetContent(newPath, pageName, ct);
                 }
