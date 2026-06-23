@@ -392,7 +392,7 @@ public sealed partial class FolderListupPageViewModel
                     if (_imageCollectionContext is FolderImageCollectionContext context
                         && context.Folder.Path == newPath)
                     {
-                        context.Context.ForceUpdateRequestForNotImages(newPath);
+                        context.Context.ForceUpdateRequestForNotImages();
                     }
                     await ResetContent(newPath, pageName, ct);
                 }
@@ -432,7 +432,7 @@ public sealed partial class FolderListupPageViewModel
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();                    
-                    lastIntractItemVM.InitializeAsync(ct).FireAndForgetSafe();
+                    lastIntractItemVM.InitializeAsync(ct).FireAndForgetSafe("lastIntractItemVM.InitializeAsync");
                     FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else
@@ -782,7 +782,6 @@ public sealed partial class FolderListupPageViewModel
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
                         }
-                        FileItemsView.RefreshFilter();
 
                         IsReadyToFavoriteFilterDisplay = true;
                     }

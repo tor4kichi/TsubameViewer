@@ -17,6 +17,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
@@ -275,17 +276,23 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public async ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
     {
         await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
-        return await Task.Run(Context.GetCachedImagesCount);
+        return Context.GetCachedImagesCount();
         //return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct); ;
     }
 
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
-        //await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
         if (Context.GetEntryFromIndex(index, sort) is not { } entry
             || await Folder.GetFileAsync(entry.Name) is not { } file)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
+            Context.ForceUpdateRequestForImages();
+            await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
+            if (Context.GetEntryFromIndex(index, sort) is not { } altEntry
+                || await Folder.GetFileAsync(altEntry.Name) is not { } altFile)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
+            }
+            return new StorageItemImageSource(altFile);
         }
 
         return new StorageItemImageSource(file);
@@ -674,17 +681,17 @@ public sealed class FolderStructureCacheContext : IDisposable
         return true;
     }
 
-    public void ForceUpdateRequestForNotImages(string path)
+    public void ForceUpdateRequestForNotImages()
     {
-        if (_updateMap.TryGetValue(path,  out var info))
+        if (_updateMap.TryGetValue(Folder.Path,  out var info))
         {
             info.IsRequireUpdate = true;
             info.CachedNotImagesCount = 0;            
         }
     }
-    public void ForceUpdateRequestForImages(string path)
+    public void ForceUpdateRequestForImages()
     {
-        if (_updateMap.TryGetValue(path, out var info))
+        if (_updateMap.TryGetValue(Folder.Path, out var info))
         {
             info.IsRequireUpdate = true;
             info.CachedImagesCount = 0;
@@ -740,10 +747,10 @@ public sealed class FolderStructureFileEntry
     [BsonId]
     public string Path { get; set; } = "";
 
-    //public string ParentFolderPath { get; set; } = "";
-
     string? _parentFolderPath;
     public string ParentFolderPath => _parentFolderPath ??= System.IO.Path.GetDirectoryName(Path);
+
+    public ulong ParentFolderPathHash { get; set; } = 0;
 
     string? _fileName;
     public string Name => _fileName ??= System.IO.Path.GetFileName(Path);
@@ -772,22 +779,31 @@ public sealed class FolderStructureFilesRepository : IDisposable
     
     public FolderStructureFilesRepository(ILiteDatabase tempLiteDatabase)
     {
-        _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();
-        _collection.EnsureIndex(x => x.ParentFolderPath);
+        _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();        
         _collection.EnsureIndex(x => x.Name);
         _collection.EnsureIndex(x => x.DateCreated);
         _collection.EnsureIndex(x => x.IsImage);        
+        if (_collection.EnsureIndex(x => x.ParentFolderPathHash))
+        {
+            foreach (var item in _collection.Query().ForUpdate().ToEnumerable())
+            {
+                item.ParentFolderPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(item.Path));
+                _collection.Update(item);
+            }
+        }
         _tempLiteDatabase = tempLiteDatabase;
     }
 
     public bool HasFolderImages(StorageFolder folder)
     {
-        return _collection.Exists(x => x.IsImage && x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal));
+        var hash = HashHelper.CalculateFNV1a64(folder.Path);
+        return _collection.Exists(x => x.IsImage && x.ParentFolderPathHash == hash);
     }
 
     public bool HasFolderNotImages(StorageFolder folder)
     {
-        return _collection.Exists(x => !x.IsImage && x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal));
+        var hash = HashHelper.CalculateFNV1a64(folder.Path);
+        return _collection.Exists(x => !x.IsImage && x.ParentFolderPathHash == hash);
     }
 
     public FolderStructureFileEntry AddOrUpdateItem(IStorageItem file)
@@ -796,7 +812,8 @@ public sealed class FolderStructureFilesRepository : IDisposable
         {
             Path = file.Path,
             DateCreated = file.DateCreated,
-            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
+            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false,
+            ParentFolderPathHash = HashHelper.CalculateFNV1a64(Path.GetDirectoryName(file.Path))
         };
         _collection.Upsert(entry);
         ClearCache();
@@ -809,7 +826,8 @@ public sealed class FolderStructureFilesRepository : IDisposable
         {
             Path = file.Path,
             DateCreated = file.DateCreated,
-            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
+            IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false,
+            ParentFolderPathHash = HashHelper.CalculateFNV1a64(Path.GetDirectoryName(file.Path))
         }));
         ClearCache();
     }
@@ -824,14 +842,15 @@ public sealed class FolderStructureFilesRepository : IDisposable
         _folderNotImagesCache = null;
     }
     PooledArray<FolderStructureFileEntry>? _folderImagesCache;
-    string? _cachedImagesfolderPath;
+    ulong? _cachedImagesfolderPathHash;
     public IEnumerable<FolderStructureFileEntry> FindFolderImages(string folderPath)
     {
-        if (_folderImagesCache == null || _cachedImagesfolderPath == null || !folderPath.Equals(_cachedImagesfolderPath, StringComparison.Ordinal))
+        var hash = HashHelper.CalculateFNV1a64(folderPath);
+        if (_folderImagesCache == null || _cachedImagesfolderPathHash == null || _cachedImagesfolderPathHash != hash)
         {
             _folderImagesCache?.Dispose();
-            _folderImagesCache = _collection.Find(x => x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
-            _cachedImagesfolderPath = folderPath;
+            _folderImagesCache = _collection.Find(x => x.IsImage && x.ParentFolderPathHash == hash).AsValueEnumerable().ToArrayPool();
+            _cachedImagesfolderPathHash = hash;
         }
 
         return _folderImagesCache.Value.ArraySegment;
@@ -839,13 +858,15 @@ public sealed class FolderStructureFilesRepository : IDisposable
 
 
     PooledArray<FolderStructureFileEntry>? _folderNotImagesCache;
-    string? _cachedNotImagesfolderPath;
+    ulong? _cachedNotImagesfolderPathHash;
     public IEnumerable<FolderStructureFileEntry> FindFolderNotImages(string folderPath)
     {
-        if (_folderNotImagesCache == null || _cachedNotImagesfolderPath == null || !folderPath.Equals(_cachedNotImagesfolderPath, StringComparison.Ordinal))
+        var hash = HashHelper.CalculateFNV1a64(folderPath);
+        if (_folderNotImagesCache == null || _cachedNotImagesfolderPathHash == null || _cachedNotImagesfolderPathHash != hash)
         {
             _folderNotImagesCache?.Dispose();
-            _folderNotImagesCache = _collection.Find(x => !x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
+            _folderNotImagesCache = _collection.Find(x => !x.IsImage && x.ParentFolderPathHash == hash).AsValueEnumerable().ToArrayPool();
+            _cachedNotImagesfolderPathHash = hash;
         }
 
         return _folderNotImagesCache.Value.ArraySegment;
@@ -901,6 +922,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
                 sb.Append(entry.Path);
                 sb.Replace(oldPath, newPath);
                 entry.Path = sb.ToString();
+                entry.ParentFolderPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(entry.Path));
                 _collection.Upsert(entry);
                 Debug.WriteLine($"ImageList Path changed: {entry.Path}");
             }
@@ -913,6 +935,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
             _collection.Delete(entry.Path);
             Debug.WriteLine($"ImageList Path changing: {entry.Path}");
             entry.Path = newPath;
+            entry.ParentFolderPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(entry.Path));
             _collection.Upsert(entry);
             Debug.WriteLine($"ImageList Path changed: {entry.Path}");
         }

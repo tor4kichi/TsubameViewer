@@ -123,6 +123,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -189,14 +190,18 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
+                    ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = bitmapImage;
+                    using (var l = await _imageLoadingLock.LockAsync(ct))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = bitmapImage;
+                    }
                 }
                 
-                //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 Status = LoadingStatus.Laoded;
             }
         }
@@ -253,7 +258,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     {
         await EnsureStorageItemAsync(ct);
         Guard.IsNotNull(Item);
-        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+        ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
     }
     bool _disposed;
 }
@@ -338,6 +343,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
             UpdateLastReadPosition();
             _isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+            _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_item.Path)?.RatioWH;
         }
         else
         {
@@ -347,6 +353,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             _type = StorageItemTypes.Image;
             UpdateLastReadPosition();
             _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
+            _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
         }
     }
 
@@ -449,6 +456,8 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
+                    ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
@@ -456,7 +465,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     Image = bitmapImage;
                 }
 
-                //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 Status = LoadingStatus.Laoded;
             }
         }
@@ -509,11 +517,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         Image = null;
     }
 
-    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
-        await EnsureStorageItemAsync(ct);
-        Guard.IsNotNull(Item);
-        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+        //await EnsureStorageItemAsync(ct);
+        //Guard.IsNotNull(Item);
+        //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+        return new();
     }
     bool _disposed;
 }

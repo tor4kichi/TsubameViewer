@@ -162,10 +162,11 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     CancellationTokenSource? _initializeCts;
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
-        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+        ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
     }
 
     public bool IsInitialized { get; private set; } = false;
@@ -181,8 +182,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             if (_disposed) { return; }
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
-
-            // ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, rootCt)).RatioWH;
 
             using var d = await _asyncLock.LockAsync(rootCt);
 
@@ -203,8 +202,11 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt);
-                    Image = bitmapImage;
+                    using (var l = await _imageLoadingLock.LockAsync(rootCt))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt);
+                        Image = bitmapImage;
+                    }
                 }
             }
 

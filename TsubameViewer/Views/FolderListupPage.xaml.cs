@@ -136,7 +136,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        d(args).FireAndForgetSafe();
+        d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
         async Task d(ContainerContentChangingEventArgs args)
         {
             if (args.Item is IStorageItemViewModel itemVM)

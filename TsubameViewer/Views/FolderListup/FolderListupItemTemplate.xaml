@@ -13,6 +13,7 @@
   xmlns:local="using:TsubameViewer.Views.FolderListup"
   xmlns:fluentIcon="using:Fluent.Icons"
   xmlns:uwpUI="using:Microsoft.Toolkit.Uwp.UI"
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   >
 
   <Style TargetType="ProgressBar" x:Key="ReadParcentageProgressBarStyle" >
@@ -23,6 +24,48 @@
     <Setter Property="Padding" Value="0" />
     <Setter Property="Foreground" Value="#afff3333" />
     <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ProgressBar">
+          <Grid x:Name="LayoutRoot">
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="ProgressStates">
+                <VisualState x:Name="Determinate" />
+
+                <VisualState x:Name="DeterminateWithAnimation">
+                  <Storyboard>
+                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="AnimationUsingKeyFrames"
+                                                   Storyboard.TargetProperty="Duration">
+                      <DiscreteObjectKeyFrame KeyTime="0"
+                                              Value="0" />
+                    </ObjectAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+
+                <VisualState x:Name="Indeterminate">
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid x:Name="ProgressBarRoot"
+                  MinHeight="{TemplateBinding MinHeight}">
+              <Rectangle x:Name="BackgroundTrack"
+                         Fill="{TemplateBinding Background}"
+                         Stroke="{TemplateBinding BorderBrush}"
+                         StrokeThickness="{TemplateBinding BorderThickness}"
+                         RadiusX="{TemplateBinding CornerRadius}"
+                         RadiusY="{TemplateBinding CornerRadius}" />
+
+              <Rectangle x:Name="ProgressBarIndicator"
+                         Fill="{TemplateBinding Foreground}"
+                         HorizontalAlignment="Left"
+                         RadiusX="{TemplateBinding CornerRadius}"
+                         RadiusY="{TemplateBinding CornerRadius}" />
+            </Grid>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
   <Style x:Key="FolderItemTextBlockStyle" TargetType="TextBlock">
@@ -119,7 +162,9 @@
            />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
+                          VerticalAlignment="Bottom"
+                          Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <ContentControl Content="{x:Bind Type, Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
                       Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
                       />
@@ -187,7 +232,9 @@
              VerticalAlignment="Center" />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
+                          VerticalAlignment="Bottom"
+                          Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
                         Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
                         />
@@ -256,8 +303,8 @@
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}"
                 Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
-                     VerticalAlignment="Bottom"                     
-                     Style="{StaticResource ReadParcentageProgressBarStyle}" />
+                          VerticalAlignment="Bottom"
+                          Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <ContentControl Content="{x:Bind}"
                         ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
                         IsTabStop="False"

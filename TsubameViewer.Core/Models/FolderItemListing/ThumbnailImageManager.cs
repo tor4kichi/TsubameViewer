@@ -435,6 +435,11 @@ public sealed class ThumbnailImageManager
     {
         return _thumbnailImageInfoRepository.TryGetSize(ToId(imageSource.Path));        
     }
+    public ThumbnailSize? GetCachedThumbnailSize(string path)
+    {
+        return _thumbnailImageInfoRepository.TryGetSize(ToId(path));
+    }
+
 
     public ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight)
     {

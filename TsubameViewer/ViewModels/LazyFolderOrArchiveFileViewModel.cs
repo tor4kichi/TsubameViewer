@@ -140,6 +140,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
+    readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -181,13 +182,17 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = bitmapImage;
+                    using (var l = await _imageLoadingLock.LockAsync(ct))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = bitmapImage;
+                    }
                 }
 
                 //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 Status = LoadingStatus.Laoded;
             }
+            UpdateLastReadPosition();
         }
         catch (OperationCanceledException)
         {
@@ -225,7 +230,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             Path = Item.Path;
             DateCreated = Item.DateCreated;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            UpdateLastReadPosition();
             IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)

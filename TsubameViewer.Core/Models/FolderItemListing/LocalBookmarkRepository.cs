@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Infrastructure;
 
 namespace TsubameViewer.Core.Models.FolderItemListing;
@@ -38,7 +39,7 @@ public sealed class BookmarkEntry
     public int Id { get; set; }
 
     [BsonField]
-    public string Path { get; set; }
+    public string Path { get; set; }    
 
     // Note: 動画のDurationにも使ってます
     [BsonField]
@@ -52,6 +53,9 @@ public sealed class BookmarkEntry
 
     [BsonField]
     public bool IsFinishedReading { get; set; }
+
+    [BsonField]
+    public ulong ParentPathHash { get; set; } = 0;
 }
 
 public sealed class LocalBookmarkRepository
@@ -62,7 +66,15 @@ public sealed class LocalBookmarkRepository
     {
         _bookmarkRepository = localDatabase.GetCollection<BookmarkEntry>();
         _bookmarkRepository.EnsureIndex(x => x.Path);
-        _bookmarkRepository.EnsureIndex(x => x.IsFinishedReading);        
+        _bookmarkRepository.EnsureIndex(x => x.IsFinishedReading);
+        if (_bookmarkRepository.EnsureIndex(x => x.ParentPathHash))
+        {
+            foreach (var item in _bookmarkRepository.Query().ForUpdate().ToEnumerable())
+            {
+                item.ParentPathHash = HashHelper.CalculateFNV1a64(Path.GetDirectoryName(item.Path));
+                _bookmarkRepository.Update(item);
+            }
+        }
     }
 
     // OneDriveを意識するならログインユーザーに対する一意のIDを持たせて置いたほうがいいかもしれない
@@ -122,10 +134,11 @@ public sealed class LocalBookmarkRepository
 
     public (int finishedItemsCount, int totalItemsCount) GetItemsCountForFolder(string path)
     {
-        int sepCount = path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar) + 1;
-        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path, StringComparison.Ordinal));
-        var finishedCount = _bookmarkRepository.Count(x => x.IsFinishedReading && x.Path.StartsWith(path, StringComparison.Ordinal));
-        return (finishedCount, itemsCount - 1);
+        ulong hash = HashHelper.CalculateFNV1a64(path);
+        int sepCount = path.Count(c => c == System.IO.Path.DirectorySeparatorChar || c == System.IO.Path.AltDirectorySeparatorChar) + 1;
+        var itemsCount = _bookmarkRepository.Count(x => x.ParentPathHash == hash);
+        var finishedCount = _bookmarkRepository.Count(x => x.IsFinishedReading && x.ParentPathHash == hash);
+        return (finishedCount, itemsCount);
     }
 }
 
@@ -188,6 +201,7 @@ file static class BookmarkCollectionExtensions
                     InnerPageIndex = innerPageIndex,
                     Position = normalizedPosition,
                     IsFinishedReading = isFinished,
+                    ParentPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(path))
                 });
             }
             else
@@ -225,6 +239,7 @@ file static class BookmarkCollectionExtensions
                 sb.Append(entry.Path);
                 sb.Replace(oldPath, newPath);
                 entry.Path = sb.ToString();
+                entry.ParentPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(entry.Path));
                 _collection.Update(entry);
                 Debug.WriteLine($"Bookmark path {prevPath} ===> {entry.Path}");
             }
