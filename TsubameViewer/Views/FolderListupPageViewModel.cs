@@ -376,8 +376,13 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
-                if (await IsRequireUpdateAsync(newPath, pageName, ct))
+                if (mode == NavigationMode.Refresh || await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
+                    if (_imageCollectionContext is FolderImageCollectionContext context
+                        && context.Folder.Path == newPath)
+                    {
+                        context.Context.ForceUpdateRequestForNotImages(newPath);
+                    }
                     await ResetContent(newPath, pageName, ct);
                 }
                 else
@@ -732,7 +737,7 @@ public sealed partial class FolderListupPageViewModel
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
                 Func<FolderStructureFileEntry, IStorageItem?, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry, file) =>
-                {
+                {                   
                     return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, new StorageItemImageSource(file), _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
@@ -775,7 +780,7 @@ public sealed partial class FolderListupPageViewModel
                                 Selection);
                         }));
 
-                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        if (FolderItems.Count == 0 || await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
                             await col.Context.HandleDiffNotImages(
                                     (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
