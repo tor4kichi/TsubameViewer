@@ -782,7 +782,6 @@ public sealed partial class FolderListupPageViewModel
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
                         }
-                        FileItemsView.RefreshFilter();
 
                         IsReadyToFavoriteFilterDisplay = true;
                     }
