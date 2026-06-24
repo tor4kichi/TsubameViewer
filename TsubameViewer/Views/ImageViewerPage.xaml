@@ -997,6 +997,15 @@
           CornerRadius="4"
           Width="240"
           Height="240">
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
       <Border CornerRadius="4"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               HorizontalAlignment="Center"

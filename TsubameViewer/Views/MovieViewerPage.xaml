@@ -481,7 +481,7 @@
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
         <animation:OpacityAnimation To="0"
-                                    Duration="0:0:0.225" />
+                                    Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
       <Grid.Resources>
