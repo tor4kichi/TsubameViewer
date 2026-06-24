@@ -1582,7 +1582,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
-            && IsDisplayControlUI)
+            && IsDisplayControlUI
+            && !IsFlyoutOpen)
         {
             _mouseCursorAutoHideTimer?.Stop();
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
