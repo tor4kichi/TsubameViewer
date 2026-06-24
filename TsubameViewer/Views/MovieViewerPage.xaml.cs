@@ -1628,7 +1628,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
         if (MediaPlayer.Source == null) { return; }
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos)
+            && !IsFlyoutOpen)
         {
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
