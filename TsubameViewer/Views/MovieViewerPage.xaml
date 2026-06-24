@@ -1014,7 +1014,15 @@
           Width="200"
           Height="200"
           RenderTransformOrigin="0.5, 0.5">
-      <Grid.RenderTransform>
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+        <Grid.RenderTransform>
         <CompositeTransform x:Name="MovieSeekbarTooltipContainerTransform" />
       </Grid.RenderTransform>
       <Grid CornerRadius="4"
