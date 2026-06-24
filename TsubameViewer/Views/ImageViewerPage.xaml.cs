@@ -229,26 +229,28 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
     }
-
+    
     Vector2 _lastPointerPosition;
     int _lastPageChangeRequestImageIndex;
     void RefreshPageSelectorTooltipContainerTranslation()
     {
-        var pos = _lastPointerPosition;
         bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
+        var pos = _lastPointerPosition;
         var ts = Window.Current.Content.TransformToVisual(PageSelector);
         var offset = ts.TransformPoint(new Point()).ToVector2();
         var posRatio = pos.X / (PageSelector.ActualWidth - 1);
-        var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;
-        PageSelectorTooltipText.Text = (pagePos + 1).ToString();        
+        var pagePos = (int)((_vm.ImageCount - 1) * posRatio);
+        PageSelectorTooltipText.Text = (pagePos).ToString();
+        var halfContainerWidth = (float)PageSelectorTooltipContainer.ActualWidth * 0.5f;
+        float clampedPosX = (float)Math.Clamp(isRightToLeft ? - pos.X + offset.X : pos.X - offset.X,
+            halfContainerWidth  + 8,
+            (float)UIContainer.ActualWidth - (halfContainerWidth)  - 8);        
         PageSelectorTooltipContainer.Translation = new Vector3(
-            isRightToLeft
-                ? -pos.X + offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f
-                : pos.X - offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f,
+            clampedPosX - halfContainerWidth,
             -offset.Y - 48  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
-        PageSelectorCandidateImageIndex = pagePos;
+        PageSelectorCandidateImageIndex = pagePos - 1;
     }
 
     private void CoreWindow_PageSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)

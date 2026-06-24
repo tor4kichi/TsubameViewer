@@ -1572,9 +1572,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             var videoPos = VideoDuration * posRatio;
             var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
 
-            if (SeekbarFrameTime != videoPosAligned)
+            if (SeekbarFrameTime != videoPosAligned 
+                && MovieSeekbarTooltipContainer.ActualWidth != 0)
             {
-                MovieSeekbarTooltipContainerTransform.TranslateX = pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f;
+                var halfContainerWidth = MovieSeekbarTooltipContainer.ActualWidth * 0.5;
+                var clampedPosX = Math.Clamp(pos.X - offset.X,
+                    halfContainerWidth + 8,
+                    ImageSelectorContainer.ActualWidth - halfContainerWidth - 8);
+                MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
                 MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
 
                 if (_videoPositionsliderPointerPressed
@@ -1638,7 +1643,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             var videoPos = VideoDuration * posRatio;
             var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
 
-            MovieSeekbarTooltipContainerTransform.TranslateX = pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f;
+            var halfContainerWidth = MovieSeekbarTooltipContainer.ActualWidth * 0.5;
+            var clampedPosX = Math.Clamp(pos.X - offset.X,
+                halfContainerWidth,
+                ImageSelectorContainer.ActualWidth - halfContainerWidth);
+            MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
             MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
 
             if (_videoPositionsliderPointerPressed
