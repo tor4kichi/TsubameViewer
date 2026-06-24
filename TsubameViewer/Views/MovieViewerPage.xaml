@@ -1011,8 +1011,8 @@
           IsHitTestVisible="False"
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
-          Width="200"
-          Height="200"
+          Width="240"
+          Height="240"
           RenderTransformOrigin="0.5, 0.5">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"

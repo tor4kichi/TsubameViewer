@@ -641,6 +641,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 bool nowFailed = false;
                 try
                 {
+                    s._vm.PageSettings.VideoFrameThumbnailSize = 240;
                     var ffmepgExt = await FFmpegFrameGrabberFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
                     codecName = ffmepgExt.CodecName;
                     var status = s._thumbanilManager.GetThumbanilGenerationStatusIfProgressAsFailed(ffmepgExt.CodecName, out nowFailed);
@@ -852,7 +853,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     });
             })
             .AddTo(ref db);
-
+        
         _vm.PageSettings.ObservePropertyChanged(x => x.IsFFmpegUseFirstToMediaSourceFactory, false)
             .Subscribe(this, static (x, s) => 
             {

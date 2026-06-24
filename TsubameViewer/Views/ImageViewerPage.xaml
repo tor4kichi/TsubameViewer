@@ -995,8 +995,8 @@
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
           CornerRadius="4"
-          Width="200"
-          Height="200">
+          Width="240"
+          Height="240">
       <Border CornerRadius="4"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               HorizontalAlignment="Center"
