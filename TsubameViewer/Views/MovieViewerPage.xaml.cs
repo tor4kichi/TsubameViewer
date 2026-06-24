@@ -129,7 +129,7 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
                 CanvasDevice.GetSharedDevice(),
                 1,
                 1,
-                DisplayInformation.GetForCurrentView().LogicalDpi);
+                96);
     }
 
     bool _isDisposed;
@@ -194,11 +194,12 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
         if (_canvasBitmap == null)
         {
             _canvasBitmap = CanvasBitmap.CreateFromBytes(
-                CanvasDevice.GetSharedDevice(),
+                _source,
                 frame.PixelData,
                 (int)_frameGrabber.DecodePixelWidth,
                 (int)_frameGrabber.DecodePixelHeight,
-                DirectXPixelFormat.B8G8R8A8UIntNormalized);
+                DirectXPixelFormat.B8G8R8A8UIntNormalized,
+                96);
         }
         else
         {
