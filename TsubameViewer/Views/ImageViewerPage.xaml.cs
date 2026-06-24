@@ -239,9 +239,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         var pos = _lastPointerPosition;
         var ts = Window.Current.Content.TransformToVisual(PageSelector);
         var offset = ts.TransformPoint(new Point()).ToVector2();
-        var posRatio = pos.X / (PageSelector.ActualWidth - 1);
-        var pagePos = (int)((_vm.ImageCount - 1) * posRatio);
-        PageSelectorTooltipText.Text = (pagePos).ToString();
+        var posRatio = pos.X / (PageSelector.ActualWidth);
+        var pagePos = (int)Math.Round((_vm.ImageCount - 1) * posRatio);
+        PageSelectorTooltipText.Text = (pagePos + 1).ToString();
         var halfContainerWidth = (float)PageSelectorTooltipContainer.ActualWidth * 0.5f;
         float clampedPosX = (float)Math.Clamp(isRightToLeft ? - pos.X + offset.X : pos.X - offset.X,
             halfContainerWidth  + 8,
@@ -251,7 +251,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
-        PageSelectorCandidateImageIndex = pagePos - 1;
+        PageSelectorCandidateImageIndex = pagePos;
     }
 
     private void CoreWindow_PageSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
