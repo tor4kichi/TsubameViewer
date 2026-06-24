@@ -1581,6 +1581,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     IFrameExtracter? _frameGrabber;
     private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
+        if (MediaPlayer.Source == null) { return; }
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
             && IsDisplayControlUI
             && !IsFlyoutOpen)
@@ -1605,6 +1606,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     PointerDeviceType _lastPointerDeviceType;
     void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
+        if (MediaPlayer.Source == null) { return; }
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos))
         {
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
@@ -1625,6 +1627,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
+        if (MediaPlayer.Source == null) { return; }
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
         {
             if (_prevPlaying)
