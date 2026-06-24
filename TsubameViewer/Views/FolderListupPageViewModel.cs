@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -92,6 +93,8 @@ public sealed partial class FolderListupPageViewModel
 
     [ObservableProperty]
     string _filterText = "";
+
+    Regex? _migemoQueryRegex;
 
     public Visibility NotEmptyToVisible(string s)
     {
@@ -250,12 +253,12 @@ public sealed partial class FolderListupPageViewModel
         FileItemsView.Filter = s =>
         {
             if (s is not IStorageItemViewModel itemVM) { return true; }
-            if (IsFavoriteFilteredDisplayEnabled
-                && !itemVM.IsFavorite)
-            {
-                return false;
-            }
-            return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+            if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }            
+            if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
+            if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
+            return _migemoQueryRegex != null
+                ? _migemoQueryRegex.IsMatch(itemVM.Name)
+                : itemVM.Name.Contains(_filterText, StringComparison.Ordinal);
         };
     }
 
@@ -454,7 +457,22 @@ public sealed partial class FolderListupPageViewModel
 
         this.ObservePropertyChanged(x => x.FilterText, false)
             .Debounce(TimeSpan.FromSeconds(0.25))
-            .Subscribe(_ => FileItemsView.RefreshFilter())
+            .Subscribe(_ =>
+            {
+                if (_folderListingSettings.IsInPageSearchWithMigemo)
+                {
+                    try
+                    {
+                        _migemoQueryRegex = MigemoService.Query(_filterText);
+                    }
+                    catch
+                    {
+                        _migemoQueryRegex = null;
+                    }
+                }
+                else { _migemoQueryRegex = null; }
+                FileItemsView.RefreshFilter();
+            })
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.SelectedChildImagesFolderOpenMode, false)

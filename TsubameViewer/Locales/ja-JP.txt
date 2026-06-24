@@ -107,7 +107,8 @@ PdfImageThresholdWidth = 代替横幅のしきい値
 PdfImageAlternateWidth = 代替横幅の値
 PdfImageThresholdHeight = 代替縦幅のしきい値
 PdfImageAlternateHeight = 代替縦幅の値
-
+IsInPageSearchWithMigemo = ローマ字で日本語絞り込み検索
+IsInPageSearchWithMigemo_Desc = ページ内の絞り込み時が対象です。ファイル名に含まれる日本語の読み方をローマ字入力して検索できます。例えば 「桜」は「saku」と入力しても絞り込めます。この機能には migemo （及び csmigemo）を利用しています。
 
 #### SourceStorageItemsPage
 Folders = フォルダ

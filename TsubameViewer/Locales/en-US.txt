@@ -107,7 +107,8 @@ PdfImageThresholdWidth = Alternate width threshold
 PdfImageAlternateWidth = Alternate width value
 PdfImageThresholdHeight = Alternate height threshold
 PdfImageAlternateHeight = Alternate height value
-
+IsInPageSearchWithMigemo = Search for Japanese using Roman letters
+IsInPageSearchWithMigemo_Desc = This feature applies when filtering within a page. You can search by entering the Romanized pronunciation of Japanese words contained in file names. For example, you can filter for “桜” by entering “saku.” This feature uses migemo (and csmigemo).
 
 #### SourceStorageItemsPage
 Folders = Folder

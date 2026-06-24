@@ -107,7 +107,8 @@ PdfImageThresholdWidth = 自定义宽度阈值
 PdfImageAlternateWidth = 自定义宽度值
 PdfImageThresholdHeight = 自定义高度阈值
 PdfImageAlternateHeight = 自定义高度值
-
+IsInPageSearchWithMigemo = 使用罗马字母搜索日语
+IsInPageSearchWithMigemo_Desc = 该功能适用于页面内的筛选操作。您可以使用罗马字输入文件名中日语词汇的读音进行搜索。例如，输入“saku”即可筛选出包含“桜”的文件。该功能使用了 migemo（及 csmigemo）。
 
 #### SourceStorageItemsPage
 Folders = 夹

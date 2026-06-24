@@ -146,6 +146,7 @@
     <Compile Include="R3\XamlCancellationHelper.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />
     <Compile Include="Contracts\Services\IMessageDialogService.cs" />
+    <Compile Include="Services\MigemoService.cs" />
     <Compile Include="Services\SyncStorageCacheService.cs" />
     <Compile Include="Services\MessageDialogService.cs" />
     <Compile Include="Services\Navigation\IViewLocator.cs" />
@@ -390,6 +391,7 @@
     <EmbeddedResource Include="Locales\en-US.txt" />
     <EmbeddedResource Include="Locales\ja-JP.txt" />
     <EmbeddedResource Include="Locales\zh-CHS.txt" />
+    <EmbeddedResource Include="Assets\migemo-compact-dict" />
     <None Include="Package.StoreAssociation.xml" />
     <EmbeddedResource Include="Locales\fr-FR.txt" />
     <Content Include="Properties\Default.rd.xml" />
@@ -413,6 +415,9 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Uwp.Controls.SettingsControls">
       <Version>8.2.251219</Version>
+    </PackageReference>
+    <PackageReference Include="CsMigemoCore">
+      <Version>0.0.1</Version>
     </PackageReference>
     <PackageReference Include="DryIoc">
       <Version>5.3.1</Version>

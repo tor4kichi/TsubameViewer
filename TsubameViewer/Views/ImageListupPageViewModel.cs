@@ -18,6 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
@@ -124,6 +125,7 @@ public sealed partial class ImageListupPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
+    Regex? _migemoQueryRegex;
 
     public void Receive(StorageItemNotFoundMessage message)
     {
@@ -284,12 +286,12 @@ public sealed partial class ImageListupPageViewModel
         FileItemsView.Filter = s =>
         {
             if (s is not IStorageItemViewModel itemVM) { return true; }
-            if (IsFavoriteFilteredDisplayEnabled
-                && !itemVM.IsFavorite)
-            {
-                return false;
-            }
-            return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+            if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }
+            if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
+            if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
+            return _migemoQueryRegex != null
+                ? _migemoQueryRegex.IsMatch(itemVM.Name)
+                : itemVM.Name.Contains(_filterText, StringComparison.Ordinal);
         };
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         FileDisplayMode = _folderListingSettings.FileDisplayMode;        
@@ -494,8 +496,23 @@ public sealed partial class ImageListupPageViewModel
                 .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
-                .Debounce(TimeSpan.FromSeconds(1))
-                .Subscribe(_ => FileItemsView.RefreshFilter())
+                .Debounce(TimeSpan.FromSeconds(0.25))
+                .Subscribe(this, static (_, s)=>
+                {
+                    if (s._folderListingSettings.IsInPageSearchWithMigemo)
+                    {
+                        try
+                        {
+                            s._migemoQueryRegex = MigemoService.Query(s._filterText);
+                        }
+                        catch
+                        {
+                            s._migemoQueryRegex = null;
+                        }
+                    }
+                    else { s._migemoQueryRegex = null; }
+                    s.FileItemsView.RefreshFilter();
+                })
                 .AddTo(ref db);
 
             // アプリ内部操作も含めて変更を検知する

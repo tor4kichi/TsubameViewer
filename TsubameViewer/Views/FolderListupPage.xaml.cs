@@ -139,7 +139,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
         async Task d(ContainerContentChangingEventArgs args)
         {
-            if (args.Item is IStorageItemViewModel itemVM)
+            if (args.Item is IStorageItemViewModel itemVM
+                && !itemVM.IsInitialized)
             {
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
                 await itemVM.InitializeAsync(_navigationCt);

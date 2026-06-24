@@ -160,6 +160,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         0.99,
                         0.01,
                         f => _storageItemSettings.ReadingFinishedThresholdForMovieViewer = (float)f),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsInPageSearchWithMigemo".Translate(), "IsInPageSearchWithMigemo_Desc".Translate(), _folderListingSettings, x => x.IsInPageSearchWithMigemo),
                 }
             },
             new SettingsGroupViewModel
