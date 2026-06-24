@@ -751,7 +751,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                 s._playbackResources = db;
 
-                if (x != null)
+                if (s.IsDisplayControlUI)
                 {
                     mouseHideTimer.Start();                    
                 }
@@ -907,7 +907,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     _this.IsDisplayControlUI = true;
                     timer.Start();
-                }                                
+                }                
+                
+                if (insideControlUIRp.CurrentValue)
+                {
+                    timer.Stop();
+                }
             })
             .AddTo(ref db);        
 
