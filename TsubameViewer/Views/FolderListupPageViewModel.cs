@@ -780,17 +780,20 @@ public sealed partial class FolderListupPageViewModel
                         IsFavoriteFilteredDisplayEnabled = false;
                         FolderItems.Clear();
 
-                        FolderItems.AddRange(col.Context.GetCacheNotImages().Select(entry =>
-                        {
-                            return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
-                                _sourceStorageItemsRepository,
-                                _bookmarkManager,
-                                _thumbnailManager,
-                                _albamRepository,
-                                Selection);
-                        }));
+                        FolderItems.AddRange(await col.Context.GetCacheNotImages()
+                            .ToObservable()
+                            .SelectAwait<FolderStructureFileEntry, LazyCacheFolderOrArchiveFileViewModel>((entry, ct) =>
+                            {
+                                return new (new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
+                                    _sourceStorageItemsRepository,
+                                    _bookmarkManager,
+                                    _thumbnailManager,
+                                    _albamRepository,
+                                    Selection));
+                            }, AwaitOperation.Parallel)
+                            .ToArrayAsync());
 
-                        if (FolderItems.Count == 0 || await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        if (FolderItems.Count == 0)
                         {
                             await col.Context.HandleDiffNotImages(
                                     (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
@@ -803,6 +806,23 @@ public sealed partial class FolderListupPageViewModel
                         IsReadyToFavoriteFilterDisplay = true;
                     }
                 }, ct);
+
+                DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                {
+                    await Task.Delay(500);
+                    if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                    {
+                        using (FileItemsView.DeferRefresh())
+                        {
+                            await col.Context.HandleDiffNotImages(
+                                (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                FileItemsView.DeferRefresh,
+                                cacheImageViewModelFactory,
+                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                ct);
+                        }
+                    }
+                }).FireAndForgetSafe();
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
