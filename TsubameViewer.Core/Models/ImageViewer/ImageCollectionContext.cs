@@ -553,7 +553,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
         var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
-        int imagesCount = (int)await query.GetItemCountAsync();
+        int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         var cached = _repo.FindFolderNotImages(Folder.Path).ToDictionary(x => x.Path);
         bool isInitial = !_repo.HasFolderNotImages(Folder);

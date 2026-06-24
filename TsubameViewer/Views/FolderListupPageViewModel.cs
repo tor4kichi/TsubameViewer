@@ -791,7 +791,7 @@ public sealed partial class FolderListupPageViewModel
                                     _albamRepository,
                                     Selection));
                             }, AwaitOperation.Parallel)
-                            .ToArrayAsync());
+                            .ToArrayAsync(ct));
 
                         if (FolderItems.Count == 0)
                         {
@@ -809,19 +809,23 @@ public sealed partial class FolderListupPageViewModel
 
                 DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                 {
-                    await Task.Delay(500);
-                    if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                    try
                     {
-                        using (FileItemsView.DeferRefresh())
+                        await Task.Delay(500, ct);
+                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
-                            await col.Context.HandleDiffNotImages(
-                                (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                FileItemsView.DeferRefresh,
-                                cacheImageViewModelFactory,
-                                (IStorageItemViewModel itemVM) => itemVM.Path,
-                                ct);
+                            using (FileItemsView.DeferRefresh())
+                            {
+                                await col.Context.HandleDiffNotImages(
+                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    FileItemsView.DeferRefresh,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                            }
                         }
                     }
+                    catch (OperationCanceledException) { }
                 }).FireAndForgetSafe();
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
@@ -852,12 +856,16 @@ public sealed partial class FolderListupPageViewModel
 
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
-                            var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
-                            foreach (var itemVM in items.ArraySegment)
+                            try
                             {
-                                await itemVM.EnsureStorageItemAsync(ct);
+                                var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
+                                foreach (var itemVM in items.ArraySegment)
+                                {
+                                    await itemVM.EnsureStorageItemAsync(ct);
+                                }
+                                IsReadyToFavoriteFilterDisplay = true;
                             }
-                            IsReadyToFavoriteFilterDisplay = true;
+                            catch (OperationCanceledException) { }
                         }).FireAndForgetSafe();
                     }
                 }, ct);
@@ -868,13 +876,17 @@ public sealed partial class FolderListupPageViewModel
 
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
-            if (_currentImageSource?.StorageItem != null)
+            try
             {
-                var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
-                _sourceItemLastUpdatedTime = prop.DateModified;
+                if (_currentImageSource?.StorageItem != null)
+                {
+                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
+                    _sourceItemLastUpdatedTime = prop.DateModified;
+                }
+                bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
+                HasFileItem = exist;
             }
-            bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
-            HasFileItem = exist;
+            catch (OperationCanceledException) { }
         }).FireAndForgetSafe();
     }
 
