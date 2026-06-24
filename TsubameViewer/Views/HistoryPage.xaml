@@ -65,6 +65,12 @@
                         AccessKey="F"
                         AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
                         QuerySubmitted="AutoSuggestBox_QuerySubmitted">
+          <AutoSuggestBox.TextBoxStyle>
+            <Style TargetType="TextBox">
+              <Setter Property="IsSpellCheckEnabled"
+                      Value="False" />
+            </Style>
+          </AutoSuggestBox.TextBoxStyle>
           <i:Interaction.Behaviors>
             <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
   <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
