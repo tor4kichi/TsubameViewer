@@ -38,6 +38,7 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Behaviors;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
+using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -403,6 +404,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Unloaded += MovieViewerPage_Unloaded;
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
+        _coreAppView = CoreApplication.GetCurrentView();
     }
 
     DirectConnectedAnimationConfiguration _animConfig = new();
@@ -1547,6 +1549,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         //MediaPlayer.PlaybackSession.Position = ts;
         //_audioPlayer.PlaybackSession.Position = ts;
     }
+    private readonly CoreApplicationView _coreAppView;
 
 
     void RefreshSeekbarThumbnailContainerPosition(Vector2 pos)
@@ -1560,7 +1563,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (SeekbarFrameTime == videoPosAligned) { return; }
 
         MovieSeekbarTooltipContainerTransform.TranslateX = pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f;
-        MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight;
+        MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
 
         MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
         if (_videoPositionsliderPointerPressed)
