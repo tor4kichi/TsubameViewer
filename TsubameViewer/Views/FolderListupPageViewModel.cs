@@ -256,9 +256,8 @@ public sealed partial class FolderListupPageViewModel
             if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }            
             if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
-            return _migemoQueryRegex != null
-                ? _migemoQueryRegex.IsMatch(itemVM.Name)
-                : itemVM.Name.Contains(_filterText, StringComparison.Ordinal);
+            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
         };
     }
 
