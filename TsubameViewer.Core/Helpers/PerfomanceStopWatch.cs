@@ -37,7 +37,7 @@ public class PerfomanceStopWatch : IStopwatch
     {
         sw.Start();
     }
-    long _lastElapsed = 0;
+    long _lastElapsed = 0;    
     public void ElapsedWrite(string name)
     {
         Debug.WriteLine($"[{GroupName} elapsed] {sw.ElapsedMilliseconds - _lastElapsed}ms / Total {sw.ElapsedMilliseconds}ms [{name}]");

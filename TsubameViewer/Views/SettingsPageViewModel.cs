@@ -329,7 +329,7 @@ public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBas
     {
         try
         {
-            await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
+            foreach (var item in await _sourceStorageItemsRepository.GetParsistantItems())
             {
                 Folders.Add(new StoredFolderViewModel(_messenger, this, _sourceStorageItemsRepository)
                 {
