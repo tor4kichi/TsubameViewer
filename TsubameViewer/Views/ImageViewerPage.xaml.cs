@@ -197,7 +197,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
-            if (_nowPressedOnPageSlider)
+            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
             {
                 if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
                 {
@@ -214,8 +214,20 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
     private void CoreWindow_PageSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
         _nowPressedOnPageSlider = false;
+
+        if (_lastPointerDeviceType == PointerDeviceType.Touch)
+        {
+            if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos))
+            {
+                _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+            }
+            else
+            {
+                PageSelector.Value = _vm.CurrentImageIndex;
+            }
+        }
     }
 
     Vector2 _lastPointerPosition;
@@ -247,7 +259,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
-            if (_nowPressedOnPageSlider)
+            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
             {
                 if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
                 {
