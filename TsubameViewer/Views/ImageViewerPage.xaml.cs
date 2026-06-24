@@ -88,7 +88,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<ImageViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-
+        _coreAppView = CoreApplication.GetCurrentView();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;            
     }
@@ -229,7 +229,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
     }
-    
+
+    readonly CoreApplicationView _coreAppView;
     Vector2 _lastPointerPosition;
     int _lastPageChangeRequestImageIndex;
     void RefreshPageSelectorTooltipContainerTranslation()
@@ -247,7 +248,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             (float)UIContainer.ActualWidth - (halfContainerWidth)  - 8);        
         PageSelectorTooltipContainer.Translation = new Vector3(
             clampedPosX - halfContainerWidth,
-            -offset.Y - 48  - (float)PageSelectorTooltipContainer.ActualHeight,
+            -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
         PageSelectorCandidateImageIndex = pagePos - 1;
