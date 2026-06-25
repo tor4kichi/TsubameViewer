@@ -95,7 +95,10 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         {
             imageSource = new StorageItemImageSource(folder);
         }
-        
+        else
+        {
+            return null;
+        }
         var albamImage = new AlbamItemImageSource(entry, imageSource);
         if (imageSource != null)
         {
