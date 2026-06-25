@@ -526,7 +526,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                     count = 200;
                     deferRefresh.Dispose();
                     deferRefresh = deferRefreshFactory();
-                    await Task.Delay(1);
+                    await Task.Delay(50);
                 }
             }
         }

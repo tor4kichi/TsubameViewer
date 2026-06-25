@@ -840,12 +840,22 @@ public sealed partial class ImageListupPageViewModel
                     ImageFileItems.Clear();
                     await SetSort(SelectedFileSortType, ct);
                     IsFavoriteFilteredDisplayEnabled = false;
-                    await col.Context.HandleDiffImages(
-                        (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                        FileItemsView.DeferRefresh,
-                        cacheImageViewModelFactory,
-                        (IStorageItemViewModel itemVM) => itemVM.Path,
-                        ct);
+                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                    {
+                        try
+                        {
+                            using (FileItemsView.DeferRefresh())
+                            {
+                                await col.Context.HandleDiffImages(
+                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    FileItemsView.DeferRefresh,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                            }
+                        }
+                        catch (OperationCanceledException) { }
+                    }).FireAndForgetSafe();
                 }
 
             }

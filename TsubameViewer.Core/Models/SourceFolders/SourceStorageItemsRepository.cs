@@ -550,7 +550,7 @@ public sealed class SourceStorageItemsRepository
                 IStorageItem? storageItem = null;
                 storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
                 return (storageItem, item.Token, item.Metadata);
-            }, AwaitOperation.Parallel)            
+            }, AwaitOperation.SequentialParallel)            
             .ToListAsync();
             
 #else
