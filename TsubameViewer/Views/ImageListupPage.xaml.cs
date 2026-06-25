@@ -170,7 +170,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         // スクロールやアイテム追加に反応して表示範囲内の初期化対象アイテムを検出する
         R3.Observable.Merge(
             _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable()
+            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable(),
+            Observable.Empty<Unit>() // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
             )
             .ObserveOnThreadPool()
             .Debounce(TimeSpan.FromMilliseconds(10))
@@ -193,25 +194,32 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         .Debounce(TimeSpan.FromMilliseconds(10))
         .SubscribeAwait(async (_, ct) =>
         {
+            int maxParallelismCount = Math.Max(1, Environment.ProcessorCount / 2);
             while (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0)
             {
                 var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
                 bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
                 _lastVerticalOffset = currentVerticalOffset;
 
-                // Note: 並列に読み込むと応答性下がるまである
                 if (_priorityLoadPendingItems.Count != 0)
                 {
                     Debug.WriteLine("LoadingTaskMonitor Primary.");
                     try
                     {
                         using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
+                        List<ValueTask> _parallelLoadingTasks = [];
                         foreach (var item in items.ArraySegment)
                         {
-                            await item.InitializeAsync(ct);
+                            if (_parallelLoadingTasks.Count >= maxParallelismCount)
+                            {
+                                var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
+                                _parallelLoadingTasks.RemoveAt(index);
+                            }
+                            _parallelLoadingTasks.Add(item.InitializeAsync(ct));
+                            _priorityLoadPendingItems.Remove(item);
                         }
 
-                        _priorityLoadPendingItems.Clear();
+                        await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
                         await Task.Delay(50);
                     }
                     catch (OperationCanceledException)
@@ -226,10 +234,17 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     try
                     {
                         using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
+                        List<ValueTask> _parallelLoadingTasks = [];
                         foreach (var item in items.ArraySegment)
                         {
-                            await item.InitializeAsync(ct);
+                            if (_parallelLoadingTasks.Count >= maxParallelismCount)
+                            {
+                                var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
+                                _parallelLoadingTasks.RemoveAt(index);
+                            }
+                            _parallelLoadingTasks.Add(item.InitializeAsync(ct));
                             _loadPendingItems.Remove(item);
+
                             if (_priorityLoadPendingItems.Count != 0
                                 || _lastVerticalOffset != ItemsScrollViewer.VerticalOffset)
                             {
@@ -240,6 +255,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
                             await Task.Delay(1);
                         }
+
+                        await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
                     }
                     catch (OperationCanceledException)
                     {
@@ -339,6 +356,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         _messenger.Unregister<StartMultiSelectionMessage>(this);
 
+        StopLoadingTaskMonitor();
         _navigationCts?.Cancel();
         _navigationCts?.Dispose();
         _navigationCts = null;
