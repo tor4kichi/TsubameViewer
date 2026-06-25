@@ -1314,15 +1314,13 @@ public sealed class ThumbnailImageManager
 
         try
         {
-            var videoProps = await file.Properties.GetVideoPropertiesAsync();
-
             var clip = await MediaClip.CreateFromFileAsync(file);
             var mc = new MediaComposition();
             mc.Clips.Add(clip);
 
             await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
             {
-                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)videoProps.Width, (int)videoProps.Height, VideoFramePrecision.NearestFrame)).AsStreamForRead();
+                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)requestedSize, 0, VideoFramePrecision.NearestFrame)).AsStreamForRead();
             }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
         }
