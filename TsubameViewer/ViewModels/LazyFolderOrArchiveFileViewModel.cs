@@ -165,7 +165,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _status = LoadingStatus.PendingLoad;
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -459,7 +459,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         _status = LoadingStatus.PendingLoad;
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }

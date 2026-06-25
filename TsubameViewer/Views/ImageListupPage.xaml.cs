@@ -352,7 +352,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region 初期フォーカス設定
 
     CancellationTokenSource? _navigationCts;
-    CancellationToken _navigationCt;
+    CancellationToken _navigationCt;    
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _messenger.Unregister<StartMultiSelectionMessage>(this);
@@ -422,6 +422,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     .Take(1)
                     .Timeout(TimeSpan.FromSeconds(3))
                     .WaitAsync(ct);
+            }
+            else
+            {
+                using var items = _realizedItems.AsValueEnumerable()
+                    .Where(x => x.DataContext is IStorageItemViewModel itemVM && !itemVM.IsInitialized)
+                    .Select(x => (x.DataContext as IStorageItemViewModel)!).ToArrayPool();
+                await items.ArraySegment.ToAwaitableParallelTaskAsync(
+                        async itemVM => await itemVM.InitializeAsync(ct),
+                        maxDegreeOfParallelism: 8, 
+                        ct: ct);
             }
             StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize(ct);
