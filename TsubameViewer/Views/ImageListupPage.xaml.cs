@@ -216,6 +216,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                                 var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
                                 _parallelLoadingTasks.RemoveAt(index);
                             }
+
+                            if (_lastVerticalOffset != ItemsScrollViewer.VerticalOffset)
+                            {
+                                break;
+                            }
                             _parallelLoadingTasks.Add(item.InitializeAsync(ct));
                             _priorityLoadPendingItems.Remove(item);
                         }
@@ -229,6 +234,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     }
                 }
 
+                // プライマリとして読み込んだ結果、レイアウトシフトによって表示位置がズレる
+                UpdateVisibleRangeItemInitialize(ct);
                 if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count != 0)
                 {
                     Debug.WriteLine("LoadingTaskMonitor Secondary.");
@@ -265,6 +272,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     }
                 }
 
+                UpdateVisibleRangeItemInitialize(ct);
                 if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
                 {
                     Debug.WriteLine("LoadingTaskMonitor STOP.");
@@ -324,7 +332,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         
         using var items = _realizedItems
             .AsValueEnumerable()
-            .Where(item => item.DataContext is IStorageItemViewModel itemVM && !itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
+            .Where(item => item.DataContext is IStorageItemViewModel itemVM && !itemVM.IsInitialized)
             .ToArrayPool();
         if (ct.IsCancellationRequested) { return; }
         foreach (var item in items.ArraySegment)
@@ -335,10 +343,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             if (currentContentArea.Contains(pos))
             {                
                 _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+                _loadPendingItems.Remove(itemVM);
             }
             else 
             {
                 _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+                _priorityLoadPendingItems.Remove(itemVM);
             }
             if (ct.IsCancellationRequested) { return; }
         }
