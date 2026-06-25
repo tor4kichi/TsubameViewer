@@ -358,10 +358,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<StartMultiSelectionMessage>(this);
 
         StopLoadingTaskMonitor();
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-
         ClearSelection();
 
         base.OnNavigatingFrom(e);
@@ -375,8 +371,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
         async Task d()
         {
-            _navigationCts = new CancellationTokenSource();
-            var ct = _navigationCt = _navigationCts.Token;
+            var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
 
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
             await _vm.ObservePropertyChanged(x => x.NowProcessing)
