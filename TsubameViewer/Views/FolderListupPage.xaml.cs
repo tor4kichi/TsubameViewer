@@ -24,6 +24,7 @@ using System.Windows.Input;
 using System.Xml.Linq;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -180,16 +181,12 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         {
             try
             {
-                if (e.NavigationMode is NavigationMode.Forward or NavigationMode.New)
+                if (e.NavigationMode is NavigationMode.New or NavigationMode.Forward or NavigationMode.Back)
                 {
                     var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
                     var ratio = sv.VerticalOffset / sv.ScrollableHeight;
-                    _pathToLastScrollPosition[path] = ratio;
+                    _pathToLastScrollPosition[HashHelper.CalculateFNV1a64(path)] = ratio;
                     Debug.WriteLine($"_pathToLastScrollPosition[{path}] = {ratio:%}");
-                }
-                else
-                {
-                    _pathToLastScrollPosition.Remove(path);
                 }
             }
             catch (Exception ex)
@@ -229,16 +226,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
             await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
             var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
-            if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward)
+            if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
             {
-                _vm.ObservePropertyChanged(x => x.DisplayCurrentPath, false)
+                _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
                     .Where(x => x != null)
                     .Take(1)
                     .Timeout(TimeSpan.FromSeconds(3))
                     .SubscribeAwait((FoldersAdaptiveGridView, _vm.FileItemsView), async (x, s, ct) => 
                     {
                         var (listView, items) = s;
-                        if (_pathToLastScrollPosition.TryGetValue(x!, out double ratio))
+                        if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
                         {
                             await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
                             bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
@@ -288,7 +285,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     // 前回スクロール位置への復帰に対応する
     // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
-    readonly static Dictionary<string, double> _pathToLastScrollPosition = new();
+    readonly static Dictionary<ulong, double> _pathToLastScrollPosition = new();
 
 
     public void DeselectItem()
@@ -316,7 +313,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             && _vm.DisplayCurrentPath != null)
         {
             var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-            if (_pathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
+            if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(_vm.DisplayCurrentPath), out double ratio) && double.IsNaN(ratio) is false)
             {
                 sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
             }
