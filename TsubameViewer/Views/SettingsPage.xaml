@@ -44,6 +44,23 @@
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
 
+      <tt:SettingsItemTemplateSelector.SelectorSettingItem>
+        <DataTemplate x:DataType="vm:ISelectorSettingsItemViewModel">
+          <winUIControls:SettingsCard Header="{x:Bind Label}"
+                                      Description="{x:Bind Desc}">
+            <!--<winUIControls:Segmented ItemsSource="{x:Bind Items}"
+                                     SelectedItem="{x:Bind SelectedItem, Mode=OneWay}"
+                                     ItemTemplate="{StaticResource LocalizeTextTemplate}"
+                                     SelectionChanged="Segmented_SelectionChanged" />-->
+
+            <ListView ItemsSource="{x:Bind Items}"
+                      SelectedItem="{x:Bind SelectedItem, Mode=OneWay}"
+                      ItemTemplate="{StaticResource LocalizeTextTemplate}"
+                      SelectionChanged="Segmented_SelectionChanged" />
+          </winUIControls:SettingsCard>
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.SelectorSettingItem>
+
       <!-- アプリに記録されたフォルダ -->
       <tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
         <DataTemplate x:DataType="vm:StoredFoldersSettingItemViewModel">
@@ -139,7 +156,8 @@
       </tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
       <tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
         <DataTemplate x:DataType="vm:NumberBoxSettingItemViewModel">
-          <winUIControls:SettingsCard Header="{x:Bind Label}">
+          <winUIControls:SettingsCard Header="{x:Bind Label}"
+                                      Description="{x:Bind Desc}">
             <Slider Value="{x:Bind FirstValue}"
                     ValueChanged="{x:Bind OnValueChanged}"
                     Minimum="{x:Bind MinValue}"

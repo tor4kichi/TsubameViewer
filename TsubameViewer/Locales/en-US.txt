@@ -160,8 +160,12 @@ StorageItemSettings_ReadingFinishedThresholdForImageViewer = Threshold for deter
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Threshold for determining completion in the novel viewer
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Threshold for determining completion in the movie viewer
 ListupPage_DetectContentsChanged = The content has been changed. You can refresh the page.
-
-
+ThumbnailDecodeMethod = How to decode thumbnail images
+ThumbnailDecodeMethod_Desc = You can specify the image decoding method. If the number of CPU cores is two or less, Win2D (GPU) is specified by default.
+ThumbnailDecodeMethod.Skia = Skia(CPU)
+ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
+ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
+FolderItemThumbnailQuality = Thumbnail image quality
 
 #### History Page
 HistoryPage_Title = History

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI.Controls;
 using I18NPortable;
 using System;
 using System.Collections.Generic;
@@ -68,5 +69,14 @@ public sealed partial class SettingsPage : Page, ITitlebarContentAware
     void BackNavigationRequest()
     {
         _messenger.Send(new BackNavigationRequestMessage());
+    }
+
+    private void Segmented_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var control = (Selector)sender;
+        var selectorSettingsItemVM = (ISelectorSettingsItemViewModel)(control).DataContext;
+        if (!control.IsLoaded) { return; }
+        
+        selectorSettingsItemVM.SelectedItem = control.SelectedItem;
     }
 }

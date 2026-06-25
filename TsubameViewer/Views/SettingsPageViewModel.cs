@@ -135,6 +135,14 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
                     _cacheSizeButton,
+                    //new SelectorSettingsItemViewModel<ThumbnailDecodeMethod>("ThumbnailDecodeMethod".Translate(), "ThumbnailDecodeMethod_Desc".Translate(), [ThumbnailDecodeMethod.Skia, ThumbnailDecodeMethod.Win2D, ThumbnailDecodeMethod.WindowsImageCodec], _folderListingSettings.ThumbnailDecodeType, type => _folderListingSettings.ThumbnailDecodeType = type),
+                    new NumberBoxSettingItemViewModel(
+                        "FolderItemThumbnailQuality".Translate(),                        
+                        _folderListingSettings.FolderItemThumbnailQuality,
+                        0.5,
+                        1.5,
+                        0.05,
+                        f => _folderListingSettings.FolderItemThumbnailQuality = (float)f),
                     new ToggleSwitchSettingItemViewModel<StorageItemSettings>(
                         "StorageItemSettings_IsDisplayFolderItemsCount".Translate(),
                         "StorageItemSettings_IsDisplayFolderItemsCount_Desc".Translate(),
@@ -160,7 +168,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         0.99,
                         0.01,
                         f => _storageItemSettings.ReadingFinishedThresholdForMovieViewer = (float)f),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsInPageSearchWithMigemo".Translate(), "IsInPageSearchWithMigemo_Desc".Translate(), _folderListingSettings, x => x.IsInPageSearchWithMigemo),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsInPageSearchWithMigemo".Translate(), "IsInPageSearchWithMigemo_Desc".Translate(), _folderListingSettings, x => x.IsInPageSearchWithMigemo),                    
                 }
             },
             new SettingsGroupViewModel
@@ -431,6 +439,48 @@ public class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, ITo
     }
 }
 
+public interface ISelectorSettingsItemViewModel : INotifyPropertyChanged
+{
+    public string Label { get; }
+    public string Desc { get; }
+    IList<object> Items { get; }
+    object? SelectedItem { get; set; }
+}
+
+public sealed partial class SelectorSettingsItemViewModel<T> : SettingItemViewModelBase, ISelectorSettingsItemViewModel
+{
+    private readonly Action<T> _onChangedAction;
+
+    public SelectorSettingsItemViewModel(string label, string desc, List<T> items, T firstSelectItem, Action<T> onChangedAction)
+    {
+        Label = label;
+        Desc = desc;
+        Items = items;
+        _onChangedAction = onChangedAction;
+        _selectedItem = firstSelectItem;
+    }
+
+    [ObservableProperty]
+    T? _selectedItem;
+
+    partial void OnSelectedItemChanged(T value)
+    {
+        _onChangedAction(value);
+    }
+
+    public string Label { get; }
+    public string Desc { get; }
+    public List<T> Items { get; }
+
+    IList<object> ISelectorSettingsItemViewModel.Items => Items.Cast<object>().ToList();
+
+    object? ISelectorSettingsItemViewModel.SelectedItem
+    {
+        get => SelectedItem;
+        set => SelectedItem = (T?)value;
+    }
+}
+
 public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
 {
     readonly Action<double> _changedAction;
@@ -445,7 +495,19 @@ public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
         _changedAction = changedAction;
     }
 
+    public NumberBoxSettingItemViewModel(string label, string desc, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
+    {
+        Label = label;
+        Desc = desc;
+        FirstValue = firstValue;
+        MinValue = minValue;
+        MaxValue = maxValue;
+        ValueStep = valueStep;
+        _changedAction = changedAction;
+    }
+
     public string Label { get; }
+    public string? Desc { get; }
     public double FirstValue { get; }
     public double MinValue { get; }
     public double MaxValue { get; }
