@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Diagnostics;
+using R3;
 using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
@@ -6,9 +7,6 @@ using System.Collections.Immutable;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.FolderItemListing;

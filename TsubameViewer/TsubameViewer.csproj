@@ -190,7 +190,6 @@
     <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="Views\FolderOrArchiveRestructurePageViewModel.cs" />
     <Compile Include="Helpers\TaskHelper.cs" />
-    <Compile Include="Views\Helpers\RangeObservableCollection.cs" />
     <Compile Include="Views\HistoryPage.xaml.cs">
       <DependentUpon>HistoryPage.xaml</DependentUpon>
     </Compile>

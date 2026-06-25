@@ -756,8 +756,7 @@ public sealed partial class FolderListupPageViewModel
                                 Selection);
                 };
 
-                var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
-                    .ToObservable()
+                var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()                    
                     .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
                         var (col, items, itemFacotry) = s;

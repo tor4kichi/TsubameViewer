@@ -750,8 +750,7 @@ public sealed partial class ImageListupPageViewModel
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // アプリ内部操作も含めて変更を検知する
-                var d2 = _imageCollectionContext.CreateImageFileChangedObserver()
-                    .ToObservable()
+                var d2 = _imageCollectionContext.CreateImageFileChangedObserver()                    
                     .SubscribeAwait(async (_, ct) =>
                     {
                         await ReloadItemsAsync(_imageCollectionContext, ct);
@@ -779,13 +778,12 @@ public sealed partial class ImageListupPageViewModel
                 };
 
                 var d1 = imageCollectionContext.CreateImageFileChangedObserver()
-                    .ToObservable()
                     .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
                         var ignore = col.Context.HandleDiffImages(
-                            (ObservableCollection<IStorageItemViewModel>)items.Source, 
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source, 
                             items.DeferRefresh,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
@@ -823,7 +821,7 @@ public sealed partial class ImageListupPageViewModel
                                     using (FileItemsView.DeferRefresh())
                                     {
                                         await col.Context.HandleDiffImages(
-                                            (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                            (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                             FileItemsView.DeferRefresh,
                                             cacheImageViewModelFactory,
                                             (IStorageItemViewModel itemVM) => itemVM.Path,
@@ -847,7 +845,7 @@ public sealed partial class ImageListupPageViewModel
                             using (FileItemsView.DeferRefresh())
                             {
                                 await col.Context.HandleDiffImages(
-                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     FileItemsView.DeferRefresh,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,

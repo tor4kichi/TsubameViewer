@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 #nullable enable
-namespace TsubameViewer.Views.Helpers;
+namespace TsubameViewer.Helpers;
 public class RangeObservableCollection<T> : ObservableCollection<T>
 {
     private bool _suppressNotification = false;
