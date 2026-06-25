@@ -400,11 +400,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
-            await _realizedItems.CollectionChangedAsObservable()
-                .ToObservable()
-                .ThrottleLast(TimeSpan.FromMilliseconds(25))
-                .Take(1)
-                .WaitAsync(ct);
+            if (_realizedItems.Count == 0)
+            {
+                await _realizedItems.CollectionChangedAsObservable()
+                    .ToObservable()
+                    .ThrottleLast(TimeSpan.FromMilliseconds(25))
+                    .Take(1)
+                    .Timeout(TimeSpan.FromSeconds(3))
+                    .WaitAsync(ct);
+            }
             StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize(ct);
         }
