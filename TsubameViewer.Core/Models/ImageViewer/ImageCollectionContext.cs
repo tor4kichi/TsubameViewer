@@ -507,41 +507,53 @@ public sealed class FolderStructureCacheContext : IDisposable
         bool isInitial = !_repo.HasFolderImages(Folder);
         // filesにあるアイテムがcachedに無い → 増分
         IDisposable deferRefresh = deferRefreshFactory();
-        int count = 200;
-        await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
-        {            
-            if (!cached.Remove(file.Path, out var entry) || isInitial)
+        try
+        {
+            int count = 200;
+            await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
             {
-                ct.ThrowIfCancellationRequested();
-                entry = _repo.AddOrUpdateItem(file);
-                var itemVM = cacheImageViewModelFactory(entry, file);
-                items.Add(itemVM);
-            }
-            else { continue; }
+                if (!cached.Remove(file.Path, out var entry) || isInitial)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    entry = _repo.AddOrUpdateItem(file);
+                    var itemVM = cacheImageViewModelFactory(entry, file);
+                    items.Add(itemVM);
+                }
+                else { continue; }
 
-            if (count-- <= 0)
-            {
-                count = 200;
-                deferRefresh.Dispose();
-                deferRefresh = deferRefreshFactory();
+                if (count-- <= 0)
+                {
+                    count = 200;
+                    deferRefresh.Dispose();
+                    deferRefresh = deferRefreshFactory();
+                    await Task.Delay(1);
+                }
             }
+        }
+        finally
+        {
+            deferRefresh.Dispose();
         }
 
         _updateMap[Folder.Path].CachedImagesCount = imagesCount;
-        deferRefresh.Dispose();
         deferRefresh = deferRefreshFactory();
 
         // cachedにあってfilesに無い → 減分
-        foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
+        try
         {
-            if (cached.TryGetValue(itemToPathConv(item), out var entry))
+            foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
             {
-                items.RemoveAt(i);
-                _repo.FileRemoved(entry);
+                if (cached.TryGetValue(itemToPathConv(item), out var entry))
+                {
+                    items.RemoveAt(i);
+                    _repo.FileRemoved(entry);
+                }
             }
         }
-
-        deferRefresh.Dispose();
+        finally
+        {
+            deferRefresh.Dispose();
+        }
     }
 
     public async Task HandleDiffNotImages<T>(ObservableCollection<T> items,

@@ -795,43 +795,59 @@ public sealed partial class ImageListupPageViewModel
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
 
-                using (FileItemsView.DeferRefresh())
+                if (col.Context.GetCachedImagesCount() != 0)
                 {
-                    await SetSort(SelectedFileSortType, ct);
-                    IsFavoriteFilteredDisplayEnabled = false;
-                    ImageFileItems.Clear();
-                    ImageFileItems.AddRange(col.Context.GetCacheImages().Select(entry =>
+                    using (FileItemsView.DeferRefresh())
                     {
-                        return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
-                            _sourceStorageItemsRepository,
-                            _bookmarkManager,
-                            _thumbnailManager,
-                            _albamRepository,
-                            Selection);
-                    }));                    
+                        ImageFileItems.Clear();
+                        await SetSort(SelectedFileSortType, ct);
+                        IsFavoriteFilteredDisplayEnabled = false;
 
-                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
-                    {
-                        try
+                        ImageFileItems.AddRange(col.Context.GetCacheImages().Select(entry =>
                         {
-                            await Task.Delay(500, ct);
-                            if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
+                            return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                        }));
+
+                        DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                        {
+                            try
                             {
-                                using (FileItemsView.DeferRefresh())
+                                await Task.Delay(500, ct);
+                                if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
                                 {
-                                    await col.Context.HandleDiffImages(
-                                        (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                        FileItemsView.DeferRefresh,
-                                        cacheImageViewModelFactory,
-                                        (IStorageItemViewModel itemVM) => itemVM.Path,
-                                        ct);
+                                    using (FileItemsView.DeferRefresh())
+                                    {
+                                        await col.Context.HandleDiffImages(
+                                            (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                            FileItemsView.DeferRefresh,
+                                            cacheImageViewModelFactory,
+                                            (IStorageItemViewModel itemVM) => itemVM.Path,
+                                            ct);
+                                    }
                                 }
                             }
-                        }
-                        catch (OperationCanceledException) { }
-                    }).FireAndForgetSafe();
-
+                            catch (OperationCanceledException) { }
+                        }).FireAndForgetSafe();
+                    }
                 }
+                else                    
+                {
+                    ImageFileItems.Clear();
+                    await SetSort(SelectedFileSortType, ct);
+                    IsFavoriteFilteredDisplayEnabled = false;
+                    await col.Context.HandleDiffImages(
+                        (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                        FileItemsView.DeferRefresh,
+                        cacheImageViewModelFactory,
+                        (IStorageItemViewModel itemVM) => itemVM.Path,
+                        ct);
+                }
+
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
