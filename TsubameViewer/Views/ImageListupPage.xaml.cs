@@ -183,9 +183,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 if (vOffset != _lastScrollOffset)
                 {
                     _lastScrollOffset = vOffset;
-                    UpdateVisibleRangeItemInitialize(ct);                    
+                    UpdateVisibleRangeItemInitialize(ct);
                 }
-            }, AwaitOperation.Drop);
+            }, AwaitOperation.Drop)
+            .AddTo(ref db);
 
         R3.Observable.Merge(
             _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
