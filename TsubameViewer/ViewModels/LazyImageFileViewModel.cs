@@ -190,7 +190,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
-                    ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                    ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
@@ -460,7 +460,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
-                    ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                    ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();

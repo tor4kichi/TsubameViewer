@@ -46,6 +46,7 @@ using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.System;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
 
@@ -959,6 +960,12 @@ public sealed class ThumbnailImageManager
             {
                 using (var inputStream = await streamOpener())
                 {
+                    var imageInfo = SKBitmap.DecodeBounds(inputStream);
+                    if (imageInfo != SKImageInfo.Empty)
+                    {
+                        SetThumbnailSize(path, imageInfo);
+                    }
+
                     inputStream.CopyTo(outputStream);
                 }
             }
@@ -1007,6 +1014,11 @@ public sealed class ThumbnailImageManager
         {
             if (path.EndsWith(".gif"))
             {
+                var imageInfo = SKBitmap.DecodeBounds(stream);
+                if (imageInfo != SKImageInfo.Empty)
+                {
+                    SetThumbnailSize(path, imageInfo);
+                }
                 stream.CopyTo(outputStream);
             }
             else
@@ -1408,6 +1420,25 @@ public sealed class ThumbnailImageManager
             RatioWH = item.RatioWH,
         };
     }
+
+    private ThumbnailSize SetThumbnailSize(string path, SKImageInfo imageInfo)
+    {
+        var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+        {
+            Path = ToId(path),
+            ImageHeight = (uint)imageInfo.Height,
+            ImageWidth = (uint)imageInfo.Width,
+            RatioWH = imageInfo.Width / (float)imageInfo.Height
+        });
+
+        return new ThumbnailSize()
+        {
+            Height = item.ImageHeight,
+            Width = item.ImageWidth,
+            RatioWH = item.RatioWH,
+        };
+    }
+
 
     public class ThumbnailImageInfo
     {
