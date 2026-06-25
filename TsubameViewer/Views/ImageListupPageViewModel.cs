@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
@@ -575,14 +576,17 @@ public sealed partial class ImageListupPageViewModel
 
     async Task ResetContentWithStorageItem(string path, string pageName, CancellationToken ct)
     {
+        PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("ResetContentWithStorageItem");
         using var lockReleaser = await _navigationLock.LockAsync(ct);
+
+        sw.ElapsedWrite("LockAsync");
 
         HasFileItem = false;
         DisplayCurrentPath = ""; 
 
         // 表示情報の解決
         ClearContent();
-        
+
         try
         {
             (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct);
@@ -595,6 +599,8 @@ public sealed partial class ImageListupPageViewModel
             ClearContent();
             throw;
         }
+
+        sw.ElapsedWrite("GetImageSourceAndContextAsync");
 
         CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);        
         DisplayCurrentPath = _currentImageSource.Path;
@@ -630,8 +636,12 @@ public sealed partial class ImageListupPageViewModel
         }
 
         FilterText = "";
-        
+
+        sw.ElapsedWrite("Before ReloadItemsAsync");
+
         await ReloadItemsAsync(_imageCollectionContext, ct);
+
+        sw.ElapsedWrite("After ReloadItemsAsync");
 
         HasFileItem = ImageFileItems.Any();
 
@@ -800,15 +810,27 @@ public sealed partial class ImageListupPageViewModel
                             Selection);
                     }));                    
 
-                    if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
+                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
-                        await col.Context.HandleDiffImages(
-                                (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                FileItemsView.DeferRefresh,
-                                cacheImageViewModelFactory,
-                                (IStorageItemViewModel itemVM) => itemVM.Path,
-                                ct);
-                    }
+                        try
+                        {
+                            await Task.Delay(500, ct);
+                            if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
+                            {
+                                using (FileItemsView.DeferRefresh())
+                                {
+                                    await col.Context.HandleDiffImages(
+                                        (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                        FileItemsView.DeferRefresh,
+                                        cacheImageViewModelFactory,
+                                        (IStorageItemViewModel itemVM) => itemVM.Path,
+                                        ct);
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException) { }
+                    }).FireAndForgetSafe();
+
                 }
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する

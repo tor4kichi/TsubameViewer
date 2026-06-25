@@ -185,7 +185,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 await EnsureStorageItemAsync(ct);
                 Guard.IsNotNull(Item);
 
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
+                using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -341,9 +341,11 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             _path = _item.Path;
             _dateCreated = _item.DateCreated;
             _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
-            UpdateLastReadPosition();
-            _isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
-            _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_item.Path)?.RatioWH;
+
+            // Note: ItemVM生成とコレクションへの詰め込み処理がボトルネックになってる
+            // 表示対象のみ必要な情報を引き出すようにして応答性を改善したい
+            //_isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+            //_imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_item.Path)?.RatioWH;
         }
         else
         {
@@ -351,9 +353,8 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             _path = _cacheEntry.Path;
             _dateCreated = _cacheEntry.DateCreated;
             _type = StorageItemTypes.Image;
-            UpdateLastReadPosition();
-            _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-            _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
+            //_isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
+            //_imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
         }
     }
 
@@ -414,11 +415,13 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 throw;
             }            
             Item = new StorageItemImageSource(file);
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            UpdateLastReadPosition();
+
+            // コンストラクタで初期化済みの項目はOnPropertyChanged発火も回避したいので更新しない
+            //Name = Item.Name;
+            //Path = Item.Path;
+            //DateCreated = Item.DateCreated;
+            //Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+            //UpdateLastReadPosition();
             IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
         }
 
@@ -442,7 +445,8 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         _status = LoadingStatus.PendingLoad;
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            // ImageListupPageの読み込みを順列化しているためロック不要
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -451,7 +455,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 _status = LoadingStatus.NowLoading;
                 await EnsureStorageItemAsync(ct);
                 Guard.IsNotNull(Item);
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
+                using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -517,12 +521,13 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         Image = null;
     }
 
-    public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
-    {
-        //await EnsureStorageItemAsync(ct);
-        //Guard.IsNotNull(Item);
-        //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-        return new();
+    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    {        
+        if (ImageAspectRatioWH == null)
+        {
+            IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
+            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
+        }
     }
     bool _disposed;
 }

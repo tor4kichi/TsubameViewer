@@ -447,9 +447,9 @@ public sealed class FolderStructureCacheContext : IDisposable
         return _repo.HasFolderImages(Folder);
     }
 
-    public List<FolderStructureFileEntry> GetCacheImages()
+    public IEnumerable<FolderStructureFileEntry> GetCacheImages()
     {
-        return _repo.FindFolderImages(Folder.Path).AsValueEnumerable().ToList();
+        return _repo.FindFolderImages(Folder.Path);
     }
 
     public bool HasNotImagesCache()
@@ -501,7 +501,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
         var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
-        int imagesCount = (int)await query.GetItemCountAsync();
+        int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         var cached = _repo.FindFolderImages(Folder.Path).ToDictionary(x => x.Path);
         bool isInitial = !_repo.HasFolderImages(Folder);
