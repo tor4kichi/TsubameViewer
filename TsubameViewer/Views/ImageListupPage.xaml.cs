@@ -161,7 +161,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         _priorityLoadPendingItems.Clear();
         _loadPendingItems.Clear();
-
+        _lastScrollOffset = -1;
         StopLoadingTaskMonitor();
         _lastVerticalOffset = 0;
         DisposableBuilder db = new();
@@ -414,25 +414,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
-            if (_realizedItems.Count == 0)
-            {
-                await _realizedItems.CollectionChangedAsObservable()
-                    .ToObservable()
-                    .ThrottleLast(TimeSpan.FromMilliseconds(25))
-                    .Take(1)
-                    .Timeout(TimeSpan.FromSeconds(3))
-                    .WaitAsync(ct);
-            }
-            else
-            {
-                using var items = _realizedItems.AsValueEnumerable()
-                    .Where(x => x.DataContext is IStorageItemViewModel itemVM && !itemVM.IsInitialized)
-                    .Select(x => (x.DataContext as IStorageItemViewModel)!).ToArrayPool();
-                await items.ArraySegment.ToAwaitableParallelTaskAsync(
-                        async itemVM => await itemVM.InitializeAsync(ct),
-                        maxDegreeOfParallelism: 8, 
-                        ct: ct);
-            }
             StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize(ct);
         }
