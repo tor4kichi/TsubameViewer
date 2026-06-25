@@ -780,18 +780,16 @@ public sealed partial class FolderListupPageViewModel
                         IsFavoriteFilteredDisplayEnabled = false;
                         FolderItems.Clear();
 
-                        FolderItems.AddRange(await col.Context.GetCacheNotImages()
-                            .ToObservable()
-                            .SelectAwait<FolderStructureFileEntry, LazyCacheFolderOrArchiveFileViewModel>((entry, ct) =>
+                        FolderItems.AddRange(col.Context.GetCacheNotImages()
+                            .Select(entry =>
                             {
-                                return new (new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
+                                return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
                                     _sourceStorageItemsRepository,
                                     _bookmarkManager,
                                     _thumbnailManager,
                                     _albamRepository,
-                                    Selection));
-                            }, AwaitOperation.Parallel)
-                            .ToArrayAsync(ct));
+                                    Selection);
+                            }));
 
                         if (FolderItems.Count == 0)
                         {
