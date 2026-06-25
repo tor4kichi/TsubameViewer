@@ -195,7 +195,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Length == 0) { return; }
-                ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
                 if (IsRequestImageLoading is false) { return; }
 
                 {
