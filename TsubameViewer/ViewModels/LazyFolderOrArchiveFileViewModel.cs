@@ -435,7 +435,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
-
+    readonly static Core.AsyncLock _imageLoadingLock = new();
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
         return new ValueTask();
@@ -476,8 +476,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = bitmapImage;
+                    using (await _imageLoadingLock.LockAsync(ct))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = bitmapImage;
+                    }
                 }
 
                 // Note: 20msぐらい掛かるのでInitializeで実行
