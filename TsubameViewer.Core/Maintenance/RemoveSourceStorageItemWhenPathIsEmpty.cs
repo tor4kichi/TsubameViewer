@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage.AccessCache;
+using ZLinq;
 
 namespace TsubameViewer.Core.Maintenance;
 
@@ -34,20 +35,21 @@ public sealed class RemoveSourceStorageItemWhenPathIsEmpty : ILaunchTimeMaintena
             _liteDatabase.DropCollection(nameof(IgnoreStorageItemEntry));
         }
 
-        foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
-        {
-            try
-            {
-                var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-                if (string.IsNullOrEmpty(item.Path))
-                {
-                    StorageApplicationPermissions.MostRecentlyUsedList.Remove(entry.Token);
-                }
-            }
-            catch (FileNotFoundException)
-            {
-                StorageApplicationPermissions.MostRecentlyUsedList.Remove(entry.Token);
-            }
-        }
+        // 整理しなくても勝手に消えるし、MostRecentlyUsedListを使う場面でファイルが無いなりの処理を選択すれば十分
+        //await StorageApplicationPermissions.MostRecentlyUsedList.Entries.ToAwaitableParallelTaskAsync(async entry =>
+        //{
+        //    try
+        //    {
+        //        var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token);
+        //        if (string.IsNullOrEmpty(item.Path))
+        //        {
+        //            StorageApplicationPermissions.MostRecentlyUsedList.Remove(entry.Token);
+        //        }
+        //    }
+        //    catch (FileNotFoundException)
+        //    {
+        //        StorageApplicationPermissions.MostRecentlyUsedList.Remove(entry.Token);
+        //    }
+        //});
     }
 }

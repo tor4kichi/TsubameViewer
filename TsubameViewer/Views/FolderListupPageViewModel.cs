@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -92,6 +93,8 @@ public sealed partial class FolderListupPageViewModel
 
     [ObservableProperty]
     string _filterText = "";
+
+    Regex? _migemoQueryRegex;
 
     public Visibility NotEmptyToVisible(string s)
     {
@@ -250,12 +253,11 @@ public sealed partial class FolderListupPageViewModel
         FileItemsView.Filter = s =>
         {
             if (s is not IStorageItemViewModel itemVM) { return true; }
-            if (IsFavoriteFilteredDisplayEnabled
-                && !itemVM.IsFavorite)
-            {
-                return false;
-            }
-            return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+            if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }            
+            if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
+            if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
+            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
         };
     }
 
@@ -454,7 +456,22 @@ public sealed partial class FolderListupPageViewModel
 
         this.ObservePropertyChanged(x => x.FilterText, false)
             .Debounce(TimeSpan.FromSeconds(0.25))
-            .Subscribe(_ => FileItemsView.RefreshFilter())
+            .Subscribe(_ =>
+            {
+                if (_folderListingSettings.IsInPageSearchWithMigemo)
+                {
+                    try
+                    {
+                        _migemoQueryRegex = MigemoService.Query(_filterText);
+                    }
+                    catch
+                    {
+                        _migemoQueryRegex = null;
+                    }
+                }
+                else { _migemoQueryRegex = null; }
+                FileItemsView.RefreshFilter();
+            })
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.SelectedChildImagesFolderOpenMode, false)
@@ -739,8 +756,7 @@ public sealed partial class FolderListupPageViewModel
                                 Selection);
                 };
 
-                var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
-                    .ToObservable()
+                var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()                    
                     .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
                         var (col, items, itemFacotry) = s;
@@ -763,17 +779,18 @@ public sealed partial class FolderListupPageViewModel
                         IsFavoriteFilteredDisplayEnabled = false;
                         FolderItems.Clear();
 
-                        FolderItems.AddRange(col.Context.GetCacheNotImages().Select(entry =>
-                        {
-                            return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
-                                _sourceStorageItemsRepository,
-                                _bookmarkManager,
-                                _thumbnailManager,
-                                _albamRepository,
-                                Selection);
-                        }));
+                        FolderItems.AddRange(col.Context.GetCacheNotImages()
+                            .Select(entry =>
+                            {
+                                return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
+                                    _sourceStorageItemsRepository,
+                                    _bookmarkManager,
+                                    _thumbnailManager,
+                                    _albamRepository,
+                                    Selection);
+                            }));
 
-                        if (FolderItems.Count == 0 || await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        if (FolderItems.Count == 0)
                         {
                             await col.Context.HandleDiffNotImages(
                                     (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
@@ -786,6 +803,27 @@ public sealed partial class FolderListupPageViewModel
                         IsReadyToFavoriteFilterDisplay = true;
                     }
                 }, ct);
+
+                DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(500, ct);
+                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        {
+                            using (FileItemsView.DeferRefresh())
+                            {
+                                await col.Context.HandleDiffNotImages(
+                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    FileItemsView.DeferRefresh,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+                }).FireAndForgetSafe();
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
@@ -815,12 +853,16 @@ public sealed partial class FolderListupPageViewModel
 
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
-                            var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
-                            foreach (var itemVM in items.ArraySegment)
+                            try
                             {
-                                await itemVM.EnsureStorageItemAsync(ct);
+                                var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
+                                foreach (var itemVM in items.ArraySegment)
+                                {
+                                    await itemVM.EnsureStorageItemAsync(ct);
+                                }
+                                IsReadyToFavoriteFilterDisplay = true;
                             }
-                            IsReadyToFavoriteFilterDisplay = true;
+                            catch (OperationCanceledException) { }
                         }).FireAndForgetSafe();
                     }
                 }, ct);
@@ -831,13 +873,17 @@ public sealed partial class FolderListupPageViewModel
 
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
-            if (_currentImageSource?.StorageItem != null)
+            try
             {
-                var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
-                _sourceItemLastUpdatedTime = prop.DateModified;
+                if (_currentImageSource?.StorageItem != null)
+                {
+                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
+                    _sourceItemLastUpdatedTime = prop.DateModified;
+                }
+                bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
+                HasFileItem = exist;
             }
-            bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
-            HasFileItem = exist;
+            catch (OperationCanceledException) { }
         }).FireAndForgetSafe();
     }
 

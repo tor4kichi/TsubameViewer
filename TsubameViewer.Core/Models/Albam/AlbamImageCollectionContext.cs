@@ -1,10 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +11,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.Navigation;
 using Windows.Storage;
+using R3;
 
 namespace TsubameViewer.Core.Models.Albam;
 
@@ -97,7 +95,10 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         {
             imageSource = new StorageItemImageSource(folder);
         }
-        
+        else
+        {
+            return null;
+        }
         var albamImage = new AlbamItemImageSource(entry, imageSource);
         if (imageSource != null)
         {
@@ -125,25 +126,27 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
     }
 
 
-    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
+    public Observable<Unit> CreateFolderAndArchiveFileChangedObserver()
     {
-        return Observable.Merge(
+        return System.Reactive.Linq.Observable.Merge(
             _messenger.CreateObservable<AlbamItemAddedMessage, AlbamItemChangedMessageValue>(),
             _messenger.CreateObservable<AlbamItemRemovedMessage, AlbamItemChangedMessageValue>()
             )
+            .ToObservable()
             .Where(x => x.ItemType == AlbamItemType.FolderOrArchive)
-            .ToUnit()
+            .AsUnitObservable()
             ;
     }
 
-    public IObservable<Unit> CreateImageFileChangedObserver()
+    public Observable<Unit> CreateImageFileChangedObserver()
     {
-        return Observable.Merge(
+        return System.Reactive.Linq.Observable.Merge(
             _messenger.CreateObservable<AlbamItemAddedMessage, AlbamItemChangedMessageValue>(),
             _messenger.CreateObservable<AlbamItemRemovedMessage, AlbamItemChangedMessageValue>()
             )
+            .ToObservable()
             .Where(x => x.ItemType == AlbamItemType.Image)
-            .ToUnit()
+            .AsUnitObservable()
             ;
     }
 

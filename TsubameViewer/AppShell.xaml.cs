@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Contracts.Navigation;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Contracts.Services;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.Navigation;
@@ -411,7 +412,8 @@ public sealed partial class AppShell : UserControl
     void InitializeNavigation()
     {
         async Task<INavigationResult> NavigationAsyncInternal(NavigationRequestMessage m)
-        {            
+        {
+            PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("NavigationAsyncInternal");
             try
             {
                 using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
@@ -449,6 +451,7 @@ public sealed partial class AppShell : UserControl
                 _messenger.SendShowTextNotificationMessage("Notification_SourceStorageItemNotFound".Translate());
                 throw;
             }
+            sw.ElapsedWrite("Completed");
         }
 
         _messenger.Register<NavigationRequestMessage>(this, (r, m) => 
@@ -780,6 +783,7 @@ public sealed partial class AppShell : UserControl
 
     async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, NavigationTransitionInfo? transitionInfo = null,  bool isNavigationStackEnabled = true)
     {
+        PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("NavigateAsync");
         var viewType = _viewLocator.ResolveView(pageName);
         Frame frame;        
         if (IsOpenWithViewerPageType(viewType))
@@ -794,8 +798,9 @@ public sealed partial class AppShell : UserControl
             frame = ContentFrame;
             SetCurrentNavigationParameters(parameters);
         }
-
+        sw.ElapsedWrite("Before RotationNextCancellationTokenSource");
         var ct = RotationNextCancellationTokenSource(viewType);
+        sw.ElapsedWrite("After RotationNextCancellationTokenSource");
         var prevPage = frame.Content as Page;
         var options = new FrameNavigationOptions() 
         {
@@ -808,10 +813,11 @@ public sealed partial class AppShell : UserControl
         {
             throw new InvalidOperationException($"Failed ContentFrame navigate to {pageName}.");
         }
-
+        sw.ElapsedWrite("Before HandleViewModelNavigation");
         var page = frame.Content;
         var currentPage = page as Page;        
         var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters, ct);
+        sw.ElapsedWrite("After HandleViewModelNavigation");
         return handleResult;
     }
 
@@ -862,12 +868,14 @@ public sealed partial class AppShell : UserControl
 
     #region Back/Forward Navigation
 
+
+
     // デッドロックさせないようにFireAndForgetで実行
     public async Task RestoreNavigationStack()
     {
         var navigationManager = _vm.RestoreNavigationManager;
 
-
+        PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("RestoreNavigationStack");
         try
         {
             if (navigationManager.GetViewerNavigationEntry() is { } viewerEntry)
@@ -886,6 +894,8 @@ public sealed partial class AppShell : UserControl
                     await ResetNavigationAsync();
                     return;
                 }
+
+                sw.ElapsedWrite("Restore Viewer State");
             }
 
             //using (await _navigationLock.LockAsync(CancellationToken.None))
@@ -918,7 +928,7 @@ public sealed partial class AppShell : UserControl
                 {
                     currentNavParameters.Add(PageNavigationConstants.Restored, string.Empty);
                 }
-
+                sw.ElapsedWrite("Prev NavigateAsync");
                 var result = await _messenger.NavigateAsync(currentEntry.PageName, currentNavParameters);
                 if (!result.IsSuccess)
                 {
@@ -927,6 +937,8 @@ public sealed partial class AppShell : UserControl
                     await ResetNavigationAsync();
                     return;
                 }
+
+                sw.ElapsedWrite("After NavigateAsync");
 
                 Debug.WriteLine($"[NavigationRestore] Restored CurrentPage: {currentEntry.PageName} {string.Join(',', currentEntry.Parameters?.Select(x => $"{x.Key}={x.Value}") ?? Enumerable.Empty<string>())}");
 
@@ -959,6 +971,8 @@ public sealed partial class AppShell : UserControl
                 //        }
                 //    }
                 //}
+
+                sw.ElapsedWrite("Completed");
             }
         }
         catch

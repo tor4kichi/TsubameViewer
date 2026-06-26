@@ -16,6 +16,7 @@ using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
 using ZLinq;
+using R3;
 
 #nullable enable
 namespace TsubameViewer.Core.Models.SourceFolders;
@@ -539,24 +540,19 @@ public sealed class SourceStorageItemsRepository
         return _tokenToPathRepository.GetTokenFromPath(path)?.Order ?? -1;
     }
 
-    public async IAsyncEnumerable<(IStorageItem item, string token, string metadata)> GetParsistantItems([EnumeratorCancellation] CancellationToken ct = default)
+    public async Task<List<(IStorageItem item, string token, string metadata)>> GetParsistantItems(CancellationToken ct = default)
     {
 #if WINDOWS_UWP
         var myItems = StorageApplicationPermissions.FutureAccessList.Entries;
-        foreach (var item in myItems)
-        {
-            ct.ThrowIfCancellationRequested();
-            IStorageItem? storageItem = null;
-            try
+        return await myItems.ToObservable()
+            .SelectAwait(async (item, ct) =>
             {
+                IStorageItem? storageItem = null;
                 storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
-            }
-            catch (FileNotFoundException) { }
-
-            if (storageItem == null) { continue; }
-
-            yield return (storageItem, item.Token, item.Metadata);
-        }
+                return (storageItem, item.Token, item.Metadata);
+            }, AwaitOperation.SequentialParallel)            
+            .ToListAsync();
+            
 #else
         // TODO: GetSourceFolders() UWP以外での対応
         throw new NotImplementedException();

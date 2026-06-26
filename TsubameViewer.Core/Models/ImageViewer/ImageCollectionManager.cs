@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.Messaging;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
+using R3;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
@@ -12,9 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.Albam;
@@ -329,12 +325,12 @@ public sealed class OnlyOneFileImageCollectionContext : IImageCollectionContext
 
     public bool IsSupportFolderOrArchiveFilesIndexAccess => false;
 
-    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
+    public Observable<Unit> CreateFolderAndArchiveFileChangedObserver()
     {
         throw new NotImplementedException();
     }
 
-    public IObservable<Unit> CreateImageFileChangedObserver()
+    public Observable<Unit> CreateImageFileChangedObserver()
     {
         throw new NotImplementedException();
     }

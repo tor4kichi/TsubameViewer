@@ -170,7 +170,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     }
 
     public bool IsInitialized { get; private set; } = false;
-    public async ValueTask InitializeAsync(CancellationToken rootCt)
+    public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -183,7 +183,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
 
-            using var d = await _asyncLock.LockAsync(rootCt);
+            using var d = await _asyncLock.LockAsync(ct);
 
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)
@@ -192,7 +192,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
                 Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
             }
 
-            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
+            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Length == 0) { return; }
                 ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
@@ -202,9 +202,9 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    using (var l = await _imageLoadingLock.LockAsync(rootCt))
+                    using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt);
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
                     }
                 }

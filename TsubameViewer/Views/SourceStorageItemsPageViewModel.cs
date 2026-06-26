@@ -185,9 +185,9 @@ public sealed partial class SourceStorageItemsPageViewModel
             Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));            
             try
             {
-                var items = await _sourceStorageItemsRepository.GetParsistantItems()
+                var items = (await _sourceStorageItemsRepository.GetParsistantItems(ct))
                     .Select(x => new StorageItemViewModel(new StorageItemImageSource(x.item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository))
-                    .ToListAsync(ct);
+                    .ToList();
                 items.Sort(_comparison);
                 foreach (var item in items)
                 {

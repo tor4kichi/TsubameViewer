@@ -53,21 +53,23 @@ namespace TsubameViewer.Views;
 
 public static class ObservableCollectionExtensions
 {
-    public static void InsertSorted<T>(this ObservableCollection<T> collection, T item, Comparison<T> comparison)
+    public static void InsertSorted<T>(this IList<T> collection, T item, Comparison<T> comparison)
     {
         int index = 0;
-        while (index < collection.Count && comparison(collection[index], item) < 0)
+        while (index < collection.Count && comparison(collection[index], item) is int c && c < 0)
         {
+            if (c == 0) { return; }
             index++;
         }
         collection.Insert(index, item);
     }
 
-    public static void InsertSortedDescending<T>(this ObservableCollection<T> collection, T item, Comparison<T> comparison)
+    public static void InsertSortedDescending<T>(this IList<T> collection, T item, Comparison<T> comparison)
     {
         int index = 0;
-        while (index < collection.Count && comparison(collection[index], item) > 0)
+        while (index < collection.Count && comparison(collection[index], item) is int c && c > 0)
         {
+            if (c == 0) { return; }
             index++;
         }
         collection.Insert(index, item);
@@ -154,88 +156,131 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region Image Loading
 
     IDisposable? _lodingTaskMonitor;
+    double _lastScrollOffset = -1;
     void StartLoadingTaskMonitor(CancellationToken ct)
     {
         _priorityLoadPendingItems.Clear();
         _loadPendingItems.Clear();
-
+        _lastScrollOffset = -1;
         StopLoadingTaskMonitor();
         _lastVerticalOffset = 0;
         DisposableBuilder db = new();
         Debug.WriteLine("LoadingTaskMonitor START.");
+
+        // スクロールやアイテム追加に反応して表示範囲内の初期化対象アイテムを検出する
         R3.Observable.Merge(
+            _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable(),
+            Observable.Empty<Unit>() // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
+            )
+            .ObserveOnThreadPool()
+            .Debounce(TimeSpan.FromMilliseconds(10))
+            .ObserveOnCurrentSynchronizationContext()
+            .SubscribeAwait(async (_, ct) =>
+            {
+                if (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0) { return; }
+                var vOffset = ItemsScrollViewer.VerticalOffset;
+                if (vOffset != _lastScrollOffset)
+                {
+                    _lastScrollOffset = vOffset;
+                    UpdateVisibleRangeItemInitialize(ct);
+                }
+            }, AwaitOperation.Drop)
+            .AddTo(ref db);
+
+        R3.Observable.Merge(
+            _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
             _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-            _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-            R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
-            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
+            _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable())
         .Debounce(TimeSpan.FromMilliseconds(10))
         .SubscribeAwait(async (_, ct) =>
         {
-            var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
-                
-            UpdateVisibleRangeItemInitialize();
-            if (!_priorityLoadPendingItems.Any() && !_loadPendingItems.Any()) { return; }
-            _isVisibleRangeUpdated = false;
-            bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
-            _lastVerticalOffset = currentVerticalOffset;
-                
-            if (_priorityLoadPendingItems.Any())
+            int maxParallelismCount = Math.Max(1, Environment.ProcessorCount / 2);
+            while (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0)
             {
-                Debug.WriteLine("LoadingTaskMonitor primary.");
-                try
-                {
-                    using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
-                    foreach (var item in items.ArraySegment)
-                    {
-                        await item.InitializeAsync(ct);
-                    }
+                var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
+                bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
+                _lastVerticalOffset = currentVerticalOffset;
 
-                    _priorityLoadPendingItems.Clear();
-                }
-                catch (OperationCanceledException)
+                if (_priorityLoadPendingItems.Count != 0)
                 {
-                    return;
-                }
-            }
-
-            if (_loadPendingItems.Any())
-            {
-                Debug.WriteLine("LoadingTaskMonitor secondary.");
-                try
-                {
-                    using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
-                    var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
-                    int count = tasks.Count;
-                    foreach (var ignore in ValueEnumerable.Range(0, tasks.Count))
+                    Debug.WriteLine("LoadingTaskMonitor Primary.");
+                    try
                     {
-                        int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
-                        tasks.RemoveAt(index);
-                        await Task.Delay(1);
-                        count--;
-                        if (count <= 0 || _isVisibleRangeUpdated)
+                        using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
+                        List<ValueTask> _parallelLoadingTasks = [];
+                        foreach (var item in items.ArraySegment)
                         {
-                            Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP secondary.");
-                            break;
-                        }
-                    }
-                    if (!_isVisibleRangeUpdated)
-                    {
-                        _loadPendingItems.Clear();
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-            }
+                            if (_parallelLoadingTasks.Count >= maxParallelismCount)
+                            {
+                                var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
+                                _parallelLoadingTasks.RemoveAt(index);
+                            }
 
-            if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
-            {
-                Debug.WriteLine("LoadingTaskMonitor STOP.");                    
-            }
-            else
-            {
-                Debug.WriteLine("LoadingTaskMonitor Continue.");
+                            if (_lastVerticalOffset != ItemsScrollViewer.VerticalOffset)
+                            {
+                                break;
+                            }
+                            _parallelLoadingTasks.Add(item.InitializeAsync(ct));
+                            _priorityLoadPendingItems.Remove(item);
+                        }
+
+                        await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
+                        await Task.Delay(50);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
+
+                // プライマリとして読み込んだ結果、レイアウトシフトによって表示位置がズレる
+                UpdateVisibleRangeItemInitialize(ct);
+                if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count != 0)
+                {
+                    Debug.WriteLine("LoadingTaskMonitor Secondary.");
+                    try
+                    {
+                        using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
+                        List<ValueTask> _parallelLoadingTasks = [];
+                        foreach (var item in items.ArraySegment)
+                        {
+                            if (_parallelLoadingTasks.Count >= maxParallelismCount)
+                            {
+                                var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
+                                _parallelLoadingTasks.RemoveAt(index);
+                            }
+                            _parallelLoadingTasks.Add(item.InitializeAsync(ct));
+                            _loadPendingItems.Remove(item);
+
+                            if (_priorityLoadPendingItems.Count != 0
+                                || _lastVerticalOffset != ItemsScrollViewer.VerticalOffset)
+                            {
+                                UpdateVisibleRangeItemInitialize(ct);
+                                Debug.WriteLine("LoadingTaskMonitor skip Secondary. rewind Primary.");
+                                break;
+                            }
+
+                            await Task.Delay(1);
+                        }
+
+                        await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
+
+                UpdateVisibleRangeItemInitialize(ct);
+                if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
+                {
+                    Debug.WriteLine("LoadingTaskMonitor STOP.");
+                }
+                else
+                {
+                    Debug.WriteLine("LoadingTaskMonitor Continue.");                    
+                }
             }
         }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
         .AddTo(ref db);
@@ -265,16 +310,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     ItemsRepeater? GetCurrentItemsRepeater() => ItemsSwitchPresenter.Content as ItemsRepeater;
 
 
-    bool _isVisibleRangeUpdated;
     ObservableCollection<IStorageItemViewModel> _priorityLoadPendingItems = [];
     ObservableCollection<IStorageItemViewModel> _loadPendingItems = [];
-
-    double _lastVerticalOffset;
-    void UpdateVisibleRangeItemInitialize()
+    
+    double _lastVerticalOffset;    
+    void UpdateVisibleRangeItemInitialize(CancellationToken ct)
     {
-        //Debug.WriteLine("LoadingTaskMonitor UpdateVisibleRangeItemInitialize.");
-        if (GetCurrentItemsRepeater() is not { } itemRepeater) { return; }
-
+        if (ct.IsCancellationRequested) { return; }
+        var time = TimeProvider.System.GetTimestamp();
         var sv = ItemsScrollViewer;
         Rect boundingBox = sv.ActualSize.ToSize().ToRect();
         Rect currentContentArea = boundingBox;
@@ -286,28 +329,31 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         {
             return Comparer<int>.Default.Compare(_vm.FileItemsView.IndexOf(x), _vm.FileItemsView.IndexOf(y));
         };
-
-        _priorityLoadPendingItems.Clear();
-        _loadPendingItems.Clear();
-
-        using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-        foreach (var item in items.Span)
+        
+        using var items = _realizedItems
+            .AsValueEnumerable()
+            .Where(item => item.DataContext is IStorageItemViewModel itemVM && !itemVM.IsInitialized)
+            .ToArrayPool();
+        if (ct.IsCancellationRequested) { return; }
+        foreach (var item in items.ArraySegment)
         {
-            if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }
-            if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
-
+            var itemVM = (item.DataContext as IStorageItemViewModel)!;
             var t = item.TransformToVisual(FileItemsContainer);
             var pos = t.TransformPoint(scrollPos);
             if (currentContentArea.Contains(pos))
-            {
+            {                
                 _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+                _loadPendingItems.Remove(itemVM);
             }
-            else
+            else 
             {
                 _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+                _priorityLoadPendingItems.Remove(itemVM);
             }
+            if (ct.IsCancellationRequested) { return; }
         }
-        _isVisibleRangeUpdated = true;
+
+        Debug.WriteLine($"UpdateVisibleRangeItemInitialize Complete: {TimeProvider.System.GetElapsedTime(time)}");
     }
 
     #endregion
@@ -316,15 +362,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region 初期フォーカス設定
 
     CancellationTokenSource? _navigationCts;
-    CancellationToken _navigationCt;
+    CancellationToken _navigationCt;    
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _messenger.Unregister<StartMultiSelectionMessage>(this);
 
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-
+        StopLoadingTaskMonitor();
         ClearSelection();
 
         base.OnNavigatingFrom(e);
@@ -338,8 +381,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
         async Task d()
         {
-            _navigationCts = new CancellationTokenSource();
-            var ct = _navigationCt = _navigationCts.Token;
+            var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
 
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
             await _vm.ObservePropertyChanged(x => x.NowProcessing)
@@ -352,8 +394,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .Take(1)
                 .WaitAsync(ct);
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
-
-            StartLoadingTaskMonitor(ct);
 
             _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
             {
@@ -374,19 +414,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 if (e.NavigationMode == NavigationMode.New)
                 {
                     await ResetScrollPosition(ct);
-
-                    if (_focusHelper.IsRequireSetFocus())
-                    {
-                        var firstItem = await WaitTargetIndexItemLoadingAsync(0, ct);
-                        if (firstItem != null)
-                        {
-                            (firstItem as Control)?.Focus(FocusState.Keyboard);
-                        }
-                        else
-                        {
-                            //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
-                        }
-                    }
                 }
                 else
                 {
@@ -395,9 +422,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             catch (OperationCanceledException) { }
 
-            UpdateVisibleRangeItemInitialize();
             InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
+            StartLoadingTaskMonitor(ct);
+            UpdateVisibleRangeItemInitialize(ct);
         }
     }
 
@@ -435,12 +463,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
 
-    async Task ResetScrollPosition(CancellationToken ct)
+    async ValueTask ResetScrollPosition(CancellationToken ct)
     {
-        var lastIntractItem = await WaitTargetIndexItemLoadingAsync(0, ct);
         ItemsScrollViewer.ChangeView(null, 0.0, null, disableAnimation: true);
-
-        if (_focusHelper.IsRequireSetFocus() && lastIntractItem is Control control)
+        if (_focusHelper.IsRequireSetFocus() && await WaitTargetIndexItemLoadingAsync(0, ct) is Control control)
         {
             control.Focus(FocusState.Keyboard);
         }

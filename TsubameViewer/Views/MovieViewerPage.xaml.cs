@@ -38,6 +38,7 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Behaviors;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
+using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -128,7 +129,7 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
                 CanvasDevice.GetSharedDevice(),
                 1,
                 1,
-                DisplayInformation.GetForCurrentView().LogicalDpi);
+                96);
     }
 
     bool _isDisposed;
@@ -162,7 +163,7 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
     public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
     {
         if (_canvasBitmap == null)
-        {
+        {            
             using (var sample = await _frameGrabber.ExtractVideoFrameAsync(time).AsTask(ct))
             {
                 float imageWidth;
@@ -193,11 +194,12 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
         if (_canvasBitmap == null)
         {
             _canvasBitmap = CanvasBitmap.CreateFromBytes(
-                CanvasDevice.GetSharedDevice(),
+                _source,
                 frame.PixelData,
                 (int)_frameGrabber.DecodePixelWidth,
                 (int)_frameGrabber.DecodePixelHeight,
-                DirectXPixelFormat.B8G8R8A8UIntNormalized);
+                DirectXPixelFormat.B8G8R8A8UIntNormalized,
+                96);
         }
         else
         {
@@ -403,6 +405,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Unloaded += MovieViewerPage_Unloaded;
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
+        _coreAppView = CoreApplication.GetCurrentView();
     }
 
     DirectConnectedAnimationConfiguration _animConfig = new();
@@ -638,6 +641,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 bool nowFailed = false;
                 try
                 {
+                    s._vm.PageSettings.VideoFrameThumbnailSize = 240;
                     var ffmepgExt = await FFmpegFrameGrabberFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
                     codecName = ffmepgExt.CodecName;
                     var status = s._thumbanilManager.GetThumbanilGenerationStatusIfProgressAsFailed(ffmepgExt.CodecName, out nowFailed);
@@ -749,7 +753,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                 s._playbackResources = db;
 
-                if (x != null)
+                if (s.IsDisplayControlUI)
                 {
                     mouseHideTimer.Start();                    
                 }
@@ -849,7 +853,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     });
             })
             .AddTo(ref db);
-
+        
         _vm.PageSettings.ObservePropertyChanged(x => x.IsFFmpegUseFirstToMediaSourceFactory, false)
             .Subscribe(this, static (x, s) => 
             {
@@ -905,7 +909,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     _this.IsDisplayControlUI = true;
                     timer.Start();
-                }                                
+                }                
+                
+                if (insideControlUIRp.CurrentValue)
+                {
+                    timer.Stop();
+                }
             })
             .AddTo(ref db);        
 
@@ -941,12 +950,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                     return; 
-                }
-                if (s._lastPointerDeviceType == PointerDeviceType.Touch)
-                {
-                    s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
-                    return; 
-                }
+                }                
 
                 using CancellationTokenSource timeoutCts = new CancellationTokenSource(5000);
                 using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, ct);
@@ -1547,44 +1551,66 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         //MediaPlayer.PlaybackSession.Position = ts;
         //_audioPlayer.PlaybackSession.Position = ts;
     }
+    private readonly CoreApplicationView _coreAppView;
 
-
-    void RefreshSeekbarThumbnailContainerPosition(Vector2 pos)
-    {
-        var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
-        var offset = ts.TransformPoint(new Point()).ToVector2();
-        var posRatio = pos.X / VideoPositionSlider.ActualWidth;
-        var videoPos = VideoDuration * posRatio;
-        var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
-
-        if (SeekbarFrameTime == videoPosAligned) { return; }
-
-        MovieSeekbarTooltipContainerTransform.TranslateX = pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f;
-        MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight;
-
-        MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-        if (_videoPositionsliderPointerPressed)
-        {
-            _videoPositionChangingFromCode = true;
-            MediaPlayer.PlaybackSession.Position = videoPos;
-            _audioPlayer.PlaybackSession.Position = videoPos;
-            VideoPosition = videoPos;
-        }
-
-        SeekbarFrameTime = videoPosAligned;
-        _lastPointerPosition = pos;
-    }
 
     IFrameExtracter? _frameGrabber;
     private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
-            && IsDisplayControlUI)
-        {
+        if (MediaPlayer.Source == null) { return; }
+        if ((args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
+            || _videoPositionsliderPointerPressed)
+                && IsDisplayControlUI
+                && !IsFlyoutOpen)
+        {            
             _mouseCursorAutoHideTimer?.Stop();
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
 
-            RefreshSeekbarThumbnailContainerPosition(pos);
+            var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+            var offset = ts.TransformPoint(new Point()).ToVector2();
+            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+            var videoPos = VideoDuration * posRatio;
+            var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+            if (SeekbarFrameTime != videoPosAligned 
+                && MovieSeekbarTooltipContainer.ActualWidth != 0)
+            {
+                var halfContainerWidth = MovieSeekbarTooltipContainer.ActualWidth * 0.5;
+                var clampedPosX = Math.Clamp(pos.X - offset.X,
+                    halfContainerWidth + 8,
+                    ImageSelectorContainer.ActualWidth - halfContainerWidth - 8);
+                MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
+                MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
+
+                if (_videoPositionsliderPointerPressed
+                    && _lastPointerDeviceType != PointerDeviceType.Touch)
+                {
+                    _videoPositionChangingFromCode = true;
+                    MediaPlayer.PlaybackSession.Position = videoPos;
+                    _audioPlayer.PlaybackSession.Position = videoPos;
+                    VideoPosition = videoPos;
+                }
+
+                SeekbarFrameTime = videoPosAligned;
+                _lastPointerPosition = pos;
+            }
+
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+            if (!_videoPositionsliderPointerPressed)
+            {
+                MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+            }
+            else if (_lastPointerDeviceType == PointerDeviceType.Touch)
+            {
+                if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
+                {
+                    MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                }
+            }
         }
         else
         {
@@ -1601,7 +1627,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     PointerDeviceType _lastPointerDeviceType;
     void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos))
+        if (MediaPlayer.Source == null) { return; }
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos)
+            && !IsFlyoutOpen)
         {
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
@@ -1610,8 +1638,41 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _audioPlayer.Pause();
             _videoPositionsliderPointerPressed = true;
 
-            RefreshSeekbarThumbnailContainerPosition(pos);
-            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+            var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+            var offset = ts.TransformPoint(new Point()).ToVector2();
+            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+            var videoPos = VideoDuration * posRatio;
+            var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+            var halfContainerWidth = MovieSeekbarTooltipContainer.ActualWidth * 0.5;
+            var clampedPosX = Math.Clamp(pos.X - offset.X,
+                halfContainerWidth,
+                ImageSelectorContainer.ActualWidth - halfContainerWidth);
+            MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
+            MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
+
+            if (_videoPositionsliderPointerPressed
+                && _lastPointerDeviceType != PointerDeviceType.Touch)
+            {
+                _videoPositionChangingFromCode = true;
+                MediaPlayer.PlaybackSession.Position = videoPos;
+                _audioPlayer.PlaybackSession.Position = videoPos;
+                VideoPosition = videoPos;
+            }
+
+            SeekbarFrameTime = videoPosAligned;
+            _lastPointerPosition = pos;
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;   
+            
+            if (_lastPointerDeviceType != PointerDeviceType.Touch)
+            {
+                MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+
+            }
         }
         else
         {
@@ -1621,23 +1682,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
-        {
-            if (_prevPlaying)
-            {
-                _prevPlaying = false;
-                MediaPlayer.Play();
-                _audioPlayer.Play();
-            }
-            else
-            {
-                // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
-                //MediaPlayer.StepBackwardOneFrame();
-                MediaPlayer.StepForwardOneFrame();
-                _audioPlayer.PlaybackSession.Position += _oneFrameTime;                
-            }
+        if (MediaPlayer.Source == null) { return; }
 
-            if (_videoPositionsliderPointerPressed)
+        if (_videoPositionsliderPointerPressed)
+        {
+            if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
             {
                 var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
                 var offset = ts.TransformPoint(new Point()).ToVector2();
@@ -1649,10 +1698,36 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 MediaPlayer.PlaybackSession.Position = videoPos;
                 _audioPlayer.PlaybackSession.Position = videoPos;
                 VideoPosition = videoPos;
+
+                if (_lastPointerDeviceType != PointerDeviceType.Touch)
+                {
+                    MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+            }
+
+            if (_prevPlaying)
+            {
+                _prevPlaying = false;
+                MediaPlayer.Play();
+                _audioPlayer.Play();
+            }
+            else
+            {
+                // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
+                //MediaPlayer.StepBackwardOneFrame();
+                MediaPlayer.StepForwardOneFrame();
+                _audioPlayer.PlaybackSession.Position += _oneFrameTime;
             }
         }
 
-        MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
         _videoPositionsliderPointerPressed = false;
     }
 

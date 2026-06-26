@@ -107,7 +107,8 @@ PdfImageThresholdWidth = Seuil de largeur alternative
 PdfImageAlternateWidth = Valeur de largeur alternative
 PdfImageThresholdHeight = Seuil de hauteur alternatif
 PdfImageAlternateHeight = Valeur de hauteur alternative
-
+IsInPageSearchWithMigemo = Recherche de japonais utilisant des lettres romaines
+IsInPageSearchWithMigemo_Desc = Cette fonctionnalité s'applique lorsque vous affinez votre recherche au sein d'une page. Vous pouvez effectuer une recherche en saisissant en romaji la prononciation des mots japonais figurant dans le nom du fichier. Par exemple, vous pouvez affiner votre recherche en saisissant « saku » pour le mot « 桜 ». Cette fonctionnalité utilise migemo (et csmigemo).
 
 #### SourceStorageItemsPage
 Folders = Dossier
@@ -159,8 +160,12 @@ StorageItemSettings_ReadingFinishedThresholdForImageViewer = Seuil de détermina
 StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Seuil de détermination de la fin de lecture pour la visionneuse de romans
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermination de la fin de lecture pour la visionneuse de vidéos
 ListupPage_DetectContentsChanged = Le contenu a été modifié. Vous pouvez actualiser la page.
-
-
+ThumbnailDecodeMethod = Comment décoder les images miniatures
+ThumbnailDecodeMethod_Desc = Vous pouvez spécifier la méthode de décodage d'image. Si le nombre de cœurs du processeur est inférieur ou égal à deux, Win2D (GPU) est utilisé par défaut.
+ThumbnailDecodeMethod.Skia = Skia(CPU)
+ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
+ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
+FolderItemThumbnailQuality = qualité de l'image miniature
 
 #### History Page
 HistoryPage_Title = Histoire

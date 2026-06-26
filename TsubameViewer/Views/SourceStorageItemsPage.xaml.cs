@@ -117,7 +117,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
         {
-            var itemVM = _vm.Folders.FirstOrDefault(x => x.Path.Equals(m.Value, StringComparison.Ordinal));
+            var itemVM = _vm.Folders.Skip(1).FirstOrDefault(x => x.Path.Equals(m.Value, StringComparison.Ordinal));
             itemVM?.UpdateLastReadPosition();
         });
     }

@@ -165,7 +165,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _status = LoadingStatus.PendingLoad;
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -174,7 +174,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                 _status = LoadingStatus.NowLoading;
                 await EnsureStorageItemAsync(ct);
                 Guard.IsNotNull(Item);
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
+                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -435,7 +435,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
-
+    readonly static Core.AsyncLock _imageLoadingLock = new();
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
         return new ValueTask();
@@ -459,7 +459,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         _status = LoadingStatus.PendingLoad;
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -468,7 +468,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                 _status = LoadingStatus.NowLoading;
                 await EnsureStorageItemAsync(ct);
                 Guard.IsNotNull(Item);
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
+                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -476,8 +476,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = bitmapImage;
+                    using (await _imageLoadingLock.LockAsync(ct))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = bitmapImage;
+                    }
                 }
 
                 // Note: 20msぐらい掛かるのでInitializeで実行

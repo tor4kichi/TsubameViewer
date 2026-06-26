@@ -22,7 +22,10 @@ public sealed class FavoriteAlbam
         else
         {
             var albam = albamRepository.GetAlbam(FavoriteAlbamId);
-            albamRepository.UpdateAlbam(albam with { Name = favoriteAlbamTitle });
+            if (!albam.Name.Equals(favoriteAlbamTitle))
+            {
+                albamRepository.UpdateAlbam(albam with { Name = favoriteAlbamTitle });
+            }
         }
     }
 

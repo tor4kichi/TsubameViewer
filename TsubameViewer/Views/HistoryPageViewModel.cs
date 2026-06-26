@@ -10,12 +10,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -31,6 +33,8 @@ public sealed partial class HistoryPageViewModel
 {
     [ObservableProperty]
     string _filterText = "";
+
+    Regex? _migemoQueryRegex;
 
     public void Receive(ImageSourceFavoriteChanged message)
     {
@@ -52,6 +56,7 @@ public sealed partial class HistoryPageViewModel
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly AlbamRepository _albamRepository;
     readonly ThumbnailImageManager _thumbnailManager;
+    private readonly FolderListingSettings _folderListingSettings;
 
     public ObservableCollection<StorageItemViewModel> RecentlyItems { get; } = [];
 
@@ -63,11 +68,10 @@ public sealed partial class HistoryPageViewModel
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LastIntractItemRepository folderLastIntractItemManager,
         RecentlyAccessRepository recentlyAccessRepository,
-
         LocalBookmarkRepository bookmarkManager,
         AlbamRepository albamRepository,
         ThumbnailImageManager thumbnailManager,
-
+        FolderListingSettings folderListingSettings,
         OpenFolderItemCommand openFolderItemCommand
         )
     {
@@ -78,10 +82,18 @@ public sealed partial class HistoryPageViewModel
         _bookmarkManager = bookmarkManager;
         _albamRepository = albamRepository;
         _thumbnailManager = thumbnailManager;
+        _folderListingSettings = folderListingSettings;
         OpenFolderItemCommand = openFolderItemCommand;
 
         FilteredItems = new (RecentlyItems, itemVM => itemVM.Path);
-        FilteredItems.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel).Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        FilteredItems.Filter = s =>
+        {
+            if (s is not IStorageItemViewModel itemVM) { return true; }            
+            if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
+            if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
+            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
+        };
     }
 
     [ObservableProperty]
@@ -148,8 +160,23 @@ public sealed partial class HistoryPageViewModel
 
             DisposableBuilder db = new();
             this.ObservePropertyChanged(x => x.FilterText, false)
-                .Debounce(TimeSpan.FromMilliseconds(500))
-                .Subscribe(_ => FilteredItems.RefreshFilter())
+                .Debounce(TimeSpan.FromSeconds(0.25))
+                .Subscribe(_ =>
+                {
+                    if (_folderListingSettings.IsInPageSearchWithMigemo)
+                    {
+                        try
+                        {
+                            _migemoQueryRegex = MigemoService.Query(_filterText);
+                        }
+                        catch
+                        {
+                            _migemoQueryRegex = null;
+                        }
+                    }
+                    else { _migemoQueryRegex = null; }
+                    FilteredItems.RefreshFilter();
+                })
                 .AddTo(ref db);
 
             db.Build().RegisterTo(ct);

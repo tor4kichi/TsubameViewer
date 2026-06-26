@@ -65,7 +65,7 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
             if (itemVM != null)
             {
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
-                if (image.FindDescendant<Image>() is UIElement target)
+                if (image?.FindDescendant<Image>() is UIElement target)
                 {
                     m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {

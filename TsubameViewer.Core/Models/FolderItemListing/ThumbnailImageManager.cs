@@ -46,6 +46,7 @@ using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.System;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
 
@@ -164,14 +165,14 @@ public sealed class ThumbnailImageManager
         {
             // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
             var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Width / decoder.PixelWidth;
-            encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio);
-            encoder.BitmapTransform.ScaledWidth = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Width;
+            encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio * _folderListingSettings.FolderItemThumbnailQuality);
+            encoder.BitmapTransform.ScaledWidth = (uint)(_folderListingSettings.FolderItemThumbnailImageSize.Width * _folderListingSettings.FolderItemThumbnailQuality);
         }
         else
         {
             var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Height / decoder.PixelHeight;
-            encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
-            encoder.BitmapTransform.ScaledHeight = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Height;
+            encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio * _folderListingSettings.FolderItemThumbnailQuality);
+            encoder.BitmapTransform.ScaledHeight = (uint)(_folderListingSettings.FolderItemThumbnailImageSize.Height * _folderListingSettings.FolderItemThumbnailQuality);
         }
         //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Height = encoder.BitmapTransform.ScaledHeight, Width = encoder.BitmapTransform.ScaledWidth };
         encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
@@ -180,16 +181,16 @@ public sealed class ThumbnailImageManager
     private void EncodingForImageFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
     {
         // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
-        var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / decoder.PixelHeight;
-        encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
-        encoder.BitmapTransform.ScaledHeight = ListingImageConstants.LargeFileThumbnailImageHeight;
+        var ratio = (double)_folderListingSettings.FolderItemThumbnailImageSize.Height / decoder.PixelHeight;
+        encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio * _folderListingSettings.FolderItemThumbnailQuality);
+        encoder.BitmapTransform.ScaledHeight = (uint)(_folderListingSettings.FolderItemThumbnailImageSize.Height * _folderListingSettings.FolderItemThumbnailQuality);
         encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
     }
 
     private SizeF CulcThumbnailSize(int width, int height)
     {
-        var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / height;
-        return new (MathF.Floor(width * (float)ratio), ListingImageConstants.LargeFileThumbnailImageHeight);
+        var ratio = (double)_folderListingSettings.FolderItemThumbnailImageSize.Height / height;
+        return new (MathF.Floor(width * (float)ratio * _folderListingSettings.FolderItemThumbnailQuality), (float)_folderListingSettings.FolderItemThumbnailImageSize.Height * _folderListingSettings.FolderItemThumbnailQuality);
     }
 
     class ThumbnailItemIdEntry
@@ -959,6 +960,12 @@ public sealed class ThumbnailImageManager
             {
                 using (var inputStream = await streamOpener())
                 {
+                    var imageInfo = SKBitmap.DecodeBounds(inputStream);
+                    if (imageInfo != SKImageInfo.Empty)
+                    {
+                        SetThumbnailSize(path, imageInfo);
+                    }
+
                     inputStream.CopyTo(outputStream);
                 }
             }
@@ -966,7 +973,18 @@ public sealed class ThumbnailImageManager
             {
                 using (var inputStream = await streamOpener())
                 {
-                    await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
+                    {
+                        await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    }
+                    else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
+                    {
+                        await TranscodeWindowsImageCodecAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    }
+                    else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
+                    {
+                        await TranscodeWithWin2DAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    }
                 }
             }
         }
@@ -976,8 +994,15 @@ public sealed class ThumbnailImageManager
             using (var inputStream = await streamOpener())
             {                
                 await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream.AsOutputStream());
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                await TranscodeAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                memoryStream.Seek(0, SeekOrigin.Begin);                
+                if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.WindowsImageCodec)
+                {
+                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+                else
+                {
+                    await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
             }
         }
 
@@ -989,11 +1014,27 @@ public sealed class ThumbnailImageManager
         {
             if (path.EndsWith(".gif"))
             {
+                var imageInfo = SKBitmap.DecodeBounds(stream);
+                if (imageInfo != SKImageInfo.Empty)
+                {
+                    SetThumbnailSize(path, imageInfo);
+                }
                 stream.CopyTo(outputStream);
             }
             else
-            {
-                await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            {                
+                if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
+                {
+                    await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct); 
+                }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
+                {
+                    await TranscodeWindowsImageCodecAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
+                {
+                    await TranscodeWithWin2DAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
             }
         }
         catch
@@ -1003,7 +1044,14 @@ public sealed class ThumbnailImageManager
             {
                 await RandomAccessStream.CopyAsync(stream.AsInputStream(), memoryStream.AsOutputStream());
                 memoryStream.Seek(0, SeekOrigin.Begin);
-                await TranscodeAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.WindowsImageCodec)
+                {
+                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+                else
+                {
+                    await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
             }
         }
     }
@@ -1020,7 +1068,7 @@ public sealed class ThumbnailImageManager
         var scaledSize = CulcThumbnailSize(bitmap.Width, bitmap.Height);
 
         // SkiaSharpでリサイズ
-        using var resizedBitmap = bitmap.Resize(new SKImageInfo((int)scaledSize.Width, (int)scaledSize.Height), SKFilterQuality.Medium);
+        using var resizedBitmap = bitmap.Resize(new SKImageInfo((int)scaledSize.Width, (int)scaledSize.Height), SKFilterQuality.High);
 
         if (resizedBitmap == null)
             throw new Exception("SkiaSharp resize failed.");
@@ -1046,7 +1094,7 @@ public sealed class ThumbnailImageManager
     }
 
 
-    async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    async Task TranscodeWindowsImageCodecAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850            
 
@@ -1089,7 +1137,7 @@ public sealed class ThumbnailImageManager
         }        
     }
 
-    async Task TranscodeWithGPUAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    async Task TranscodeWithWin2DAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
         {
@@ -1103,7 +1151,7 @@ public sealed class ThumbnailImageManager
                     : scaledSize.Height / (float)bitmap.Size.Height;
                 ds.Transform = Matrix3x2.CreateScale(ratio);
                 ds.Blend = CanvasBlend.Copy;
-                ds.Antialiasing = CanvasAntialiasing.Aliased;
+                ds.Antialiasing = CanvasAntialiasing.Antialiased;
                 ds.DrawImage(bitmap);
             }
 
@@ -1266,15 +1314,13 @@ public sealed class ThumbnailImageManager
 
         try
         {
-            var videoProps = await file.Properties.GetVideoPropertiesAsync();
-
             var clip = await MediaClip.CreateFromFileAsync(file);
             var mc = new MediaComposition();
             mc.Clips.Add(clip);
 
             await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
             {
-                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)videoProps.Width, (int)videoProps.Height, VideoFramePrecision.NearestFrame)).AsStreamForRead();
+                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)requestedSize, 0, VideoFramePrecision.NearestFrame)).AsStreamForRead();
             }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
         }
@@ -1372,6 +1418,25 @@ public sealed class ThumbnailImageManager
             RatioWH = item.RatioWH,
         };
     }
+
+    private ThumbnailSize SetThumbnailSize(string path, SKImageInfo imageInfo)
+    {
+        var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+        {
+            Path = ToId(path),
+            ImageHeight = (uint)imageInfo.Height,
+            ImageWidth = (uint)imageInfo.Width,
+            RatioWH = imageInfo.Width / (float)imageInfo.Height
+        });
+
+        return new ThumbnailSize()
+        {
+            Height = item.ImageHeight,
+            Width = item.ImageWidth,
+            RatioWH = item.RatioWH,
+        };
+    }
+
 
     public class ThumbnailImageInfo
     {

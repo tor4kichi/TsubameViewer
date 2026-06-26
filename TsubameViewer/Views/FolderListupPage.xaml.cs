@@ -8,6 +8,7 @@ using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Uwp.UI;
 using R3;
 using R3.Extensions;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,6 +24,7 @@ using System.Windows.Input;
 using System.Xml.Linq;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -77,12 +79,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        // Note: GetCancellationTokenOnUnloadedは使わない
-        // 　Unlaodedは次ページのナビゲーション後に呼ばれてしまい
-        // 　前ページのアイテム読み込みが残るケースが出ていた
-        var ct = this.GetCancellationTokenOnNavigatingFrom();
-        _navigationCt = ct;
-
         ContentViewTypeSelector.SelectedIndex = 0;
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
@@ -107,12 +103,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.Value, StringComparison.Ordinal) ?? false);
             itemVM?.UpdateLastReadPosition();
         });
-
-        DisposableBuilder db = new();
-        HandleCreateFolderDialogTextChanging(ref db);        
-        db.Build().RegisterTo(ct);
-        InitializeMoveToFolders(ct).FireAndForgetSafe();
-    }
+    }    
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
@@ -126,7 +117,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         if (selector.IsLoaded && selector.SelectedIndex == 1 && _vm?.CurrentFolderItem != null)
         {
             _messenger.Send(new NavigationRequestMessage(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item)) { TransitionInfo = new SuppressNavigationTransitionInfo() });
-            _vm.SetDefaultListupMode();
+            _vm?.SetDefaultListupMode();
         }
     }
 
@@ -134,6 +125,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
 
+    ObservableCollection<IStorageItemViewModel> _realizedItems = [];
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
@@ -141,50 +133,61 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         {
             if (args.Item is IStorageItemViewModel itemVM)
             {
-                // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                await itemVM.InitializeAsync(_navigationCt);
-                if (itemVM.Item != null)
+                if (!args.InRecycleQueue)
                 {
-                    var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
-                    if (size.Y == 0)
+                    _realizedItems.Add(itemVM);
+
+                    // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
+                    // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
+                    if (!itemVM.IsInitialized)
                     {
-                        size = new Vector2(120, 200);
-                    }
-                    ToolTipService.SetToolTip(args.ItemContainer,
-                        new ToolTip()
+                        await itemVM.ObservePropertyChanged(x => x.IsInitialized)
+                            .Take(1)
+                            .WaitAsync(_navigationCt);
+                        if (itemVM.Item != null)
                         {
-                            Content = new TextBlock()
+                            var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                            if (size.Y == 0)
                             {
-                                Text = itemVM.Name,
-                                TextWrapping = TextWrapping.Wrap
-                            },
-                            PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                            Placement = PlacementMode.Bottom
-                        });
+                                size = new Vector2(120, 200);
+                            }
+                            ToolTipService.SetToolTip(args.ItemContainer,
+                                new ToolTip()
+                                {
+                                    Content = new TextBlock()
+                                    {
+                                        Text = itemVM.Name,
+                                        TextWrapping = TextWrapping.Wrap
+                                    },
+                                    PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
+                                    Placement = PlacementMode.Bottom
+                                });
+                        }
+                    }
+                }
+                else
+                {
+                    _realizedItems.Remove(itemVM);
                 }
             }
+            
         }
     }
 
-    CancellationTokenSource? _navigationCts;
     CancellationToken _navigationCt;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        if (_navigationCts != null)
-        {
-            _navigationCts.Cancel();
-            _navigationCts.Dispose();
-        }
-
-        if (_vm.DisplayCurrentPath != null) 
+        if (_vm.DisplayCurrentPath is { } path) 
         {
             try
             {
-                var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-                var ratio = sv.VerticalOffset / sv.ScrollableHeight;
-                _pathToLastScrollPosition[_vm.DisplayCurrentPath] = ratio;
-
-                Debug.WriteLine(ratio);
+                if (e.NavigationMode is NavigationMode.New or NavigationMode.Forward or NavigationMode.Back)
+                {
+                    var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
+                    var ratio = sv.VerticalOffset / sv.ScrollableHeight;
+                    _pathToLastScrollPosition[HashHelper.CalculateFNV1a64(path)] = ratio;
+                    Debug.WriteLine($"_pathToLastScrollPosition[{path}] = {ratio:%}");
+                }
             }
             catch (Exception ex)
             {
@@ -194,56 +197,95 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         base.OnNavigatingFrom(e);
     }
-    #region 初期フォーカス設定
 
-
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        _navigationCts = new CancellationTokenSource();
-        var ct = _navigationCt = _navigationCts.Token;
-        
-        d().FireAndForgetSafe();
-        async Task d()
+        var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        ConnectedAnimationService.GetForCurrentView()
+                    .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
+        d(e, ct).FireAndForgetSafe();
+        async Task d(NavigationEventArgs e, CancellationToken ct)
         {
-            ConnectedAnimationService.GetForCurrentView()
-                        .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
-
             base.OnNavigatedTo(e);
 
-            if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
-            {
-                if (_focusHelper.IsRequireSetFocus())
+            
+            DisposableBuilder db = new();
+            HandleCreateFolderDialogTextChanging(ref db);
+            InitializeMoveToFolders(ct).FireAndForgetSafe();
+            _realizedItems.ObserveAddChanged().ToObservable()
+                .SubscribeAwait(async (itemVM, ct) =>
                 {
-                    await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
-                    var firstItem = FoldersAdaptiveGridView.Items.First();
-                    if (firstItem is not null)
+                    if (!itemVM.IsInitialized)
                     {
-                        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
-                        Control? itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                        if (itemContainer != null)
-                        {
-                            await Task.Delay(50);
-                            itemContainer.Focus(FocusState.Keyboard);
-                        }
+                        // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
+                        await itemVM.InitializeAsync(ct);
                     }
-                    else
-                    {
-                        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
-                    }
-                }
-            }
-            else
+                }, AwaitOperation.Parallel, maxConcurrent: 8)
+                .AddTo(ref db);
+            db.Build().RegisterTo(ct);
+
+            await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
+            var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
+            if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
             {
-                await BringIntoViewLastIntractItem(ct);
+                _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
+                    .Where(x => x != null)
+                    .Take(1)
+                    .Timeout(TimeSpan.FromSeconds(3))
+                    .SubscribeAwait((FoldersAdaptiveGridView, _vm.FileItemsView), async (x, s, ct) => 
+                    {
+                        var (listView, items) = s;
+                        if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
+                        {
+                            await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
+                            bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
+                            Debug.WriteLine($"Restore ScrollPosition: {ratio:%}");
+                            //await Task.Delay(50, ct);
+                            //if (_vm.GetLastIntractItem() is { } lastItem
+                            //    && listView.ContainerFromItem(lastItem) is Control itemContainer)
+                            //{
+                            //    itemContainer.Focus(FocusState.Keyboard);
+                            //}
+                        }
+                        else
+                        {
+                            bool result = sv.ChangeView(null, 0, null, true);
+                        }
+                    });                
             }
+            else 
+            {
+                bool result = sv.ChangeView(null, 0, null, true);
+
+                //if (_focusHelper.IsRequireSetFocus())
+                //{
+                //    await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
+                //    var firstItem = FoldersAdaptiveGridView.Items.First();
+                //    if (firstItem is not null)
+                //    {
+                //        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
+                //        Control? itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
+                //        if (itemContainer != null)
+                //        {
+                //            await Task.Delay(50, ct);
+                //            itemContainer.Focus(FocusState.Keyboard);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                //    }
+                //}
+            }
+
+            using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
+            await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM => await itemVM.InitializeAsync(ct), maxDegreeOfParallelism: 8, ct: ct);
         }
     }
 
-    #endregion
-
     // 前回スクロール位置への復帰に対応する
     // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
-    readonly Dictionary<string, double> _pathToLastScrollPosition = new();
+    readonly static Dictionary<ulong, double> _pathToLastScrollPosition = new();
 
 
     public void DeselectItem()
@@ -271,7 +313,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             && _vm.DisplayCurrentPath != null)
         {
             var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-            if (_pathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
+            if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(_vm.DisplayCurrentPath), out double ratio) && double.IsNaN(ratio) is false)
             {
                 sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
             }

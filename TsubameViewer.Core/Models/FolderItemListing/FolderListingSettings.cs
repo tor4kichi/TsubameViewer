@@ -20,12 +20,13 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         _IsFolderGenerateThumbnailEnabled = Read(true, nameof(IsFolderGenerateThumbnailEnabled));
         _IsArchiveFileGenerateThumbnailEnabled = Read(true, nameof(IsArchiveFileGenerateThumbnailEnabled));
         _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
-
         _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
-        
         _ThumbnailPriorityTitleRegex = Read(DefaultThumbnailPriorityTitleRegexString, nameof(ThumbnailPriorityTitleRegex));
         _ShowWithIndexedFolderItemAccess = Read(true, nameof(ShowWithIndexedFolderItemAccess));
+        _isInPageSearchWithMigemo = Read(true, nameof(IsInPageSearchWithMigemo));
+        _thumbnailDecodeType = Read(ThumbnailDecodeMethod.Skia, nameof(ThumbnailDecodeType));
+        _FolderItemThumbnailQuality = Read(1f, nameof(FolderItemThumbnailQuality));
     }
 
     private FileDisplayMode _FileDisplayMode;
@@ -63,6 +64,13 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         set { SetProperty(ref _IsArchiveEntryGenerateThumbnailEnabled, value); }
     }
 
+    private float _FolderItemThumbnailQuality;
+    public float FolderItemThumbnailQuality
+    {
+        get => _FolderItemThumbnailQuality;
+        set => SetProperty(ref _FolderItemThumbnailQuality, Math.Clamp(value, 0.5f, 1.5f));
+    }
+
     private Size _FolderItemThumbnailImageSize;
     public Size FolderItemThumbnailImageSize
     {
@@ -91,4 +99,25 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         get => _ShowWithIndexedFolderItemAccess;
         set => SetProperty(ref _ShowWithIndexedFolderItemAccess, value);
     }
+
+    private bool _isInPageSearchWithMigemo;
+    public bool IsInPageSearchWithMigemo
+    {
+        get => _isInPageSearchWithMigemo;
+        set => SetProperty(ref _isInPageSearchWithMigemo, value);
+    }
+
+    private ThumbnailDecodeMethod _thumbnailDecodeType;
+    public ThumbnailDecodeMethod ThumbnailDecodeType
+    {
+        get => _thumbnailDecodeType;
+        set => SetProperty(ref _thumbnailDecodeType, value);
+    }
+}
+
+public enum ThumbnailDecodeMethod
+{
+    Skia,
+    WindowsImageCodec,
+    Win2D,
 }

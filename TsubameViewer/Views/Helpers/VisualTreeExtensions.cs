@@ -53,5 +53,14 @@ namespace TsubameViewer.Views.Helpers
                 await Task.Delay(10, ct);
             }
         }
+
+        public static async ValueTask WaitLoadedAsync<TElement>(Func<TElement> whenComplete, CancellationToken ct)
+            where TElement : FrameworkElement
+        {
+            while (whenComplete().IsLoaded != true)
+            {
+                await Task.Delay(10, ct);
+            }
+        }
     }
 }

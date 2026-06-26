@@ -12,6 +12,6 @@ public static class ListingImageConstants
     public const int MidiumFileThumbnailImageWidth = 160;
     public const int MidiumFileThumbnailImageHeight = 160;
 
-    public const int LargeFileThumbnailImageWidth = 300;
-    public const int LargeFileThumbnailImageHeight = 426;
+    public const int LargeFileThumbnailImageWidth = 224;
+    public const int LargeFileThumbnailImageHeight = 320;
 }

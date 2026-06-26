@@ -88,7 +88,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<ImageViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-
+        _coreAppView = CoreApplication.GetCurrentView();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;            
     }
@@ -197,7 +197,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
-            if (_nowPressedOnPageSlider)
+            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
             {
                 if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
                 {
@@ -214,26 +214,41 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
     private void CoreWindow_PageSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
         _nowPressedOnPageSlider = false;
+
+        if (_lastPointerDeviceType == PointerDeviceType.Touch)
+        {
+            if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos))
+            {
+                _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+            }
+            else
+            {
+                PageSelector.Value = _vm.CurrentImageIndex;
+            }
+        }
     }
 
+    readonly CoreApplicationView _coreAppView;
     Vector2 _lastPointerPosition;
     int _lastPageChangeRequestImageIndex;
     void RefreshPageSelectorTooltipContainerTranslation()
     {
-        var pos = _lastPointerPosition;
         bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
+        var pos = _lastPointerPosition;
         var ts = Window.Current.Content.TransformToVisual(PageSelector);
         var offset = ts.TransformPoint(new Point()).ToVector2();
-        var posRatio = pos.X / (PageSelector.ActualWidth - 1);
-        var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;
-        PageSelectorTooltipText.Text = (pagePos + 1).ToString();        
+        var posRatio = pos.X / (PageSelector.ActualWidth);
+        var pagePos = (int)Math.Round((_vm.ImageCount - 1) * posRatio);
+        PageSelectorTooltipText.Text = (pagePos + 1).ToString();
+        var halfContainerWidth = (float)PageSelectorTooltipContainer.ActualWidth * 0.5f;
+        float clampedPosX = (float)Math.Clamp(isRightToLeft ? - pos.X + offset.X : pos.X - offset.X,
+            halfContainerWidth  + 8,
+            (float)UIContainer.ActualWidth - (halfContainerWidth)  - 8);        
         PageSelectorTooltipContainer.Translation = new Vector3(
-            isRightToLeft
-                ? -pos.X + offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f
-                : pos.X - offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f,
-            -offset.Y - 48  - (float)PageSelectorTooltipContainer.ActualHeight,
+            clampedPosX - halfContainerWidth,
+            -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
         PageSelectorCandidateImageIndex = pagePos;
@@ -247,7 +262,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
-            if (_nowPressedOnPageSlider)
+            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
             {
                 if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
                 {
