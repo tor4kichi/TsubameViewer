@@ -185,8 +185,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
                     var ratio = sv.VerticalOffset / sv.ScrollableHeight;
-                    _pathToLastScrollPosition[HashHelper.CalculateFNV1a64(path)] = ratio;
-                    Debug.WriteLine($"_pathToLastScrollPosition[{path}] = {ratio:%}");
+                    if (!double.IsNaN(ratio) && !double.IsInfinity(ratio))
+                    {
+                        _pathToLastScrollPosition[HashHelper.CalculateFNV1a64(path)] = ratio;
+                        Debug.WriteLine($"_pathToLastScrollPosition[{path}] = {ratio:%}");
+                    }
                 }
             }
             catch (Exception ex)
