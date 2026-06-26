@@ -54,9 +54,10 @@
                                      SelectionChanged="Segmented_SelectionChanged" />-->
 
             <ListView ItemsSource="{x:Bind Items}"
-                      SelectedItem="{x:Bind SelectedItem, Mode=OneWay}"
+                      SelectedItem="{x:Bind SelectedItem, Mode=TwoWay}"
                       ItemTemplate="{StaticResource LocalizeTextTemplate}"
-                      SelectionChanged="Segmented_SelectionChanged" />
+                      SelectionChanged="Segmented_SelectionChanged"
+                      Loaded="ListView_Loaded"/>
           </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.SelectorSettingItem>
