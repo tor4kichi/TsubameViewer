@@ -960,13 +960,13 @@ public sealed class ThumbnailImageManager
             {
                 using (var inputStream = await streamOpener())
                 {
+                    inputStream.CopyTo(outputStream);
+                    inputStream.Seek(0, SeekOrigin.Begin);
                     var imageInfo = SKBitmap.DecodeBounds(inputStream);
                     if (imageInfo != SKImageInfo.Empty)
                     {
                         SetThumbnailSize(path, imageInfo);
                     }
-
-                    inputStream.CopyTo(outputStream);
                 }
             }
             else
@@ -1058,12 +1058,13 @@ public sealed class ThumbnailImageManager
         {
             if (path.EndsWith(".gif"))
             {
+                stream.CopyTo(outputStream);
+                stream.Seek(0, SeekOrigin.Begin);
                 var imageInfo = SKBitmap.DecodeBounds(stream);
                 if (imageInfo != SKImageInfo.Empty)
                 {
                     SetThumbnailSize(path, imageInfo);
                 }
-                stream.CopyTo(outputStream);
             }
             else
             {                
@@ -1223,7 +1224,7 @@ public sealed class ThumbnailImageManager
     {
         try
         {
-            using var bitmap = await CanvasBitmap.LoadAsync(_canvasDevice, stream).AsTask(ct).ConfigureAwait(false);
+            using var bitmap = await CanvasBitmap.LoadAsync(_canvasDevice, stream).AsTask(ct);
             var scaledSize = CulcThumbnailSize((int)bitmap.Size.Width, (int)bitmap.Size.Height);
             using var canvas = new CanvasRenderTarget(bitmap, (float)scaledSize.Width, (float)scaledSize.Height);
             using (var ds = canvas.CreateDrawingSession())
@@ -1247,7 +1248,7 @@ public sealed class ThumbnailImageManager
             });
 
             outputStream.SetLength(0);
-            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.8f).AsTask(ct).ConfigureAwait(false);
+            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.8f).AsTask(ct);
             outputStream.Seek(0, SeekOrigin.Begin);
         }
         catch (Exception ex) when (ex.HResult == -1072868846)
