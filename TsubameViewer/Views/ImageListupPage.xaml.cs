@@ -198,6 +198,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             int maxParallelismCount = Math.Max(1, Environment.ProcessorCount / 2);
             while (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0)
             {
+                ct.ThrowIfCancellationRequested();
+
                 var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
                 bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
                 _lastVerticalOffset = currentVerticalOffset;
@@ -211,6 +213,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                         List<ValueTask> _parallelLoadingTasks = [];
                         foreach (var item in items.ArraySegment)
                         {
+                            ct.ThrowIfCancellationRequested();
                             if (_parallelLoadingTasks.Count >= maxParallelismCount)
                             {
                                 var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
@@ -225,8 +228,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                             _priorityLoadPendingItems.Remove(item);
                         }
 
-                        await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
-                        await Task.Delay(50);
+                        await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);                        
                     }
                     catch (OperationCanceledException)
                     {
@@ -245,6 +247,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                         List<ValueTask> _parallelLoadingTasks = [];
                         foreach (var item in items.ArraySegment)
                         {
+                            ct.ThrowIfCancellationRequested();
                             if (_parallelLoadingTasks.Count >= maxParallelismCount)
                             {
                                 var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
@@ -261,7 +264,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                                 break;
                             }
 
-                            await Task.Delay(1);
+                            await Task.Delay(1, ct);
                         }
 
                         await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
@@ -332,23 +335,22 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         
         using var items = _realizedItems
             .AsValueEnumerable()
-            .Where(item => item.DataContext is IStorageItemViewModel itemVM && !itemVM.IsInitialized)
             .ToArrayPool();
+        _priorityLoadPendingItems.Clear();
+        _loadPendingItems.Clear();
         if (ct.IsCancellationRequested) { return; }
         foreach (var item in items.ArraySegment)
         {
-            var itemVM = (item.DataContext as IStorageItemViewModel)!;
+            if (item.DataContext is not IStorageItemViewModel itemVM || itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
             var t = item.TransformToVisual(FileItemsContainer);
             var pos = t.TransformPoint(scrollPos);
             if (currentContentArea.Contains(pos))
             {                
-                _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
-                _loadPendingItems.Remove(itemVM);
+                _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);                
             }
             else 
             {
-                _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
-                _priorityLoadPendingItems.Remove(itemVM);
+                _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);                
             }
             if (ct.IsCancellationRequested) { return; }
         }

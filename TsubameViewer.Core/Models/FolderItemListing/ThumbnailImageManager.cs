@@ -242,7 +242,7 @@ public sealed class ThumbnailImageManager
     }
 
     // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
-    public async Task<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
@@ -1182,7 +1182,7 @@ public sealed class ThumbnailImageManager
 
         try
         {
-            var decoder = await BitmapDecoder.CreateAsync(stream).AsTask().ConfigureAwait(false);
+            var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(ct).ConfigureAwait(false);
 
             // サムネイルサイズ情報を記録                
             _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
@@ -1193,7 +1193,7 @@ public sealed class ThumbnailImageManager
                 RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
             });
 
-            var pixelData = await decoder.GetPixelDataAsync();
+            var pixelData = await decoder.GetPixelDataAsync().AsTask(ct).ConfigureAwait(false);
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
 
@@ -1223,7 +1223,7 @@ public sealed class ThumbnailImageManager
     {
         try
         {
-            using var bitmap = await CanvasBitmap.LoadAsync(_canvasDevice, stream).AsTask(ct);
+            using var bitmap = await CanvasBitmap.LoadAsync(_canvasDevice, stream).AsTask(ct).ConfigureAwait(false);
             var scaledSize = CulcThumbnailSize((int)bitmap.Size.Width, (int)bitmap.Size.Height);
             using var canvas = new CanvasRenderTarget(bitmap, (float)scaledSize.Width, (float)scaledSize.Height);
             using (var ds = canvas.CreateDrawingSession())
@@ -1247,7 +1247,7 @@ public sealed class ThumbnailImageManager
             });
 
             outputStream.SetLength(0);
-            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.8f).AsTask(ct);
+            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.8f).AsTask(ct).ConfigureAwait(false);
             outputStream.Seek(0, SeekOrigin.Begin);
         }
         catch (Exception ex) when (ex.HResult == -1072868846)
