@@ -988,24 +988,47 @@ public sealed class ThumbnailImageManager
                 }
             }
         }
-        catch
+        catch (NotSupportedImageFormatException)
+        {
+            if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.Skia)
+            {
+                using (var inputStream = await streamOpener())
+                {
+                    await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
+            }
+            else
+            {
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+                using (var inputStream = await streamOpener())
+                {
+                    await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream.AsOutputStream());
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+            }
+        }
+        catch (NotSupportedException) // Seek不可な場合
         {
             using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             using (var inputStream = await streamOpener())
             {                
                 await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream.AsOutputStream());
-                memoryStream.Seek(0, SeekOrigin.Begin);                
-                if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.WindowsImageCodec)
-                {
-                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
-                }
-                else
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
                 {
                     await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
                 }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
+                {
+                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
+                {
+                    await TranscodeWithWin2DAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
             }
         }
-
     }
 
     private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Stream stream, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
@@ -1037,20 +1060,41 @@ public sealed class ThumbnailImageManager
                 }
             }
         }
-        catch
+        catch (NotSupportedImageFormatException)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.Skia)
+            {
+                await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            }
+            else
+            {
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+                {
+                    await RandomAccessStream.CopyAsync(stream.AsInputStream(), memoryStream.AsOutputStream());
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+            }
+        }
+        catch (NotSupportedException) // Seek不可な場合
         {
             stream.Seek(0, SeekOrigin.Begin);
             using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             {
                 await RandomAccessStream.CopyAsync(stream.AsInputStream(), memoryStream.AsOutputStream());
                 memoryStream.Seek(0, SeekOrigin.Begin);
-                if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.WindowsImageCodec)
+                if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
+                {
+                    await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
                 {
                     await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                 }
-                else
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
                 {
-                    await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    await TranscodeWithWin2DAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
                 }
             }
         }
