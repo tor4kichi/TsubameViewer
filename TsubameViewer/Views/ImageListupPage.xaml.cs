@@ -321,8 +321,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         var sv = ItemsScrollViewer;
         Rect boundingBox = sv.ActualSize.ToSize().ToRect();
         Rect currentContentArea = boundingBox;
-        currentContentArea.Y -= 720; // アイテムの高さ分を調整
-        currentContentArea.Height += 720 * 2;
+        currentContentArea.Y -= 140; // アイテムの高さ分を調整
+        currentContentArea.Height += 140 * 2;
         double expandLoadingArea = sv.ActualHeight * 2;
         Point scrollPos = new(0, -sv.VerticalOffset);
         Comparison<IStorageItemViewModel> comparisonItemVM = (x, y) =>
