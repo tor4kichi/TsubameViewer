@@ -167,15 +167,40 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         DisposableBuilder db = new();
         Debug.WriteLine("LoadingTaskMonitor START.");
 
+        R3.Observable.Merge(
+            _vm.ObservePropertyChanged(x => x.SelectedFileSortType, true).AsUnitObservable(),
+            _vm.ImageFileItems.ObservePropertyChanged(x => x.Count, false).AsUnitObservable()
+            )        
+            .Delay(TimeSpan.FromMilliseconds(50))
+            .SubscribeAwait(async (x, ct) => 
+            {
+                foreach (var i in ValueEnumerable.Range(0, 10))
+                {
+                    try
+                    {
+                        _indexMap.Clear();
+                        foreach (var itemVM in _vm.FileItemsView.Cast<IStorageItemViewModel>())
+                        {
+                            _indexMap.Add(itemVM, _vm.FileItemsView.IndexOf(itemVM));
+                        }
+                        break;
+                    }
+                    catch
+                    {
+                        await Task.Delay(100);
+                    }
+                }
+            })
+            .AddTo(ref db);
         // スクロールやアイテム追加に反応して表示範囲内の初期化対象アイテムを検出する
         R3.Observable.Merge(
+            _vm.ObservePropertyChanged(x => x.SelectedFileSortType, true).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
+            _vm.ImageFileItems.ObservePropertyChanged(x => x.Count, false).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
             _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
             ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable(),
             Observable.Empty<Unit>() // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
             )
-            .ObserveOnThreadPool()
-            .Debounce(TimeSpan.FromMilliseconds(10))
-            .ObserveOnCurrentSynchronizationContext()
+            .ThrottleFirstLast(TimeSpan.FromMilliseconds(250))
             .SubscribeAwait(async (_, ct) =>
             {
                 if (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0) { return; }
@@ -195,7 +220,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         .Debounce(TimeSpan.FromMilliseconds(10))
         .SubscribeAwait(async (_, ct) =>
         {
-            int maxParallelismCount = Math.Max(1, Environment.ProcessorCount / 2);
+            int maxParallelismCount = Math.Max(1, Environment.ProcessorCount * 2);
             while (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0)
             {
                 ct.ThrowIfCancellationRequested();
@@ -224,8 +249,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                             {
                                 break;
                             }
+
                             _parallelLoadingTasks.Add(item.InitializeAsync(ct));
-                            _priorityLoadPendingItems.Remove(item);
+                            _priorityLoadPendingItems.Remove(item);                            
                         }
 
                         await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);                        
@@ -243,6 +269,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     Debug.WriteLine("LoadingTaskMonitor Secondary.");
                     try
                     {
+                        using CancellationTokenSource manualCts = new CancellationTokenSource();
+                        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(manualCts.Token, ct);
+                        var linkedCt = linkedCts.Token;
                         using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
                         List<ValueTask> _parallelLoadingTasks = [];
                         foreach (var item in items.ArraySegment)
@@ -251,10 +280,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                             if (_parallelLoadingTasks.Count >= maxParallelismCount)
                             {
                                 var index = await ValueTaskSupplement.ValueTaskEx.WhenAny(_parallelLoadingTasks);
-                                _parallelLoadingTasks.RemoveAt(index);
+                                _parallelLoadingTasks.RemoveAt(index);                                
                             }
-                            _parallelLoadingTasks.Add(item.InitializeAsync(ct));
-                            _loadPendingItems.Remove(item);
 
                             if (_priorityLoadPendingItems.Count != 0
                                 || _lastVerticalOffset != ItemsScrollViewer.VerticalOffset)
@@ -264,7 +291,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                                 break;
                             }
 
-                            await Task.Delay(1, ct);
+                            _parallelLoadingTasks.Add(item.InitializeAsync(ct));
+                            _loadPendingItems.Remove(item);
                         }
 
                         await ValueTaskSupplement.ValueTaskEx.WhenAll(_parallelLoadingTasks);
@@ -315,7 +343,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     ObservableCollection<IStorageItemViewModel> _priorityLoadPendingItems = [];
     ObservableCollection<IStorageItemViewModel> _loadPendingItems = [];
-    
+
+    Dictionary<IStorageItemViewModel, int> _indexMap = [];
     double _lastVerticalOffset;    
     void UpdateVisibleRangeItemInitialize(CancellationToken ct)
     {
@@ -330,11 +359,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         Point scrollPos = new(0, -sv.VerticalOffset);
         Comparison<IStorageItemViewModel> comparisonItemVM = (x, y) =>
         {
-            return Comparer<int>.Default.Compare(_vm.FileItemsView.IndexOf(x), _vm.FileItemsView.IndexOf(y));
+            var xIndex = _indexMap.TryGetValue(x, out int indexX) ? indexX : _vm.FileItemsView.IndexOf(x);
+            var yIndex = _indexMap.TryGetValue(y, out int indexY) ? indexY : _vm.FileItemsView.IndexOf(y);
+            return Comparer<int>.Default.Compare(xIndex, yIndex);
         };
         
         using var items = _realizedItems
             .AsValueEnumerable()
+            .Where(item => item.DataContext is IStorageItemViewModel itemVM && !itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
             .ToArrayPool();
         _priorityLoadPendingItems.Clear();
         _loadPendingItems.Clear();

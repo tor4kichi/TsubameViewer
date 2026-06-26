@@ -979,7 +979,7 @@
                                      ItemsSource="{x:Bind _vm.FileItemsView}"
                                      ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                      DataContext="{x:Null}"
-                                     VerticalCacheLength="3"
+                                     VerticalCacheLength="4"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <uwpControls:WrapLayout Orientation="Horizontal"
@@ -994,7 +994,7 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
-                                     VerticalCacheLength="3"
+                                     VerticalCacheLength="5"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <uwpControls:WrapLayout Orientation="Horizontal"
@@ -1009,7 +1009,7 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
-                                     VerticalCacheLength="3"
+                                     VerticalCacheLength="7"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <uwpControls:WrapLayout Orientation="Horizontal"
