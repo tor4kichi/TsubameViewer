@@ -205,10 +205,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Diagnostics">
-      <Version>8.0.0</Version>
+      <Version>8.4.2</Version>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm">
-      <Version>8.0.0</Version>
+      <Version>8.4.2</Version>
     </PackageReference>
     <PackageReference Include="FFmpegInteropX">
       <Version>2.0.0</Version>
