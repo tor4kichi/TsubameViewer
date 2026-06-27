@@ -528,6 +528,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    bool IsPointerInsideWindow()
+    {
+        return Window.Current.CoreWindow.Bounds.Contains(Window.Current.CoreWindow.PointerPosition);
+    }
+
     IDisposable? _playbackResources;
     void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
@@ -555,7 +560,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside window: {x}"))
 #endif
-            .ToReadOnlyReactiveProperty(Window.Current.CoreWindow.Bounds.Contains(Window.Current.CoreWindow.PointerPosition))
+            .ToReadOnlyReactiveProperty(IsPointerInsideWindow())
             .AddTo(ref db);
 
         var insideControlUIRp = Observable.Merge(
@@ -1418,6 +1423,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     // マウスカーソルを非表示にする
     void HideMouseCursor()
     {
+        if (!IsPointerInsideWindow()) { return; }
         // 現在のウィンドウのカーソルに null を設定
         Window.Current.CoreWindow.PointerCursor = null;
     }
