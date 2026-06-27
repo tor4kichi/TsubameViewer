@@ -337,17 +337,12 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             }
             else
             {
-                if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
-                {
-                    return;
-                }
-
                 if (_vm.CanGoNext())
                 {
                     var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
                         ? EPubRenderer_2
                         : EPubRenderer_1;
-
+                    EPubRenderer_2.FirstApproachingPageIndex = 0;
                     altEPubRenderer.PrepareGoNext();
                     currentEPubRenderer.PrepareGoNext();
                     if (_vm.IsNextPageCached() is false)
@@ -375,17 +370,15 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             }
             else
             {
-                if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
-                {
-                    return;
-                }
-
                 if (_vm.CanGoPrev())
                 {
                     var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
                         ? EPubRenderer_2
                         : EPubRenderer_1;
 
+                    // EPubRenderer_2のisFirstContent挙動を踏まえて
+                    // 戻りの場合は前ファイルの最後尾ページを開くようにしたい
+                    EPubRenderer_2.FirstApproachingPageIndex = int.MaxValue;
                     altEPubRenderer.PrepareGoPreview();
                     currentEPubRenderer.PrepareGoPreview();
                     if (_vm.IsPrevPageCached() is false)
