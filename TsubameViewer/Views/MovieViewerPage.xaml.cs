@@ -555,7 +555,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside window: {x}"))
 #endif
-            .ToReadOnlyReactiveProperty(true)
+            .ToReadOnlyReactiveProperty(Window.Current.CoreWindow.Bounds.Contains(Window.Current.CoreWindow.PointerPosition))
             .AddTo(ref db);
 
         var insideControlUIRp = Observable.Merge(
