@@ -4,7 +4,7 @@
       xmlns:local="using:TsubameViewer.Views"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:tt="using:TsubameViewer.Views.TemplateSelector"
       xmlns:wst="using:WindowsStateTriggers"
       xmlns:vm="using:TsubameViewer.ViewModels"

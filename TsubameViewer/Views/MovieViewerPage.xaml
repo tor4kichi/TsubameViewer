@@ -6,12 +6,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:i="using:Microsoft.Xaml.Interactivity"
-      xmlns:core="using:Microsoft.Xaml.Interactions.Core"
       xmlns:myConv="using:TsubameViewer.Views.Converters"
-      xmlns:wst="using:Microsoft.Toolkit.Uwp.UI.Triggers"
-      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
+      xmlns:ui="using:CommunityToolkit.WinUI"
       xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
-      xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
+      xmlns:uwpUIExtensions="using:CommunityToolkit.WinUI"
       xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
       xmlns:domainModels="using:TsubameViewer.Core.Models"
       xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
@@ -19,12 +18,13 @@
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:models="using:TsubameViewer.Core.Models.FolderItemListing"
       xmlns:vm="using:TsubameViewer.ViewModels"
-      xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+      xmlns:animation="using:CommunityToolkit.WinUI.Animations"
       xmlns:fluentIcon="using:Fluent.Icons"
       xmlns:mediaProps="using:Windows.Media.MediaProperties"
       xmlns:media="using:Windows.UI.Xaml.Media"
       mc:Ignorable="d"
-      xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)">
+      xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
+      xmlns:wst="using:CommunityToolkit.WinUI">
 
   <Page.Resources>
     <Style TargetType="fluentIcon:FluentSymbolIcon">
@@ -563,7 +563,7 @@
                   IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                   KeyboardAcceleratorPlacementMode="Hidden"
                   KeyTipPlacementMode="Hidden"
-                  uwpUIExtensions:FrameworkElementExtensions.Cursor="Hand">
+                  wst:FrameworkElementExtensions.Cursor="Hand" >
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>
@@ -1026,35 +1026,52 @@
                    MaxWidth="400"
                    TextWrapping="Wrap"
                    Foreground="{ThemeResource SystemChromeWhiteColor}">
-          <uwpUIExtensions:Effects.Shadow>
-            <uwpUIExtensions:AttachedDropShadow CastTo="{x:Bind ShadowTarget}"
+          <wst:Effects.Shadow>
+            <wst:AttachedDropShadow CastTo="{x:Bind ShadowTarget}"
                                                 BlurRadius="4" 
                                                 Offset="1, 1"
                                                 Color="{ThemeResource SystemChromeBlackMediumColor}"/>
-          </uwpUIExtensions:Effects.Shadow>
+          </wst:Effects.Shadow>
         </TextBlock>
       </Grid>
     </StackPanel>
 
-    <uwpControls:InAppNotification x:Name="FrameSavedNotification"
-                                   HorizontalAlignment="Right"
-                                   VerticalAlignment="Bottom"
-                                   Margin="0 0 32 32"
-                                   >
-      <uwpControls:DockPanel>
-        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame_Saved}" 
-                   uwpControls:DockPanel.Dock="Left" VerticalAlignment="Center" 
-                   Margin="0 0 8 0"/>
-
-        <uwpControls:WrapPanel Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8">
-          <Button Content="{i18nExt:Localize Key=OpenWithExternalApplication}" 
+    <StackPanel x:Name="FrameSavedNotification"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom"
+          Margin="0 0 16 140"
+          Visibility="Collapsed"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"          
+                Spacing="8"
+                CornerRadius="8">
+      <uwpControls:DockPanel Margin="8">
+        <Button Command="{x:Bind CloseFrameSavedNotificationCommand}"
+                uwpControls:DockPanel.Dock="Right">
+          <SymbolIcon Symbol="Clear" />
+        </Button>
+        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame_Saved}"
+                   uwpControls:DockPanel.Dock="Left"                   
+                   VerticalAlignment="Center"
+                   Margin="4 0 8 0" />
+      </uwpControls:DockPanel>
+      <Image Height="140"
+             x:Name="FrameSavedImage" />
+      <uwpControls:DockPanel Background="{ThemeResource SystemChromeMediumColor}"
+                             VerticalAlignment="Bottom">
+        <uwpControls:WrapPanel Orientation="Horizontal"
+                               HorizontalSpacing="8"
+                               VerticalSpacing="8"
+                               VerticalAlignment="Bottom"
+                               Padding="8 8 0 8">
+          <Button Content="{i18nExt:Localize Key=OpenWithExternalApplication}"
                   MinWidth="80"
-                  Command="{x:Bind OpenSavedFrameImageFileCommand}"/>
-          <Button Content="{i18nExt:Localize Key=OpenWithExplorer}" MinWidth="80"
-                  Command="{x:Bind OpenSavedFrameImageFileWithExplorerCommand}"/>
+                  Command="{x:Bind OpenSavedFrameImageFileCommand}" />
+          <Button Content="{i18nExt:Localize Key=OpenWithExplorer}"
+                  MinWidth="80"
+                  Command="{x:Bind OpenSavedFrameImageFileWithExplorerCommand}" />
         </uwpControls:WrapPanel>
       </uwpControls:DockPanel>
-    </uwpControls:InAppNotification>
+    </StackPanel>
 
     <Grid x:Name="MovieSeekbarTooltipContainer" 
           Visibility="Collapsed"

@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using I18NPortable;
-using Microsoft.Toolkit.Uwp.UI.Controls;
+using CommunityToolkit.WinUI.Controls;
 using R3;
 using System;
 using System.Linq;
@@ -10,6 +10,8 @@ using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
+using CommunityToolkit.WinUI.Controls;
+using Microsoft.Toolkit.Uwp.UI.Controls;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -38,7 +40,7 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
     void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_nowSelectAllWithSearch) { return; }
-        if (sender is not  DataGrid dataGrid) { return; }
+        if (sender is not DataGrid dataGrid) { return; }
 
         foreach (var removed in e.RemovedItems.Cast<IPathRestructure>())
         {

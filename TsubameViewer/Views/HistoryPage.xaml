@@ -7,9 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
       xmlns:ts="using:TsubameViewer.Views.TemplateSelector"
-      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:i="using:Microsoft.Xaml.Interactivity"
-      xmlns:core="using:Microsoft.Xaml.Interactions.Core"
       xmlns:wst="using:WindowsStateTriggers"
       xmlns:myBehaior="using:TsubameViewer.Views.Behaviors"
       xmlns:ss="using:TsubameViewer.Views.StyleSelector"
@@ -17,6 +16,7 @@
       xmlns:myFlyouts="using:TsubameViewer.Views.Flyouts"
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
+      xmlns:msTkControls="using:CommunityToolkit.WinUI.Controls"
       Background="{ThemeResource ApplicationContentBackgroundBrush}">
 
   <Page.Resources>
@@ -72,12 +72,12 @@
             </Style>
           </AutoSuggestBox.TextBoxStyle>
           <i:Interaction.Behaviors>
-            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
-  <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-</core:EventTriggerBehavior>-->
+            <!--<i:EventTriggerBehavior EventName="QuerySubmitted">
+  <i:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+</i:EventTriggerBehavior>-->
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
                                                       IsRequireFocus="True">
-              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+              <i:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
                                      MethodName="RemoveFocusEngagement" />
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
@@ -180,7 +180,7 @@
         </StackPanel>
       </uwpControls:DockPanel>-->
 
-      <uwpControls:AdaptiveGridView x:Name="FoldersAdaptiveGridView"
+      <msTkControls:AdaptiveGridView x:Name="FoldersAdaptiveGridView"
                                     StretchContentForSingleRow="False"
                                     OneRowModeEnabled="False"
                                     ItemsSource="{x:Bind _vm.FilteredItems}"
@@ -199,7 +199,7 @@
           <TransitionCollection />
         </GridView.ItemContainerTransitions>
 
-        <uwpControls:AdaptiveGridView.Header>
+        <msTkControls:AdaptiveGridView.Header>
           <Grid Visibility="{x:Bind _vm.RecentlyItems.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}">
             <TextBlock Text="{i18nExt:Localize Key=NoItems}"
                        Style="{StaticResource SubtitleTextBlockStyle}"
@@ -208,7 +208,7 @@
                        Margin="32"
                        />
           </Grid>
-        </uwpControls:AdaptiveGridView.Header>
+        </msTkControls:AdaptiveGridView.Header>
         <!--<GridView.GroupStyle>
         <GroupStyle HidesIfEmpty="True">
           <GroupStyle.HeaderTemplate>
@@ -224,7 +224,7 @@
           </GroupStyle.HeaderContainerStyle>
         </GroupStyle>
       </GridView.GroupStyle>-->
-      </uwpControls:AdaptiveGridView>
+      </msTkControls:AdaptiveGridView>
     </uwpControls:DockPanel>
     
   </Grid>

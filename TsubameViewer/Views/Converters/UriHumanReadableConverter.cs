@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Data;
 using ZLinq;
-using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
+using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
 
 namespace TsubameViewer.Views.Converters;
 

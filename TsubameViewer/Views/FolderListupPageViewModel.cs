@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using I18NPortable;
-using Microsoft.Toolkit.Uwp.UI;
+using CommunityToolkit.WinUI;
 using R3;
 using System;
 using System.Collections.Generic;

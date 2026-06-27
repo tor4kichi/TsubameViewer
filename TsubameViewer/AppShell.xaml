@@ -6,17 +6,16 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
   xmlns:i="using:Microsoft.Xaml.Interactivity"
-  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:ts="using:TsubameViewer.Views.TemplateSelector"
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-  xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI"
+  xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
+  xmlns:uwpExtensions="using:CommunityToolkit.WinUI"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myConv="using:TsubameViewer.Views.Converters" 
   xmlns:mySS="using:TsubameViewer.Views.StyleSelector" 
   xmlns:viewModel="using:TsubameViewer.ViewModels"
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
-  xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:animations="using:CommunityToolkit.WinUI.Animations"
   xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
   xmlns:fi="using:Fluent.Icons"
              xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
@@ -211,9 +210,9 @@
       
       <i:Interaction.Behaviors>
         <!--
-        <core:EventTriggerBehavior EventName="ItemInvoked">
-          <core:InvokeCommandAction Command="{x:Bind _vm.OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
-        </core:EventTriggerBehavior>
+        <i:EventTriggerBehavior EventName="ItemInvoked">
+          <i:InvokeCommandAction Command="{x:Bind _vm.OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
+        </i:EventTriggerBehavior>
         -->
       </i:Interaction.Behaviors>
 
@@ -471,16 +470,16 @@
     <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
       <Button Content="Show BusyWall">
         <i:Interaction.Behaviors>
-          <core:EventTriggerBehavior EventName="Tapped">
-            <core:GoToStateAction StateName="VS_ShowBusyWall" />
-          </core:EventTriggerBehavior>
+          <i:EventTriggerBehavior EventName="Tapped">
+            <i:GoToStateAction StateName="VS_ShowBusyWall" />
+          </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
       </Button>
       <Button Content="Hide BusyWall">
         <i:Interaction.Behaviors>
-          <core:EventTriggerBehavior EventName="Tapped">
-            <core:GoToStateAction StateName="VS_HideBusyWall" />
-          </core:EventTriggerBehavior>
+          <i:EventTriggerBehavior EventName="Tapped">
+            <i:GoToStateAction StateName="VS_HideBusyWall" />
+          </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
       </Button>
     </StackPanel>

@@ -6,7 +6,6 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:i="using:Microsoft.Xaml.Interactivity"
-  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   mc:Ignorable="d"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   Title="TITLE"
@@ -19,9 +18,9 @@
       />
       <TextBlock Text="{i18nExt:Localize Key=DoNotDisplayFromNextTime}" VerticalAlignment="Center">
         <i:Interaction.Behaviors>
-          <core:EventTriggerBehavior EventName="Tapped">
-            <core:ChangePropertyAction TargetObject="{x:Bind DoNotDisplayFromNextTimeToggleButton}" PropertyName="IsChecked" Value="{x:Bind DoNotDisplayFromNextTimeToggleButton.IsChecked, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
-          </core:EventTriggerBehavior>
+          <i:EventTriggerBehavior EventName="Tapped">
+            <i:ChangePropertyAction TargetObject="{x:Bind DoNotDisplayFromNextTimeToggleButton}" PropertyName="IsChecked" Value="{x:Bind DoNotDisplayFromNextTimeToggleButton.IsChecked, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </i:EventTriggerBehavior>
                                      
         </i:Interaction.Behaviors>
       </TextBlock>

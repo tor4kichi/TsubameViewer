@@ -9,14 +9,14 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
-  xmlns:uwpUI="using:Microsoft.Toolkit.Uwp.UI" 
+  xmlns:uwpUI="using:CommunityToolkit.WinUI" 
   xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
   xmlns:eBookControls="using:TsubameViewer.Views.EBookControls" 
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls" 
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger" 
-  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:animation="using:CommunityToolkit.WinUI.Animations"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:epub="using:VersOne.Epub"
@@ -274,36 +274,36 @@
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseCenterClickTrigger>
-        <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
+        <i:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
 
       <myBehaviour:PointerCursolAutoHideBehavior x:Name="PointerCursolAutoHideBehavior" IsAutoHideEnabled="False" />
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
+        <i:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
+        <i:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
-        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind OpenTocPaneCommand}" />
+        <i:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind OpenTocPaneCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
@@ -534,12 +534,12 @@
         </animation:Implicit.HideAnimations>
         
         <i:Interaction.Behaviors>
-          <core:EventTriggerBehavior EventName="Tapped">
-            <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
-          </core:EventTriggerBehavior>
-          <core:DataTriggerBehavior Binding="{x:Bind _vm.CurrentImageIndex, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
-            <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
-          </core:DataTriggerBehavior>
+          <i:EventTriggerBehavior EventName="Tapped">
+            <i:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
+          </i:EventTriggerBehavior>
+          <i:DataTriggerBehavior Binding="{x:Bind _vm.CurrentImageIndex, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
+            <i:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
+          </i:DataTriggerBehavior>
 
         </i:Interaction.Behaviors>
       </Grid>
@@ -600,14 +600,14 @@
                 </ListView.ItemTemplate>
 
                 <i:Interaction.Behaviors>
-                  <core:EventTriggerBehavior EventName="Tapped">
-                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer_1}"
+                  <i:EventTriggerBehavior EventName="Tapped">
+                    <i:CallMethodAction TargetObject="{x:Bind EPubRenderer_1}"
                                            MethodName="PrepareTocSelectionChange" />
-                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer_2}"
+                    <i:CallMethodAction TargetObject="{x:Bind EPubRenderer_2}"
                                            MethodName="PrepareTocSelectionChange" />
-                    <core:CallMethodAction TargetObject="{Binding}"
+                    <i:CallMethodAction TargetObject="{Binding}"
                                            MethodName="UpdateFromCurrentTocItem" />
-                  </core:EventTriggerBehavior>
+                  </i:EventTriggerBehavior>
                 </i:Interaction.Behaviors>
 
               </ListView>

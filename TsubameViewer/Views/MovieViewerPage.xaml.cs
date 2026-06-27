@@ -8,7 +8,7 @@ using FFmpegInteropX;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
-using Microsoft.Toolkit.Uwp.UI.Animations;
+using CommunityToolkit.WinUI.Animations;
 using Microsoft.VisualBasic;
 using PDFtoImage;
 using R3;
@@ -2901,9 +2901,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }
             }
 
-            SavedVideoFrameFile = file;
-            FrameSavedNotification.ShowDismissButton = true;
-            FrameSavedNotification.Show();
+            SavedVideoFrameFile = file;            
+            FrameSavedNotification.Visibility = Visibility.Visible;
+
+            using (var fs = await file.OpenReadAsync())
+            {
+                var source = new BitmapImage();
+                await source.SetSourceAsync(fs).AsTask(ct);
+                FrameSavedImage.Source = source;
+            }
         }
         finally
         {
@@ -2913,7 +2919,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
         }
     }
-    
+
+    [RelayCommand]
+    void CloseFrameSavedNotification()
+    {
+        FrameSavedNotification.Visibility = Visibility.Collapsed;
+    }
 
     [ObservableProperty]
     StorageFile? _savedVideoFrameFile;

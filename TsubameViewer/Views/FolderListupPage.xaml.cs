@@ -3,9 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
-using Microsoft.Toolkit.Uwp.UI;
+using CommunityToolkit.WinUI;
 using R3;
 using R3.Extensions;
 using Reactive.Bindings.Extensions;
@@ -45,7 +46,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
-using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
+using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
 
 #nullable enable
 namespace TsubameViewer.Views;

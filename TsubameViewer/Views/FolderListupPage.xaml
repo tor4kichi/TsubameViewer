@@ -6,21 +6,21 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:ts="using:TsubameViewer.Views.TemplateSelector" 
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
-  xmlns:i="using:Microsoft.Xaml.Interactivity" 
-  xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
+  xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls" 
+  xmlns:i="using:Microsoft.Xaml.Interactivity"   
   xmlns:myBehaior="using:TsubameViewer.Views.Behaviors" 
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:folderModels ="using:TsubameViewer.Core.Models.FolderItemListing" 
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
-  xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
+      xmlns:tkWinUI="using:CommunityToolkit.WinUI"
+      xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"  
   xmlns:vm="using:TsubameViewer.ViewModels" 
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:models="using:TsubameViewer.Core.Models" 
   xmlns:fluentIcon="using:Fluent.Icons"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:storage="using:Windows.Storage"
+      xmlns:uwpControls1="using:CommunityToolkit.WinUI.Controls"
       mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
@@ -67,12 +67,12 @@
             </Style>
           </AutoSuggestBox.TextBoxStyle>
           <i:Interaction.Behaviors>
-            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
-              <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-            </core:EventTriggerBehavior>-->
+            <!--<i:EventTriggerBehavior EventName="QuerySubmitted">
+              <i:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+            </i:EventTriggerBehavior>-->
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
                                                       IsRequireFocus="True">
-              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+              <i:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
                                      MethodName="RemoveFocusEngagement" />
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
@@ -120,7 +120,7 @@
                     SelectionMode="Single"
                     x:Name="MoveToFolderTargetSelector"
                     Padding="0 0 0 48"
-                    uwpUIExtensions:ListViewExtensions.AlternateColor="{ThemeResource SystemBaseLowColor}"
+                    tkWinUI:ListViewExtensions.AlternateColor="{ThemeResource SystemBaseLowColor}"
                     FlowDirection="RightToLeft">
             <ListView.ItemTemplate>
               <DataTemplate x:DataType="storage:StorageFolder">
@@ -216,7 +216,7 @@
 
         <StackPanel x:Name="HeaderLayout"
                     Background="{ThemeResource ApplicationContentBackgroundBrush}"
-                    uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+                    tkWinUI:FrameworkElementExtensions.EnableActualSizeBinding="True"
                     uwpControls:DockPanel.Dock="Top"
                     HorizontalAlignment="Stretch">
           <uwpControls:DockPanel x:Name="FilesActionLayout"
@@ -224,7 +224,7 @@
 
             <StackPanel uwpControls:DockPanel.Dock="Bottom"
                         Orientation="Horizontal"
-                        Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+                        Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}">
               <TextBlock Opacity="0.7">
                 <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
               </TextBlock>
@@ -409,7 +409,7 @@
                   Opacity="0.5"></Border>
         </StackPanel>
 
-        <uwpControls:AdaptiveGridView ItemsSource="{x:Bind _vm.FileItemsView}"
+        <uwpControls1:AdaptiveGridView ItemsSource="{x:Bind _vm.FileItemsView}"
                                       x:Name="FoldersAdaptiveGridView"
                                       StretchContentForSingleRow="False"
                                       OneRowModeEnabled="False"
@@ -424,7 +424,7 @@
                                       IsMultiSelectCheckBoxEnabled="True"
                                       IsTabStop="False"
                                       ContextFlyout="{StaticResource StorageItemMenuFlyout}"
-                                      uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
+                                       tkWinUI:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
                                       XYFocusUp="{x:Bind FileSortButton}"
                                       SelectedItem="{x:Bind _vm.FolderLastIntractItem, Mode=TwoWay}"
                                       SelectionChanged="OnSelectionChanged"
@@ -450,12 +450,12 @@
           <i:Interaction.Behaviors>
             <uiNavigation:UINavigationTriggerBehavior Kind="Context1">
               <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-                <core:InvokeCommandAction Command="{x:Bind SelectionChangeCommand}" />
+                <i:InvokeCommandAction Command="{x:Bind SelectionChangeCommand}" />
               </uiNavigation:BypassToCurrentFocusElementDataContextAction>
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
 
-        </uwpControls:AdaptiveGridView>
+        </uwpControls1:AdaptiveGridView>
 
       </uwpControls:DockPanel>
 

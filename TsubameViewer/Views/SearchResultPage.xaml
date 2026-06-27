@@ -5,16 +5,17 @@
     xmlns:local="using:TsubameViewer.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:winUI="using:CommunityToolkit.WinUI"
   xmlns:ts="using:TsubameViewer.Views.TemplateSelector" 
   xmlns:myBehaior="using:TsubameViewer.Views.Behaviors" 
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
-  xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:wst="using:WindowsStateTriggers"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
+  xmlns:uwpUIExtensions="using:CommunityToolkit.WinUI"  
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
+      xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
+      xmlns:uwpControls1="using:CommunityToolkit.WinUI.Controls"
       mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
 
@@ -59,12 +60,12 @@
             </Style>
           </AutoSuggestBox.TextBoxStyle>
           <i:Interaction.Behaviors>
-            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
-      <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-    </core:EventTriggerBehavior>-->
+            <!--<i:EventTriggerBehavior EventName="QuerySubmitted">
+      <i:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+    </i:EventTriggerBehavior>-->
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
                                                       IsRequireFocus="True">
-              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+              <i:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
                                      MethodName="RemoveFocusEngagement" />
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
@@ -110,7 +111,7 @@
           </TextBlock>
         </StackPanel>
       </StackPanel>
-      <uwpControls:AdaptiveGridView ItemsSource="{Binding Source={StaticResource SearchResultItemsViewSource}}"
+      <uwpControls1:AdaptiveGridView ItemsSource="{Binding Source={StaticResource SearchResultItemsViewSource}}"
                                     x:Name="FoldersAdaptiveGridView"
                                     StretchContentForSingleRow="False"
                                     OneRowModeEnabled="False"
@@ -141,7 +142,7 @@
           <TransitionCollection />
         </GridView.ItemContainerTransitions>
 
-      </uwpControls:AdaptiveGridView>
+      </uwpControls1:AdaptiveGridView>
     </uwpControls:DockPanel>
 
     <VisualStateManager.VisualStateGroups>
