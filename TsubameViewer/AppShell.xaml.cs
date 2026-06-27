@@ -542,6 +542,9 @@ public sealed partial class AppShell : UserControl
         };
     }
 
+    [ObservableProperty]
+    string? _title;
+
     IDisposable? _titlebarContentDisposable;
     void SetTitleContentForPrimary(Frame frame)
     {
@@ -565,7 +568,7 @@ public sealed partial class AppShell : UserControl
                 _titlebarContentDisposable = observe.Subscribe(title =>
                 {
                     title ??= "";
-                    WindowTitleTextBlock.Text = title;
+                    Title = title;
                     ApplicationView.GetForCurrentView().Title = title;
                 });
             }

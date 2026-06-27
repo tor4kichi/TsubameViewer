@@ -40,12 +40,14 @@
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0"
                     Orientation="Horizontal">
-          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}">
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
+                        ToolTipService.Placement="Bottom">
             <SymbolIcon Symbol="Favorite"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </ToggleButton>
-        </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
           <Button Style="{StaticResource TitlebarButton}"
                   ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
                   ToolTipService.Placement="Bottom"
@@ -54,7 +56,9 @@
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </Button>
           <Button Flyout="{StaticResource SettingsFlyout}"
-                  Style="{StaticResource TitlebarButton}">
+                  Style="{StaticResource TitlebarButton}"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=DisplaySettings}"
+                  ToolTipService.Placement="Bottom">
             <SymbolIcon Symbol="Setting"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </Button>

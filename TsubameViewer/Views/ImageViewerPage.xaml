@@ -37,25 +37,29 @@
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="0">
-          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
-                        Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
-            <SymbolIcon Symbol="Favorite"
-                        Style="{StaticResource TitlebarSymbolIcon}" />
-          </ToggleButton>
         </StackPanel>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="8">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
+                        Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
+                        ToolTipService.Placement="Bottom">
+            <SymbolIcon Symbol="Favorite"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </ToggleButton>
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
                      Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
                      Foreground="{ThemeResource SystemErrorTextColor}"
-                     Opacity="0"
+                     Visibility="{x:Bind IfAllFilesWannaWatchThenRegistrationFolderAtApp, Mode=OneWay,Converter={StaticResource TrueToVisibleConverter}}"
                      Style="{StaticResource TitlebarTextBlock}" />
           <TextBlock Style="{StaticResource TitlebarTextBlock}">
             <Run Text="{Binding DisplayCurrentImageIndex, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
           </TextBlock>
           <Button Command="{Binding ToggleFullScreenCommand}"
-                  Style="{StaticResource TitlebarButton}">
+                  Style="{StaticResource TitlebarButton}"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
+                  ToolTipService.Placement="Bottom">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -1383,18 +1387,6 @@
         </VisualState>
 
       </VisualStateGroup>
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IfAllFilesWannaWatchThenRegistrationFolderAtApp, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop.Opacity"
-                    Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
       <!-- メニューを開いている時は読了状況スライダーを非表示 -->
       <VisualStateGroup>
         <VisualState>

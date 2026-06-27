@@ -35,19 +35,20 @@
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:MovieViewerPageViewModel">
       <uwpControls:DockPanel>
-        <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
-                   Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
-                   Foreground="{ThemeResource SystemErrorTextColor}"
-                   Visibility="Collapsed"
-                   Style="{StaticResource TitlebarTextBlock}"
-                   uwpControls:DockPanel.Dock="Left" />
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="4"
                     uwpControls:DockPanel.Dock="Right">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
+                        ToolTipService.Placement="Bottom">
+            <SymbolIcon Symbol="Favorite"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </ToggleButton>
           <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}"
+                        ToolTipService.Placement="Bottom"
                         AccessKey="A">
             <SymbolIcon Symbol="ZoomIn"
                         Style="{StaticResource TitlebarSymbolIcon}">
@@ -56,6 +57,7 @@
           <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerRotateEnabled, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerRotate}"
+                        ToolTipService.Placement="Bottom"
                         AccessKey="R">
             <SymbolIcon Symbol="Orientation"
                         Style="{StaticResource TitlebarSymbolIcon}">
@@ -64,6 +66,7 @@
           <ToggleButton IsChecked="{x:Bind PageSettings.IsHorizontalMirror, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}"
+                        ToolTipService.Placement="Bottom"
                         AccessKey="H">
             <SymbolIcon Symbol="Sort"
                         Style="{StaticResource TitlebarSymbolIcon}">
@@ -74,6 +77,8 @@
           </ToggleButton>
           <Button Command="{x:Bind ToggleFullScreenCommand}"
                   Style="{StaticResource TitlebarButton}"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
+                  ToolTipService.Placement="Bottom"
                   AccessKey="F">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
@@ -82,10 +87,6 @@
         </StackPanel>
 
         <StackPanel Orientation="Horizontal">
-          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}">
-            <SymbolIcon Symbol="Favorite"
-                        Style="{StaticResource TitlebarSymbolIcon}" />
-          </ToggleButton>
         </StackPanel>
 
       </uwpControls:DockPanel>
