@@ -1071,6 +1071,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         catch { }
 
         playbackItem.ApplyDisplayProperties(props);
+        if (playbackItem.VideoTracks.ElementAtOrDefault(0) is { } track
+            && track.GetEncodingProperties() is { } encProps)
+        {
+            var fps = encProps.FrameRate.Numerator / (float)encProps.FrameRate.Denominator;
+            _oneFrameTime = TimeSpan.FromSeconds(1 / fps);
+        }
+        else 
+        {
+            _oneFrameTime = TimeSpan.Zero;
+        }
     }
 
 
@@ -1512,9 +1522,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 .KeyFrame(TimeSpan.FromSeconds(1.075), new Vector3(0.7f, 0.7f, 1f))
             );
 
-    CancellationTokenSource? _playPauseToggleAnimationCts;
+
     [RelayCommand]
-    void TogglePlayPause()
+    void TogglePlayPauseWoAnimation()
     {
         if (MediaPlayer == null) { return; }
         if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
@@ -1527,13 +1537,28 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             MediaPlayer.Play();
             _audioPlayer.Play();
             _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
-            StartIconNotification(Fluent.Icons.FluentSymbol.Play24Filled);
         }
         else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
         {
             MediaPlayer.Pause();
             _audioPlayer.Pause();
             _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+        }
+    }
+
+    CancellationTokenSource? _playPauseToggleAnimationCts;
+    [RelayCommand]
+    void TogglePlayPause()
+    {
+        if (MediaPlayer == null) { return; }
+        var prevPlaybackState = MediaPlayer.PlaybackSession.PlaybackState;
+        TogglePlayPauseWoAnimation();
+        if (prevPlaybackState == MediaPlaybackState.Paused)
+        {
+            StartIconNotification(Fluent.Icons.FluentSymbol.Play24Filled);
+        }
+        else if (prevPlaybackState == MediaPlaybackState.Playing)
+        {
             StartIconNotification(Fluent.Icons.FluentSymbol.Pause24Filled);
         }
     }
@@ -1826,24 +1851,43 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _videoPositionsliderPointerPressed = false;
     }
+    [RelayCommand]
+    void BackwardOneFrameWoAnimation()
+    {
+        if (MediaPlayer == null) { return; }
+        if (_oneFrameTime == TimeSpan.Zero) { return; }
+        //MediaPlayer.StepBackwardOneFrame();
+        MediaPlayer.Pause();
+        MediaPlayer.PlaybackSession.Position -= _oneFrameTime;
+        _audioPlayer.Pause();
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+        // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
+    }
+
+    [RelayCommand]
+    void ForwardOneFrameWoAnimation()
+    {
+        if (MediaPlayer == null) { return; }
+        if (_oneFrameTime == TimeSpan.Zero) { return; }
+        //MediaPlayer.StepForwardOneFrame();
+        MediaPlayer.Pause();
+        MediaPlayer.PlaybackSession.Position += _oneFrameTime;
+        _audioPlayer.Pause();
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+    }
+
 
     [RelayCommand]
     void BackwardOneFrame()
     {
-        if (MediaPlayer == null) { return; }
-        MediaPlayer.StepBackwardOneFrame();
-        _audioPlayer.Pause();
-        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
-        // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
+        BackwardOneFrameWoAnimation();
         StartLiteNotification($"-1F");
     }
 
     [RelayCommand]
     void ForwardOneFrame()
     {
-        MediaPlayer.StepForwardOneFrame();
-        _audioPlayer.Pause();
-        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+        ForwardOneFrameWoAnimation();
         StartLiteNotification($"+1F");
     }
 

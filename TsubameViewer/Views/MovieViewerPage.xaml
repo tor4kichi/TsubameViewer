@@ -791,7 +791,7 @@
                       uwpControls:DockPanel.Dock="Left"
                       Spacing="8">
             <Button x:Name="ControlUI_PlayPauseButton"
-                    Command="{x:Bind TogglePlayPauseCommand}"
+                    Command="{x:Bind TogglePlayPauseWoAnimationCommand}"
                     Height="40"
                     Width="48"
                     AccessKey="P"
@@ -800,7 +800,7 @@
             </Button>
 
             <RepeatButton x:Name="ControlUI_BackwardOneFrameButton"
-                          Command="{x:Bind BackwardOneFrameCommand}"
+                          Command="{x:Bind BackwardOneFrameWoAnimationCommand}"
                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                           Height="40"
                           Width="48"
@@ -822,7 +822,7 @@
               </Grid>
             </RepeatButton>
             <RepeatButton x:Name="ControlUI_ForwardOneFrameButton"
-                          Command="{x:Bind ForwardOneFrameCommand}"
+                          Command="{x:Bind ForwardOneFrameWoAnimationCommand}"
                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                           Height="40"
                           Width="48"
