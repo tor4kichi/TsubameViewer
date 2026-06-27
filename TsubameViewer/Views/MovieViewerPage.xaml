@@ -24,7 +24,7 @@
       xmlns:mediaProps="using:Windows.Media.MediaProperties"
       xmlns:media="using:Windows.UI.Xaml.Media"
       mc:Ignorable="d"
-    >
+      xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)">
 
   <Page.Resources>
     <Style TargetType="fluentIcon:FluentSymbolIcon">
@@ -1080,10 +1080,10 @@
               VerticalAlignment="Bottom"
               BorderThickness="1"
               BorderBrush="{ThemeResource SystemChromeWhiteColor}"
-              Translation="0, 0, 8">
-        <Grid.Shadow>
-          <ThemeShadow />
-        </Grid.Shadow>
+            Windows10version1903:Translation="0, 0, 8">
+        <Windows10version1903:Grid.Shadow>
+          <Windows10version1903:ThemeShadow />
+        </Windows10version1903:Grid.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"               
                Stretch="None"/>
         <TextBlock x:Name="MovieSeekbarTooltipNotSupported"

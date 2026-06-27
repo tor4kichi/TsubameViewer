@@ -1012,10 +1012,10 @@
               VerticalAlignment="Bottom"
               BorderThickness="1"
               BorderBrush="{ThemeResource SystemChromeWhiteColor}"
-              Translation="0, 0, 8">
-        <Border.Shadow>
-          <ThemeShadow />
-        </Border.Shadow>
+              Windows10version1903:Translation="0, 0, 8">
+        <Windows10version1903:Border.Shadow>
+          <Windows10version1903:ThemeShadow />
+        </Windows10version1903:Border.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"       
                Stretch="Uniform"               
                />

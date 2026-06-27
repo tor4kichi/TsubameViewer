@@ -21,7 +21,8 @@
   xmlns:fi="using:Fluent.Icons"
              xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
              mc:Ignorable="d"
-  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+             xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
+             Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
   <UserControl.Resources>
     <ResourceDictionary>
@@ -194,16 +195,16 @@
       </UIElement.RenderTransform>
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader">
-          <Border Translation="0, 0, 8"
+          <Border Windows10version1903:Translation="0, 0, 8"
                   VerticalAlignment="Top"
                   Height="16"
                   Background="Transparent">
             <Border.RenderTransform>
               <TranslateTransform Y="-19" />
             </Border.RenderTransform>
-            <Border.Shadow>
-              <ThemeShadow />
-            </Border.Shadow>
+            <Windows10version1903:Border.Shadow>
+              <Windows10version1903:ThemeShadow />
+            </Windows10version1903:Border.Shadow>
           </Border>
         </Border>
       </muxc:NavigationView.PaneHeader>
@@ -222,27 +223,27 @@
                CacheSize="5"
                XYFocusDownNavigationStrategy="RectilinearDistance">
         </Frame>
-        <Border Translation="0, 0, 8"
+        <Border Windows10version1903:Translation="0, 0, 8"
                 VerticalAlignment="Top"
                 Height="16"
                 Background="Transparent">
           <Border.RenderTransform>
             <TranslateTransform Y="-17" />
           </Border.RenderTransform>
-          <Border.Shadow>
-            <ThemeShadow />
-          </Border.Shadow>
+          <Windows10version1903:Border.Shadow>
+            <Windows10version1903:ThemeShadow />
+          </Windows10version1903:Border.Shadow>
         </Border>
-        <Border Translation="0, 0, 8"
+        <Border Windows10version1903:Translation="0, 0, 8"
                 HorizontalAlignment="Left"
                 Width="32"
                 Background="Transparent">
           <Border.RenderTransform>
             <TranslateTransform X="-32" />
           </Border.RenderTransform>
-          <Border.Shadow>
-            <ThemeShadow />
-          </Border.Shadow>
+          <Windows10version1903:Border.Shadow>
+            <Windows10version1903:ThemeShadow />
+          </Windows10version1903:Border.Shadow>
         </Border>
 
       </Grid>
