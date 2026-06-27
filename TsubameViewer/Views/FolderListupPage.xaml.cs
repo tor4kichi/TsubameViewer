@@ -138,19 +138,26 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     _realizedItems.Add(itemVM);
 
                     // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                    // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                    if (!itemVM.IsInitialized)
+                    await itemVM.ObservePropertyChanged(x => x.IsInitialized)
+                        .Where(x => x)
+                        .Take(1)
+                        .WaitAsync(_navigationCt);                    
+                    if (itemVM.Item != null)
                     {
-                        await itemVM.ObservePropertyChanged(x => x.IsInitialized)
-                            .Take(1)
-                            .WaitAsync(_navigationCt);
-                        if (itemVM.Item != null)
+                        if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
+                            && tooltip is ToolTip tt
+                            && tt.Content is TextBlock tb)
+                        {
+                            tb.Text = itemVM.Name;
+                        }
+                        else
                         {
                             var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
                             if (size.Y == 0)
                             {
                                 size = new Vector2(120, 200);
                             }
+
                             ToolTipService.SetToolTip(args.ItemContainer,
                                 new ToolTip()
                                 {
