@@ -270,6 +270,8 @@ MovieViewer_Subtitles_Avairable = Subtitles available
 MovieViewer_NotSupportedCodec = Video codec {0} cannot display preview images.
 MovieViewer_NotSupportedCodec_OnceClear = Retry displaying the preview image.
 MovieViewer_CheckCodec_ReEnabled = Preview images are available.
+MovieViewer_PlaybackRate = Playback Speed
+
 
 #### SearchResult
 SearchResultWith = Search results for {0}

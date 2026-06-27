@@ -411,6 +411,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     DirectConnectedAnimationConfiguration _animConfig = new();
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
+        if (_playPauseToggleAnimationCts != null)
+        {
+            _playPauseToggleAnimationCts.Cancel();
+            _playPauseToggleAnimationCts.Dispose();
+            _playPauseToggleAnimationCts = null;
+        }
+
         d().FireAndForgetSafe();
         async Task d()
         {
@@ -451,6 +458,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
             base.OnNavigatingFrom(e);
         }
+    }
+
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        await Task.Delay(500);
+        var result = await FocusManager.TryFocusAsync(HiddenPlayPauseButton, FocusState.Keyboard);
+        base.OnNavigatedTo(e);
     }
 
     void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
@@ -528,8 +542,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
         Window.Current.CoreWindow.PointerMoved += CoreWindow_VideoPositionSlider_PointerMoved;
         MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+        _initializePlayIconAnimation.Start(Notification_PlayPause);
+        _initialiLiteNotificationAnimation.Start(LiteNotificationContainer);
         DisposableBuilder db = new();
-        
+
         var mediaPlayer = MyMediaPlayerElement.MediaPlayer;
         mediaPlayer.CommandManager.IsEnabled = true;
 
@@ -989,7 +1005,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             },  AwaitOperation.Drop) // Switchだと応答性が悪く見える。Dropなら先行する描画処理を優先できてGood           
             .AddTo(ref db);
 
-
         HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
@@ -1318,6 +1333,41 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+
+    long _lastAnimationStartTime;
+    void StartLiteNotification(string text, double refeneceValueForAnimationDirection = 0)
+    {
+        LiteNotificationTextBlock.Text = text;
+        _liteNotificationAnimation.Start(LiteNotificationContainer);
+        if (TimeProvider.System.GetElapsedTime(_lastAnimationStartTime) < TimeSpan.FromSeconds(1.925)
+            && refeneceValueForAnimationDirection != 0)
+        {
+            int sign = (int)Math.Clamp(refeneceValueForAnimationDirection, -1, 1);
+            AnimationBuilder.Create()
+                .RotationInDegrees()
+                .TimedKeyFrames(
+                    d => d.KeyFrame(TimeSpan.FromMilliseconds(0), 0)
+                    .KeyFrame(TimeSpan.FromMilliseconds(250), 50 * sign)
+                    .KeyFrame(TimeSpan.FromMilliseconds(100), 0)
+                )
+                .Start(LiteNotificationContainer);
+        }
+
+        _lastAnimationStartTime = TimeProvider.System.GetTimestamp();
+    }
+
+    readonly AnimationBuilder _initialiLiteNotificationAnimation = AnimationBuilder.Create()
+        .TimedKeyFrames<double>("Opacity",
+            d => d.KeyFrame(TimeSpan.FromSeconds(0.01), 0));
+
+    readonly AnimationBuilder _liteNotificationAnimation = AnimationBuilder.Create()
+        .TimedKeyFrames<double>("Opacity",
+            d => d.KeyFrame(TimeSpan.FromSeconds(0.0), 0.7)
+            .KeyFrame(TimeSpan.FromSeconds(0.125), 1)
+            .KeyFrame(TimeSpan.FromSeconds(1.80), 1)
+            .KeyFrame(TimeSpan.FromSeconds(1.925), 0));
+
+
     #region ShortcutKey
 
     [ObservableProperty]
@@ -1435,6 +1485,34 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
 
+    readonly AnimationBuilder _initializePlayIconAnimation = AnimationBuilder.Create()
+        .Opacity()
+            .TimedKeyFrames(d => d
+                .KeyFrame(TimeSpan.FromSeconds(0.001), 0)
+            )
+        .CenterPoint(new Vector3(58, 58, 0))
+        .Scale()
+            .TimedKeyFrames(d => d
+                .KeyFrame(TimeSpan.FromSeconds(0.001), new Vector3(0.7f, 0.7f, 1f))
+            );
+    readonly AnimationBuilder _playIconAnimation = AnimationBuilder.Create()
+        .Opacity()
+            .TimedKeyFrames(d => d
+                .KeyFrame(TimeSpan.FromSeconds(0.000), 0)
+                .KeyFrame(TimeSpan.FromSeconds(0.125), 1)
+                .KeyFrame(TimeSpan.FromSeconds(0.950), 1)
+                .KeyFrame(TimeSpan.FromSeconds(1.075), 0)
+            )
+        .CenterPoint(new Vector3(58, 58, 0))
+        .Scale()
+            .TimedKeyFrames(d => d
+                .KeyFrame(TimeSpan.FromSeconds(0.001), new Vector3(0.7f, 0.7f, 1f))
+                .KeyFrame(TimeSpan.FromSeconds(0.125), new Vector3(1f, 1f, 1f))
+                .KeyFrame(TimeSpan.FromSeconds(0.950), new Vector3(1f, 1f, 1f))
+                .KeyFrame(TimeSpan.FromSeconds(1.075), new Vector3(0.7f, 0.7f, 1f))
+            );
+
+    CancellationTokenSource? _playPauseToggleAnimationCts;
     [RelayCommand]
     void TogglePlayPause()
     {
@@ -1449,13 +1527,31 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             MediaPlayer.Play();
             _audioPlayer.Play();
             _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+            StartIconNotification(Fluent.Icons.FluentSymbol.Play24Filled);
         }
         else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
         {
             MediaPlayer.Pause();
             _audioPlayer.Pause();
             _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+            StartIconNotification(Fluent.Icons.FluentSymbol.Pause24Filled);
         }
+    }
+
+    void StartIconNotification(Fluent.Icons.FluentSymbol symbol, bool mirror = false)
+    {
+        if (_playPauseToggleAnimationCts != null)
+        {
+            _playPauseToggleAnimationCts.Cancel();
+            _playPauseToggleAnimationCts.Dispose();
+            _playPauseToggleAnimationCts = null;
+        }
+
+        var scale = Math.Abs(Notification_PlayPause_Icon_Transform.ScaleX);
+        Notification_PlayPause_Icon_Transform.ScaleX = !mirror ? scale : -scale;
+        _playPauseToggleAnimationCts = new CancellationTokenSource();
+        Notification_PlayPause_Icon.Symbol = symbol;
+        _playIconAnimation.Start(Notification_PlayPause, _playPauseToggleAnimationCts.Token);
     }
 
     void HandleLoopingChanged(ref DisposableBuilder db)
@@ -1739,6 +1835,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.Pause();
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
+        StartLiteNotification($"-1F");
     }
 
     [RelayCommand]
@@ -1747,6 +1844,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.StepForwardOneFrame();
         _audioPlayer.Pause();
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+        StartLiteNotification($"+1F");
     }
 
 
@@ -1755,6 +1853,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var time = MediaPlayer.PlaybackSession.Position + relativeTime;
         MediaPlayer.PlaybackSession.Position = time;
         _audioPlayer.PlaybackSession.Position = time;
+
+        string text;
+        if (relativeTime.TotalSeconds > 0)
+        {
+            text = "MovieViewer_SC_PlaybackPositionChangeForward".Translate(relativeTime.TotalSeconds);
+        }
+        else
+        {
+            text = "MovieViewer_SC_PlaybackPositionChangeBackward".Translate(relativeTime.TotalSeconds * -1);
+        }
+        StartLiteNotification(text, relativeTime.TotalSeconds);
     }
 
     void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
@@ -1886,6 +1995,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
         _audioPlayer.PlaybackSession.PlaybackRate = nextRate;
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+        StartLiteNotification($"x{nextRate:F2}");
+        StartIconNotification(Fluent.Icons.FluentSymbol.FastForward20Filled);
     }
 
     void Button_Tapped(object sender, TappedRoutedEventArgs e)
@@ -1904,6 +2015,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackRate = prevRate;
         _audioPlayer.PlaybackSession.PlaybackRate = prevRate;
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
+        StartLiteNotification($"x{prevRate:F2}");
+        StartIconNotification(Fluent.Icons.FluentSymbol.FastForward20Filled, true);
     }
 
     #endregion
@@ -1916,13 +2029,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     AnimationBuilder _fadeOutAnimation = AnimationBuilder.Create()
         .Opacity(0, delay: TimeSpan.FromMilliseconds(2000), duration: TimeSpan.FromMilliseconds(75));
-
-
-    AnimationBuilder _soundVolumeNotificationAnimation = AnimationBuilder.Create()
-        .TimedKeyFrames<double>("Opacity",
-            d => d.KeyFrame(TimeSpan.FromSeconds(0.125), 1)
-            .KeyFrame(TimeSpan.FromSeconds(1.80), 1)
-            .KeyFrame(TimeSpan.FromSeconds(1.925), 0));
 
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
@@ -1962,7 +2068,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 s.MediaPlayer.Volume = x;
                 s._audioPlayer.Volume = x;
-                s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);                
+                s.StartLiteNotification($"{"MovieViewer_SoundVolume".Translate()}: {x * 100:F0}%");
             })
             .AddTo(ref db);
 
@@ -1979,7 +2085,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 if (Math.Abs(s.MySwipeDistanceBehavior.ProgressX) >= 1)
                 {
-                    s._soundVolumeNotificationAnimation.Start(s.SeekingTimeUIContainer);
+                    s.StartLiteNotification($"{ProgressXToTimeText(s.MySwipeDistanceBehavior.ProgressX)}", s.MySwipeDistanceBehavior.ProgressX);
                 }
             })
             .AddTo(ref db);

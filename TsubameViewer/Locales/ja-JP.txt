@@ -270,6 +270,8 @@ MovieViewer_Subtitles_Avairable = 字幕あり
 MovieViewer_NotSupportedCodec = 動画コーデック {0} はプレビュー画像が表示できません
 MovieViewer_NotSupportedCodec_OnceClear = プレビュー画像の表示を再試行
 MovieViewer_CheckCodec_ReEnabled = プレビュー画像が利用可能です
+MovieViewer_PlaybackRate = 再生速度
+
 
 #### SearchResult
 SearchResultWith = "{0}"の検索結果

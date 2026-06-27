@@ -270,6 +270,8 @@ MovieViewer_Subtitles_Avairable = Sous-titres disponibles
 MovieViewer_NotSupportedCodec = Le codec vidéo {0} ne peut pas afficher les images d'aperçu.
 MovieViewer_NotSupportedCodec_OnceClear = Réessayez d'afficher l'image d'aperçu.
 MovieViewer_CheckCodec_ReEnabled = Des images d'aperçu sont disponibles.
+MovieViewer_PlaybackRate = vitesse de lecture
+
 
 #### SearchResult
 SearchResultWith = Résultats de la recherche pour {0}
