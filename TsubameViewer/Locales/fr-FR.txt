@@ -59,7 +59,7 @@ StorePackageUpdateState = État de la mise à jour du paquet
 StorePackageUpdateState.Pending = Traitement
 StorePackageUpdateState.Downloading = Téléchargement
 StorePackageUpdateState.Deploying = Déploiement
-StorePackageUpdateState.Completed = achèvement
+StorePackageUpdateState.Completed = Achèvement
 StorePackageUpdateState.Canceled = Annuler
 StorePackageUpdateState.OtherError = Autres erreurs
 StorePackageUpdateState.ErrorLowBattery = Erreur de batterie faible
@@ -167,7 +167,7 @@ ThumbnailDecodeMethod_Desc = Vous pouvez spécifier la méthode de décodage d'i
 ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
-FolderItemThumbnailQuality = qualité de l'image miniature
+FolderItemThumbnailQuality = Qualité de l'image miniature
 
 #### History Page
 HistoryPage_Title = Histoire
@@ -220,7 +220,7 @@ WritingMode.Vertical_LeftToRight = Écriture verticale (de gauche à droite) ➡
 ResetEBookSettings = Réinitialiser les paramètres
 DisplaySettings = Paramètres d'affichages
 Toc = Table des matières
-ReadingItemsTitle = déposer
+ReadingItemsTitle = Déposer
 
 
 #### Movie Viewer Page
@@ -265,14 +265,15 @@ MovieViewer_VideoTrack = Piste vidéo ({0})
 MovieViewer_VideoTrackChanged = Changer la piste vidéo : {0}
 MovieViewer_AudioTrack = Piste audio ({0})
 MovieViewer_AudioTrackChanged = Changer la piste audio : {0}
-MovieViewer_Subtitles = Sous-titre({0})
+MovieViewer_Subtitles = Sous-titre
+MovieViewer_SubtitlesMenuTitleWithCount = Sous-titre({0})
 MovieViewer_Subtitles_OpenSettings = Paramètres des sous-titres
 MovieViewer_Subtitles_HideAll = Pas de sous-titres
 MovieViewer_Subtitles_Avairable = Sous-titres disponibles
 MovieViewer_NotSupportedCodec = Le codec vidéo {0} ne peut pas afficher les images d'aperçu.
 MovieViewer_NotSupportedCodec_OnceClear = Réessayez d'afficher l'image d'aperçu.
 MovieViewer_CheckCodec_ReEnabled = Des images d'aperçu sont disponibles.
-MovieViewer_PlaybackRate = vitesse de lecture
+MovieViewer_PlaybackRate = Vitesse de lecture
 MovieViewer_IsRepeat = Lecture en boucle
 
 

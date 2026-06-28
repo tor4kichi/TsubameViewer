@@ -608,6 +608,18 @@
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Right"
                       Spacing="8">
+            <ToggleButton ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_Subtitles}"
+                          IsChecked="{x:Bind _vm.PageSettings.IsSubtitleDisplayEnabled, Mode=TwoWay}"
+                          MinWidth="60"
+                          Height="40">
+              <SymbolIcon Symbol="ClosedCaption"
+                          RenderTransformOrigin="0.5, 0.5">
+                <SymbolIcon.RenderTransform>
+                  <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
+                </SymbolIcon.RenderTransform>
+              </SymbolIcon>
+            </ToggleButton>
+            
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60"
                     Height="40">

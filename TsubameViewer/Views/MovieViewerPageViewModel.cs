@@ -48,6 +48,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isFFmpegUseFirstToMediaSourceFactory = Read(true, nameof(IsFFmpegUseFirstToMediaSourceFactory));
         _videoFrameThumbnailSize = Read(240, nameof(VideoFrameThumbnailSize));
         _subtitleEnabledByLanguage = Read(new Dictionary<string, bool>(), "SubtitleEnabledByLanguage");
+        _isSubtitleDisplayEnabled = Read(false, nameof(IsSubtitleDisplayEnabled));
     }
     
     bool _isRepeat;
@@ -128,6 +129,14 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         set => SetProperty(ref _videoFrameThumbnailSize, value);
     }
 
+
+    bool _isSubtitleDisplayEnabled;
+    public bool IsSubtitleDisplayEnabled
+    {
+        get => _isSubtitleDisplayEnabled;
+        set => SetProperty(ref _isSubtitleDisplayEnabled, value);
+    }
+
     Dictionary<string, bool> _subtitleEnabledByLanguage;
     public bool GetSubtitleLanguageEnabled(string language)
     {
@@ -146,7 +155,9 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     {
         _subtitleEnabledByLanguage.Clear();
         Save(_subtitleEnabledByLanguage, "SubtitleEnabledByLanguage");
-    }
+    }    
+
+
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
