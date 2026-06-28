@@ -5,15 +5,15 @@
     xmlns:local="using:TsubameViewer.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-  xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  
   xmlns:i="using:Microsoft.Xaml.Interactivity"
-  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:viewModels="using:TsubameViewer.ViewModels"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:navigationVM="using:TsubameViewer.ViewModels.PageNavigation" 
   xmlns:myBehaior="using:TsubameViewer.Views.Behaviors"
-  mc:Ignorable="d">
+      xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+      mc:Ignorable="d">
 
   <Page.Resources>
     

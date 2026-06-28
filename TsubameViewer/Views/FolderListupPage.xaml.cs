@@ -3,9 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
-using Microsoft.Toolkit.Uwp.UI;
+using CommunityToolkit.WinUI;
 using R3;
 using R3.Extensions;
 using Reactive.Bindings.Extensions;
@@ -45,7 +46,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
-using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
+using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -138,19 +139,26 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     _realizedItems.Add(itemVM);
 
                     // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                    // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                    if (!itemVM.IsInitialized)
+                    await itemVM.ObservePropertyChanged(x => x.IsInitialized)
+                        .Where(x => x)
+                        .Take(1)
+                        .WaitAsync(_navigationCt);                    
+                    if (itemVM.Item != null)
                     {
-                        await itemVM.ObservePropertyChanged(x => x.IsInitialized)
-                            .Take(1)
-                            .WaitAsync(_navigationCt);
-                        if (itemVM.Item != null)
+                        if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
+                            && tooltip is ToolTip tt
+                            && tt.Content is TextBlock tb)
+                        {
+                            tb.Text = itemVM.Name;
+                        }
+                        else
                         {
                             var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
                             if (size.Y == 0)
                             {
                                 size = new Vector2(120, 200);
                             }
+
                             ToolTipService.SetToolTip(args.ItemContainer,
                                 new ToolTip()
                                 {
@@ -185,8 +193,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
                     var ratio = sv.VerticalOffset / sv.ScrollableHeight;
-                    _pathToLastScrollPosition[HashHelper.CalculateFNV1a64(path)] = ratio;
-                    Debug.WriteLine($"_pathToLastScrollPosition[{path}] = {ratio:%}");
+                    if (!double.IsNaN(ratio) && !double.IsInfinity(ratio))
+                    {
+                        _pathToLastScrollPosition[HashHelper.CalculateFNV1a64(path)] = ratio;
+                        Debug.WriteLine($"_pathToLastScrollPosition[{path}] = {ratio:%}");
+                    }
                 }
             }
             catch (Exception ex)

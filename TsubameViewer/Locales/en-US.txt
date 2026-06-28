@@ -161,7 +161,7 @@ StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Threshold for deter
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Threshold for determining completion in the movie viewer
 ListupPage_DetectContentsChanged = The content has been changed. You can refresh the page.
 ThumbnailDecodeMethod = How to decode thumbnail images
-ThumbnailDecodeMethod_Desc = You can specify the image decoding method. If the number of CPU cores is two or less, Win2D (GPU) is specified by default.
+ThumbnailDecodeMethod_Desc = You can specify the image decoding method. Skia is optimal in terms of processing speed and image quality, but please use other options if you experience problems with Skia's performance.
 ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
@@ -270,6 +270,8 @@ MovieViewer_Subtitles_Avairable = Subtitles available
 MovieViewer_NotSupportedCodec = Video codec {0} cannot display preview images.
 MovieViewer_NotSupportedCodec_OnceClear = Retry displaying the preview image.
 MovieViewer_CheckCodec_ReEnabled = Preview images are available.
+MovieViewer_PlaybackRate = Playback Speed
+
 
 #### SearchResult
 SearchResultWith = Search results for {0}

@@ -6,12 +6,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
-  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:myConv="using:TsubameViewer.Views.Converters"
   xmlns:wst="using:WindowsStateTriggers" 
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
   xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
+  xmlns:uwpUIExtensions="using:CommunityToolkit.WinUI" 
   xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
   xmlns:domainModels="using:TsubameViewer.Core.Models" 
   xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger" 
@@ -19,8 +18,8 @@
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
   xmlns:models="using:TsubameViewer.Core.Models.FolderItemListing" 
   xmlns:vm="using:TsubameViewer.ViewModels" 
-  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
-  xmlns:behaviours="using:Microsoft.Toolkit.Uwp.UI.Behaviors"
+  xmlns:animation="using:CommunityToolkit.WinUI.Animations"
+  xmlns:behaviours="using:CommunityToolkit.WinUI.Behaviors"
   xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml"
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)" 
   xmlns:fluentIcon="using:Fluent.Icons"
@@ -37,25 +36,29 @@
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="0">
-          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
-                        Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
-            <SymbolIcon Symbol="Favorite"
-                        Style="{StaticResource TitlebarSymbolIcon}" />
-          </ToggleButton>
         </StackPanel>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="8">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
+                        Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
+                        ToolTipService.Placement="Bottom">
+            <SymbolIcon Symbol="Favorite"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </ToggleButton>
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
                      Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
                      Foreground="{ThemeResource SystemErrorTextColor}"
-                     Opacity="0"
+                     Visibility="{x:Bind IfAllFilesWannaWatchThenRegistrationFolderAtApp, Mode=OneWay,Converter={StaticResource TrueToVisibleConverter}}"
                      Style="{StaticResource TitlebarTextBlock}" />
           <TextBlock Style="{StaticResource TitlebarTextBlock}">
             <Run Text="{Binding DisplayCurrentImageIndex, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
           </TextBlock>
           <Button Command="{Binding ToggleFullScreenCommand}"
-                  Style="{StaticResource TitlebarButton}">
+                  Style="{StaticResource TitlebarButton}"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
+                  ToolTipService.Placement="Bottom">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -199,30 +202,30 @@
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand}"  />
+          <i:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand}"  />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand}"  />
+          <i:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand}"  />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseCenterClickTrigger>
-        <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
+        <i:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
 
       <myBehaviour:MouseWheelTrigger x:Name="ZommingMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind ZoomUpCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind ZoomUpCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind ZoomDownCommand}" />
+          <i:InvokeCommandAction Command="{x:Bind ZoomDownCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
 
@@ -230,33 +233,33 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
+        <i:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
+        <i:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
-        <core:InvokeCommandAction Command="{x:Bind ZoomDownWithControllerCommand, Mode=OneTime}" />
+        <i:InvokeCommandAction Command="{x:Bind ZoomDownWithControllerCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLTTriggerBehavior" Kind="PageDown" IsRequireFocus="True" IsEnabled="True">
-        <core:InvokeCommandAction Command="{x:Bind ZoomUpWithControllerCommand, Mode=OneTime}" />
+        <i:InvokeCommandAction Command="{x:Bind ZoomUpWithControllerCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickRightTriggerBehavior" Kind="ScrollRight" IsRequireFocus="True" IsEnabled="True">
-        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveRightCommand, Mode=OneTime}" />
+        <i:InvokeCommandAction Command="{x:Bind ZoomCenterMoveRightCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickLeftTriggerBehavior" Kind="ScrollLeft" IsRequireFocus="True" IsEnabled="True">
-        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveLeftCommand, Mode=OneTime}" />
+        <i:InvokeCommandAction Command="{x:Bind ZoomCenterMoveLeftCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickUpTriggerBehavior" Kind="ScrollUp" IsRequireFocus="True" IsEnabled="True">
-        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveUpCommand, Mode=OneTime}" />
+        <i:InvokeCommandAction Command="{x:Bind ZoomCenterMoveUpCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickDownTriggerBehavior" Kind="ScrollDown" IsRequireFocus="True" IsEnabled="True">
-        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveDownCommand, Mode=OneTime}" />
+        <i:InvokeCommandAction Command="{x:Bind ZoomCenterMoveDownCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
-        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
+        <i:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
 
@@ -276,19 +279,19 @@
 
         <i:Interaction.Behaviors>
           <!-- Image sizing -->
-          <core:EventTriggerBehavior EventName="Loaded">
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+          <i:EventTriggerBehavior EventName="Loaded">
+            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm,Mode=OneWay}"
+            <i:ChangePropertyAction TargetObject="{x:Bind _vm,Mode=OneWay}"
                                        PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-          </core:EventTriggerBehavior>
-          <core:EventTriggerBehavior EventName="SizeChanged">
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+          </i:EventTriggerBehavior>
+          <i:EventTriggerBehavior EventName="SizeChanged">
+            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-            <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
-          </core:EventTriggerBehavior>
+            <i:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
+          </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
         <Grid.Resources>
           <Style TargetType="muxc:ItemsRepeater">
@@ -868,14 +871,14 @@
                   AccessKey="3"
                   >
           <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" >
-                <core:InvokeCommandAction.InputConverter>
+            <i:EventTriggerBehavior EventName="SelectionChanged">
+              <i:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" >
+                <i:InvokeCommandAction.InputConverter>
                   <local:SelectorSelectedChangedToStringConverter />
-                </core:InvokeCommandAction.InputConverter>
-              </core:InvokeCommandAction>
-              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
-            </core:EventTriggerBehavior>
+                </i:InvokeCommandAction.InputConverter>
+              </i:InvokeCommandAction>
+              <i:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
+            </i:EventTriggerBehavior>
           </i:Interaction.Behaviors>
 
           <ComboBox.KeyboardAccelerators>
@@ -948,12 +951,12 @@
 
 
       <i:Interaction.Behaviors>
-        <core:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Visible" >
+        <i:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Visible" >
           <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithinButtonsContainer}" />
-        </core:DataTriggerBehavior>
-        <core:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Collapsed" >
+        </i:DataTriggerBehavior>
+        <i:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Collapsed" >
           <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithoutButtonsContainer}" />
-        </core:DataTriggerBehavior>
+        </i:DataTriggerBehavior>
       </i:Interaction.Behaviors>
 
 
@@ -1012,10 +1015,10 @@
               VerticalAlignment="Bottom"
               BorderThickness="1"
               BorderBrush="{ThemeResource SystemChromeWhiteColor}"
-              Translation="0, 0, 8">
-        <Border.Shadow>
-          <ThemeShadow />
-        </Border.Shadow>
+              Windows10version1903:Translation="0, 0, 8">
+        <Windows10version1903:Border.Shadow>
+          <Windows10version1903:ThemeShadow />
+        </Windows10version1903:Border.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"       
                Stretch="Uniform"               
                />
@@ -1383,18 +1386,6 @@
         </VisualState>
 
       </VisualStateGroup>
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IfAllFilesWannaWatchThenRegistrationFolderAtApp, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop.Opacity"
-                    Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
       <!-- メニューを開いている時は読了状況スライダーを非表示 -->
       <VisualStateGroup>
         <VisualState>

@@ -135,7 +135,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
                     _cacheSizeButton,
-                    //new SelectorSettingsItemViewModel<ThumbnailDecodeMethod>("ThumbnailDecodeMethod".Translate(), "ThumbnailDecodeMethod_Desc".Translate(), [ThumbnailDecodeMethod.Skia, ThumbnailDecodeMethod.Win2D, ThumbnailDecodeMethod.WindowsImageCodec], _folderListingSettings.ThumbnailDecodeType, type => _folderListingSettings.ThumbnailDecodeType = type),
+                    new SelectorSettingsItemViewModel<ThumbnailDecodeMethod>("ThumbnailDecodeMethod".Translate(), "ThumbnailDecodeMethod_Desc".Translate(), [ThumbnailDecodeMethod.Skia, ThumbnailDecodeMethod.WindowsImageCodec, ThumbnailDecodeMethod.Win2D], _folderListingSettings.ThumbnailDecodeType, type => _folderListingSettings.ThumbnailDecodeType = type),
                     new NumberBoxSettingItemViewModel(
                         "FolderItemThumbnailQuality".Translate(),                        
                         _folderListingSettings.FolderItemThumbnailQuality,

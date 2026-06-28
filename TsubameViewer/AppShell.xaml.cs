@@ -9,8 +9,8 @@ using DryIoc;
 using DryIoc.ImTools;
 using Fluent.Icons;
 using I18NPortable;
-using Microsoft.Toolkit.Uwp.UI;
-using Microsoft.Toolkit.Uwp.UI.Animations;
+using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Animations;
 using R3;
 using Reactive.Bindings;
 using System;
@@ -542,6 +542,9 @@ public sealed partial class AppShell : UserControl
         };
     }
 
+    [ObservableProperty]
+    string? _title;
+
     IDisposable? _titlebarContentDisposable;
     void SetTitleContentForPrimary(Frame frame)
     {
@@ -565,7 +568,7 @@ public sealed partial class AppShell : UserControl
                 _titlebarContentDisposable = observe.Subscribe(title =>
                 {
                     title ??= "";
-                    WindowTitleTextBlock.Text = title;
+                    Title = title;
                     ApplicationView.GetForCurrentView().Title = title;
                 });
             }

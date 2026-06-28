@@ -161,7 +161,7 @@ StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Seuil de détermina
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermination de la fin de lecture pour la visionneuse de vidéos
 ListupPage_DetectContentsChanged = Le contenu a été modifié. Vous pouvez actualiser la page.
 ThumbnailDecodeMethod = Comment décoder les images miniatures
-ThumbnailDecodeMethod_Desc = Vous pouvez spécifier la méthode de décodage d'image. Si le nombre de cœurs du processeur est inférieur ou égal à deux, Win2D (GPU) est utilisé par défaut.
+ThumbnailDecodeMethod_Desc = Vous pouvez spécifier la méthode de décodage d'image. Skia offre des performances optimales en termes de vitesse de traitement et de qualité d'image, mais veuillez utiliser d'autres options si vous rencontrez des problèmes avec Skia.
 ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
@@ -270,6 +270,8 @@ MovieViewer_Subtitles_Avairable = Sous-titres disponibles
 MovieViewer_NotSupportedCodec = Le codec vidéo {0} ne peut pas afficher les images d'aperçu.
 MovieViewer_NotSupportedCodec_OnceClear = Réessayez d'afficher l'image d'aperçu.
 MovieViewer_CheckCodec_ReEnabled = Des images d'aperçu sont disponibles.
+MovieViewer_PlaybackRate = vitesse de lecture
+
 
 #### SearchResult
 SearchResultWith = Résultats de la recherche pour {0}

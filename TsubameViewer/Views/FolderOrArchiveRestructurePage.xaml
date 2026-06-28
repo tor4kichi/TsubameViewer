@@ -6,11 +6,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls" 
   xmlns:windowsstatetriggers="using:WindowsStateTriggers"
   xmlns:vm="using:TsubameViewer.ViewModels"
-  mc:Ignorable="d"
+      xmlns:uwpControls1="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"  
   >
 
@@ -225,7 +226,7 @@
         </uwpControls:DockPanel>
       </Grid>
 
-      <uwpControls:DataGrid 
+      <uwpControls1:DataGrid 
         x:Name="PathsDataGrid"
         ItemsSource="{x:Bind _vm.Items, Mode=OneWay}"
         AutoGenerateColumns="False"
@@ -235,21 +236,21 @@
         SelectionChanged="DataGrid_SelectionChanged"          
         AlternatingRowBackground="{ThemeResource ApplicationContentBackgroundBrush}"
                             MaxWidth="1080">
-        <uwpControls:DataGrid.Columns>
-          <uwpControls:DataGridCheckBoxColumn x:Name="DataGridColumn_IsOutput" Header="{i18nExt:Localize Key=RestructurePage_IsOutput}" IsReadOnly="False" Binding="{Binding IsOutput, Mode=TwoWay}" IsThreeState="False" />
-          <uwpControls:DataGridTextColumn x:Name="DataGridColumn_RelativePath" Header="{i18nExt:Localize Key=RestructurePage_EditPath}" IsReadOnly="False" Binding="{Binding EditPath, Mode=TwoWay}" FontSize="12" />
-          <uwpControls:DataGridCheckBoxColumn x:Name="DataGridColumn_IsSplitImage" Header="{i18nExt:Localize Key=RestructurePage_IsSplitImage}" IsReadOnly="False" Binding="{Binding IsSplitImage, Mode=TwoWay}" IsThreeState="False" />
-        </uwpControls:DataGrid.Columns>
+        <uwpControls1:DataGrid.Columns>
+          <uwpControls1:DataGridCheckBoxColumn x:Name="DataGridColumn_IsOutput" Header="{i18nExt:Localize Key=RestructurePage_IsOutput}" IsReadOnly="False" Binding="{Binding IsOutput, Mode=TwoWay}" IsThreeState="False" />
+          <uwpControls1:DataGridTextColumn x:Name="DataGridColumn_RelativePath" Header="{i18nExt:Localize Key=RestructurePage_EditPath}" IsReadOnly="False" Binding="{Binding EditPath, Mode=TwoWay}" FontSize="12" />
+          <uwpControls1:DataGridCheckBoxColumn x:Name="DataGridColumn_IsSplitImage" Header="{i18nExt:Localize Key=RestructurePage_IsSplitImage}" IsReadOnly="False" Binding="{Binding IsSplitImage, Mode=TwoWay}" IsThreeState="False" />
+        </uwpControls1:DataGrid.Columns>
 
-        <uwpControls:DataGrid.ContextFlyout>
+        <uwpControls1:DataGrid.ContextFlyout>
           <MenuFlyout>
             <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_ToggleIsOutput}" Command="{x:Bind _vm.ToggleIsOutputSelectedItemsCommand}" />
             <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_ToggleIsSplitImage}" Command="{x:Bind _vm.ToggleIsSplitImageCommand}" />
             <MenuFlyoutSeparator />
             <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_DigitCompletion}" Command="{x:Bind _vm.DigitCompletionSelectedItemsCommand}" />
           </MenuFlyout>
-        </uwpControls:DataGrid.ContextFlyout>
-      </uwpControls:DataGrid>
+        </uwpControls1:DataGrid.ContextFlyout>
+      </uwpControls1:DataGrid>
     </uwpControls:DockPanel>
 
     <VisualStateManager.VisualStateGroups>

@@ -1,5 +1,5 @@
 ﻿using I18NPortable;
-using Microsoft.Toolkit.Uwp.UI;
+using CommunityToolkit.WinUI;
 using System;
 using Windows.UI.Xaml.Data;
 

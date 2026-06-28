@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Foundation;
@@ -78,5 +79,14 @@ public sealed partial class SettingsPage : Page, ITitlebarContentAware
         if (!control.IsLoaded) { return; }
         
         selectorSettingsItemVM.SelectedItem = control.SelectedItem;
+    }
+
+    private async void ListView_Loaded(object sender, RoutedEventArgs e)
+    {
+        await Task.Delay(50);
+        var control = (Selector)sender;
+        var selectorSettingsItemVM = (ISelectorSettingsItemViewModel)(control).DataContext;
+
+        control.SelectedItem = selectorSettingsItemVM.SelectedItem;
     }
 }

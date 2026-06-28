@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
-using Microsoft.Toolkit.Uwp.UI;
+using CommunityToolkit.WinUI;
 using R3;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;

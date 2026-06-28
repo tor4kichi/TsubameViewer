@@ -242,7 +242,7 @@ public sealed class ThumbnailImageManager
     }
 
     // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
-    public async Task<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
@@ -960,13 +960,13 @@ public sealed class ThumbnailImageManager
             {
                 using (var inputStream = await streamOpener())
                 {
+                    inputStream.CopyTo(outputStream);
+                    inputStream.Seek(0, SeekOrigin.Begin);
                     var imageInfo = SKBitmap.DecodeBounds(inputStream);
                     if (imageInfo != SKImageInfo.Empty)
                     {
                         SetThumbnailSize(path, imageInfo);
                     }
-
-                    inputStream.CopyTo(outputStream);
                 }
             }
             else
@@ -975,37 +975,86 @@ public sealed class ThumbnailImageManager
                 {
                     if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
                     {
-                        await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        if (inputStream.CanSeek)
+                        {
+                            await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        }
+                        else
+                        {
+                            inputStream.CopyTo(outputStream);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+                            await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        }
                     }
                     else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
                     {
-                        await TranscodeWindowsImageCodecAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                        if (inputStream.CanSeek)
+                        {
+                            await TranscodeWindowsImageCodecAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                        }
+                        else
+                        {
+                            inputStream.CopyTo(outputStream);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+                            await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                        }
                     }
                     else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
                     {
-                        await TranscodeWithWin2DAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        if (inputStream.CanSeek)
+                        {
+                            await TranscodeWithWin2DAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        }
+                        else
+                        {
+                            inputStream.CopyTo(outputStream);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+                            await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        }
                     }
                 }
             }
         }
-        catch
+        catch (NotSupportedImageFormatException)
         {
-            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
-            using (var inputStream = await streamOpener())
-            {                
-                await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream.AsOutputStream());
-                memoryStream.Seek(0, SeekOrigin.Begin);                
-                if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.WindowsImageCodec)
+            if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.Skia)
+            {
+                using (var inputStream = await streamOpener())
                 {
-                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    inputStream.CopyTo(outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+                    await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
                 }
-                else
+            }
+            else
+            {
+                using (var inputStream = await streamOpener())
                 {
-                    await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    inputStream.CopyTo(outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+                    await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                 }
             }
         }
-
+        catch (NotSupportedException) // Seek不可な場合
+        {
+            using (var inputStream = await streamOpener())
+            {                
+                await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), outputStream.AsOutputStream()).AsTask(ct);
+                if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
+                {
+                    await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
+                {
+                    await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                }
+                else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
+                {
+                    await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
+            }
+        }
     }
 
     private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Stream stream, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
@@ -1014,44 +1063,89 @@ public sealed class ThumbnailImageManager
         {
             if (path.EndsWith(".gif"))
             {
+                stream.CopyTo(outputStream);
+                stream.Seek(0, SeekOrigin.Begin);
                 var imageInfo = SKBitmap.DecodeBounds(stream);
                 if (imageInfo != SKImageInfo.Empty)
                 {
                     SetThumbnailSize(path, imageInfo);
                 }
-                stream.CopyTo(outputStream);
             }
             else
             {                
                 if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
                 {
-                    await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct); 
-                }
+                    if (stream.CanSeek)
+                    {
+                        await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    }
+                    else
+                    {
+                        stream.CopyTo(outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+                        await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    }
+                }                
                 else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
                 {
-                    await TranscodeWindowsImageCodecAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    if (stream.CanSeek)
+                    {
+                        await TranscodeWindowsImageCodecAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    }
+                    else
+                    {
+                        stream.CopyTo(outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+                        await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    }
                 }
                 else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
                 {
-                    await TranscodeWithWin2DAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    if (stream.CanSeek)
+                    {
+                        await TranscodeWithWin2DAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    }
+                    else
+                    {
+                        stream.CopyTo(outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+                        await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    }
                 }
             }
         }
-        catch
+        catch (NotSupportedImageFormatException)
         {
             stream.Seek(0, SeekOrigin.Begin);
-            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+            if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.Skia)
             {
-                await RandomAccessStream.CopyAsync(stream.AsInputStream(), memoryStream.AsOutputStream());
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                if (_folderListingSettings.ThumbnailDecodeType != ThumbnailDecodeMethod.WindowsImageCodec)
-                {
-                    await TranscodeWindowsImageCodecAsync(path, memoryStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
-                }
-                else
-                {
-                    await TranscodeSkiaAsync(path, memoryStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
-                }
+                stream.CopyTo(outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+                await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            }
+            else
+            {
+                stream.CopyTo(outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+                await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+            }
+        }
+        catch (NotSupportedException) // Seek不可な場合
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            await RandomAccessStream.CopyAsync(stream.AsInputStream(), outputStream.AsOutputStream());
+            outputStream.Seek(0, SeekOrigin.Begin);
+            if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
+            {
+                await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            }
+            else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
+            {
+                await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+            }
+            else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
+            {
+                await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
             }
         }
     }
@@ -1059,7 +1153,7 @@ public sealed class ThumbnailImageManager
     async ValueTask TranscodeSkiaAsync(string path, Stream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         //using var skiaStream = new SKManagedStream(stream);            
-        using var bitmap = SKBitmap.Decode(stream);
+        using var bitmap = SKBitmap.Decode(new SKManagedStream(stream, false));
 
         if (bitmap == null)
             throw new NotSupportedImageFormatException(Path.GetExtension(path));
@@ -1100,7 +1194,7 @@ public sealed class ThumbnailImageManager
 
         try
         {
-            var decoder = await BitmapDecoder.CreateAsync(stream).AsTask().ConfigureAwait(false);
+            var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(ct).ConfigureAwait(false);
 
             // サムネイルサイズ情報を記録                
             _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
@@ -1111,7 +1205,7 @@ public sealed class ThumbnailImageManager
                 RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
             });
 
-            var pixelData = await decoder.GetPixelDataAsync();
+            var pixelData = await decoder.GetPixelDataAsync().AsTask(ct).ConfigureAwait(false);
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
 
@@ -1151,8 +1245,8 @@ public sealed class ThumbnailImageManager
                     : scaledSize.Height / (float)bitmap.Size.Height;
                 ds.Transform = Matrix3x2.CreateScale(ratio);
                 ds.Blend = CanvasBlend.Copy;
-                ds.Antialiasing = CanvasAntialiasing.Antialiased;
-                ds.DrawImage(bitmap);
+                ds.Antialiasing = CanvasAntialiasing.Aliased;
+                ds.DrawImage(bitmap, 0, 0, new Rect(new Windows.Foundation.Point(), bitmap.Size), 1, CanvasImageInterpolation.HighQualityCubic);
             }
 
             // サムネイルサイズ情報を記録                

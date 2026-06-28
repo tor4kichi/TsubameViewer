@@ -164,8 +164,7 @@ public sealed partial class AppShellViewModel
                 .AppendLine();
             sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
                 .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
-                .Append(" ").Append(SystemInformation.Instance.DeviceFamily)
-                ;
+                .Append(" ").Append(SystemInformation.Instance.DeviceFamily);
             var data = new DataPackage();
             data.SetText(sb.ToString());
             Clipboard.SetContent(data);

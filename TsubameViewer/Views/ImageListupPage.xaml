@@ -8,22 +8,22 @@
       Background="{ThemeResource ApplicationContentBackgroundBrush}"
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:ts="using:TsubameViewer.Views.TemplateSelector"
-      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
-      xmlns:i="using:Microsoft.Xaml.Interactivity"
-      xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+      xmlns:i="using:Microsoft.Xaml.Interactivity"      
+      xmlns:m="using:CommunityToolkit.WinUI.Behaviors"
       xmlns:myBehaior="using:TsubameViewer.Views.Behaviors"
       xmlns:wst="using:WindowsStateTriggers"
       xmlns:models="using:TsubameViewer.Core.Models"
       xmlns:modelListing="using:TsubameViewer.Core.Models.FolderItemListing"
       xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
       xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
-      xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
+      xmlns:uwpUIExtensions="using:CommunityToolkit.WinUI"
       xmlns:vm="using:TsubameViewer.ViewModels"
-      xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters"
+      xmlns:uwpConv="using:CommunityToolkit.WinUI.Converters"
       xmlns:myConv="using:TsubameViewer.Views.Converters"
       xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
-      xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
+      xmlns:animations="using:CommunityToolkit.WinUI.Animations"
       xmlns:myTrigger="using:TsubameViewer.Views.StateTrigger"
       xmlns:fluentIcon="using:Fluent.Icons"
       xmlns:storage="using:Windows.Storage"
@@ -83,13 +83,13 @@
             </Style>
           </AutoSuggestBox.TextBoxStyle>
           <i:Interaction.Behaviors>
-            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
-      <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-    </core:EventTriggerBehavior>-->
+            <!--<i:EventTriggerBehavior EventName="QuerySubmitted">
+      <i:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+    </i:EventTriggerBehavior>-->
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
                                                       IsRequireFocus="True">
-              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
-                                     MethodName="RemoveFocusEngagement" />
+              <i:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+                                  MethodName="RemoveFocusEngagement" />
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
 
@@ -189,7 +189,7 @@
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
             <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+              <i:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
             </uiNavigation:BypassToCurrentFocusElementDataContextAction>
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
@@ -282,7 +282,7 @@
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
             <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+              <i:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
             </uiNavigation:BypassToCurrentFocusElementDataContextAction>
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
@@ -390,7 +390,7 @@
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
             <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+              <i:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
             </uiNavigation:BypassToCurrentFocusElementDataContextAction>
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
@@ -480,7 +480,7 @@
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
             <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+              <i:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
             </uiNavigation:BypassToCurrentFocusElementDataContextAction>
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
@@ -979,7 +979,7 @@
                                      ItemsSource="{x:Bind _vm.FileItemsView}"
                                      ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                      DataContext="{x:Null}"
-                                     VerticalCacheLength="3"
+                                     VerticalCacheLength="4"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <uwpControls:WrapLayout Orientation="Horizontal"
@@ -994,7 +994,7 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
-                                     VerticalCacheLength="3"
+                                     VerticalCacheLength="5"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <uwpControls:WrapLayout Orientation="Horizontal"
@@ -1009,7 +1009,7 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
-                                     VerticalCacheLength="3"
+                                     VerticalCacheLength="7"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <uwpControls:WrapLayout Orientation="Horizontal"
