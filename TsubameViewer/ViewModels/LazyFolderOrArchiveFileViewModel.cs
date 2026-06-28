@@ -37,7 +37,7 @@ public enum LoadingStatus
     LoadFailed,
 }
 
-public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject, IStorageItemViewModel
+public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject, IStorageItemViewModel, IEquatable<IStorageItemViewModel>
 {
     readonly IImageCollectionContext _imageCollectionContext;
     readonly int _itemIndex;
@@ -303,6 +303,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
         throw new NotImplementedException();
+    }
+
+    public bool Equals(IStorageItemViewModel other)
+    {
+        return this.Path?.Equals(other.Path) ?? false;
     }
 
     bool _disposed;

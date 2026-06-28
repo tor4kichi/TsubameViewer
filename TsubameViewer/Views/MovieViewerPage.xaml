@@ -303,6 +303,14 @@
           <KeyboardAccelerator Key="H" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button x:Name="ControlUI_RepeatButton"
+              Command="{x:Bind ToggleRepeatModeCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="L" />
+        </Button.KeyboardAccelerators>
+      </Button>
       <Button Command="{x:Bind ToggleFullScreenCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
               KeyboardAcceleratorPlacementMode="Hidden">
@@ -601,6 +609,18 @@
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Right"
                       Spacing="8">
+            <ToggleButton ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_Subtitles}"
+                          IsChecked="{x:Bind _vm.PageSettings.IsSubtitleDisplayEnabled, Mode=TwoWay}"
+                          MinWidth="60"
+                          Height="40">
+              <SymbolIcon Symbol="ClosedCaption"
+                          RenderTransformOrigin="0.5, 0.5">
+                <SymbolIcon.RenderTransform>
+                  <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
+                </SymbolIcon.RenderTransform>
+              </SymbolIcon>
+            </ToggleButton>
+            
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60"
                     Height="40">
@@ -699,17 +719,7 @@
                 </Flyout>
               </Button.Flyout>
             </Button>
-            <ToggleButton x:Name="ControlUI_RepeatButton"
-                          IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
-                          Height="40"
-                          Width="48"
-                          AccessKey="R">
-              <ToggleButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="R" />
-              </ToggleButton.KeyboardAccelerators>
-
-              <SymbolIcon Symbol="RepeatAll" />
-            </ToggleButton>
+            
 
             <Button Height="40" Width="48">
               <SymbolIcon Symbol="Setting" />
@@ -776,6 +786,9 @@
                   </MenuFlyoutSubItem>
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                  <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
+                                        x:Name="IsRepeat_MenuItem"
+                                        Command="{x:Bind ToggleLoopingCommand}" />
                   <MenuFlyoutSeparator />
                   <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
                                      Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />

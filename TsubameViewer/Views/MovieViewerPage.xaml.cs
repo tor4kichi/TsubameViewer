@@ -831,44 +831,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         _this.PlayerContainer.Opacity = 1;
 
                         // 字幕の表示設定を反映
-                        if (_this.MediaPlayer.Source is MediaPlaybackItem item)
+                        _this.RefreshSubtitleDisplay();
+
+                        // ループ再生の自動有効化
+                        if (!_this._vm.PageSettings.IsRepeat 
+                            && _this._vm.PageSettings.IsAutoRepeatEnablingEnabled)
                         {
-                            HashSet<string> _enabeldTracks = [];
-                            foreach (var (index, subtitle) in item.TimedMetadataTracks.AsValueEnumerable().Index())
+                            var duration = _this.MediaPlayer.PlaybackSession.NaturalDuration;
+                            if (duration > TimeSpan.Zero
+                                && duration < TimeSpan.FromHours(24)
+                                && duration < _this._vm.PageSettings.AutoRepeatEnablingTimeInSeconds)
                             {
-                                var key = subtitle.Id;
-                                if (string.IsNullOrEmpty(key)) { continue; }
-                                if (_enabeldTracks.Contains(key)) { continue; }
-
-                                var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
-                                item.TimedMetadataTracks.SetPresentationMode((uint)index,
-                                    isEnabeld
-                                    ? TimedMetadataTrackPresentationMode.PlatformPresented
-                                    : TimedMetadataTrackPresentationMode.Hidden);
-                                if (isEnabeld)
-                                {
-                                    _enabeldTracks.Add(key);
-                                    if (!string.IsNullOrEmpty(subtitle.Language))
-                                    {
-                                        _enabeldTracks.Add(subtitle.Language);
-                                    }
-                                }
-                            }
-
-                            foreach (var (index, subtitle) in item.TimedMetadataTracks.AsValueEnumerable().Index())
-                            {
-                                var key = _this.GetSubtitleKey(subtitle);
-                                if (_enabeldTracks.Contains(key)) { continue; }
-
-                                var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
-                                item.TimedMetadataTracks.SetPresentationMode((uint)index,
-                                    isEnabeld
-                                    ? TimedMetadataTrackPresentationMode.PlatformPresented
-                                    : TimedMetadataTrackPresentationMode.Hidden);
-                                if (isEnabeld)
-                                {
-                                    _enabeldTracks.Add(key);
-                                }
+                                _this.MediaPlayer.IsLoopingEnabled = true;
+                                _this.StartLiteNotification("AutoRepeatEnabling".Translate());
                             }
                         }
                     });
@@ -883,7 +858,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 s._vm.MovieFile = file;
             })
             .AddTo(ref db);
-        
+
+        _vm.PageSettings.ObservePropertyChanged(x => x.IsSubtitleDisplayEnabled, false)
+            .Subscribe(this, static (x, s) => s.RefreshSubtitleDisplay())
+            .AddTo(ref db);
+
         this.ObservePropertyChanged(x => x.PlayerState)
             .Subscribe(new DisplayRequestFacade(), static (state, s)  => 
             {
@@ -1590,6 +1569,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.PageSettings.ObservePropertyChanged(x => x.IsRepeat)
             .Subscribe(this, (x, s) => s.MediaPlayer.IsLoopingEnabled = x)
             .AddTo(ref db);
+    }
+
+    [RelayCommand]
+    void ToggleLooping()
+    {
+        var nextLooping = !MediaPlayer.IsLoopingEnabled;
+        MediaPlayer.IsLoopingEnabled = nextLooping;
+        _vm.PageSettings.IsRepeat = nextLooping;
     }
 
 
@@ -2976,8 +2963,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             foreach (var (index, menuItem) in SubtitlesMenuSubItem.Items.Skip(1).SkipLast(2).AsValueEnumerable().Index())
             {
                 var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
-                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = mode == TimedMetadataTrackPresentationMode.PlatformPresented;
-                anySubstitleDisplay |= mode == TimedMetadataTrackPresentationMode.PlatformPresented;
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
+                anySubstitleDisplay |= mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
             }
 
             return; 
@@ -3065,7 +3052,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
                 DataContext = subtitle,
-                IsChecked = mode == TimedMetadataTrackPresentationMode.PlatformPresented,
+                IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented,
                 Command = SetTimedMetadataTrackCommand,
                 CommandParameter = subtitle,
             };
@@ -3080,7 +3067,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             Command = OpenSubstitleSettingsCommand,
         });
 
-        SubtitlesMenuSubItem.Text = "MovieViewer_Subtitles".Translate(playbackItem.TimedMetadataTracks.Count);
+        SubtitlesMenuSubItem.Text = "MovieViewer_SubtitlesMenuTitleWithCount".Translate(playbackItem.TimedMetadataTracks.Count);
+
+        IsRepeat_MenuItem.IsChecked = MediaPlayer.IsLoopingEnabled;
     }
 
     [RelayCommand]
@@ -3145,12 +3134,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
         {
+            bool isDisplay = _vm.PageSettings.IsSubtitleDisplayEnabled;
             if (subtitle == null)
             {
                 foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
                 {
                     var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
-                    if (mode == TimedMetadataTrackPresentationMode.PlatformPresented)
+                    if (mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented)
                     {
                         playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
                         if (!string.IsNullOrEmpty(timed.Id))
@@ -3168,15 +3158,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     if (subtitle.Id == timed.Id)
                     {
                         var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
-                        var nextMode = mode == TimedMetadataTrackPresentationMode.PlatformPresented
+                        var nextMode = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented
                             ? TimedMetadataTrackPresentationMode.Hidden
-                            : TimedMetadataTrackPresentationMode.PlatformPresented;
+                            : (isDisplay ? TimedMetadataTrackPresentationMode.PlatformPresented : TimedMetadataTrackPresentationMode.ApplicationPresented);
                         playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, nextMode);
+                        bool nextIsEnabled = nextMode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
                         if (!string.IsNullOrEmpty(timed.Id))
                         {
-                            _vm.PageSettings.SetSubtitleLanguageEnabled(timed.Id, nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
+                            _vm.PageSettings.SetSubtitleLanguageEnabled(timed.Id, nextIsEnabled);
                         }
-                        _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(subtitle), nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
+                        _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(subtitle), nextIsEnabled);
+
+                        if (nextIsEnabled)
+                        {
+                            _vm.PageSettings.IsSubtitleDisplayEnabled = true;
+                        }
                         break;
                     }
                 }
@@ -3190,7 +3186,52 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                             playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
                         }
                     }
+                }                
+            }
+        }
+    }    
+
+
+    void RefreshSubtitleDisplay()
+    {
+        if (MediaPlayer.Source is not MediaPlaybackItem playbackItem) { return; }
+
+        bool isDisplay = _vm.PageSettings.IsSubtitleDisplayEnabled;
+        HashSet<string> _enabeldTracks = [];
+        foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+        {
+            var key = subtitle.Id;
+            if (string.IsNullOrEmpty(key)) { continue; }
+            if (_enabeldTracks.Contains(key)) { continue; }
+
+            var isEnabeld = _vm.PageSettings.GetSubtitleLanguageEnabled(key);
+            playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index,
+                isEnabeld
+                ? (isDisplay ? TimedMetadataTrackPresentationMode.PlatformPresented : TimedMetadataTrackPresentationMode.ApplicationPresented)
+                : TimedMetadataTrackPresentationMode.Hidden);
+            if (isEnabeld)
+            {
+                _enabeldTracks.Add(key);
+                if (!string.IsNullOrEmpty(subtitle.Language))
+                {
+                    _enabeldTracks.Add(subtitle.Language);
                 }
+            }
+        }
+
+        foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+        {
+            var key = GetSubtitleKey(subtitle);
+            if (_enabeldTracks.Contains(key)) { continue; }
+
+            var isEnabeld = _vm.PageSettings.GetSubtitleLanguageEnabled(key);
+            playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index,
+                isEnabeld
+                ? (isDisplay ? TimedMetadataTrackPresentationMode.PlatformPresented : TimedMetadataTrackPresentationMode.ApplicationPresented)
+                : TimedMetadataTrackPresentationMode.Hidden);
+            if (isEnabeld)
+            {
+                _enabeldTracks.Add(key);
             }
         }
     }
@@ -3212,6 +3253,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         var uri = new Uri("ms-settings:easeofaccess-closedcaptioning");
         await Launcher.LaunchUriAsync(uri);        
+    }
+
+
+    [RelayCommand]
+    void ToggleRepeatMode()
+    {
+        _vm.PageSettings.IsRepeat = !_vm.PageSettings.IsRepeat;
+        StartLiteNotification($"{"MovieViewer_IsRepeat".Translate()}: {(_vm.PageSettings.IsRepeat ? "Enabled" : "Disabled").Translate()}");
     }
 }
 

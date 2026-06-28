@@ -10,6 +10,8 @@ Close = 关闭
 Confirm = 确定
 Refresh = 更新
 NoItems = 暂无商品可供展示。
+Enabled = 有效
+Disabled = 无效
 Overwrite = 覆盖
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -263,7 +265,8 @@ MovieViewer_VideoTrack = 视频轨道（{0}）
 MovieViewer_VideoTrackChanged = 切换视频轨道：{0}
 MovieViewer_AudioTrack = 音频轨道（{0}）
 MovieViewer_AudioTrackChanged = 切换音轨：{0}
-MovieViewer_Subtitles = 副标题({0})
+MovieViewer_Subtitles = 字幕
+MovieViewer_SubtitlesMenuTitleWithCount = 副标题({0})
 MovieViewer_Subtitles_OpenSettings = 字幕设置
 MovieViewer_Subtitles_HideAll = 无字幕
 MovieViewer_Subtitles_Avairable = 提供字幕
@@ -271,6 +274,13 @@ MovieViewer_NotSupportedCodec = 视频编解码器{0}无法显示预览图像。
 MovieViewer_NotSupportedCodec_OnceClear = 请重试显示预览图像。
 MovieViewer_CheckCodec_ReEnabled = 提供预览图片。
 MovieViewer_PlaybackRate = 播放速度
+MovieViewer_IsRepeat = 循环播放
+MovieViewer_Settings = 视频查看器设置
+IsAutoRepeatEnablingEnabled = 启用自动循环播放。
+AutoRepeatEnablingTime = 自动启用循环播放的最大播放时间（以秒为单位）。
+AutoRepeatEnabling = 循环播放：已启用（自动）
+
+
 
 
 #### SearchResult

@@ -10,6 +10,8 @@ Close = Close
 Confirm = Confirm
 Refresh = Refresh
 NoItems = No items are available to display.
+Enabled = Enabled
+Disabled = Disabled
 Overwrite = Overwrite
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -57,8 +59,8 @@ StorePackageUpdateState = Package update status
 StorePackageUpdateState.Pending = Processing
 StorePackageUpdateState.Downloading = Downloading
 StorePackageUpdateState.Deploying = Deploying
-StorePackageUpdateState.Completed = completion
-StorePackageUpdateState.Canceled = cancel
+StorePackageUpdateState.Completed = Completion
+StorePackageUpdateState.Canceled = Cancel
 StorePackageUpdateState.OtherError = Other errors
 StorePackageUpdateState.ErrorLowBattery = Low battery error
 StorePackageUpdateState.ErrorWiFiRecommended = Wi-Fi recommended error
@@ -137,7 +139,7 @@ OpenWithExternalApplication = Open with
 AddSecondaryTile = Pin to start
 RemoveSecondaryTile = Unpin the start
 SetThumbnailImage = Set as thumbnail image
-ArchiveOrFolderTransform = conversion
+ArchiveOrFolderTransform = Conversion
 TitleDigitCompletionTransform = Title digit completion
 SendToOtherFolder = Move...
 SendToOtherFolder_ConfirmOverwrite = Is it okay to overwrite it?
@@ -263,14 +265,22 @@ MovieViewer_VideoTrack = Video track ({0})
 MovieViewer_VideoTrackChanged = Change video track: {0}
 MovieViewer_AudioTrack = Audio track ({0})
 MovieViewer_AudioTrackChanged = Change audio track: {0}
-MovieViewer_Subtitles = Subtitle({0})
+MovieViewer_Subtitles = Subtitle
+MovieViewer_SubtitlesMenuTitleWithCount = Subtitle({0})
 MovieViewer_Subtitles_OpenSettings = Subtitle settings
 MovieViewer_Subtitles_HideAll = No subtitles
 MovieViewer_Subtitles_Avairable = Subtitles available
 MovieViewer_NotSupportedCodec = Video codec {0} cannot display preview images.
 MovieViewer_NotSupportedCodec_OnceClear = Retry displaying the preview image.
 MovieViewer_CheckCodec_ReEnabled = Preview images are available.
-MovieViewer_PlaybackRate = Playback Speed
+MovieViewer_PlaybackRate = Playback speed
+MovieViewer_IsRepeat = Loop playback
+MovieViewer_Settings = Movie viewer settings
+IsAutoRepeatEnablingEnabled = Enable automatic loop playback.
+AutoRepeatEnablingTime = Maximum playback time (in seconds) for automatically enabling loop playback.
+AutoRepeatEnabling = Loop playback: Enabled (automatic)
+
+
 
 
 #### SearchResult

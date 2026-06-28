@@ -37,6 +37,8 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     public MovieViewerPageSettings()
     {
         _isRepeat = Read(false, nameof(IsRepeat));
+        _isAutoRepeatEnablingEnabled = Read(true, nameof(IsAutoRepeatEnablingEnabled));
+        _autoRepeatEnablingTimeInSeconds = Read(60, nameof(AutoRepeatEnablingTimeInSeconds));
         _isMuted = Read(false, nameof(IsMuted));
         _playbackRate = Read(1d, nameof(PlaybackRate));
         _isHorizontalMirror = Read(false, nameof(IsHorizontalMirror));
@@ -48,6 +50,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isFFmpegUseFirstToMediaSourceFactory = Read(true, nameof(IsFFmpegUseFirstToMediaSourceFactory));
         _videoFrameThumbnailSize = Read(240, nameof(VideoFrameThumbnailSize));
         _subtitleEnabledByLanguage = Read(new Dictionary<string, bool>(), "SubtitleEnabledByLanguage");
+        _isSubtitleDisplayEnabled = Read(false, nameof(IsSubtitleDisplayEnabled));
     }
     
     bool _isRepeat;
@@ -55,6 +58,21 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     {
         get => _isRepeat;
         set => SetProperty(ref _isRepeat, value);
+    }
+
+    bool _isAutoRepeatEnablingEnabled;
+    public bool IsAutoRepeatEnablingEnabled
+    {
+        get => _isAutoRepeatEnablingEnabled;
+        set => SetProperty(ref _isAutoRepeatEnablingEnabled, value);
+    }
+
+
+    int _autoRepeatEnablingTimeInSeconds;
+    public TimeSpan AutoRepeatEnablingTimeInSeconds
+    {
+        get => TimeSpan.FromSeconds( _autoRepeatEnablingTimeInSeconds);
+        set => SetProperty(ref _autoRepeatEnablingTimeInSeconds, (int)value.TotalSeconds);
     }
 
     bool _isMuted;
@@ -128,6 +146,14 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         set => SetProperty(ref _videoFrameThumbnailSize, value);
     }
 
+
+    bool _isSubtitleDisplayEnabled;
+    public bool IsSubtitleDisplayEnabled
+    {
+        get => _isSubtitleDisplayEnabled;
+        set => SetProperty(ref _isSubtitleDisplayEnabled, value);
+    }
+
     Dictionary<string, bool> _subtitleEnabledByLanguage;
     public bool GetSubtitleLanguageEnabled(string language)
     {
@@ -146,7 +172,9 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     {
         _subtitleEnabledByLanguage.Clear();
         Save(_subtitleEnabledByLanguage, "SubtitleEnabledByLanguage");
-    }
+    }    
+
+
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase

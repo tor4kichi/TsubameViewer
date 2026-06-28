@@ -240,29 +240,48 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
             {
                 _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
+                    .IgnoreOnErrorResume()
+                    .Timeout(TimeSpan.FromSeconds(1))
                     .Where(x => x != null)
+                    .Skip(1)
                     .Take(1)
-                    .Timeout(TimeSpan.FromSeconds(3))
-                    .SubscribeAwait((FoldersAdaptiveGridView, _vm.FileItemsView), async (x, s, ct) => 
-                    {
+                    .SubscribeAwait((FoldersAdaptiveGridView, _vm.FileItemsView), async (x, s, ct) =>
+                    {                        
                         var (listView, items) = s;
+                        await _vm.ObservePropertyChanged(x => x.NowProcessing)
+                            .Take(2)
+                            .WaitAsync(ct);
                         if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
                         {
                             await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
                             bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
-                            Debug.WriteLine($"Restore ScrollPosition: {ratio:%}");
-                            //await Task.Delay(50, ct);
-                            //if (_vm.GetLastIntractItem() is { } lastItem
-                            //    && listView.ContainerFromItem(lastItem) is Control itemContainer)
-                            //{
-                            //    itemContainer.Focus(FocusState.Keyboard);
-                            //}
+                            Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {x}");
                         }
                         else
                         {
-                            bool result = sv.ChangeView(null, 0, null, true);
+                            if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
+                            {
+                                int index = indexAndLastItem.Index;
+                                await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
+                                var offset = sv.ScrollableHeight * (index / (float)_vm.FileItemsView.Count);
+                                sv.ChangeView(null, offset, null, true);
+                            }
+                            else
+                            {
+                                sv.ChangeView(null, 0, null, true);
+                            }
                         }
-                    });                
+
+                        if (_vm.GetLastIntractIndexAndItem() is { } lastItem)
+                        {
+                            int index = lastItem.Index;
+                            await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
+                            if (listView.ContainerFromIndex(index) is Control itemContainer)
+                            {
+                                itemContainer.Focus(FocusState.Keyboard);
+                            }
+                        }
+                    });
             }
             else 
             {

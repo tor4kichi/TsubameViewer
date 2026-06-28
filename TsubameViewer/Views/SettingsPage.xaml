@@ -159,21 +159,52 @@
         <DataTemplate x:DataType="vm:NumberBoxSettingItemViewModel">
           <winUIControls:SettingsCard Header="{x:Bind Label}"
                                       Description="{x:Bind Desc}">
-            <Slider Value="{x:Bind FirstValue}"
+            <winui:NumberBox Value="{x:Bind FirstValue}"
                     ValueChanged="{x:Bind OnValueChanged}"
                     Minimum="{x:Bind MinValue}"
                     Maximum="{x:Bind MaxValue}"           
+                    HorizontalAlignment="Right"
+                    HorizontalContentAlignment="Right"
+                    MinWidth="140"
+                             SmallChange="{x:Bind ValueStep}"
+                             LargeChange="{x:Bind ValueStep}"
+                             SpinButtonPlacementMode="Compact"
+                             x:Name="MyNumberBox"
+                             >
+              <winui:NumberBox.Header>
+                <TextBlock Text="{x:Bind HeaderText, Mode=OneWay}" 
+                           HorizontalAlignment="Right"
+                           FontSize="16"
+                           Margin="0 0 32 0"/>
+              </winui:NumberBox.Header>
+            </winui:NumberBox>
+          </winUIControls:SettingsCard>
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
+      <tt:SettingsItemTemplateSelector.SliderSettingItem>
+        <DataTemplate x:DataType="vm:SliderSettingItemViewModel">
+          <winUIControls:SettingsCard Header="{x:Bind Label}"
+                                      Description="{x:Bind Desc}">
+            <Slider Value="{x:Bind FirstValue}"
+                    ValueChanged="{x:Bind OnValueChanged}"
+                    Minimum="{x:Bind MinValue}"
+                    Maximum="{x:Bind MaxValue}"
                     StepFrequency="{x:Bind ValueStep}"
                     TickFrequency="{x:Bind ValueStep}"
                     HorizontalAlignment="Right"
                     HorizontalContentAlignment="Right"
                     MinWidth="240"
                     ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
-                    Header="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Value, Converter={StaticResource DoubleToPercentTextConverter}}">
+                    x:Name="MySlider">
+              <Slider.Header>
+                <TextBlock Text="{Binding ElementName=MySlider, Path=Value, Converter={StaticResource DoubleToPercentTextConverter}}"
+                           HorizontalAlignment="Right" 
+                           FontSize="16"/>
+              </Slider.Header>
             </Slider>
           </winUIControls:SettingsCard>
         </DataTemplate>
-      </tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
+      </tt:SettingsItemTemplateSelector.SliderSettingItem>
     </tt:SettingsItemTemplateSelector>
 
     <DataTemplate x:Key="SettingsGroupTemplate"
