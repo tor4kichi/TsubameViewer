@@ -195,9 +195,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         R3.Observable.Merge(
             _vm.ObservePropertyChanged(x => x.SelectedFileSortType, true).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
             _vm.ImageFileItems.ObservePropertyChanged(x => x.Count, false).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
+            _vm.ObservePropertyChanged(x => x.FileDisplayMode).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
+            _vm.ObservePropertyChanged(x => x.IsFavoriteFilteredDisplayEnabled).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
             _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
             ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable(),
-            Observable.Empty<Unit>() // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
+            _messenger.CreateObservable<RefreshNavigationRequestMessage>().ToObservable().Delay(TimeSpan.FromMilliseconds(500)).AsUnitObservable(),
+            Observable.Empty<Unit>().Delay(TimeSpan.FromMilliseconds(100)) // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
             )
             .ThrottleFirstLast(TimeSpan.FromMilliseconds(250))
             .SubscribeAwait(async (_, ct) =>
@@ -220,7 +223,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         .Debounce(TimeSpan.FromMilliseconds(10))
         .SubscribeAwait(async (_, ct) =>
         {
-            int maxParallelismCount = Math.Max(1, Environment.ProcessorCount * 2);
+            int maxParallelismCount = Math.Max(1, Environment.ProcessorCount * 2);            
             while (_priorityLoadPendingItems.Count != 0 || _loadPendingItems.Count != 0)
             {
                 ct.ThrowIfCancellationRequested();
@@ -368,9 +371,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .AsValueEnumerable()
             .Where(item => item.DataContext is IStorageItemViewModel itemVM && !itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
             .ToArrayPool();
-        _priorityLoadPendingItems.Clear();
-        _loadPendingItems.Clear();
-        //if (ct.IsCancellationRequested) { return; }
         foreach (var item in items.ArraySegment)
         {
             if (item.DataContext is not IStorageItemViewModel itemVM || itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
@@ -383,8 +383,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             else 
             {
                 _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);                
-            }
-            //if (ct.IsCancellationRequested) { return; }
+            }            
         }
 
         Debug.WriteLine($"UpdateVisibleRangeItemInitialize Complete: {TimeProvider.System.GetElapsedTime(time)}");
