@@ -275,6 +275,10 @@ MovieViewer_NotSupportedCodec_OnceClear = Retry displaying the preview image.
 MovieViewer_CheckCodec_ReEnabled = Preview images are available.
 MovieViewer_PlaybackRate = Playback speed
 MovieViewer_IsRepeat = Loop playback
+MovieViewer_Settings = Movie viewer settings
+IsAutoRepeatEnablingEnabled = Enable automatic loop playback.
+AutoRepeatEnablingTime = Maximum playback time (in seconds) for automatically enabling loop playback.
+AutoRepeatEnabling = Loop playback: Enabled (automatic)
 
 
 

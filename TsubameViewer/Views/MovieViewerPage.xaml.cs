@@ -832,6 +832,20 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                         // 字幕の表示設定を反映
                         _this.RefreshSubtitleDisplay();
+
+                        // ループ再生の自動有効化
+                        if (!_this._vm.PageSettings.IsRepeat 
+                            && _this._vm.PageSettings.IsAutoRepeatEnablingEnabled)
+                        {
+                            var duration = _this.MediaPlayer.PlaybackSession.NaturalDuration;
+                            if (duration > TimeSpan.Zero
+                                && duration < TimeSpan.FromHours(24)
+                                && duration < _this._vm.PageSettings.AutoRepeatEnablingTimeInSeconds)
+                            {
+                                _this.MediaPlayer.IsLoopingEnabled = true;
+                                _this.StartLiteNotification("AutoRepeatEnabling".Translate());
+                            }
+                        }
                     });
             })
             .AddTo(ref db);
@@ -1555,6 +1569,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.PageSettings.ObservePropertyChanged(x => x.IsRepeat)
             .Subscribe(this, (x, s) => s.MediaPlayer.IsLoopingEnabled = x)
             .AddTo(ref db);
+    }
+
+    [RelayCommand]
+    void ToggleLooping()
+    {
+        var nextLooping = !MediaPlayer.IsLoopingEnabled;
+        MediaPlayer.IsLoopingEnabled = nextLooping;
+        _vm.PageSettings.IsRepeat = nextLooping;
     }
 
 
@@ -3046,6 +3068,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         });
 
         SubtitlesMenuSubItem.Text = "MovieViewer_SubtitlesMenuTitleWithCount".Translate(playbackItem.TimedMetadataTracks.Count);
+
+        IsRepeat_MenuItem.IsChecked = MediaPlayer.IsLoopingEnabled;
     }
 
     [RelayCommand]
@@ -3236,7 +3260,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void ToggleRepeatMode()
     {
         _vm.PageSettings.IsRepeat = !_vm.PageSettings.IsRepeat;
-        StartLiteNotification($"{"MovieViewer_IsRepeat".Translate()}: {(_vm.PageSettings.IsRepeat ? "Enabled" : "Disabled").Translate()}%");
+        StartLiteNotification($"{"MovieViewer_IsRepeat".Translate()}: {(_vm.PageSettings.IsRepeat ? "Enabled" : "Disabled").Translate()}");
     }
 }
 

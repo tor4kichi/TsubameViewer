@@ -303,6 +303,14 @@
           <KeyboardAccelerator Key="H" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button x:Name="ControlUI_RepeatButton"
+              Command="{x:Bind ToggleRepeatModeCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="L" />
+        </Button.KeyboardAccelerators>
+      </Button>
       <Button Command="{x:Bind ToggleFullScreenCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
               KeyboardAcceleratorPlacementMode="Hidden">
@@ -462,13 +470,6 @@
         </Button.CommandParameter>
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Number9" />
-        </Button.KeyboardAccelerators>
-      </Button>
-      <Button x:Name="ControlUI_RepeatButton"
-              Command="{x:Bind ToggleRepeatModeCommand}"
-              KeyboardAcceleratorPlacementMode="Hidden">
-        <Button.KeyboardAccelerators>
-          <KeyboardAccelerator Key="R" />
         </Button.KeyboardAccelerators>
       </Button>
     </Grid>
@@ -786,7 +787,8 @@
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
-                                        IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}" />
+                                        x:Name="IsRepeat_MenuItem"
+                                        Command="{x:Bind ToggleLoopingCommand}" />
                   <MenuFlyoutSeparator />
                   <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
                                      Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />

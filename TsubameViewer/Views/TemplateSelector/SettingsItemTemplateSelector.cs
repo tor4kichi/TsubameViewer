@@ -16,6 +16,7 @@ namespace TsubameViewer.Views.TemplateSelector
         public DataTemplate ThemeSelectSettingItem { get; set; }
         public DataTemplate LocaleSelectSettingItem { get; set; }
         public DataTemplate NumericTextBoxSettingItem { get; set; }
+        public DataTemplate SliderSettingItem { get; set; }
         public DataTemplate SelectorSettingItem { get; set; }
 
 
@@ -34,6 +35,7 @@ namespace TsubameViewer.Views.TemplateSelector
                 ThemeSelectSettingItemViewModel _ => ThemeSelectSettingItem,
                 LocaleSelectSettingItemViewModel _ => LocaleSelectSettingItem,
                 NumberBoxSettingItemViewModel _ => NumericTextBoxSettingItem,
+                SliderSettingItemViewModel => SliderSettingItem,
                 ISelectorSettingsItemViewModel => SelectorSettingItem,
                 _ => throw new NotSupportedException(),
             };

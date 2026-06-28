@@ -275,6 +275,10 @@ MovieViewer_NotSupportedCodec_OnceClear = Réessayez d'afficher l'image d'aperç
 MovieViewer_CheckCodec_ReEnabled = Des images d'aperçu sont disponibles.
 MovieViewer_PlaybackRate = Vitesse de lecture
 MovieViewer_IsRepeat = Lecture en boucle
+MovieViewer_Settings = Paramètres du visualiseur vidéo
+IsAutoRepeatEnablingEnabled = Activer la lecture en boucle automatique.
+AutoRepeatEnablingTime = Durée de lecture maximale (en secondes) pour l'activation automatique de la lecture en boucle.
+AutoRepeatEnabling = Lecture en boucle : Activée (automatique)
 
 
 

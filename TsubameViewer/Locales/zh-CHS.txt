@@ -275,6 +275,10 @@ MovieViewer_NotSupportedCodec_OnceClear = 请重试显示预览图像。
 MovieViewer_CheckCodec_ReEnabled = 提供预览图片。
 MovieViewer_PlaybackRate = 播放速度
 MovieViewer_IsRepeat = 循环播放
+MovieViewer_Settings = 视频查看器设置
+IsAutoRepeatEnablingEnabled = 启用自动循环播放。
+AutoRepeatEnablingTime = 自动启用循环播放的最大播放时间（以秒为单位）。
+AutoRepeatEnabling = 循环播放：已启用（自动）
 
 
 

@@ -37,6 +37,8 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     public MovieViewerPageSettings()
     {
         _isRepeat = Read(false, nameof(IsRepeat));
+        _isAutoRepeatEnablingEnabled = Read(true, nameof(IsAutoRepeatEnablingEnabled));
+        _autoRepeatEnablingTimeInSeconds = Read(60, nameof(AutoRepeatEnablingTimeInSeconds));
         _isMuted = Read(false, nameof(IsMuted));
         _playbackRate = Read(1d, nameof(PlaybackRate));
         _isHorizontalMirror = Read(false, nameof(IsHorizontalMirror));
@@ -56,6 +58,21 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     {
         get => _isRepeat;
         set => SetProperty(ref _isRepeat, value);
+    }
+
+    bool _isAutoRepeatEnablingEnabled;
+    public bool IsAutoRepeatEnablingEnabled
+    {
+        get => _isAutoRepeatEnablingEnabled;
+        set => SetProperty(ref _isAutoRepeatEnablingEnabled, value);
+    }
+
+
+    int _autoRepeatEnablingTimeInSeconds;
+    public TimeSpan AutoRepeatEnablingTimeInSeconds
+    {
+        get => TimeSpan.FromSeconds( _autoRepeatEnablingTimeInSeconds);
+        set => SetProperty(ref _autoRepeatEnablingTimeInSeconds, (int)value.TotalSeconds);
     }
 
     bool _isMuted;

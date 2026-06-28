@@ -44,6 +44,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
     readonly ImageViewerSettings _imageViewerPageSettings;
     readonly FolderListingSettings _folderListupSettings;
     private readonly StorageItemSettings _storageItemSettings;
+    private readonly MovieViewerPageSettings _movieSettings;
     readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SettingsGroupViewModel[] SettingGroups { get; }
@@ -72,6 +73,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         ImageViewerSettings imageViewerPageSettings,
         FolderListingSettings folderListupSettings,
         StorageItemSettings storageItemSettings,
+        MovieViewerPageSettings movieSettings,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
         )
     {
@@ -82,6 +84,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         _imageViewerPageSettings = imageViewerPageSettings;
         _folderListupSettings = folderListupSettings;
         _storageItemSettings = storageItemSettings;
+        _movieSettings = movieSettings;
         _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
         _isThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
         _thumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
@@ -127,6 +130,23 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
             },
             new SettingsGroupViewModel
             {
+                Label = "MovieViewer_Settings".Translate(),
+                Items =
+                {
+                    new ToggleSwitchSettingItemViewModel<MovieViewerPageSettings>("IsAutoRepeatEnablingEnabled".Translate(), _movieSettings, x => x.IsAutoRepeatEnablingEnabled),
+                    new NumberBoxSettingItemViewModel(
+                        "AutoRepeatEnablingTime".Translate(),
+                        _movieSettings.AutoRepeatEnablingTimeInSeconds.TotalSeconds,
+                        1,
+                        TimeSpan.FromHours(24).TotalSeconds,
+                        30,
+                        f => _movieSettings.AutoRepeatEnablingTimeInSeconds = TimeSpan.FromSeconds(f),
+                        f => TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(f))
+                        ),                    
+                }
+            },
+            new SettingsGroupViewModel
+            {
                 Label = "FolderItemListingSettings".Translate(),
                 Items =
                 {
@@ -136,7 +156,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
                     _cacheSizeButton,
                     new SelectorSettingsItemViewModel<ThumbnailDecodeMethod>("ThumbnailDecodeMethod".Translate(), "ThumbnailDecodeMethod_Desc".Translate(), [ThumbnailDecodeMethod.Skia, ThumbnailDecodeMethod.WindowsImageCodec, ThumbnailDecodeMethod.Win2D], _folderListingSettings.ThumbnailDecodeType, type => _folderListingSettings.ThumbnailDecodeType = type),
-                    new NumberBoxSettingItemViewModel(
+                    new SliderSettingItemViewModel(
                         "FolderItemThumbnailQuality".Translate(),                        
                         _folderListingSettings.FolderItemThumbnailQuality,
                         0.5,
@@ -147,21 +167,21 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         "StorageItemSettings_IsDisplayFolderItemsCount".Translate(),
                         "StorageItemSettings_IsDisplayFolderItemsCount_Desc".Translate(),
                         _storageItemSettings, x => x.IsDisplayFolderItemsCount),
-                    new NumberBoxSettingItemViewModel(
+                    new SliderSettingItemViewModel(
                         "StorageItemSettings_ReadingFinishedThresholdForImageViewer".Translate(),
                         _storageItemSettings.ReadingFinishedThresholdForImageViewer,
                         0.01,
                         0.99,
                         0.01,
                         f => _storageItemSettings.ReadingFinishedThresholdForImageViewer = (float)f),
-                    new NumberBoxSettingItemViewModel(
+                    new SliderSettingItemViewModel(
                         "StorageItemSettings_ReadingFinishedThresholdForEBookViewer".Translate(),
                         _storageItemSettings.ReadingFinishedThresholdForEBookViewer,
                         0.01,
                         0.99,
                         0.01,
                         f => _storageItemSettings.ReadingFinishedThresholdForEBookViewer = (float)f),
-                    new NumberBoxSettingItemViewModel(
+                    new SliderSettingItemViewModel(
                         "StorageItemSettings_ReadingFinishedThresholdForMovieViewer".Translate(),
                         _storageItemSettings.ReadingFinishedThresholdForMovieViewer,
                         0.01,
@@ -481,11 +501,73 @@ public sealed partial class SelectorSettingsItemViewModel<T> : SettingItemViewMo
     }
 }
 
-public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
+public sealed partial class NumberBoxSettingItemViewModel : SettingItemViewModelBase
 {
     readonly Action<double> _changedAction;
-    
-    public NumberBoxSettingItemViewModel(string label, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
+    private readonly Func<double, string> _headerTextConverter;
+
+    public NumberBoxSettingItemViewModel(
+        string label,
+        double firstValue,
+        double minValue,
+        double maxValue,
+        double valueStep,
+        Action<double> changedAction,
+        Func<double, string> headerTextConverter)
+    {
+        Label = label;
+        FirstValue = firstValue;
+        MinValue = minValue;
+        MaxValue = maxValue;
+        ValueStep = valueStep;
+        _changedAction = changedAction;
+        _headerTextConverter = headerTextConverter;
+        _headerText = _headerTextConverter(firstValue);
+    }
+
+    public NumberBoxSettingItemViewModel(
+        string label,
+        string desc,
+        double firstValue,
+        double minValue,
+        double maxValue,
+        double valueStep,
+        Action<double> changedAction,
+        Func<double, string> headerTextConverter)
+    {
+        Label = label;
+        Desc = desc;
+        FirstValue = firstValue;
+        MinValue = minValue;
+        MaxValue = maxValue;
+        ValueStep = valueStep;
+        _changedAction = changedAction;
+        _headerTextConverter = headerTextConverter;
+        _headerText = _headerTextConverter(firstValue);
+    }
+
+    public string Label { get; }
+    public string? Desc { get; }
+    public double FirstValue { get; }
+    public double MinValue { get; }
+    public double MaxValue { get; }
+    public double ValueStep { get; }
+
+    [ObservableProperty]
+    string _headerText = "";
+
+    public void OnValueChanged(object sender, NumberBoxValueChangedEventArgs args)
+    {
+        _changedAction(args.NewValue);
+        HeaderText = _headerTextConverter(args.NewValue);
+    }
+}
+
+public class SliderSettingItemViewModel : SettingItemViewModelBase
+{
+    readonly Action<double> _changedAction;
+
+    public SliderSettingItemViewModel(string label, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
     {
         Label = label;
         FirstValue = firstValue;
@@ -495,7 +577,7 @@ public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
         _changedAction = changedAction;
     }
 
-    public NumberBoxSettingItemViewModel(string label, string desc, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
+    public SliderSettingItemViewModel(string label, string desc, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
     {
         Label = label;
         Desc = desc;
