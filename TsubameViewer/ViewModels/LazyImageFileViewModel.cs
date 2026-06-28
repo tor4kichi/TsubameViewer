@@ -116,10 +116,8 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     public void StopImageLoading()
     {
-        if (Status is LoadingStatus.PendingLoad)
-        {
-            Status = LoadingStatus.None;
-        }
+        Status = LoadingStatus.None;
+        Image = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
@@ -175,7 +173,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         _status = LoadingStatus.PendingLoad;
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -375,10 +373,8 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
     public void StopImageLoading()
     {
-        if (Status is LoadingStatus.PendingLoad)
-        {
-            Status = LoadingStatus.None;
-        }
+        Status = LoadingStatus.None;
+        Image = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));

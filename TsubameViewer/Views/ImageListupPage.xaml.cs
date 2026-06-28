@@ -215,7 +215,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         R3.Observable.Merge(
             _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
             _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-            _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable())
+            _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
         .Debounce(TimeSpan.FromMilliseconds(10))
         .SubscribeAwait(async (_, ct) =>
         {
@@ -347,7 +348,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     double _lastVerticalOffset;    
     void UpdateVisibleRangeItemInitialize(CancellationToken ct)
     {
-        if (ct.IsCancellationRequested) { return; }
+        //if (ct.IsCancellationRequested) { return; }
         var time = TimeProvider.System.GetTimestamp();
         var sv = ItemsScrollViewer;
         Rect boundingBox = sv.ActualSize.ToSize().ToRect();
@@ -369,7 +370,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .ToArrayPool();
         _priorityLoadPendingItems.Clear();
         _loadPendingItems.Clear();
-        if (ct.IsCancellationRequested) { return; }
+        //if (ct.IsCancellationRequested) { return; }
         foreach (var item in items.ArraySegment)
         {
             if (item.DataContext is not IStorageItemViewModel itemVM || itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
@@ -383,7 +384,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             {
                 _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);                
             }
-            if (ct.IsCancellationRequested) { return; }
+            //if (ct.IsCancellationRequested) { return; }
         }
 
         Debug.WriteLine($"UpdateVisibleRangeItemInitialize Complete: {TimeProvider.System.GetElapsedTime(time)}");
@@ -580,11 +581,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe)
-        {
+        {            
             _realizedItems.Add(fe);
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
-                itemVM.EnsureImageSizeRatioAsync(_navigationCt).FireAndForgetSafe("EnsureImageSizeRatioAsync");
+                _ = itemVM.EnsureImageSizeRatioAsync(_navigationCt);
             }
         }
     }
@@ -594,7 +595,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (args.Element is FrameworkElement fe)
         {
             _realizedItems.Remove(fe);
-            if (fe.DataContext is IStorageItemViewModel itemVM)
+            if (fe.DataContext is IStorageItemViewModel itemVM
+                && !_navigationCt.IsCancellationRequested)
             {
                 itemVM.StopImageLoading();
             }

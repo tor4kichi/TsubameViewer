@@ -291,7 +291,7 @@
                 Style="{StaticResource ImageItemButtonStyle}"
                 Tag="{Binding Name}"
                 Height="{StaticResource SmallImageHeight}"
-                MinWidth="48"
+                MinWidth="80"
                 VerticalContentAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
                 Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}, Mode=OneWay}"
@@ -982,9 +982,11 @@
                                      VerticalCacheLength="4"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <uwpControls:WrapLayout Orientation="Horizontal"
-                                            HorizontalSpacing="6"
-                                            VerticalSpacing="6" />
+                    <winUI:FlowLayout MinColumnSpacing="1"
+                                      MinRowSpacing="1"
+                                      Orientation="Horizontal"
+                                      LineAlignment="Start"
+                                      />
                   </winUI:ItemsRepeater.Layout>
                 </winUI:ItemsRepeater>
               </uwpControls:Case>
@@ -997,9 +999,10 @@
                                      VerticalCacheLength="5"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <uwpControls:WrapLayout Orientation="Horizontal"
-                                            HorizontalSpacing="8"
-                                            VerticalSpacing="8" />
+                    <winUI:FlowLayout MinColumnSpacing="8"
+                                      MinRowSpacing="8"
+                                      Orientation="Horizontal"
+                                      LineAlignment="Start"/>
                   </winUI:ItemsRepeater.Layout>
                 </winUI:ItemsRepeater>
               </uwpControls:Case>
@@ -1012,9 +1015,10 @@
                                      VerticalCacheLength="7"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <uwpControls:WrapLayout Orientation="Horizontal"
-                                            HorizontalSpacing="12"
-                                            VerticalSpacing="12" />
+                    <winUI:FlowLayout MinColumnSpacing="12"
+                                      MinRowSpacing="12"
+                                      Orientation="Horizontal"
+                                      LineAlignment="Start"/>
                   </winUI:ItemsRepeater.Layout>
                 </winUI:ItemsRepeater>
               </uwpControls:Case>
