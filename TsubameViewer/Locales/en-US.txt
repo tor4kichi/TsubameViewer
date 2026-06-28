@@ -10,6 +10,8 @@ Close = Close
 Confirm = Confirm
 Refresh = Refresh
 NoItems = No items are available to display.
+Enabled = Enabled
+Disabled = Disabled
 Overwrite = Overwrite
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -270,7 +272,10 @@ MovieViewer_Subtitles_Avairable = Subtitles available
 MovieViewer_NotSupportedCodec = Video codec {0} cannot display preview images.
 MovieViewer_NotSupportedCodec_OnceClear = Retry displaying the preview image.
 MovieViewer_CheckCodec_ReEnabled = Preview images are available.
-MovieViewer_PlaybackRate = Playback Speed
+MovieViewer_PlaybackRate = playback speed
+MovieViewer_IsRepeat = Loop playback
+
+
 
 
 #### SearchResult

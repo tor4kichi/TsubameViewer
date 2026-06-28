@@ -464,6 +464,13 @@
           <KeyboardAccelerator Key="Number9" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button x:Name="ControlUI_RepeatButton"
+              Command="{x:Bind ToggleRepeatModeCommand}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="R" />
+        </Button.KeyboardAccelerators>
+      </Button>
     </Grid>
 
     <Grid x:Name="PlayerContainer" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -699,17 +706,7 @@
                 </Flyout>
               </Button.Flyout>
             </Button>
-            <ToggleButton x:Name="ControlUI_RepeatButton"
-                          IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
-                          Height="40"
-                          Width="48"
-                          AccessKey="R">
-              <ToggleButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="R" />
-              </ToggleButton.KeyboardAccelerators>
-
-              <SymbolIcon Symbol="RepeatAll" />
-            </ToggleButton>
+            
 
             <Button Height="40" Width="48">
               <SymbolIcon Symbol="Setting" />
@@ -776,6 +773,8 @@
                   </MenuFlyoutSubItem>
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                  <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
+                                        IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}" />
                   <MenuFlyoutSeparator />
                   <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
                                      Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />

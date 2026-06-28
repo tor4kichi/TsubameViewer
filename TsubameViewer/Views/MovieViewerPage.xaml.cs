@@ -3213,6 +3213,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var uri = new Uri("ms-settings:easeofaccess-closedcaptioning");
         await Launcher.LaunchUriAsync(uri);        
     }
+
+
+    [RelayCommand]
+    void ToggleRepeatMode()
+    {
+        _vm.PageSettings.IsRepeat = !_vm.PageSettings.IsRepeat;
+        StartLiteNotification($"{"MovieViewer_IsRepeat".Translate()}: {(_vm.PageSettings.IsRepeat ? "Enabled" : "Disabled").Translate()}%");
+    }
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter
