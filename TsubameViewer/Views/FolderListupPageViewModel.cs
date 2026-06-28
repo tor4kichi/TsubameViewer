@@ -283,6 +283,7 @@ public sealed partial class FolderListupPageViewModel
         d().FireAndForgetSafe();
         async Task d()
         {
+            var mode = parameters.GetNavigationMode();
             Selection.EndSelection();
             using (await _navigationLock.LockAsync(default))
             {
@@ -292,9 +293,11 @@ public sealed partial class FolderListupPageViewModel
                 }
 
                 if (_currentImageSource != null
-                    && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
+                    && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
+                    && mode == NavigationMode.New)
                 {
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentImageSource.Path, Uri.UnescapeDataString(path));
+                    Debug.WriteLine($"{Path.GetFileName(_currentImageSource.Path)} : {Path.GetFileName(Uri.UnescapeDataString(path))}");
                 }
 
                 _messenger.Unregister<RefreshNavigationRequestMessage>(this);
@@ -341,13 +344,31 @@ public sealed partial class FolderListupPageViewModel
 
         foreach (var item in FolderItems)
         {
-            if (item.Name == lastIntaractItem)
+            if (item.Name.Equals(lastIntaractItem, StringComparison.Ordinal))
             {
                 return item;
             }
         }
 
         return null;
+    }
+
+    public (int Index, IStorageItemViewModel? Item) GetLastIntractIndexAndItem()
+    {
+        if (_currentImageSource == null) { return default; }
+
+        var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentImageSource.Path);
+        if (lastIntaractItem == null) { return default; }
+
+        foreach (var (i, item) in FileItemsView.AsValueEnumerable().Cast<IStorageItemViewModel>().Index())
+        {
+            if (item.Name.Equals(lastIntaractItem, StringComparison.Ordinal))
+            {
+                return (i, item);
+            }
+        }
+
+        return default;
     }
 
     async ValueTask<bool> IsRequireUpdateAsync(string newPath, string pageName, CancellationToken ct)
