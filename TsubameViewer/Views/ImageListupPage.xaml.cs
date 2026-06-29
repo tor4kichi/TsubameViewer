@@ -204,13 +204,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             try
             {
+                // ここでawaitをつけるとUIの応答性が下がるので避けたい
                 if (e.NavigationMode == NavigationMode.New)
                 {
-                    await ResetScrollPosition(ct);
+                    _ = ResetScrollPosition(ct);
                 }
                 else
-                {
-                    await BringIntoViewLastIntractItem(ct);
+                {                    
+                    _ = BringIntoViewLastIntractItem(ct);
                 }
             }
             catch (OperationCanceledException) { }
@@ -218,15 +219,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
 
-            // Back/Forwardで移動してきた場合、_realizedItemsに前回表示が残っている
+            // itemVM側の非同期ロックに期待して全部を一気に処理させる
+            // ここでawaitをつけるとUIの応答性が下がるので避けたい
             using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
             try
             {
-                await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM =>
+                foreach (var itemVM in items.ArraySegment)
                 {
-                    await itemVM.EnsureImageSizeRatioAsync(ct);
-                    await itemVM.InitializeAsync(ct);
-                }, maxDegreeOfParallelism: Environment.ProcessorCount, ct: ct);
+                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
+                    _ = itemVM.InitializeAsync(ct);
+                }
             }
             catch (OperationCanceledException) { }
         }

@@ -222,7 +222,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         async Task d(NavigationEventArgs e, CancellationToken ct)
         {
             base.OnNavigatedTo(e);
-
             
             DisposableBuilder db = new();
             HandleCreateFolderDialogTextChanging(ref db);
@@ -302,8 +301,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 //}
             }
 
+            // itemVM側の非同期ロックに期待して全部を一気に処理させる
+            // ここでawaitをつけるとUIの応答性が下がるので避けたい
             using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM => await itemVM.InitializeAsync(ct), maxDegreeOfParallelism: Environment.ProcessorCount / 2, ct: ct);
+            try
+            {
+                foreach (var itemVM in items.ArraySegment)
+                {
+                    _ = itemVM.InitializeAsync(ct);
+                }
+            }
+            catch (OperationCanceledException) { }
         }
     }
 
