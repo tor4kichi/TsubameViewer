@@ -120,7 +120,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         Image = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
     readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -170,23 +170,24 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         var lastStatus = _status;
         if (lastStatus is not LoadingStatus.None and not LoadingStatus.PendingLoad and not LoadingStatus.NowLoading) { return; }
 
-        _status = LoadingStatus.PendingLoad;
         try
         {
-            //using (await _asyncLock.LockAsync(ct))
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
+            _status = LoadingStatus.PendingLoad;
+            await EnsureStorageItemAsync(ct);
+            Guard.IsNotNull(Item);
+
+            _status = LoadingStatus.NowLoading;
+            using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
-                if (_status is not LoadingStatus.PendingLoad) { return; }
-                
-                _status = LoadingStatus.NowLoading;
-                await EnsureStorageItemAsync(ct);
-                Guard.IsNotNull(Item);
+                if (_status is not LoadingStatus.NowLoading) { return; }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
-                    if (_status is not LoadingStatus.NowLoading) { return; }
 
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
@@ -373,7 +374,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public bool IsInitialized => _status == LoadingStatus.Laoded;
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
     readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public async ValueTask InitializeAsync(CancellationToken ct)
@@ -383,19 +384,20 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         var lastStatus = _status;
         if (lastStatus is not LoadingStatus.None and not LoadingStatus.PendingLoad and not LoadingStatus.NowLoading) { return; }
 
-        _status = LoadingStatus.PendingLoad;
         try
         {
-            // ImageListupPageの読み込みを順列化しているためロック不要
-            //using (await _asyncLock.LockAsync(ct))
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
+            _status = LoadingStatus.PendingLoad;
+            await EnsureStorageItemAsync(ct);
+            Guard.IsNotNull(Item);
+            _status = LoadingStatus.NowLoading;
+            using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
-                if (_status is not LoadingStatus.PendingLoad) { return; }
+                if (_status is not LoadingStatus.NowLoading) { return; }
 
-                _status = LoadingStatus.NowLoading;
-                await EnsureStorageItemAsync(ct);
-                Guard.IsNotNull(Item);
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
