@@ -346,11 +346,6 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
-        foreach (var itemVM in ImageFileItems.Reverse())
-        {
-            itemVM.StopImageLoading();
-        }
-
         base.OnNavigatedFrom(parameters);
     }
     

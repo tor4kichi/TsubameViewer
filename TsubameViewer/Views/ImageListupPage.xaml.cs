@@ -118,10 +118,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         ContentViewTypeSelector.SelectedIndex = 1;
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) => 
-        {
-            var image = _realizedItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
-            if (image is { } target)
+        {            
+            if (_realizedItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false) is { } itemVM
+            && GetCurrentDisplayItemsRepeater() is { } itemsRepeater)
             {
+                var index = _vm.FileItemsView.IndexOf(itemVM);
+                var image = itemsRepeater.GetOrCreateElement(index);
                 m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                 {
                     return (UIElement?)image;
@@ -202,13 +204,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             try
             {
+                // ここでawaitをつけるとUIの応答性が下がるので避けたい
                 if (e.NavigationMode == NavigationMode.New)
                 {
-                    await ResetScrollPosition(ct);
+                    _ = ResetScrollPosition(ct);
                 }
                 else
-                {
-                    await BringIntoViewLastIntractItem(ct);
+                {                    
+                    _ = BringIntoViewLastIntractItem(ct);
                 }
             }
             catch (OperationCanceledException) { }
@@ -216,16 +219,18 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
 
-            // Back/Forwardで移動してきた場合、_realizedItemsに前回表示が残っている
-            foreach (var itemVM in _realizedItems)
+            // itemVM側の非同期ロックに期待して全部を一気に処理させる
+            // ここでawaitをつけるとUIの応答性が下がるので避けたい
+            using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
+            try
             {
-                try
+                foreach (var itemVM in items.ArraySegment)
                 {
-                    await itemVM.EnsureImageSizeRatioAsync(ct);
-                    await itemVM.InitializeAsync(ct);
+                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
+                    itemVM.RestoreThumbnailLoadingTask(ct);
                 }
-                catch (OperationCanceledException) { }
             }
+            catch (OperationCanceledException) { }
         }
     }
 
@@ -285,13 +290,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-
     private ItemsRepeater? GetCurrentDisplayItemsRepeater()
     {
-        if (FileItemsRepeater_Small.Visibility == Visibility.Visible) { return FileItemsRepeater_Small; }
-        else if (FileItemsRepeater_Midium.Visibility == Visibility.Visible) { return FileItemsRepeater_Midium; }
-        else if (FileItemsRepeater_Large.Visibility == Visibility.Visible) { return FileItemsRepeater_Large; }
-        else { return null; }
+        return _vm.FileDisplayMode switch
+        {
+            FileDisplayMode.Small => FileItemsRepeater_Small,
+            FileDisplayMode.Midium => FileItemsRepeater_Midium,
+            FileDisplayMode.Large => FileItemsRepeater_Large,
+            _ => null,
+        };
     }
 
     public async Task<UIElement?> BringIntoViewLastIntractItem(CancellationToken ct)
@@ -343,7 +350,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         return mode.ToString();
     }
 
-    ObservableCollection<IStorageItemViewModel> _realizedItems = [];
+    ObservableCollection<IStorageItemViewModel> _realizedItems = [];    
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Environment.ProcessorCount / 2);
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {        

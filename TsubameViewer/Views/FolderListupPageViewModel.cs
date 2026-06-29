@@ -287,11 +287,6 @@ public sealed partial class FolderListupPageViewModel
             Selection.EndSelection();
             using (await _navigationLock.LockAsync(default))
             {
-                foreach (var itemVM in FolderItems)
-                {
-                    itemVM.StopImageLoading();
-                }
-
                 if (_currentImageSource != null
                     && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
                     && mode == NavigationMode.New)
@@ -422,14 +417,6 @@ public sealed partial class FolderListupPageViewModel
                 else
                 {
                     _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
-
-                    if (FolderItems != null)
-                    {
-                        foreach (var itemVM in FolderItems)
-                        {
-                            itemVM.RestoreThumbnailLoadingTask(ct);                            
-                        }
-                    }
 
                     FileItemsView.RefreshFilter();
                 }

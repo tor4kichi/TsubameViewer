@@ -176,8 +176,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
                 else
                 {
-                    _realizedItems.Remove(itemVM);
-                    itemVM.StopImageLoading();
+                    _realizedItems.Remove(itemVM);     
+                    if (!_navigationCt.IsCancellationRequested)
+                    {
+                        itemVM.StopImageLoading();
+                    }
                 }
             }
             
@@ -222,7 +225,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         async Task d(NavigationEventArgs e, CancellationToken ct)
         {
             base.OnNavigatedTo(e);
-
             
             DisposableBuilder db = new();
             HandleCreateFolderDialogTextChanging(ref db);
@@ -302,8 +304,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 //}
             }
 
+            // itemVM側の非同期ロックに期待して全部を一気に処理させる
+            // ここでawaitをつけるとUIの応答性が下がるので避けたい
             using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM => await itemVM.InitializeAsync(ct), maxDegreeOfParallelism: 8, ct: ct);
+            try
+            {
+                foreach (var itemVM in items.ArraySegment)
+                {
+                    itemVM.RestoreThumbnailLoadingTask(ct);
+                }
+            }
+            catch (OperationCanceledException) { }
         }
     }
 

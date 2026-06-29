@@ -162,7 +162,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         }
     }
 
-    public bool IsInitialized => _status == LoadingStatus.Laoded;
+    public bool IsInitialized => _status == LoadingStatus.Loaded;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
@@ -201,7 +201,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     }
                 }
                 
-                Status = LoadingStatus.Laoded;
+                Status = LoadingStatus.Loaded;
             }
         }
         catch (OperationCanceledException)
@@ -231,7 +231,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (Status is LoadingStatus.NowLoading)
+        if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
             InitializeAsync(ct).FireAndForgetSafe();
@@ -371,7 +371,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         }
     }
 
-    public bool IsInitialized => _status == LoadingStatus.Laoded;
+    public bool IsInitialized => _status == LoadingStatus.Loaded;
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
@@ -415,12 +415,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     }
                 }
 
-                Status = LoadingStatus.Laoded;
+                Status = LoadingStatus.Loaded;
             }
         }
         catch (OperationCanceledException)
         {
-            Status = LoadingStatus.NowLoading;
+            Status = LoadingStatus.PendingLoad;
         }
         catch (NotSupportedImageFormatException ex)
         {
@@ -505,7 +505,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (Status is LoadingStatus.NowLoading)
+        if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
             InitializeAsync(ct).FireAndForgetSafe();

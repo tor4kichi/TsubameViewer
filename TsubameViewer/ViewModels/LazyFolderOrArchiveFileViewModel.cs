@@ -32,7 +32,7 @@ public enum LoadingStatus
     None,
     PendingLoad,
     NowLoading,
-    Laoded,
+    Loaded,
 
     LoadFailed,
 }
@@ -153,7 +153,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     }
     public bool IsThumbanilImageCached => Item == null ? false : _thumbnailImageService.GetCachedThumbnailSize(Item) != null;
 
-    public bool IsInitialized => _status == LoadingStatus.Laoded;
+    public bool IsInitialized => _status == LoadingStatus.Loaded;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
@@ -189,7 +189,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     }
                 }
 
-                Status = LoadingStatus.Laoded;
+                Status = LoadingStatus.Loaded;
             }
             UpdateLastReadPosition();
         }
@@ -281,7 +281,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (Status is LoadingStatus.NowLoading)
+        if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
             InitializeAsync(ct).FireAndForgetSafe();
@@ -454,7 +454,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         //}
     }
 
-    public bool IsInitialized => _status == LoadingStatus.Laoded;
+    public bool IsInitialized => _status == LoadingStatus.Loaded;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
@@ -494,7 +494,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                 UpdateLastReadPosition();
 
                 //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-                Status = LoadingStatus.Laoded;
+                Status = LoadingStatus.Loaded;
             }
             
         }
@@ -602,7 +602,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (Status is LoadingStatus.NowLoading)
+        if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
             InitializeAsync(ct).FireAndForgetSafe();
