@@ -219,15 +219,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             HandleCreateFolderDialogTextChanging(ct);
 
             // Back/Forwardで移動してきた場合、_realizedItemsに前回表示が残っている
-            foreach (var itemVM in _realizedItems)
+            using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
+            try
             {
-                try
+                await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM =>
                 {
                     await itemVM.EnsureImageSizeRatioAsync(ct);
                     await itemVM.InitializeAsync(ct);
-                }
-                catch (OperationCanceledException) { }
+                }, maxDegreeOfParallelism: Environment.ProcessorCount, ct: ct);
             }
+            catch (OperationCanceledException) { }
         }
     }
 
@@ -347,7 +348,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         return mode.ToString();
     }
 
-    ObservableCollection<IStorageItemViewModel> _realizedItems = [];
+    ObservableCollection<IStorageItemViewModel> _realizedItems = [];    
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Environment.ProcessorCount / 2);
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {        

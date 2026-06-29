@@ -303,7 +303,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
 
             using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM => await itemVM.InitializeAsync(ct), maxDegreeOfParallelism: 8, ct: ct);
+            await items.ArraySegment.ToAwaitableParallelTaskAsync(async itemVM => await itemVM.InitializeAsync(ct), maxDegreeOfParallelism: Environment.ProcessorCount / 2, ct: ct);
         }
     }
 
