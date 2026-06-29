@@ -193,14 +193,18 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .AddTo(ref db);
         // スクロールやアイテム追加に反応して表示範囲内の初期化対象アイテムを検出する
         R3.Observable.Merge(
-            _vm.ObservePropertyChanged(x => x.SelectedFileSortType, true).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
-            _vm.ImageFileItems.ObservePropertyChanged(x => x.Count, false).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
-            _vm.ObservePropertyChanged(x => x.FileDisplayMode).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
-            _vm.ObservePropertyChanged(x => x.IsFavoriteFilteredDisplayEnabled).Delay(TimeSpan.FromMilliseconds(100)).AsUnitObservable(),
+            Observable.Merge(
+                _vm.ObservePropertyChanged(x => x.SelectedFileSortType, true).AsUnitObservable(),
+                _vm.ImageFileItems.ObservePropertyChanged(x => x.Count, false).AsUnitObservable(),
+                _vm.ObservePropertyChanged(x => x.FileDisplayMode).AsUnitObservable(),
+                _vm.ObservePropertyChanged(x => x.IsFavoriteFilteredDisplayEnabled).AsUnitObservable(),
+                _messenger.CreateObservable<RefreshNavigationRequestMessage>().ToObservable().AsUnitObservable(),
+                _vm.ObservePropertyChanged(x => x.NowProcessing).AsUnitObservable(),
+                Observable.Empty<Unit>() // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
+                )
+                .Delay(TimeSpan.FromMilliseconds(100)),
             _realizedItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable(),
-            _messenger.CreateObservable<RefreshNavigationRequestMessage>().ToObservable().Delay(TimeSpan.FromMilliseconds(500)).AsUnitObservable(),
-            Observable.Empty<Unit>().Delay(TimeSpan.FromMilliseconds(100)) // 同パスを再読み込みした場合に個数変動がないので強制的に動かしたい
+            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable()
             )
             .ThrottleFirstLast(TimeSpan.FromMilliseconds(250))
             .SubscribeAwait(async (_, ct) =>
@@ -373,16 +377,18 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .ToArrayPool();
         foreach (var item in items.ArraySegment)
         {
-            if (item.DataContext is not IStorageItemViewModel itemVM || itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
+            if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }
             var t = item.TransformToVisual(FileItemsContainer);
             var pos = t.TransformPoint(scrollPos);
             if (currentContentArea.Contains(pos))
             {                
-                _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);                
+                _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+                _loadPendingItems.Remove(itemVM);
             }
             else 
             {
-                _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);                
+                _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+                _priorityLoadPendingItems.Remove(itemVM);
             }            
         }
 

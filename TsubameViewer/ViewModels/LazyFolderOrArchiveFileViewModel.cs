@@ -165,7 +165,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _status = LoadingStatus.PendingLoad;
         try
         {
-            //using (await _asyncLock.LockAsync(ct))
+            using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -219,6 +219,10 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             Status = LoadingStatus.LoadFailed;
             _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }        
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
     }
 
     public async ValueTask EnsureStorageItemAsync(CancellationToken ct)
@@ -519,6 +523,10 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         {
             Status = LoadingStatus.LoadFailed;
             _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
         }
     }
 
