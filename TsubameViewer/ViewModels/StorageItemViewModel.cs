@@ -239,6 +239,10 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             IsInitialized = true;
             _messenger.Send(new StorageItemNotFoundMessage(Path));
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
         finally
         {
             _initializeCts = null;

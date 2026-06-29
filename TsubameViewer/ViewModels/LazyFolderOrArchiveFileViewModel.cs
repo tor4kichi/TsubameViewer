@@ -133,13 +133,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void StopImageLoading()
     {
-        if (Status is LoadingStatus.PendingLoad)
-        {
-            Status = LoadingStatus.None;
-        }
+        Status = LoadingStatus.None;
+        Image = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
     readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -153,6 +151,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         //    ImageAspectRatioWH = size.RatioWH;
         //}
     }
+    public bool IsThumbanilImageCached => Item == null ? false : _thumbnailImageService.GetCachedThumbnailSize(Item) != null;
 
     public bool IsInitialized => _status == LoadingStatus.Laoded;
     public async ValueTask InitializeAsync(CancellationToken ct)
@@ -162,18 +161,19 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         var lastStatus = _status;
         if (lastStatus is not LoadingStatus.None and not LoadingStatus.PendingLoad and not LoadingStatus.NowLoading) { return; }
 
-        _status = LoadingStatus.PendingLoad;
         try
         {
-            //using (await _asyncLock.LockAsync(ct))
-            {
-                if (IsInitialized) { return; }
-                if (_disposed) { return; }
-                if (_status is not LoadingStatus.PendingLoad) { return; }
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
+            _status = LoadingStatus.PendingLoad;
 
-                _status = LoadingStatus.NowLoading;
-                await EnsureStorageItemAsync(ct);
-                Guard.IsNotNull(Item);
+            await EnsureStorageItemAsync(ct);
+            Guard.IsNotNull(Item);
+
+            _status = LoadingStatus.NowLoading;
+            using (await _asyncLock.LockAsync(ct))
+            {
+                if (_status is not LoadingStatus.NowLoading) { return; }
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -182,14 +182,13 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    using (var l = await _imageLoadingLock.LockAsync(ct))
+                    //using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
                     }
                 }
 
-                //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 Status = LoadingStatus.Laoded;
             }
             UpdateLastReadPosition();
@@ -219,6 +218,10 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             Status = LoadingStatus.LoadFailed;
             _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }        
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
     }
 
     public async ValueTask EnsureStorageItemAsync(CancellationToken ct)
@@ -433,13 +436,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     public void StopImageLoading()
     {
-        if (Status is LoadingStatus.PendingLoad)
-        {
-            Status = LoadingStatus.None;
-        }
+        Status = LoadingStatus.None;
+        Image = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new();
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -464,15 +465,15 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         _status = LoadingStatus.PendingLoad;
         try
         {
-            //using (await _asyncLock.LockAsync(ct))
-            {
-                if (IsInitialized) { return; }
-                if (_disposed) { return; }
-                if (_status is not LoadingStatus.PendingLoad) { return; }
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
 
-                _status = LoadingStatus.NowLoading;
-                await EnsureStorageItemAsync(ct);
-                Guard.IsNotNull(Item);
+            await EnsureStorageItemAsync(ct);
+            Guard.IsNotNull(Item);
+            _status = LoadingStatus.NowLoading;
+            using (await _asyncLock.LockAsync(ct))
+            {
+                if (_status is not LoadingStatus.NowLoading) { return; }
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -481,8 +482,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    using (await _imageLoadingLock.LockAsync(ct))
+                    //using (await _imageLoadingLock.LockAsync(ct))
                     {
+                        if (_status is not LoadingStatus.NowLoading) { return; }
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
                     }
@@ -494,6 +496,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                 //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 Status = LoadingStatus.Laoded;
             }
+            
         }
         catch (OperationCanceledException)
         {
@@ -520,6 +523,10 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             Status = LoadingStatus.LoadFailed;
             _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
     }
 
     public async ValueTask EnsureStorageItemAsync(CancellationToken ct)
@@ -543,11 +550,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             }
 
             Item = new StorageItemImageSource(storageItem);
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
+            //Name = Item.Name;
+            //Path = Item.Path;
+            //DateCreated = Item.DateCreated;
+            //Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+            //IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)
             {

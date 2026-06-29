@@ -120,7 +120,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         Image = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
     readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -170,23 +170,24 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         var lastStatus = _status;
         if (lastStatus is not LoadingStatus.None and not LoadingStatus.PendingLoad and not LoadingStatus.NowLoading) { return; }
 
-        _status = LoadingStatus.PendingLoad;
         try
         {
-            //using (await _asyncLock.LockAsync(ct))
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
+            _status = LoadingStatus.PendingLoad;
+            await EnsureStorageItemAsync(ct);
+            Guard.IsNotNull(Item);
+
+            _status = LoadingStatus.NowLoading;
+            using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
-                if (_status is not LoadingStatus.PendingLoad) { return; }
-                
-                _status = LoadingStatus.NowLoading;
-                await EnsureStorageItemAsync(ct);
-                Guard.IsNotNull(Item);
+                if (_status is not LoadingStatus.NowLoading) { return; }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
-                    if (_status is not LoadingStatus.NowLoading) { return; }
 
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
@@ -356,7 +357,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         }
     }
 
-    public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
     LoadingStatus _status = LoadingStatus.None;
     public LoadingStatus Status
     {
@@ -371,66 +371,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         }
     }
 
-    public void StopImageLoading()
-    {
-        Status = LoadingStatus.None;
-        Image = null;
-    }
-
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
-
-    public ValueTask PrepareImageSizeAsync(CancellationToken ct)
-    {
-        return new ValueTask();
-        //if (Item == null) { return; }
-
-        //if (ImageAspectRatioWH == null)
-        //{
-        //    var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
-        //    ImageAspectRatioWH = size.RatioWH;
-        //}
-    }
-
-    async ValueTask EnsureStorageItemAsync(CancellationToken ct)
-    {        
-        if (Item == null)
-        {
-            StorageFile file;
-            try
-            {
-                file = await _imageCollectionContext.Folder.GetFileAsync(_cacheEntry.Name).AsTask(ct);
-            }
-            catch (DirectoryNotFoundException)
-            {
-                _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
-                throw;
-            }
-            catch (FileNotFoundException)
-            {
-                _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
-                throw;
-            }            
-            Item = new StorageItemImageSource(file);
-
-            // コンストラクタで初期化済みの項目はOnPropertyChanged発火も回避したいので更新しない
-            //Name = Item.Name;
-            //Path = Item.Path;
-            //DateCreated = Item.DateCreated;
-            //Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            //UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
-        }
-
-        if (Type == StorageItemTypes.Movie
-            && Duration == null
-            &&  Item.StorageItem is StorageFile movieFile)
-        {
-            var videoProps = await movieFile.Properties.GetVideoPropertiesAsync();
-            Duration = TimeSpanHelper.FormatTimeSpan(videoProps?.Duration ?? TimeSpan.Zero);
-        }
-    }
-
     public bool IsInitialized => _status == LoadingStatus.Laoded;
+    public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
+
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
+    readonly static Core.AsyncLock _imageLoadingLock = new();
+
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
@@ -438,19 +384,20 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         var lastStatus = _status;
         if (lastStatus is not LoadingStatus.None and not LoadingStatus.PendingLoad and not LoadingStatus.NowLoading) { return; }
 
-        _status = LoadingStatus.PendingLoad;
         try
         {
-            // ImageListupPageの読み込みを順列化しているためロック不要
-            //using (await _asyncLock.LockAsync(ct))
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
+            _status = LoadingStatus.PendingLoad;
+            await EnsureStorageItemAsync(ct);
+            Guard.IsNotNull(Item);
+            _status = LoadingStatus.NowLoading;
+            using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
-                if (_status is not LoadingStatus.PendingLoad) { return; }
+                if (_status is not LoadingStatus.NowLoading) { return; }
 
-                _status = LoadingStatus.NowLoading;
-                await EnsureStorageItemAsync(ct);
-                Guard.IsNotNull(Item);
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -461,8 +408,11 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = bitmapImage;
+                    using (await _imageLoadingLock.LockAsync(ct))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = bitmapImage;
+                    }
                 }
 
                 Status = LoadingStatus.Laoded;
@@ -483,7 +433,67 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         {
             Status = LoadingStatus.LoadFailed;
         }        
+        catch { } // LiteDBの書き込みエラーへの対処
     }
+
+
+    public ValueTask PrepareImageSizeAsync(CancellationToken ct)
+    {
+        return new ValueTask();
+        //if (Item == null) { return; }
+
+        //if (ImageAspectRatioWH == null)
+        //{
+        //    var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
+        //    ImageAspectRatioWH = size.RatioWH;
+        //}
+    }
+
+    public void StopImageLoading()
+    {
+        Status = LoadingStatus.None;
+        Image = null;
+    }
+
+    async ValueTask EnsureStorageItemAsync(CancellationToken ct)
+    {
+        if (Item == null)
+        {
+            StorageFile file;
+            try
+            {
+                file = await _imageCollectionContext.Folder.GetFileAsync(_cacheEntry.Name).AsTask(ct);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
+                throw;
+            }
+            catch (FileNotFoundException)
+            {
+                _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
+                throw;
+            }
+            Item = new StorageItemImageSource(file);
+
+            // コンストラクタで初期化済みの項目はOnPropertyChanged発火も回避したいので更新しない
+            //Name = Item.Name;
+            //Path = Item.Path;
+            //DateCreated = Item.DateCreated;
+            //Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+            //UpdateLastReadPosition();
+            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
+        }
+
+        if (Type == StorageItemTypes.Movie
+            && Duration == null
+            && Item.StorageItem is StorageFile movieFile)
+        {
+            var videoProps = await movieFile.Properties.GetVideoPropertiesAsync();
+            Duration = TimeSpanHelper.FormatTimeSpan(videoProps?.Duration ?? TimeSpan.Zero);
+        }
+    }
+
 
     public void UpdateLastReadPosition()
     {
