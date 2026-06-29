@@ -176,8 +176,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
                 else
                 {
-                    _realizedItems.Remove(itemVM);
-                    itemVM.StopImageLoading();
+                    _realizedItems.Remove(itemVM);     
+                    if (!_navigationCt.IsCancellationRequested)
+                    {
+                        itemVM.StopImageLoading();
+                    }
                 }
             }
             
@@ -308,7 +311,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             {
                 foreach (var itemVM in items.ArraySegment)
                 {
-                    _ = itemVM.InitializeAsync(ct);
+                    itemVM.RestoreThumbnailLoadingTask(ct);
                 }
             }
             catch (OperationCanceledException) { }

@@ -227,7 +227,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 foreach (var itemVM in items.ArraySegment)
                 {
                     _ = itemVM.EnsureImageSizeRatioAsync(ct);
-                    _ = itemVM.InitializeAsync(ct);
+                    itemVM.RestoreThumbnailLoadingTask(ct);
                 }
             }
             catch (OperationCanceledException) { }
