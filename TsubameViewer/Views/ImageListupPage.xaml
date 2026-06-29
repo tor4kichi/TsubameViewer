@@ -982,8 +982,8 @@
                                      VerticalCacheLength="4"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <winUI:FlowLayout MinColumnSpacing="1"
-                                      MinRowSpacing="1"
+                    <winUI:FlowLayout MinColumnSpacing="2"
+                                      MinRowSpacing="2"
                                       Orientation="Horizontal"
                                       LineAlignment="Start"
                                       />
@@ -999,8 +999,8 @@
                                      VerticalCacheLength="5"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <winUI:FlowLayout MinColumnSpacing="8"
-                                      MinRowSpacing="8"
+                    <winUI:FlowLayout MinColumnSpacing="4"
+                                      MinRowSpacing="4"
                                       Orientation="Horizontal"
                                       LineAlignment="Start"/>
                   </winUI:ItemsRepeater.Layout>
@@ -1015,8 +1015,8 @@
                                      VerticalCacheLength="7"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <winUI:FlowLayout MinColumnSpacing="12"
-                                      MinRowSpacing="12"
+                    <winUI:FlowLayout MinColumnSpacing="8"
+                                      MinRowSpacing="8"
                                       Orientation="Horizontal"
                                       LineAlignment="Start"/>
                   </winUI:ItemsRepeater.Layout>
