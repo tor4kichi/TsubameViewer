@@ -550,11 +550,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             }
 
             Item = new StorageItemImageSource(storageItem);
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
+            //Name = Item.Name;
+            //Path = Item.Path;
+            //DateCreated = Item.DateCreated;
+            //Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+            //IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)
             {
