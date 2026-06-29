@@ -1403,15 +1403,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void HideMouseCursor()
     {
         if (!IsPointerInsideWindow()) { return; }
-        // 現在のウィンドウのカーソルに null を設定
-        Window.Current.CoreWindow.PointerCursor = null;
+
+        if (Window.Current.CoreWindow.PointerCursor != null)
+        {
+            _lastCursor = Window.Current.CoreWindow.PointerCursor;
+            // 現在のウィンドウのカーソルに null を設定
+            Window.Current.CoreWindow.PointerCursor = null;
+        }
     }
 
     // マウスカーソルを再表示する（通常の矢印カーソル）
+    CoreCursor? _lastCursor;
     void ShowMouseCursor()
     {
-        // Arrow（矢印）タイプを指定して再設定
-        Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Arrow, 0);
+        if (Window.Current.CoreWindow.PointerCursor == null)
+        {
+            // Arrow（矢印）タイプを指定して再設定
+            Window.Current.CoreWindow.PointerCursor = _lastCursor;
+        }
     }
 
 

@@ -24,7 +24,7 @@
       xmlns:media="using:Windows.UI.Xaml.Media"
       mc:Ignorable="d"
       xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
-      xmlns:wst="using:CommunityToolkit.WinUI">
+      xmlns:ctwu="using:CommunityToolkit.WinUI">
 
   <Page.Resources>
     <Style TargetType="fluentIcon:FluentSymbolIcon">
@@ -41,7 +41,8 @@
                     uwpControls:DockPanel.Dock="Right">
           <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
-                        ToolTipService.Placement="Bottom">
+                        ToolTipService.Placement="Bottom"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="Favorite"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </ToggleButton>
@@ -49,7 +50,8 @@
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}"
                         ToolTipService.Placement="Bottom"
-                        AccessKey="A">
+                        AccessKey="A"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="ZoomIn"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -58,7 +60,8 @@
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerRotate}"
                         ToolTipService.Placement="Bottom"
-                        AccessKey="R">
+                        AccessKey="R"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="Orientation"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -67,7 +70,8 @@
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}"
                         ToolTipService.Placement="Bottom"
-                        AccessKey="H">
+                        AccessKey="H"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="Sort"
                         Style="{StaticResource TitlebarSymbolIcon}">
               <SymbolIcon.RenderTransform>
@@ -79,7 +83,8 @@
                   Style="{StaticResource TitlebarButton}"
                   ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
                   ToolTipService.Placement="Bottom"
-                  AccessKey="F">
+                  AccessKey="F"
+                  ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -177,7 +182,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:IsEqualStateTrigger Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
+            <ctwu:IsEqualStateTrigger Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
                                      To="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -571,7 +576,7 @@
                   IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                   KeyboardAcceleratorPlacementMode="Hidden"
                   KeyTipPlacementMode="Hidden"
-                  wst:FrameworkElementExtensions.Cursor="Hand" >
+                  ctwu:FrameworkElementExtensions.Cursor="Hand">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>
@@ -612,7 +617,8 @@
             <ToggleButton ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_Subtitles}"
                           IsChecked="{x:Bind _vm.PageSettings.IsSubtitleDisplayEnabled, Mode=TwoWay}"
                           MinWidth="60"
-                          Height="40">
+                          Height="40"
+                          ctwu:FrameworkElementExtensions.Cursor="Hand">
               <SymbolIcon Symbol="ClosedCaption"
                           RenderTransformOrigin="0.5, 0.5">
                 <SymbolIcon.RenderTransform>
@@ -623,7 +629,8 @@
             
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60"
-                    Height="40">
+                    Height="40"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <Button.Flyout>
                 <Flyout Opened="MenuFlyout_Opened"
                         Closed="MenuFlyout_Closed">
@@ -809,7 +816,7 @@
                     Height="40"
                     Width="48"
                     AccessKey="P"
-                    >
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <SymbolIcon Symbol="Play" />
             </Button>
 
@@ -822,7 +829,8 @@
                           Interval="80"
                           HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Stretch"
-                          AccessKey="J">
+                          AccessKey="J"
+                          ctwu:FrameworkElementExtensions.Cursor="Hand">
               <Grid>
                 <TextBlock Text="1" HorizontalAlignment="Left" VerticalAlignment="Top"
                            Style="{StaticResource CaptionTextBlockStyle}"/>
@@ -843,7 +851,8 @@
                           Interval="80"
                           HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Stretch"
-                          AccessKey="K">
+                          AccessKey="K"
+                          ctwu:FrameworkElementExtensions.Cursor="Hand">
               <RepeatButton.KeyboardAccelerators>
                 <KeyboardAccelerator Key="Right" />
               </RepeatButton.KeyboardAccelerators>
@@ -866,7 +875,8 @@
                     Command="{x:Bind ToggleIsMutedCommand}"
                     Height="40"
                     Width="48"
-                    AccessKey="M">
+                    AccessKey="M"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <fluentIcon:FluentSymbolIcon Symbol="Speaker224" />
             </Button>
             <Slider Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
@@ -877,7 +887,8 @@
                     MinWidth="120"
                     Margin="0 4 0 0"
                     ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
-                    PointerReleased="ControlUI_SoundVolumeSlider_PointerReleased" />
+                    PointerReleased="ControlUI_SoundVolumeSlider_PointerReleased"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand" />
           </StackPanel>
         </uwpControls:DockPanel>
       </StackPanel>
@@ -949,7 +960,8 @@
               VerticalAlignment="Top"
               Height="48"
               Width="48"
-              Margin="16">
+              Margin="16"
+              ctwu:FrameworkElementExtensions.Cursor="Hand">
         <SymbolIcon Symbol="Clear" />
       </Button>
     </Grid>
@@ -1026,7 +1038,8 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Margin="1 1 0 0"
-                CornerRadius="12">
+                CornerRadius="12"
+                ctwu:FrameworkElementExtensions.Cursor="Hand">
           <SymbolIcon Symbol="Clear" />
         </Button>
       </Grid>
@@ -1039,12 +1052,12 @@
                    MaxWidth="400"
                    TextWrapping="Wrap"
                    Foreground="{ThemeResource SystemChromeWhiteColor}">
-          <wst:Effects.Shadow>
-            <wst:AttachedDropShadow CastTo="{x:Bind ShadowTarget}"
+          <ctwu:Effects.Shadow>
+            <ctwu:AttachedDropShadow CastTo="{x:Bind ShadowTarget}"
                                                 BlurRadius="4" 
                                                 Offset="1, 1"
                                                 Color="{ThemeResource SystemChromeBlackMediumColor}"/>
-          </wst:Effects.Shadow>
+          </ctwu:Effects.Shadow>
         </TextBlock>
       </Grid>
     </StackPanel>
