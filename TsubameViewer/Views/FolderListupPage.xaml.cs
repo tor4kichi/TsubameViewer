@@ -137,6 +137,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 if (!args.InRecycleQueue)
                 {
                     _realizedItems.Add(itemVM);
+                    await itemVM.InitializeAsync(_navigationCt);
 
                     // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
                     await itemVM.ObservePropertyChanged(x => x.IsInitialized)
@@ -176,6 +177,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 else
                 {
                     _realizedItems.Remove(itemVM);
+                    itemVM.StopImageLoading();
                 }
             }
             
@@ -209,6 +211,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         base.OnNavigatingFrom(e);
     }
 
+
+    AsyncLock _imageGenerationLock = new AsyncLock(Environment.ProcessorCount / 2);
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
@@ -222,17 +226,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             
             DisposableBuilder db = new();
             HandleCreateFolderDialogTextChanging(ref db);
-            InitializeMoveToFolders(ct).FireAndForgetSafe();
-            _realizedItems.ObserveAddChanged().ToObservable()
-                .SubscribeAwait(async (itemVM, ct) =>
-                {
-                    if (!itemVM.IsInitialized)
-                    {
-                        // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                        await itemVM.InitializeAsync(ct);
-                    }
-                }, AwaitOperation.Parallel, maxConcurrent: 8)
-                .AddTo(ref db);
+            InitializeMoveToFolders(ct).FireAndForgetSafe();            
             db.Build().RegisterTo(ct);
 
             await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
