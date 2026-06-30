@@ -25,7 +25,7 @@ public sealed class StorageItemSettings : FlagsRepositoryBase
 {
     public StorageItemSettings()
     {
-        _isDisplayFolderItemsCount = Read(false, nameof(IsDisplayFolderItemsCount));
+        _isDisplayFolderItemsCount = Read(true, nameof(IsDisplayFolderItemsCount));
         _descriptionTextFontSize = Read(12, nameof(DescriptionTextFontSize));
         _readingFinishedThresholdForImageViewer = Read(0.85, nameof(ReadingFinishedThresholdForImageViewer));
         _readingFinishedThresholdForEBookViewer = Read(0.9, nameof(ReadingFinishedThresholdForEBookViewer));
