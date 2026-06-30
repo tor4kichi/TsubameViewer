@@ -1684,7 +1684,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if ((args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
             || _videoPositionsliderPointerPressed)
                 && IsDisplayControlUI
-                && !IsFlyoutOpen)
+                && !IsFlyoutOpen
+                && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed)
         {            
             _mouseCursorAutoHideTimer?.Stop();
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
@@ -1752,7 +1753,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (MediaPlayer.Source == null) { return; }
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos)
-            && !IsFlyoutOpen)
+            && !IsFlyoutOpen
+            && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed)
         {
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
@@ -1785,7 +1787,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
             SeekbarFrameTime = videoPosAligned;
             _lastPointerPosition = pos;
-            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;   
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
             
             if (_lastPointerDeviceType != PointerDeviceType.Touch)
             {
@@ -1794,7 +1796,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             else
             {
                 MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
-
             }
         }
         else
