@@ -647,6 +647,8 @@
                                 Value="32" />
                         <Setter Property="FontSize"
                                 Value="16" />
+                        <Setter Property="ctwu:FrameworkElementExtensions.Cursor"
+                                Value="Hand" />
                       </Style>
                     </StackPanel.Resources>
                     <Slider HorizontalAlignment="Stretch"
@@ -659,7 +661,8 @@
                             TickPlacement="Outside"
                             x:Name="PlaybackRateSlider"
                             IsThumbToolTipEnabled="True"
-                            ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}" />
+                            ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand" />
                     <Grid>
                       <TextBlock Text="x0.1"
                                  HorizontalAlignment="Left" />
@@ -728,7 +731,8 @@
             </Button>
             
 
-            <Button Height="40" Width="48">
+            <Button Height="40" Width="48"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <SymbolIcon Symbol="Setting" />
 
               <Button.Flyout>
@@ -897,6 +901,7 @@
     <Grid x:Name="ShortcutKeyGuideUIContainer"
           Visibility="Collapsed"
           Margin="16"
+          IsHitTestVisible="True"
           Background="{ThemeResource SystemControlAcrylicElementBrush}"
           BorderThickness="1"
           BorderBrush="{ThemeResource SystemBaseLowColor}"
