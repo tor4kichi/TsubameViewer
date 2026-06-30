@@ -491,7 +491,7 @@ public sealed class FolderStructureCacheContext : IDisposable
     readonly static Core.AsyncLock _asyncLock = new();
     public async Task HandleDiffImages<T>(RangeObservableCollection<T> items,
         Func<IDisposable> deferRefreshFactory,
-        Func<FolderStructureFileEntry, StorageFile, T> cacheImageViewModelFactory,
+        Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
         Func<T, string> itemToPathConv,
         CancellationToken ct)
     {
@@ -509,14 +509,35 @@ public sealed class FolderStructureCacheContext : IDisposable
             int count = 200;
             if (isInitial)
             {
+#if DEBUG
+                PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
+#endif
+                uint oneTimeLoadCount = 100;
                 cached = [];
-                var files = await query.ToAsyncEnumerable(ct)
-                    .ToListAsync(ct);
-                items.AddRange(files.Select(file =>
+                uint currentCount = 0;
+                var loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                currentCount += 100;
+                while (true)
                 {
-                    var entry = _repo.AddOrUpdateItem(file);
-                    return cacheImageViewModelFactory(entry, file);
-                }));
+                    var lastLoadTask = loadTask;
+                    loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                    var loaded = (await lastLoadTask);
+                    if (loaded.Any() is false) { break; }
+                    items.AddRange(loaded.Select(x =>
+                    {
+                        var entry = _repo.AddOrUpdateItem(x);
+                        return cacheImageViewModelFactory(entry);
+                    }));
+                    if (loaded.Count < oneTimeLoadCount) { break; }
+                    currentCount += (uint)loaded.Count;
+
+#if DEBUG
+                    sw.ElapsedWrite(currentCount.ToString());
+#endif
+                }
+#if DEBUG
+                sw.ElapsedWrite("Complete");
+#endif
             }
             else
             {
@@ -527,7 +548,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                     {
                         ct.ThrowIfCancellationRequested();
                         entry = _repo.AddOrUpdateItem(file);
-                        var itemVM = cacheImageViewModelFactory(entry, file);
+                        var itemVM = cacheImageViewModelFactory(entry);
                         items.Add(itemVM);
                     }
                     else { continue; }
@@ -569,9 +590,9 @@ public sealed class FolderStructureCacheContext : IDisposable
         }
     }
 
-    public async Task HandleDiffNotImages<T>(ObservableCollection<T> items,
+    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,
        Func<IDisposable> deferRefreshFactory,
-       Func<FolderStructureFileEntry, IStorageItem, T> cacheImageViewModelFactory,
+       Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
        Func<T, string> itemToPathConv,
        CancellationToken ct)
     {
@@ -585,22 +606,58 @@ public sealed class FolderStructureCacheContext : IDisposable
         // filesにあるアイテムがcachedに無い → 増分
         IDisposable deferRefresh = deferRefreshFactory();
         int count = 200;
-        await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
-        {
-            if (!cached.Remove(file.Path, out var entry) || isInitial)
-            {
-                ct.ThrowIfCancellationRequested();
-                entry = _repo.AddOrUpdateItem(file);
-                var itemVM = cacheImageViewModelFactory(entry, file);
-                items.Add(itemVM);
-            }
-            else { continue; }
 
-            if (count-- <= 0)
+        if (isInitial)
+        {
+#if DEBUG
+            PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
+#endif
+            uint oneTimeLoadCount = 100;
+            cached = [];
+            uint currentCount = 0;
+            var loadTask = query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+            currentCount += 100;
+            while (true)
             {
-                count = 200;
-                deferRefresh.Dispose();
-                deferRefresh = deferRefreshFactory();
+                var lastLoadTask = loadTask;
+                loadTask = query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                var loaded = (await lastLoadTask);
+                if (loaded.Any() is false) { break; }
+                items.AddRange(loaded.Select(x =>
+                {
+                    var entry = _repo.AddOrUpdateItem(x);
+                    return cacheImageViewModelFactory(entry);                    
+                }));                
+                if (loaded.Count < oneTimeLoadCount) { break; }
+                currentCount += (uint)loaded.Count;
+
+#if DEBUG
+                sw.ElapsedWrite(currentCount.ToString());
+#endif
+            }
+#if DEBUG
+            sw.ElapsedWrite("Complete");
+#endif
+        }
+        else
+        {
+            await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+            {
+                if (!cached.Remove(file.Path, out var entry) || isInitial)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    entry = _repo.AddOrUpdateItem(file);
+                    var itemVM = cacheImageViewModelFactory(entry);
+                    items.Add(itemVM);
+                }
+                else { continue; }
+
+                if (count-- <= 0)
+                {
+                    count = 200;
+                    deferRefresh.Dispose();
+                    deferRefresh = deferRefreshFactory();
+                }
             }
         }
 

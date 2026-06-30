@@ -762,9 +762,9 @@ public sealed partial class ImageListupPageViewModel
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
-                Func<FolderStructureFileEntry, StorageFile?, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry, file) => 
+                Func<FolderStructureFileEntry, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry) => 
                 {
-                    return new LazyCacheImageFileViewModel(col, sortType, entry, new StorageItemImageSource(file), _messenger,
+                    return new LazyCacheImageFileViewModel(col, sortType, entry, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
@@ -798,7 +798,7 @@ public sealed partial class ImageListupPageViewModel
 
                         ImageFileItems.AddRange(col.Context.GetCacheImages().Select(entry =>
                         {
-                            return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                            return new LazyCacheImageFileViewModel(col, sortType, entry, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,

@@ -135,6 +135,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     {
         Status = LoadingStatus.None;
         Image = null;
+        Item = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
@@ -370,8 +371,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     public LazyCacheFolderOrArchiveFileViewModel(
         FolderImageCollectionContext imageCollectionContext,
         FolderStructureFileEntry cacheEntry,
-        FileSortType fileSortType,
-        IImageSource? imageSource,
+        FileSortType fileSortType,        
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
@@ -389,31 +389,17 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         Settings = settings ?? Ioc.Default.GetRequiredService<StorageItemSettings>();
         _imageCollectionContext = imageCollectionContext;
         _cacheEntry = cacheEntry;
-        _fileSortType = fileSortType;
-        _item = imageSource;
+        _fileSortType = fileSortType;        
         _messenger = messenger;
-
-        if (imageSource != null)
+        _name = _cacheEntry.Name;
+        _path = _cacheEntry.Path;
+        _dateCreated = _cacheEntry.DateCreated;
+        _type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
+        if (_type == StorageItemTypes.None)
         {
-            _item = imageSource;
-            _name = _item.Name;
-            _path = _item.Path;
-            _dateCreated = _item.DateCreated;
-            _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            _isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+            _type = StorageItemTypes.Folder;
         }
-        else
-        {
-            _name = _cacheEntry.Name;
-            _path = _cacheEntry.Path;
-            _dateCreated = _cacheEntry.DateCreated;
-            _type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
-            if (_type == StorageItemTypes.None)
-            {
-                _type = StorageItemTypes.Folder;
-            }
-            _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-        }
+        _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
     }
 
     BookmarkFacade? _bookmark;
@@ -438,6 +424,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     {
         Status = LoadingStatus.None;
         Image = null;
+        Item = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));

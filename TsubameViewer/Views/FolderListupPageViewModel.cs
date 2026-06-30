@@ -754,9 +754,9 @@ public sealed partial class FolderListupPageViewModel
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
-                Func<FolderStructureFileEntry, IStorageItem?, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry, file) =>
+                Func<FolderStructureFileEntry, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry) =>
                 {                   
-                    return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, new StorageItemImageSource(file), _messenger,
+                    return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
@@ -770,7 +770,7 @@ public sealed partial class FolderListupPageViewModel
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
                         var ignore = col.Context.HandleDiffNotImages(
-                            (ObservableCollection<IStorageItemViewModel>)items.Source,
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,
                             items.DeferRefresh,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
@@ -790,7 +790,7 @@ public sealed partial class FolderListupPageViewModel
                         FolderItems.AddRange(col.Context.GetCacheNotImages()
                             .Select(entry =>
                             {
-                                return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
+                                return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
                                     _sourceStorageItemsRepository,
                                     _bookmarkManager,
                                     _thumbnailManager,
@@ -801,7 +801,7 @@ public sealed partial class FolderListupPageViewModel
                         if (FolderItems.Count == 0)
                         {
                             await col.Context.HandleDiffNotImages(
-                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     FileItemsView.DeferRefresh,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
@@ -819,15 +819,12 @@ public sealed partial class FolderListupPageViewModel
                         await Task.Delay(500, ct);
                         if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
-                            using (FileItemsView.DeferRefresh())
-                            {
-                                await col.Context.HandleDiffNotImages(
-                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    FileItemsView.DeferRefresh,
-                                    cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
-                                    ct);
-                            }
+                            await col.Context.HandleDiffNotImages(
+                                (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                FileItemsView.DeferRefresh,
+                                cacheImageViewModelFactory,
+                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                ct);
                         }
                     }
                     catch (OperationCanceledException) { }
