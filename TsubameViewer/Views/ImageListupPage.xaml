@@ -27,6 +27,7 @@
       xmlns:myTrigger="using:TsubameViewer.Views.StateTrigger"
       xmlns:fluentIcon="using:Fluent.Icons"
       xmlns:storage="using:Windows.Storage"
+      xmlns:ctwu="using:CommunityToolkit.WinUI"
       NavigationCacheMode="Enabled"
       x:Name="PageRoot">
 
@@ -201,7 +202,8 @@
                 Width="240"
                 VerticalContentAlignment="Stretch"
                 HorizontalContentAlignment="Left"
-                Click="ImageListItem_Clicked">
+                Click="ImageListItem_Clicked"
+                ctwu:FrameworkElementExtensions.Cursor="Hand">
           <ToolTipService.ToolTip>
             <ToolTip Placement="Bottom"
                      VerticalOffset="2">
@@ -218,7 +220,8 @@
                             Margin="0"
                             Translation="0, 0, 8"
                             Tapped="ImageListToggleSelectButton_Tapped"
-                            uwpControls:DockPanel.Dock="Left">
+                            uwpControls:DockPanel.Dock="Left"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <Windows10version1903:ToggleButton.Shadow>
                   <Windows10version1903:ThemeShadow />
                 </Windows10version1903:ToggleButton.Shadow>
@@ -297,7 +300,8 @@
                 Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}, Mode=OneWay}"
                 Click="ImageListItem_Clicked"
                 PointerEntered="Image_PointerEntered"
-                PointerExited="Image_PointerExited">
+                PointerExited="Image_PointerExited"
+                ctwu:FrameworkElementExtensions.Cursor="Hand">
 
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource SmallImageRect}"
@@ -405,7 +409,8 @@
                 Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}, Mode=OneWay}"
                 Click="ImageListItem_Clicked"
                 PointerEntered="Image_PointerEntered"
-                PointerExited="Image_PointerExited">
+                PointerExited="Image_PointerExited"
+                ctwu:FrameworkElementExtensions.Cursor="Hand">
           <Grid>
             <Image x:Name="Image"
                    Source="{Binding Image, Mode=OneWay}"
@@ -495,7 +500,8 @@
                 Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}"
                 Click="ImageListItem_Clicked"
                 PointerEntered="Image_PointerEntered"
-                PointerExited="Image_PointerExited">
+                PointerExited="Image_PointerExited"
+                ctwu:FrameworkElementExtensions.Cursor="Hand">
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource LargeImageRect}"
                      Placement="Bottom"
@@ -659,7 +665,8 @@
             <Button Command="{x:Bind MoveToFolderSelectedItemsCommand}"
                     CommandParameter="{x:Bind MoveToFolderTargetSelector.SelectedItem, Mode=OneWay}"
                     HorizontalAlignment="Stretch"
-                    Style="{ThemeResource AccentButtonStyle}">
+                    Style="{ThemeResource AccentButtonStyle}"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <TextBlock Text="{i18nExt:Localize Key=MoveToFolder_ItemsMoveToSelectedFolder}" />
             </Button>
           </StackPanel>
@@ -701,7 +708,8 @@
                 <Button Content="{i18nExt:Localize Key=MoveToFolder_ToggleSiblingFoldersDisplay}"
                         x:Name="ToggleDisplaySiblingFoldersButton"
                         IsEnabled="False"
-                        Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}" />
+                        Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand" />
                 <TextBlock Text="{x:Bind SelectedCountDisplayText, Mode=OneWay}"
                            VerticalAlignment="Center"
                            Margin="48 0" />
@@ -720,7 +728,8 @@
                             Command="{x:Bind CreateFolderCommand}"
                             AccessKey="B"
                             BorderThickness="1"
-                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                            BorderBrush="{ThemeResource SystemBaseLowColor}"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <AppBarButton.Icon>
                   <SymbolIcon Symbol="Folder" />
                 </AppBarButton.Icon>
@@ -733,7 +742,7 @@
                             BorderBrush="{ThemeResource SystemBaseLowColor}"
                             Command="{x:Bind _vm.FavoriteToggleCommand}"
                             CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
-                            >
+                            ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <AppBarButton.Icon>
                   <SymbolIcon Symbol="Favorite" />
                 </AppBarButton.Icon>
@@ -746,7 +755,8 @@
                             Command="{x:Bind _vm.FileDeleteCommand}"
                             CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
                             BorderThickness="1"
-                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                            BorderBrush="{ThemeResource SystemBaseLowColor}"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <AppBarButton.Icon>
                   <SymbolIcon Symbol="Delete" />
                 </AppBarButton.Icon>
@@ -760,7 +770,8 @@
                 <Button Content="{i18nExt:Localize Key=Cancel}"
                         Click="{x:Bind ClearSelection}"
                         Background="Transparent"
-                        Height="36">
+                        Height="36"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
                   <Button.KeyboardAccelerators>
                     <KeyboardAccelerator Key="Escape" />
                   </Button.KeyboardAccelerators>
@@ -793,7 +804,8 @@
                               Background="Transparent"
                               ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                               AccessKey="S"
-                              CornerRadius="4">
+                              CornerRadius="4"
+                              ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <DropDownButton.Flyout>
                   <MenuFlyout>
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
@@ -836,7 +848,8 @@
               <Button x:Name="OptionalActionsButton"
                       Margin="8 0 0 0"
                       XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
-                      Visibility="Collapsed">
+                      Visibility="Collapsed"
+                      ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <Button.Content>
                   <SymbolIcon Symbol="More" />
                 </Button.Content>
@@ -857,7 +870,8 @@
                 <ToggleSwitch IsOn="{x:Bind _vm.IsFavoriteFilteredDisplayEnabled, Mode=TwoWay}"
                               Style="{StaticResource ToggleSwitchNoHeader}"
                               uwpControls:DockPanel.Dock="Right"
-                              Margin="8 0 0 0" />
+                              Margin="8 0 0 0"
+                              ctwu:FrameworkElementExtensions.Cursor="Hand" />
                 <TextBlock Text="{i18nExt:Localize Key=Favorite_ShowOnlyFavorite}"
                            VerticalAlignment="Center" />
               </uwpControls:DockPanel>
@@ -868,7 +882,8 @@
               <Button Command="{x:Bind _vm.RefreshPageCommand}"
                       Visibility="{x:Bind _vm.RequireRefresh, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
                       Style="{ThemeResource AccentButtonStyle}"
-                      Margin="8 0 16 0">
+                      Margin="8 0 16 0"
+                      ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <StackPanel Orientation="Horizontal"
                             Spacing="4">
                   <SymbolIcon Symbol="Refresh"
@@ -878,7 +893,8 @@
                 </StackPanel>
               </Button>
               <Border Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-                      Margin="8 0 16 0">
+                      Margin="8 0 16 0"
+                      ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <winUIControls:Segmented SelectionMode="Single"
                                          SelectionChanged="ContentViewTypeSelector_SelectionChanged"
                                          x:Name="ContentViewTypeSelector"
@@ -932,7 +948,8 @@
                             Value="0" />
                     <Setter Property="HorizontalContentAlignment"
                             Value="Center" />
-
+                    <Setter Property="ctwu:FrameworkElementExtensions.Cursor"
+                            Value="Hand" />
                   </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemsPanel>

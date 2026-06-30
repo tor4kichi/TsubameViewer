@@ -24,7 +24,7 @@
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)" 
   xmlns:fluentIcon="using:Fluent.Icons"
   mc:Ignorable="d"
-      >
+      xmlns:ctwu="using:CommunityToolkit.WinUI">
 
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent" 
@@ -43,7 +43,8 @@
           <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
                         Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
-                        ToolTipService.Placement="Bottom">
+                        ToolTipService.Placement="Bottom"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="Favorite"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </ToggleButton>
@@ -58,7 +59,8 @@
           <Button Command="{Binding ToggleFullScreenCommand}"
                   Style="{StaticResource TitlebarButton}"
                   ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
-                  ToolTipService.Placement="Bottom">
+                  ToolTipService.Placement="Bottom"
+                  ctwu:FrameworkElementExtensions.Cursor="Hand">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -361,8 +363,8 @@
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
-              KeyboardAcceleratorPlacementMode="Hidden"                         
-              >
+              KeyboardAcceleratorPlacementMode="Hidden"
+              ctwu:FrameworkElementExtensions.Cursor="UpArrow">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
           <KeyboardAccelerator Key="LeftButton" />
@@ -394,8 +396,8 @@
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
-              KeyboardAcceleratorPlacementMode="Hidden"                  
-              >
+              KeyboardAcceleratorPlacementMode="Hidden"
+              ctwu:FrameworkElementExtensions.Cursor="UpArrow">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
           <KeyboardAccelerator Key="RightButton" />
@@ -457,10 +459,16 @@
       </Windows10version1903:UIElement.Shadow>
 
       <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    EasingType="Cubic"
+                                    Duration="0:0:0.175" />
         <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, -48" EasingType="Cubic" Duration="0:0:0.125" />
+        <animation:OpacityAnimation To="0"
+                                    EasingType="Cubic"
+                                    Duration="0:0:0.125" />
+        <animation:TranslationAnimation To="0, -24" EasingType="Cubic" Duration="0:0:0.125" />
       </animation:Implicit.HideAnimations>
 
       <Grid.Resources>
@@ -474,6 +482,8 @@
                   Value="1" />
           <Setter Property="BorderBrush"
                   Value="{ThemeResource SystemBaseLowColor}" />
+          <Setter Property="ctwu:FrameworkElementExtensions.Cursor"
+                  Value="Hand" />
         </Style>
         <Style TargetType="ToggleButton">
           <Setter Property="Height" Value="40" />
@@ -485,6 +495,8 @@
                   Value="1" />
           <Setter Property="BorderBrush"
                   Value="{ThemeResource SystemBaseLowColor}" />
+          <Setter Property="ctwu:FrameworkElementExtensions.Cursor"
+                  Value="Hand" />
         </Style>
         <Style TargetType="SymbolIcon">
           <Setter Property="RenderTransformOrigin" Value="0.5, 0.5" />
@@ -649,10 +661,16 @@
       </Windows10version1903:Border.Shadow>
       
       <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    EasingType="Cubic"
+                                    Duration="0:0:0.175" />
         <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, 180" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:OpacityAnimation To="0"
+                                    EasingType="Cubic"
+                                    Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 24" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
       <StackPanel Margin="8" Spacing="6">
@@ -676,7 +694,8 @@
                           IsEnabled="True"
                           Height="40"
                           Width="56"
-                          Padding="8 0">
+                          Padding="8 0"
+                          ctwu:FrameworkElementExtensions.Cursor="Hand">
               <uwpControls:SwitchPresenter Value="{x:Bind _vm.Page1Favorite, Mode=OneWay}">
                 <uwpControls:Case>
                   <uwpControls:Case.Value>
@@ -708,7 +727,8 @@
                                  Height="40"
                                  Margin="8 0 0 0"
                                  IsAccessKeyScope="True"
-                                 AccessKey="1">
+                                 AccessKey="1"
+                                 ctwu:FrameworkElementExtensions.Cursor="Hand">
               <muxc:DropDownButton.KeyboardAccelerators>
                 <KeyboardAccelerator Key="Number1"
                                      Invoked="{x:Bind ShowBottomUI}" />
@@ -769,7 +789,8 @@
                           uwpControls:DockPanel.Dock="Right"
                           Height="40"
                           Width="56"
-                          Padding="8 0">
+                          Padding="8 0"
+                          ctwu:FrameworkElementExtensions.Cursor="Hand">
               <uwpControls:SwitchPresenter Value="{x:Bind _vm.Page2Favorite, Mode=OneWay}">
                 <uwpControls:Case>
                   <uwpControls:Case.Value>
@@ -801,7 +822,8 @@
                                  Height="40"
                                  Margin="0 0 8 0"
                                  IsAccessKeyScope="True"
-                                 AccessKey="2">
+                                 AccessKey="2"
+                                 ctwu:FrameworkElementExtensions.Cursor="Hand">
               <muxc:DropDownButton.KeyboardAccelerators>
                 <KeyboardAccelerator Key="Number2" />
               </muxc:DropDownButton.KeyboardAccelerators>
@@ -869,6 +891,7 @@
                   HorizontalContentAlignment="Center"
                   Margin="0 4"
                   AccessKey="3"
+                  ctwu:FrameworkElementExtensions.Cursor="Hand"
                   >
           <i:Interaction.Behaviors>
             <i:EventTriggerBehavior EventName="SelectionChanged">
@@ -901,7 +924,8 @@
                 AccessKey="4"
                 IsThumbToolTipEnabled="False"
                 KeyboardAcceleratorPlacementMode="Hidden"
-                KeyTipPlacementMode="Hidden">
+                KeyTipPlacementMode="Hidden"
+                ctwu:FrameworkElementExtensions.Cursor="Hand">
           <Slider.KeyboardAccelerators>
             <KeyboardAccelerator Key="4" />
           </Slider.KeyboardAccelerators>
@@ -966,7 +990,17 @@
     </Grid>
 
     <!-- コントロールUI非表示時に下部に読了状況を表示する -->
-    <Grid VerticalAlignment="Bottom">
+    <Grid VerticalAlignment="Bottom"
+          Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.HideAnimations>
+      
       <Slider Style="{StaticResource SimpleThumbSlider}"
               Value="{x:Bind _vm.DisplayCurrentImageIndex, Mode=OneWay}"
               Maximum="{x:Bind _vm.ImageCount, Mode=OneWay}"
@@ -1386,19 +1420,7 @@
         </VisualState>
 
       </VisualStateGroup>
-      <!-- メニューを開いている時は読了状況スライダーを非表示 -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ReadOnlySeekBar.Opacity"
-                    Value="0.0" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
+      
       <!-- ページ１のお気に入り切替 -->
       <VisualStateGroup>
         <VisualState>

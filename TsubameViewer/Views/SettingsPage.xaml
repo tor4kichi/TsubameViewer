@@ -12,6 +12,7 @@
       xmlns:winui="using:Microsoft.UI.Xaml.Controls"
       xmlns:sss="using:Windows.Globalization.NumberFormatting"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
+      xmlns:ctwu="using:CommunityToolkit.WinUI"
       mc:Ignorable="d"
       Background="{ThemeResource ApplicationContentBackgroundBrush}">
   <Page.Resources>
@@ -39,7 +40,8 @@
             <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}"
                           uwpControls:DockPanel.Dock="Right"
                           Margin="0"
-                          Padding="0" />
+                          Padding="0"
+                          ctwu:FrameworkElementExtensions.Cursor="Hand"/>
           </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
@@ -57,7 +59,10 @@
                       SelectedItem="{x:Bind SelectedItem, Mode=TwoWay}"
                       ItemTemplate="{StaticResource LocalizeTextTemplate}"
                       SelectionChanged="Segmented_SelectionChanged"
-                      Loaded="ListView_Loaded"/>
+                      Loaded="ListView_Loaded"
+                      ctwu:FrameworkElementExtensions.Cursor="Hand">
+              
+            </ListView>
           </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.SelectorSettingItem>
@@ -73,7 +78,8 @@
                   <winUIControls:SettingsCard Header="{x:Bind FolderName}"
                                               Description="{x:Bind Path}">
                     <Button Content="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}"
-                            Command="{x:Bind DeleteStoredFolderCommand}" />
+                            Command="{x:Bind DeleteStoredFolderCommand}"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand" />
                   </winUIControls:SettingsCard>
                 </DataTemplate>
               </winUIControls:SettingsExpander.ItemTemplate>
@@ -85,7 +91,8 @@
                   <winUIControls:SettingsCard Header="{x:Bind FolderName}"
                                               Description="{x:Bind Path}">
                     <Button Content="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}"
-                            Command="{x:Bind DeleteStoredFolderCommand}" />
+                            Command="{x:Bind DeleteStoredFolderCommand}"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand" />
                   </winUIControls:SettingsCard>
                 </DataTemplate>
               </winUIControls:SettingsExpander.ItemTemplate>
@@ -111,7 +118,8 @@
                     MaxWidth="{StaticResource SettingItemWidth}"
                     HorizontalAlignment="Right"
                     Visibility="{x:Bind IsVisible, Converter={StaticResource TrueToVisibleConverter}}"
-                    Margin="0 16" />
+                    Margin="0 16"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand" />
           </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ButtonSettingItem>
@@ -120,14 +128,14 @@
           <winUIControls:SettingsCard Header="{x:Bind Label}">
             <ComboBox ItemsSource="{x:Bind ThemeItems}"
                       SelectedItem="{x:Bind SelectedTheme.Value, Mode=TwoWay}"
-                      HorizontalAlignment="Right">
+                      HorizontalAlignment="Right"
+                      ctwu:FrameworkElementExtensions.Cursor="Hand">
               <ComboBox.ItemTemplate>
                 <DataTemplate>
                   <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-
           </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
@@ -138,7 +146,8 @@
               <ComboBox ItemsSource="{x:Bind Locales}"
                         SelectedValue="{x:Bind SelectedLocale, Mode=OneWay}"
                         SelectionChanged="ComboBox_SelectionChanged"                        
-                        HorizontalAlignment="Right">
+                        HorizontalAlignment="Right"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
                 <ComboBox.ItemTemplate>
                   <DataTemplate>
                     <TextBlock>
@@ -150,7 +159,8 @@
               <Button Content="{x:Bind RestartTextTranslated}"
                       Command="{x:Bind RestartApplicationCommand}"
                       Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-                      Margin="0 16 0 0"/>
+                      Margin="0 16 0 0"
+                      ctwu:FrameworkElementExtensions.Cursor="Hand"/>
             </StackPanel>
           </winUIControls:SettingsCard>
         </DataTemplate>
@@ -195,7 +205,8 @@
                     HorizontalContentAlignment="Right"
                     MinWidth="240"
                     ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
-                    x:Name="MySlider">
+                    x:Name="MySlider"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <Slider.Header>
                 <TextBlock Text="{Binding ElementName=MySlider, Path=Value, Converter={StaticResource DoubleToPercentTextConverter}}"
                            HorizontalAlignment="Right" 
@@ -231,10 +242,13 @@
                 VerticalAlignment="Bottom"
                 Background="{ThemeResource SystemBaseLowColor}" 
                 Opacity="0.3"/>
-        <StackPanel Orientation="Horizontal" Margin="0 0 0 16">
+        <StackPanel Orientation="Horizontal" Margin="0 0 0 8">
           <Button Command="{x:Bind BackNavigationRequestCommand}"
-                  HorizontalAlignment="Left">
-            <SymbolIcon Symbol="Back" />
+                  HorizontalAlignment="Left"
+                  ctwu:FrameworkElementExtensions.Cursor="Hand"
+                  VerticalAlignment="Stretch">
+            <SymbolIcon Symbol="Back"
+                        />
           </Button>
 
           <TextBlock Text="{i18Ext:Localize Key=Settings}" 
@@ -250,7 +264,8 @@
                       HorizontalAlignment="Right">
             <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyToClipboard}"
                     Command="{x:Bind _vm.AppInfoCopyToClipboard}"
-                    Style="{StaticResource TitlebarButton}">
+                    Style="{StaticResource TitlebarButton}"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <SymbolIcon Symbol="Copy" />
             </Button>
             <TextBlock Text="{x:Bind _vm.ReportUserEnvString}"

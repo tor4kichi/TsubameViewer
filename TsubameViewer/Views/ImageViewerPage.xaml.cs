@@ -94,7 +94,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
+    {        
         if (e.Key == VirtualKey.Escape && e.OriginalKey != VirtualKey.GamepadB)
         {
             if (IsOpenBottomMenu)
@@ -175,6 +175,15 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
             }, AwaitOperation.Drop)
             .RegisterTo(this.GetCancellationTokenOnUnloaded());
+
+        AnimationBuilder.Create()
+            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+            .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
+            .Start(ButtonsContainer);
+        AnimationBuilder.Create()
+            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+            .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
+            .Start(ImageSelectorContainer);
     }
 
     [ObservableProperty]
@@ -310,6 +319,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     R3.CompositeDisposable? _navigationDisposables;
     CancellationTokenSource? _navigaitonCts;
+    CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
@@ -325,7 +335,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         });
 
         _navigaitonCts = new CancellationTokenSource();
-        var ct = _navigaitonCts.Token;
+        var ct = _navigationCt = _navigaitonCts.Token;
         bool isFirst = true;
         _messenger.Register<ImageLoadedMessage>(this, (r, m) => 
         {
@@ -562,6 +572,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void IntaractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
+
         var lastMnipulating = _nowZoomCenterMovingWithPointer;
         _nowZoomCenterMovingWithPointer = false;
         if (e.Handled) { return; }
@@ -621,7 +632,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     bool _isLastPointerPressedLeft;
     void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
-    {
+    {        
         var pointer = e.GetCurrentPoint(null);
         _isLastPointerPressedLeft = pointer.Properties.IsLeftButtonPressed;
     }
@@ -857,10 +868,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-
     [RelayCommand]
     void ZoomUp(PointerRoutedEventArgs args)
     {
+        CloseBottomUI();
+
         var targetUI = ImagesContainer;
         var lastZoom = (float)ZoomFactor;
         var nextCenter = args.GetCurrentPoint(targetUI).Position.ToVector2();
@@ -890,6 +902,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void ZoomDown(PointerRoutedEventArgs args)
     {
+        CloseBottomUI();
+
         var targetUI = ImagesContainer;
         var lastZoom = (float)ZoomFactor;
         var lastCenter = ZoomCenter;

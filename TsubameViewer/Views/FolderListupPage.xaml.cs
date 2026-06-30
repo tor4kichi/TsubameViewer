@@ -819,4 +819,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     {
         
     }
+
+    private void TextBlock_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        _vm.IsFavoriteFilteredDisplayEnabled = !_vm.IsFavoriteFilteredDisplayEnabled;
+    }
 }
