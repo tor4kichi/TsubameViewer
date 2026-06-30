@@ -175,6 +175,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             using (await _asyncLock.LockAsync(ct))
             {
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -461,6 +462,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             using (await _asyncLock.LockAsync(ct))
             {
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }

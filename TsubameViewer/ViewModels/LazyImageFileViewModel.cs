@@ -180,6 +180,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
@@ -190,7 +191,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    using (var l = await _imageLoadingLock.LockAsync(ct))
+                    //using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
@@ -378,6 +379,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
@@ -389,7 +391,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    using (await _imageLoadingLock.LockAsync(ct))
+                    //using (await _imageLoadingLock.LockAsync(ct))
                     {
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;

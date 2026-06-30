@@ -244,6 +244,7 @@ public sealed class ThumbnailImageManager
     // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
     public async ValueTask<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
+        if (imageSource == null) { return null; }
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
         {
@@ -1448,13 +1449,13 @@ public sealed class ThumbnailImageManager
         using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
         fg.DecodePixelHeight = (int)requestedSize;
 
-        if (GetThumbnailGenerationStatus(fg.CurrentVideoStream.CodecName) == ThumbnailGenerationStatus.Failed)
-        {
-            using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
-            await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
-            return true;
-        }
-        else
+        //if (GetThumbnailGenerationStatus(fg.CurrentVideoStream.CodecName) == ThumbnailGenerationStatus.Failed)
+        //{
+        //    using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
+        //    await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
+        //    return true;
+        //}
+        //else
         {
             using CancellationTokenSource cts = new CancellationTokenSource(3000);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, ct);
