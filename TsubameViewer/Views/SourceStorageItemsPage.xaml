@@ -90,7 +90,7 @@
                                   DesiredWidth="{StaticResource FolderGridViewItemWidth}"
                                   ItemHeight="{StaticResource FolderGridViewItemHeight}"
                                   IsItemClickEnabled="True"
-                                  ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
+                                   ItemClickCommand="{x:Bind _vm.OpenSourceCommand}"
                                   IsSynchronizedWithCurrentItem="False"
                                   SelectionMode="None"
                                   ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"

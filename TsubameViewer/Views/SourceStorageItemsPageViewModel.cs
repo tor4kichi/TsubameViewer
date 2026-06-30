@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using I18NPortable;
 using CommunityToolkit.WinUI;
+using I18NPortable;
 using R3;
 using Reactive.Bindings;
 using System;
@@ -15,6 +16,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -24,13 +26,16 @@ using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
+using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
+
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -71,8 +76,10 @@ public sealed partial class SourceStorageItemsPageViewModel
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
-    public OpenFolderItemCommand OpenFolderItemCommand { get; }
-
+    private readonly SourceChoiceCommand _sourceChoiceCommand;
+    private readonly AlbamCreateCommand _albamCreateCommand;
+    private readonly FolderContainerTypeManager _folderContainerTypeManager;
+    private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     [ObservableProperty]
     bool _foldersInitialized = false;
 
@@ -85,15 +92,20 @@ public sealed partial class SourceStorageItemsPageViewModel
         ThumbnailImageManager thumbnailManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LastIntractItemRepository folderLastIntractItemManager,
-        OpenFolderItemCommand openFolderItemCommand
+        SourceChoiceCommand sourceChoiceCommand,
+        AlbamCreateCommand albamCreateCommand,
+        FolderContainerTypeManager folderContainerTypeManager,
+        DisplaySettingsByPathRepository displaySettingsByPathRepository
         )
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
         ItemsView = new (Folders);
-        OpenFolderItemCommand = openFolderItemCommand;
-
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        _folderLastIntractItemManager = folderLastIntractItemManager;
+        _folderLastIntractItemManager = folderLastIntractItemManager;        
+        _sourceChoiceCommand = sourceChoiceCommand;
+        _albamCreateCommand = albamCreateCommand;
+        _folderContainerTypeManager = folderContainerTypeManager;
+        _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _bookmarkManager = bookmarkManager;
         _albamRepository = albamRepository;
         _thumbnailManager = thumbnailManager;
@@ -245,6 +257,35 @@ public sealed partial class SourceStorageItemsPageViewModel
         {
             existInFolders.Dispose();
             Folders.Remove(existInFolders);
+        }
+    }
+
+    [RelayCommand]
+    async Task OpenSourceAsync(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
+        {
+            parameter = itemVM.Item;
+
+            if (itemVM.Type == Core.Models.StorageItemTypes.AddFolder)
+            {
+                ((ICommand)_sourceChoiceCommand).Execute(null);
+                return;
+            }
+            else if (itemVM.Type == Core.Models.StorageItemTypes.AddAlbam)
+            {
+                ((ICommand)_albamCreateCommand).Execute(null);
+                return;
+            }
+        }
+
+        if (parameter is IImageSource imageSource)
+        {
+            var folder = (StorageFolder)((StorageItemImageSource)imageSource).StorageItem;
+            var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(folder.Path);
+            var imagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+            var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
         }
     }
 }
