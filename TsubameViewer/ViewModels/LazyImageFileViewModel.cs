@@ -118,7 +118,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
-    readonly static Core.AsyncLock _imageLoadingLock = new();
+    readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -191,7 +191,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    //using (var l = await _imageLoadingLock.LockAsync(ct))
+                    using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
@@ -357,7 +357,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
-    readonly static Core.AsyncLock _imageLoadingLock = new();
+    readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
@@ -391,7 +391,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    //using (await _imageLoadingLock.LockAsync(ct))
+                    using (await _imageLoadingLock.LockAsync(ct))
                     {
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
