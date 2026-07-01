@@ -430,7 +430,7 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
-                await ResetContentWithAlbam(albamIdString, ct);
+                await ResetContentWithAlbam(albamIdString, ct);                
                 FilterText = "";
             }
 
@@ -677,9 +677,11 @@ public sealed partial class FolderListupPageViewModel
         ClearContent();
 
         string path = albam._id.ToString();
+        var folderDisplaySettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path);
         //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
         SelectedChildFileSortType = FileSortType.None;
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
+        FolderItemDisplayWithLandscape = folderDisplaySettings?.FolderItemDisplayWithLandscape ?? false;
         SetSortAsyncUnsafe(SelectedFileSortType, path);        
 
         AlbamImageCollectionContext imageCollectionContext = new (albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);

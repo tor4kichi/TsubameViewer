@@ -31,7 +31,7 @@ public sealed class AlbamImageSource : IImageSource, IAlbamImageSource
 
     public string Name => AlbamEntry.Name;
 
-    public string Path => AlbamEntry.Name;
+    public string Path => AlbamEntry._id.ToString();
 
     public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;
 
