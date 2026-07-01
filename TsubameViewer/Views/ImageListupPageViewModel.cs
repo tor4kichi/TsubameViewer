@@ -394,6 +394,7 @@ public sealed partial class ImageListupPageViewModel
                 {
                     RequireRefresh = false;
                     await ResetContentWithStorageItem(newPath, pageName, ct);
+                    FilterText = "";
                 }
                 else
                 {
@@ -405,6 +406,7 @@ public sealed partial class ImageListupPageViewModel
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
                 await ResetContentWithAlbam(albamIdString, ct);
+                FilterText = "";
             }
             if (mode != NavigationMode.New)
             {

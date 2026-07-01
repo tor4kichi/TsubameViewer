@@ -280,7 +280,7 @@ public sealed partial class FolderListupPageViewModel
 
     [ObservableProperty]
     bool _isReadyToFavoriteFilterDisplay;
-
+    
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
         d().FireAndForgetSafe();
@@ -415,7 +415,9 @@ public sealed partial class FolderListupPageViewModel
                     {
                         context.Context.ForceUpdateRequestForNotImages();
                     }
+
                     await ResetContent(newPath, pageName, ct);
+                    FilterText = "";
                 }
                 else
                 {
@@ -428,7 +430,8 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
-                await ResetContentWithAlbam(albamIdString, ct);                
+                await ResetContentWithAlbam(albamIdString, ct);
+                FilterText = "";
             }
 
             if (mode is NavigationMode.Back && 
