@@ -64,6 +64,7 @@ public static class SupportedFileTypesHelper
             Movie_M2TsFileType,
             Movie_AviFileType,
             Movie_WmvFileType,
+            Movie_FlvFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
         .ToHashSet();
@@ -104,6 +105,7 @@ public static class SupportedFileTypesHelper
     public const string Movie_M2TsFileType = ".m2ts";
     public const string Movie_AviFileType = ".avi";
     public const string Movie_WmvFileType = ".wmv";
+    public const string Movie_FlvFileType = ".flv";
 
     public static readonly HashSet<string> SupportedArchiveFileExtensions;
     public static readonly HashSet<string> SupportedImageFileExtensions;

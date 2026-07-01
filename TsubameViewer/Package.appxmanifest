@@ -83,6 +83,7 @@
               <uap:FileType ContentType="video/mp2t">.ts</uap:FileType>
               <uap:FileType ContentType="video/mp2t">.mts</uap:FileType>
               <uap:FileType ContentType="video/mp2t">.m2ts</uap:FileType>
+              <uap:FileType ContentType="video/x-flv">.flv</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>
