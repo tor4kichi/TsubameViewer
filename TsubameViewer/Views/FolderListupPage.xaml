@@ -513,7 +513,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.DesiredWidth"
-                    Value="272" />
+                    Value="252" />
             <Setter Target="FoldersAdaptiveGridView.ItemHeight"
                     Value="160.0" />
           </VisualState.Setters>

@@ -72,7 +72,7 @@
     <Setter Property="Margin" Value="12 0" />
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="MaxLines" Value="3" />
-    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextWrapping" Value="WrapWholeWords" />
   </Style>
 
   <Style x:Key="FolderItemImageStyle" TargetType="Image">
@@ -149,12 +149,18 @@
           Drop="Grid_Drop"
           uwpUI:UIElementExtensions.ClipToBounds="True"
           CornerRadius="6">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="1*" />
+        <RowDefinition Height="{StaticResource FolderItemTitleHeight}" />
+      </Grid.RowDefinitions>
+
       <Image Source="{x:Bind Image, Mode=OneWay}"
              Style="{StaticResource FolderItemImageStyle}"
              Stretch="UniformToFill"
              Opacity="1"
-             VerticalAlignment="Center"/>
-      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
+             VerticalAlignment="Center"
+             Grid.RowSpan="2"/>
+      <Grid Grid.Row="1">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
                           VerticalAlignment="Bottom"
@@ -167,29 +173,14 @@
 
       <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
             HorizontalAlignment="Right"
-            VerticalAlignment="Bottom">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="Auto" />
-          <RowDefinition Height="1*" />
-        </Grid.RowDefinitions>
-
-        <Border Grid.Row="0">
-          <Border VerticalAlignment="Bottom"
-                  HorizontalAlignment="Right"
-                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
-                  CornerRadius="4 4 0 4"
-                  Margin="0"
-                  Padding="6 2"
-                  Opacity="0.8">
-            <TextBlock Text="{x:Bind Duration, Mode=OneWay}"
-                       Style="{StaticResource CaptionTextBlockStyle}" />
-          </Border>
-        </Border>
-
-        <Border Height="{StaticResource FolderItemTitleHeight}"
-                Grid.Row="1">
-
-        </Border>
+            VerticalAlignment="Bottom"
+            Background="{ThemeResource ApplicationContentBackgroundBrush}"
+            CornerRadius="4 4 4 4"
+            Margin="1"
+            Opacity="0.8"
+            Padding="6 2 6 3"
+            Grid.Row="0">
+        <TextBlock Text="{x:Bind Duration, Mode=OneWay}" />
       </Grid>
       <Border Background="{ThemeResource SystemAccentColor}"
               Width="80"
@@ -197,7 +188,8 @@
               HorizontalAlignment="Left"
               VerticalAlignment="Top"
               Opacity="{x:Bind IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-              RenderTransformOrigin="0.5, 0.5">
+              RenderTransformOrigin="0.5, 0.5"
+              Grid.Row="0">
         <Border.RenderTransform>
           <CompositeTransform Rotation="-45"
                               TranslateX="-40"
