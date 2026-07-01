@@ -290,6 +290,13 @@ public sealed partial class FolderListupPageViewModel
             Selection.EndSelection();
             using (await _navigationLock.LockAsync(default))
             {
+                try
+                {
+                    _filterQueryCts?.Cancel();
+                    _filterQueryCts?.Dispose();
+                    _filterQueryCts = null;
+                }
+                catch { }
                 if (_currentImageSource != null
                     && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
                     && mode == NavigationMode.New)
@@ -394,6 +401,7 @@ public sealed partial class FolderListupPageViewModel
         return false;
     }
 
+    CancellationTokenSource? _filterQueryCts;
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;
@@ -469,23 +477,33 @@ public sealed partial class FolderListupPageViewModel
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.FilterText, false)
-            .Debounce(TimeSpan.FromSeconds(0.25))
-            .Subscribe(_ =>
+            .ThrottleFirstLast(TimeSpan.FromSeconds(0.5))
+            .SubscribeAwait(async (s, ct) =>
             {
-                if (_folderListingSettings.IsInPageSearchWithMigemo)
+                using (FileItemsView.DeferRefresh())
                 {
-                    try
+                    if (_filterQueryCts != null)
                     {
-                        _migemoQueryRegex = MigemoService.Query(_filterText);
+                        _filterQueryCts.Cancel();
+                        _filterQueryCts.Dispose();
                     }
-                    catch
+                    _filterQueryCts = new CancellationTokenSource();
+                    var lastQueryCt = _filterQueryCts.Token;
+                    if (_folderListingSettings.IsInPageSearchWithMigemo)
                     {
-                        _migemoQueryRegex = null;
+                        try
+                        {
+                            _migemoQueryRegex = MigemoService.Query(s);
+                        }
+                        catch
+                        {
+                            _migemoQueryRegex = null;
+                        }
                     }
+                    else { _migemoQueryRegex = null; }
+                    FileItemsView.RefreshFilter(lastQueryCt);
                 }
-                else { _migemoQueryRegex = null; }
-                FileItemsView.RefreshFilter();
-            })
+            }, AwaitOperation.Switch)
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.SelectedChildImagesFolderOpenMode, false)

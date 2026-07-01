@@ -338,6 +338,9 @@ public sealed partial class ImageListupPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
+        _filterQueryCts?.Cancel();
+        _filterQueryCts?.Dispose();
+        _filterQueryCts = null;
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
@@ -380,6 +383,7 @@ public sealed partial class ImageListupPageViewModel
         return false;
     }
 
+    CancellationTokenSource? _filterQueryCts;
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;
@@ -393,8 +397,9 @@ public sealed partial class ImageListupPageViewModel
                 if (await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
                     RequireRefresh = false;
-                    await ResetContentWithStorageItem(newPath, pageName, ct);
                     FilterText = "";
+
+                    await ResetContentWithStorageItem(newPath, pageName, ct);                    
                 }
                 else
                 {
@@ -493,23 +498,33 @@ public sealed partial class ImageListupPageViewModel
                 .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
-                .Debounce(TimeSpan.FromSeconds(0.25))
-                .Subscribe(this, static (_, s)=>
+                .ThrottleFirstLast(TimeSpan.FromSeconds(0.5))
+                .SubscribeAwait(this, static async (x, s, ct)=>
                 {
-                    if (s._folderListingSettings.IsInPageSearchWithMigemo)
+                    using (s.FileItemsView.DeferRefresh())
                     {
-                        try
+                        if (s._filterQueryCts != null)
                         {
-                            s._migemoQueryRegex = MigemoService.Query(s._filterText);
+                            s._filterQueryCts.Cancel();
+                            s._filterQueryCts.Dispose();
                         }
-                        catch
+                        s._filterQueryCts = new CancellationTokenSource();
+                        var lastQueryCt = s._filterQueryCts.Token;
+                        if (s._folderListingSettings.IsInPageSearchWithMigemo)
                         {
-                            s._migemoQueryRegex = null;
+                            try
+                            {
+                                s._migemoQueryRegex = MigemoService.Query(x);
+                            }
+                            catch
+                            {
+                                s._migemoQueryRegex = null;
+                            }
                         }
+                        else { s._migemoQueryRegex = null; }
+                        s.FileItemsView.RefreshFilter(lastQueryCt);
                     }
-                    else { s._migemoQueryRegex = null; }
-                    s.FileItemsView.RefreshFilter();
-                })
+                }, AwaitOperation.Switch)
                 .AddTo(ref db);
 
             // アプリ内部操作も含めて変更を検知する
