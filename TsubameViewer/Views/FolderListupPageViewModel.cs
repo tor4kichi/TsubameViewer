@@ -177,6 +177,9 @@ public sealed partial class FolderListupPageViewModel
         ];
 
     [ObservableProperty]
+    bool _folderItemDisplayWithLandscape;
+
+    [ObservableProperty]
     string? _displaySortTypeInheritancePath;
     [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
@@ -487,6 +490,10 @@ public sealed partial class FolderListupPageViewModel
             .AddTo(ref db);
 
 
+        this.ObservePropertyChanged(x => x.FolderItemDisplayWithLandscape, false)
+            .Subscribe((_displaySettingsByPathRepository, _currentImageSource!.Path), (x, s) => s._displaySettingsByPathRepository.SetParentFolderItemDisplayWithLandscape(s.Path, x))
+            .AddTo(ref db);
+
 
         // アプリ内部操作も含めて変更を検知する
         // FolderItemsQueryは動作不安定を確認したため使っていない
@@ -635,6 +642,9 @@ public sealed partial class FolderListupPageViewModel
         var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path);
         SelectedChildImagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
         SelectedChildFileSortType = parentSettings?.ChildItemDefaultSort;
+
+        var upStreamSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(path);
+        FolderItemDisplayWithLandscape = upStreamSettings?.FolderItemDisplayWithLandscape ?? parentSettings?.FolderItemDisplayWithLandscape ?? false;
 
         try
         {

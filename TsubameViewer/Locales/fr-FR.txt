@@ -121,6 +121,7 @@ SelectSourceFolder = Ajouter un dossier dans TsubameViewer
 #### FolderListupPage
 ChangeViewToFolderListupPage = Affichage des dossiers
 ChangeViewToImageListupPage = Affichage des images
+FolderItemDisplayWithLandscape = Afficher les éléments en orientation paysage
 FileSortTitle = Trier
 FileSortType.TitleAscending = Titre (Asc)
 FileSortType.TitleDecending = Titre (Desc)

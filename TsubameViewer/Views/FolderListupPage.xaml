@@ -293,6 +293,15 @@
                           Opened="ChildFolderSettingsFlyout_Opened">
                     <StackPanel Spacing="8">
 
+                      <winUIControls:DockPanel Margin="0 0 0 8">
+                        <ToggleSwitch x:Name="Landscape"
+                                      IsOn="{x:Bind _vm.FolderItemDisplayWithLandscape, Mode=TwoWay}"
+                                      Style="{StaticResource ToggleSwitchNoHeader}"
+                                      winUIControls:DockPanel.Dock="Right" />
+
+                        <TextBlock Text="{i18nExt:Localize Key=FolderItemDisplayWithLandscape}" />
+                      </winUIControls:DockPanel>
+                      
                       <TextBlock x:Name="ChildImageFolderOpenModeButtonHeaderText"
                                  Text="{i18nExt:Localize Key=ChildImagesFolderOpenMode}"
                                  Visibility="Collapsed" />
@@ -376,10 +385,12 @@
                       Style="{ThemeResource AccentButtonStyle}"
                       Margin="8 0 16 0"
                       ctwu:FrameworkElementExtensions.Cursor="Hand">
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                  <SymbolIcon Symbol="Refresh" Style="{StaticResource TitlebarSymbolIcon}" />
+                <StackPanel Orientation="Horizontal"
+                            Spacing="4">
+                  <SymbolIcon Symbol="Refresh"
+                              Style="{StaticResource TitlebarSymbolIcon}" />
                   <TextBlock Text="{i18nExt:Localize Key=Refresh}"
-                             VerticalAlignment="Center"/>
+                             VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
               <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
@@ -493,7 +504,21 @@
     </ContentDialog>
 
     <VisualStateManager.VisualStateGroups>
+      <!-- アイテムを横長表示 -->
 
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.FolderItemDisplayWithLandscape, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.DesiredWidth"
+                    Value="272" />
+            <Setter Target="FoldersAdaptiveGridView.ItemHeight"
+                    Value="160.0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       <!-- 選択中の表示 -->
       <VisualStateGroup>
         <VisualState>
