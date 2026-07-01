@@ -1402,7 +1402,7 @@ public sealed class ThumbnailImageManager
         }
     }
     
-    private async ValueTask<bool> MovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
     {
         // 1. サムネイルの取得設定
         // ThumbnailMode.Videos を指定することで、動画に最適なサムネイルを取得します
@@ -1416,28 +1416,19 @@ public sealed class ThumbnailImageManager
 
             await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
             {
-                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)requestedSize, 0, VideoFramePrecision.NearestFrame)).AsStreamForRead();
+                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)requestedSize, 0, VideoFramePrecision.NearestKeyFrame)).AsStreamForRead();
             }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
         }
         catch
         {
-            try
+            ThumbnailOptions options = ThumbnailOptions.None;
+            await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
             {
-                await FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
-                return true;
-            }
-            catch
-            {
-                ThumbnailOptions options = ThumbnailOptions.None;
-                {
-                    await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
-                    {
-                        return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
-                    }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    return true;
-                }
-            }
+                return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
+            }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            return true;
+            
         }
     }
     private async ValueTask<bool> FFMpeg_MovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
@@ -1445,10 +1436,6 @@ public sealed class ThumbnailImageManager
         // 1. サムネイルの取得設定
         // ThumbnailMode.Videos を指定することで、動画に最適なサムネイルを取得します
         uint requestedSize = 200; // 要求するピクセルサイズ（長辺）
-
-        using var fileStream = await file.OpenReadAsync().AsTask(ct);
-        using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
-        fg.DecodePixelHeight = (int)requestedSize;
 
         //if (GetThumbnailGenerationStatus(fg.CurrentVideoStream.CodecName) == ThumbnailGenerationStatus.Failed)
         //{
@@ -1463,14 +1450,28 @@ public sealed class ThumbnailImageManager
             var linkedCt = linkedCts.Token;
             try
             {
+                using var fileStream = await file.OpenReadAsync().AsTask(ct);
+                using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
+                fg.DecodePixelHeight = (int)requestedSize;
                 using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(linkedCt);
+                if (frame.Timestamp == TimeSpan.Zero 
+                    || frame.Timestamp > fg.Duration)
+                {
+                    throw new InvalidOperationException();
+                }
                 await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(linkedCt);
             }
             catch
             {
-                ThumbnailGenerationFailed(fg.CurrentVideoStream.CodecName);
-                using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
-                await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
+                try
+                {
+                    await Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
+                }
+                catch
+                {
+                    using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
+                    await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
+                }
             }
 
             return true;
@@ -1780,7 +1781,7 @@ public sealed class ThumbnailImageManager
                 SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_Mp4FileType => MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_Mp4FileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.Movie_HevcFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
