@@ -185,12 +185,12 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
             using var d = await _asyncLock.LockAsync(ct);
 
-            if (Type == StorageItemTypes.Movie
-                && Item.StorageItem is Windows.Storage.StorageFile file)
-            {
-                var movieProps = await file.Properties.GetVideoPropertiesAsync();
-                Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
-            }
+            //if (Type == StorageItemTypes.Movie
+            //    && Item.StorageItem is Windows.Storage.StorageFile file)
+            //{
+            //    var movieProps = await file.Properties.GetVideoPropertiesAsync();
+            //    Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
+            //}
 
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
@@ -256,14 +256,14 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             var facade = _bookmarkManager.GetBookmarkFacade(Path);
             ReadParcentage = facade.IsFinishedReading ? 1d : facade.ReadPosition.Value;
         }
-        else if (Type is StorageItemTypes.Folder && Settings.IsDisplayFolderItemsCount)
-        {
-            var (finished, total) = _bookmarkManager.GetItemsCountForFolder(Path);
-            if (total != 0)
-            {
-                Duration = $"{finished}/{total}";
-            }
-        }
+        //else if (Type is StorageItemTypes.Folder && Settings.IsDisplayFolderItemsCount)
+        //{
+        //    var (finished, total) = _bookmarkManager.GetItemsCountForFolder(Path);
+        //    if (total != 0)
+        //    {
+        //        Duration = $"{finished}/{total}";
+        //    }
+        //}
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
