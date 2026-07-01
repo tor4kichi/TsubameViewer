@@ -1453,9 +1453,8 @@ public sealed class ThumbnailImageManager
                 using var fileStream = await file.OpenReadAsync().AsTask(ct);
                 using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
                 fg.DecodePixelHeight = (int)requestedSize;
-                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(linkedCt);
-                if (frame.Timestamp == TimeSpan.Zero 
-                    || frame.Timestamp > fg.Duration)
+                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(10)).AsTask(linkedCt);
+                if (frame.Timestamp > fg.Duration)
                 {
                     throw new InvalidOperationException();
                 }
