@@ -415,7 +415,7 @@ public sealed partial class FolderListupPageViewModel
                     if (_imageCollectionContext is FolderImageCollectionContext context
                         && context.Folder.Path == newPath)
                     {
-                        context.Context.ForceUpdateRequestForNotImages();
+                        //context.Context.ForceUpdateRequestForNotImages();
                     }
 
                     FilterText = "";
@@ -531,14 +531,6 @@ public sealed partial class FolderListupPageViewModel
                     }, AwaitOperation.Drop)
                     .AddTo(ref db);
         }
-
-        _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
-        {
-            Guard.IsNotNull(_imageCollectionContext);
-            // TODO: 現在のフォルダ名、ないしアーカイブ名が変わっていないかチェック
-            ReloadItemsAsync(_imageCollectionContext, ct).FireAndForgetSafe();
-        });
-
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
         {
             if (Selection.IsSelectionModeEnabled)
@@ -797,8 +789,7 @@ public sealed partial class FolderListupPageViewModel
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
                         var ignore = col.Context.HandleDiffNotImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,
-                            items.DeferRefresh,
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                            
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -807,55 +798,40 @@ public sealed partial class FolderListupPageViewModel
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
 
-                await _messenger.WorkWithBusyWallAsync(async (ct) =>
+                using (FileItemsView.DeferRefresh())
                 {
-                    using (FileItemsView.DeferRefresh())
-                    {
-                        IsFavoriteFilteredDisplayEnabled = false;
-                        FolderItems.Clear();
+                    IsFavoriteFilteredDisplayEnabled = false;
 
-                        FolderItems.AddRange(col.Context.GetCacheNotImages()
-                            .Select(entry =>
+                    FolderItems.Clear();
+                    FolderItems.AddRange(col.Context.GetCacheNotImages()
+                    .Select(entry =>
+                    {
+                        return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
+                            _sourceStorageItemsRepository,
+                            _bookmarkManager,
+                            _thumbnailManager,
+                            _albamRepository,
+                            Selection);
+                    }));
+
+                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                    {
+                        try
+                        {
+                            if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                             {
-                                return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
-                                    _sourceStorageItemsRepository,
-                                    _bookmarkManager,
-                                    _thumbnailManager,
-                                    _albamRepository,
-                                    Selection);
-                            }));
-
-                        if (FolderItems.Count == 0)
-                        {
-                            await col.Context.HandleDiffNotImages(
-                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    FileItemsView.DeferRefresh,
-                                    cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
-                                    ct);
-                        }
-
-                        IsReadyToFavoriteFilterDisplay = true;
-                    }
-                }, ct);
-
-                DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
-                {
-                    try
-                    {
-                        await Task.Delay(500, ct);
-                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
-                        {
-                            await col.Context.HandleDiffNotImages(
+                                await col.Context.HandleDiffNotImages(
                                 (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                FileItemsView.DeferRefresh,
                                 cacheImageViewModelFactory,
                                 (IStorageItemViewModel itemVM) => itemVM.Path,
                                 ct);
+                            }
                         }
-                    }
-                    catch (OperationCanceledException) { }
-                }).FireAndForgetSafe();
+                        catch (OperationCanceledException) { }
+                    }).FireAndForgetSafe();
+
+                    IsReadyToFavoriteFilterDisplay = true;
+                }
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {

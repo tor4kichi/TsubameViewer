@@ -795,8 +795,7 @@ public sealed partial class ImageListupPageViewModel
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
                         var ignore = col.Context.HandleDiffImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source, 
-                            items.DeferRefresh,
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                             
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -829,18 +828,14 @@ public sealed partial class ImageListupPageViewModel
                         {
                             try
                             {
-                                await Task.Delay(500, ct);
+                                await Task.Delay(100, ct);
                                 if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
                                 {
-                                    using (FileItemsView.DeferRefresh())
-                                    {
-                                        await col.Context.HandleDiffImages(
-                                            (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                            FileItemsView.DeferRefresh,
-                                            cacheImageViewModelFactory,
-                                            (IStorageItemViewModel itemVM) => itemVM.Path,
-                                            ct);
-                                    }                                    
+                                    await col.Context.HandleDiffImages(
+                                        (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                        cacheImageViewModelFactory,
+                                        (IStorageItemViewModel itemVM) => itemVM.Path,
+                                        ct);
                                 }
 
                                 HasFileItem = ImageFileItems.Any();
@@ -861,8 +856,7 @@ public sealed partial class ImageListupPageViewModel
                                 await SetSort(SelectedFileSortType, ct);
                                 IsFavoriteFilteredDisplayEnabled = false;
                                 await col.Context.HandleDiffImages(
-                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    FileItemsView.DeferRefresh,
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,                                    
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
