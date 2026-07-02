@@ -498,7 +498,7 @@ public sealed partial class ImageListupPageViewModel
                 .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
-                .ThrottleFirstLast(TimeSpan.FromSeconds(0.5))
+                .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
                 .SubscribeAwait(this, static async (x, s, ct)=>
                 {
                     using (s.FileItemsView.DeferRefresh())

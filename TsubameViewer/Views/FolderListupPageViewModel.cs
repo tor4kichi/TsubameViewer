@@ -424,8 +424,8 @@ public sealed partial class FolderListupPageViewModel
                         context.Context.ForceUpdateRequestForNotImages();
                     }
 
-                    await ResetContent(newPath, pageName, ct);
                     FilterText = "";
+                    await ResetContent(newPath, pageName, ct);                    
                 }
                 else
                 {
@@ -438,8 +438,8 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
-                await ResetContentWithAlbam(albamIdString, ct);                
                 FilterText = "";
+                await ResetContentWithAlbam(albamIdString, ct);                
             }
 
             if (mode is NavigationMode.Back && 
@@ -477,7 +477,7 @@ public sealed partial class FolderListupPageViewModel
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.FilterText, false)
-            .ThrottleFirstLast(TimeSpan.FromSeconds(0.5))
+            .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
             .SubscribeAwait(async (s, ct) =>
             {
                 using (FileItemsView.DeferRefresh())
