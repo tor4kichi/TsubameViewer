@@ -8,6 +8,7 @@ using Microsoft.Toolkit.Uwp.Helpers;
 using R3.UWP;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -67,7 +68,7 @@ sealed partial class App : Application
         UnhandledException += App_UnhandledException;
 
         RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
-        WinRTProviderInitializer.SetDefaultObservableSystem(OnTimerProviderException);
+        WinRTProviderInitializer.SetDefaultObservableSystem(HandleException);
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
@@ -92,23 +93,16 @@ sealed partial class App : Application
     void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         e.Handled = true;
-        if (e.Exception is OperationCanceledException)
-        {
-            return; 
-        }
-
-        Debug.WriteLine(e.Message);
-        Debug.WriteLine(e.Exception.ToString());
+        HandleException(e.Exception);
     }
 
-    void OnTimerProviderException(Exception exception)
+
+    public void HandleException(Exception exception)
     {
         if (exception == null) { return; }
         if (exception is OperationCanceledException) { return; }
 
         Debug.WriteLine(exception);
-
-        //Container.Resolve<IMessenger>()?.Send<AppExceptionMessage>(new(exception));
     }
 
 

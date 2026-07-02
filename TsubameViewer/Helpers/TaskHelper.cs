@@ -23,15 +23,16 @@ public static class TaskExtensions
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
+            (App.Current as App).HandleException(ex);
             // 現在の同期文脈（UIスレッドなど）があればそこへ、なければThreadPoolへ例外を逃がす
-            if (SynchronizationContext.Current is { } context)
-            {
-                context.Post(_ => ExceptionDispatchInfo.Throw(ex), null);
-            }
-            else
-            {
-                ThreadPool.QueueUserWorkItem(_ => ExceptionDispatchInfo.Throw(ex));
-            }
+            //if (SynchronizationContext.Current is { } context)
+            //{
+            //    context.Post(_ => ExceptionDispatchInfo.Throw(ex), null);
+            //}
+            //else
+            //{
+            //    ThreadPool.QueueUserWorkItem(_ => ExceptionDispatchInfo.Throw(ex));
+            //}
         }
     }
 
@@ -47,15 +48,16 @@ public static class TaskExtensions
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
+            (App.Current as App).HandleException(ex);
             // 現在の同期文脈（UIスレッドなど）があればそこへ、なければThreadPoolへ例外を逃がす
-            if (SynchronizationContext.Current is { } context)
-            {
-                context.Post(_ => ExceptionDispatchInfo.Throw(ex), null);
-            }
-            else
-            {
-                ThreadPool.QueueUserWorkItem(_ => ExceptionDispatchInfo.Throw(ex));
-            }
+            //if (SynchronizationContext.Current is { } context)
+            //{
+            //    context.Post(_ => ExceptionDispatchInfo.Throw(ex), null);
+            //}
+            //else
+            //{
+            //    ThreadPool.QueueUserWorkItem(_ => ExceptionDispatchInfo.Throw(ex));
+            //}
         }
     }
 
@@ -68,15 +70,16 @@ public static class TaskExtensions
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
+            (App.Current as App).HandleException(ex);
             // 現在の同期文脈（UIスレッドなど）があればそこへ、なければThreadPoolへ例外を逃がす
-            if (SynchronizationContext.Current is { } context)
-            {
-                context.Post(_ => ExceptionDispatchInfo.Throw(ex), null);
-            }
-            else
-            {
-                ThreadPool.QueueUserWorkItem(_ => ExceptionDispatchInfo.Throw(ex));
-            }
+            //if (SynchronizationContext.Current is { } context)
+            //{
+            //    context.Post(_ => ExceptionDispatchInfo.Throw(ex), null);
+            //}
+            //else
+            //{
+            //    ThreadPool.QueueUserWorkItem(_ => ExceptionDispatchInfo.Throw(ex));
+            //}
         }
     }
 }
