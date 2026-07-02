@@ -460,8 +460,10 @@
                                       AllowDrop="True">
 
           <GridView.Header>
-            <Grid Visibility="{x:Bind _vm.IsReadyToFavoriteFilterDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
-                  Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
+            <Grid IsHitTestVisible="False"
+                  Opacity="1"
+                  Visibility="Collapsed"
+                  x:Name="NoItemsNotifyContainer">
               <TextBlock Text="{i18nExt:Localize Key=NoItems}"
                          Style="{StaticResource SubtitleTextBlockStyle}"
                          Opacity="0.5"
@@ -508,8 +510,37 @@
     </ContentDialog>
 
     <VisualStateManager.VisualStateGroups>
-      <!-- アイテムを横長表示 -->
 
+      <!-- 表示できるアイテムがない場合の通知 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToTrueConverter}}" />
+          </VisualState.StateTriggers>
+          <Storyboard>
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="NoItemsNotifyContainer"
+                                           Storyboard.TargetProperty="Visibility">
+              <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                <DiscreteObjectKeyFrame.Value>
+                  <Visibility>Collapsed</Visibility>
+                </DiscreteObjectKeyFrame.Value>
+              </DiscreteObjectKeyFrame>
+              <DiscreteObjectKeyFrame KeyTime="0:0:0.5">
+                <DiscreteObjectKeyFrame.Value>
+                  <Visibility>Visible</Visibility>
+                </DiscreteObjectKeyFrame.Value>
+              </DiscreteObjectKeyFrame>
+            </ObjectAnimationUsingKeyFrames>
+          </Storyboard>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- アイテムを横長表示 -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
