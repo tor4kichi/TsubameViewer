@@ -522,6 +522,17 @@
                     Value="160.0" />
           </VisualState.Setters>
         </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.FolderItemDisplayWithLandscape, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.DesiredWidth"
+                    Value="{StaticResource FolderGridViewItemWidth}" />
+            <Setter Target="FoldersAdaptiveGridView.ItemHeight"
+                    Value="{StaticResource FolderGridViewItemHeight}" />
+          </VisualState.Setters>
+        </VisualState>
       </VisualStateGroup>
       <!-- 選択中の表示 -->
       <VisualStateGroup>
