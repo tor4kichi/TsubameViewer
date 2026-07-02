@@ -121,6 +121,7 @@ SelectSourceFolder = Add folder to TsubameViewer
 #### FolderListupPage
 ChangeViewToFolderListupPage = Folder View
 ChangeViewToImageListupPage = Image View
+FolderItemDisplayWithLandscape = Display items in landscape orientation
 FileSortTitle = Sorting
 FileSortType.TitleAscending = Title Asc
 FileSortType.TitleDecending = Title Desc

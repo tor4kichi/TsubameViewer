@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models.FolderItemListing;
 using ZLinq;
@@ -29,10 +30,11 @@ public sealed record AlbamItemEntry
     [BsonId(autoId: true)]
     public Guid _id { get; init; }
 
-
     public Guid AlbamId { get; init; }
 
     public string Path { get; init; }
+
+    public ulong PathHash { get; init; }
 
     public string Name { get; init; }
 
@@ -73,11 +75,19 @@ public sealed class AlbamRepository
             _collection.EnsureIndex(x => x.Path);
             _collection.EnsureIndex(x => x.AddedAt);
             _collection.EnsureIndex(x => x.ItemType);
+            if (_collection.EnsureIndex(x => x.PathHash))
+            {
+                foreach (var entry in _collection.Query().ForUpdate().ToEnumerable())
+                {
+                    _collection.Update(entry with { PathHash = HashHelper.CalculateFNV1a64(entry.Path) });
+                }
+            }
         }
 
         public AlbamItemEntry? FindByPath(string path)
         {
-            return _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
+            ulong hash = HashHelper.CalculateFNV1a64(path);
+            return _collection.FindOne(x => x.PathHash == hash);
         }
 
         public int DeleteAlbam(Guid albamId)
@@ -87,7 +97,8 @@ public sealed class AlbamRepository
 
         public bool Delete(Guid albamId, string path)
         {
-            return _collection.DeleteMany(x => x.AlbamId == albamId && x.Path.Equals(path, StringComparison.Ordinal)) > 0;
+            ulong hash = HashHelper.CalculateFNV1a64(path);
+            return _collection.DeleteMany(x => x.AlbamId == albamId && x.PathHash == hash) > 0;
         }
 
         public IEnumerable<AlbamItemEntry> GetAlbamItem(Guid albamId, FileSortType sort, int skip = 0, int limit = int.MaxValue)
@@ -155,7 +166,8 @@ public sealed class AlbamRepository
             else
             {
                 // FindByIdだと ドライブレターに使われる : によって例外が生じる
-                var entry = _collection.FindOne(x => x.Path.Equals(oldPath, StringComparison.Ordinal));
+                ulong oldPathHash = HashHelper.CalculateFNV1a64(oldPath);
+                var entry = _collection.FindOne(x => x.PathHash == oldPathHash);
                 if (entry == null) { return; }
                 Debug.WriteLine($"AlbamItem Path changing: {entry.Path}");
                 var newEntry = entry with { Path = newPath };
@@ -234,12 +246,14 @@ public sealed class AlbamRepository
 
     public bool IsExistAlbamItem(string path)
     {
-        return _albamItemDatabase.Exists(x => x.Path.Equals(path, StringComparison.Ordinal));
+        ulong hash = HashHelper.CalculateFNV1a64(path);
+        return _albamItemDatabase.Exists(x => x.PathHash == hash);
     }
 
     public bool IsExistAlbamItem(string path, AlbamItemType itemType)
     {
-        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.Path.Equals(path, StringComparison.Ordinal));
+        ulong hash = HashHelper.CalculateFNV1a64(path);
+        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.PathHash == hash);
     }
 
     public AlbamItemEntry AddAlbamItem(Guid albamId, string path, string name, AlbamItemType itemType)
@@ -247,7 +261,7 @@ public sealed class AlbamRepository
 #if DEBUG
         Guard.IsTrue(_albamDatabase.Exists(x => x._id == albamId), $"Not Exist Id: {albamId}");
 #endif
-        var createdItem = _albamItemDatabase.CreateItem(new AlbamItemEntry() { _id = Guid.NewGuid(), AlbamId = albamId, Path = path, Name = name, AddedAt = DateTimeOffset.Now, ItemType = itemType });
+        var createdItem = _albamItemDatabase.CreateItem(new AlbamItemEntry() { _id = Guid.NewGuid(), AlbamId = albamId, Path = path, PathHash = HashHelper.CalculateFNV1a64(path), Name = name, AddedAt = DateTimeOffset.Now, ItemType = itemType });
         _messenger.Send(new AlbamItemAddedMessage(albamId, path, itemType));
         return createdItem;
     }

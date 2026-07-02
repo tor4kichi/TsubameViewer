@@ -135,10 +135,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     {
         Status = LoadingStatus.None;
         Image = null;
+        Item = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
-    readonly static Core.AsyncLock _imageLoadingLock = new();
+    readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -174,6 +175,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             using (await _asyncLock.LockAsync(ct))
             {
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -182,7 +184,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    //using (var l = await _imageLoadingLock.LockAsync(ct))
+                    using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = bitmapImage;
@@ -370,8 +372,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     public LazyCacheFolderOrArchiveFileViewModel(
         FolderImageCollectionContext imageCollectionContext,
         FolderStructureFileEntry cacheEntry,
-        FileSortType fileSortType,
-        IImageSource? imageSource,
+        FileSortType fileSortType,        
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
@@ -389,31 +390,17 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         Settings = settings ?? Ioc.Default.GetRequiredService<StorageItemSettings>();
         _imageCollectionContext = imageCollectionContext;
         _cacheEntry = cacheEntry;
-        _fileSortType = fileSortType;
-        _item = imageSource;
+        _fileSortType = fileSortType;        
         _messenger = messenger;
-
-        if (imageSource != null)
+        _name = _cacheEntry.Name;
+        _path = _cacheEntry.Path;
+        _dateCreated = _cacheEntry.DateCreated;
+        _type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
+        if (_type == StorageItemTypes.None)
         {
-            _item = imageSource;
-            _name = _item.Name;
-            _path = _item.Path;
-            _dateCreated = _item.DateCreated;
-            _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            _isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+            _type = StorageItemTypes.Folder;
         }
-        else
-        {
-            _name = _cacheEntry.Name;
-            _path = _cacheEntry.Path;
-            _dateCreated = _cacheEntry.DateCreated;
-            _type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
-            if (_type == StorageItemTypes.None)
-            {
-                _type = StorageItemTypes.Folder;
-            }
-            _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-        }
+        _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
     }
 
     BookmarkFacade? _bookmark;
@@ -438,10 +425,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     {
         Status = LoadingStatus.None;
         Image = null;
+        Item = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
-    readonly static Core.AsyncLock _imageLoadingLock = new();
+    readonly static Core.AsyncLock _imageLoadingLock = new(2);
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
         return new ValueTask();
@@ -474,6 +462,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             using (await _asyncLock.LockAsync(ct))
             {
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -482,7 +471,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    //using (await _imageLoadingLock.LockAsync(ct))
+                    using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);

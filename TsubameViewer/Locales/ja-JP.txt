@@ -121,6 +121,7 @@ SelectSourceFolder = ツバメビューアにフォルダを追加
 #### FolderListupPage
 ChangeViewToFolderListupPage = フォルダビュー
 ChangeViewToImageListupPage = 画像ビュー
+FolderItemDisplayWithLandscape = アイテムを横長表示
 FileSortTitle = 並び替え
 FileSortType.TitleAscending = タイトル昇順
 FileSortType.TitleDecending = タイトル降順

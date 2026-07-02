@@ -37,6 +37,8 @@ public record FolderAndArchiveChildFileDisplaySettingEntry
     [BsonId]
     public string Path { get; init; } = "";
 
+    public bool FolderItemDisplayWithLandscape { get; set; } = false;
+
     public FileSortType? ChildItemDefaultSort { get; set; }
 
     public DefaultFolderOrArchiveOpenMode ChildImagesFolderOpenMode { get; set; } = DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
@@ -220,6 +222,14 @@ public sealed class DisplaySettingsByPathRepository
         var entry = _internalChildFileRepository.FindById(path)
             ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
         entry.ChildImagesFolderOpenMode = openMode;
+        _internalChildFileRepository.UpdateItem(entry);
+    }
+
+    public void SetParentFolderItemDisplayWithLandscape(string path, bool isLandscape)
+    {
+        var entry = _internalChildFileRepository.FindById(path)
+            ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
+        entry.FolderItemDisplayWithLandscape = isLandscape;
         _internalChildFileRepository.UpdateItem(entry);
     }
 

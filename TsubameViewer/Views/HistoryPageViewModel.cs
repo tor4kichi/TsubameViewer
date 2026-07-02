@@ -161,13 +161,13 @@ public sealed partial class HistoryPageViewModel
             DisposableBuilder db = new();
             this.ObservePropertyChanged(x => x.FilterText, false)
                 .Debounce(TimeSpan.FromSeconds(0.25))
-                .Subscribe(_ =>
+                .SubscribeAwait(async (s, ct) =>
                 {
                     if (_folderListingSettings.IsInPageSearchWithMigemo)
                     {
                         try
                         {
-                            _migemoQueryRegex = MigemoService.Query(_filterText);
+                            _migemoQueryRegex = MigemoService.Query(s);
                         }
                         catch
                         {
@@ -175,8 +175,8 @@ public sealed partial class HistoryPageViewModel
                         }
                     }
                     else { _migemoQueryRegex = null; }
-                    FilteredItems.RefreshFilter();
-                })
+                    FilteredItems.RefreshFilter(ct);
+                }, AwaitOperation.Switch)
                 .AddTo(ref db);
 
             db.Build().RegisterTo(ct);

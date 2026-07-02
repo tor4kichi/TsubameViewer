@@ -289,7 +289,7 @@ public class MediaCompositionFrameExtracter : IFrameExtracter, IDisposable
     }
     public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
     {
-        using var frame = await _mc.GetThumbnailAsync(time, _decodeWidth, _decodeHeight, VideoFramePrecision.NearestFrame);
+        using var frame = await _mc.GetThumbnailAsync(time, _decodeWidth, _decodeHeight, VideoFramePrecision.NearestKeyFrame);
         await _imageSource.SetSourceAsync(frame).AsTask(ct);
         return new(_imageSource.PixelWidth, _imageSource.PixelHeight);
     }

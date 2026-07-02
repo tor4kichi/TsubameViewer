@@ -250,9 +250,13 @@ file static class BookmarkCollectionExtensions
             var entry = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             if (entry == null)
             {
-                entry = new BookmarkEntry() { Path = path };
+                entry = new BookmarkEntry() { Path = path, ParentPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(path)) };
                 var id = _collection.Insert(entry);
                 entry.Id = id;
+            }
+            else if (entry.ParentPathHash == 0)
+            {
+                entry.ParentPathHash = HashHelper.CalculateFNV1a64(System.IO.Path.GetDirectoryName(entry.Path));
             }
 
             return entry;

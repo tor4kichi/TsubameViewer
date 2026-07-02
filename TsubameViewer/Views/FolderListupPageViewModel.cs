@@ -141,7 +141,7 @@ public sealed partial class FolderListupPageViewModel
     }
 
     [ObservableProperty]
-    bool _nowProcessing;
+    bool _nowProcessing = true;
 
     readonly IMessenger _messenger;
     readonly LocalBookmarkRepository _bookmarkManager;
@@ -175,6 +175,9 @@ public sealed partial class FolderListupPageViewModel
             DefaultFolderOrArchiveOpenMode.Viewer,
             DefaultFolderOrArchiveOpenMode.Listup,
         ];
+
+    [ObservableProperty]
+    bool _folderItemDisplayWithLandscape;
 
     [ObservableProperty]
     string? _displaySortTypeInheritancePath;
@@ -277,36 +280,37 @@ public sealed partial class FolderListupPageViewModel
 
     [ObservableProperty]
     bool _isReadyToFavoriteFilterDisplay;
-
+    
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-        d().FireAndForgetSafe();
-        async Task d()
+        var mode = parameters.GetNavigationMode();
+        Selection.EndSelection();
+        NowProcessing = true;
+        try
         {
-            var mode = parameters.GetNavigationMode();
-            Selection.EndSelection();
-            using (await _navigationLock.LockAsync(default))
-            {
-                if (_currentImageSource != null
-                    && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
-                    && mode == NavigationMode.New)
-                {
-                    _folderLastIntractItemManager.SetLastIntractItemName(_currentImageSource.Path, Uri.UnescapeDataString(path));
-                    Debug.WriteLine($"{Path.GetFileName(_currentImageSource.Path)} : {Path.GetFileName(Uri.UnescapeDataString(path))}");
-                }
-
-                _messenger.Unregister<RefreshNavigationRequestMessage>(this);
-                _messenger.Unregister<BackNavigationRequestingMessage>(this);
-                _messenger.Unregister<StartMultiSelectionMessage>(this);
-                _messenger.Unregister<InPageSearchRequestMessage>(this);
-                _messenger.Unregister<StorageItemNotFoundMessage>(this);
-                _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
-                _messenger.Unregister<SendToOtherFolderMessage>(this);
-                _messenger.Unregister<ImageSourceFavoriteChanged>(this);
-
-                base.OnNavigatedFrom(parameters);
-            }
+            _filterQueryCts?.Cancel();
+            _filterQueryCts?.Dispose();
+            _filterQueryCts = null;
         }
+        catch { }
+        if (_currentImageSource != null
+            && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
+            && mode == NavigationMode.New)
+        {
+            _folderLastIntractItemManager.SetLastIntractItemName(_currentImageSource.Path, Uri.UnescapeDataString(path));
+            Debug.WriteLine($"{Path.GetFileName(_currentImageSource.Path)} : {Path.GetFileName(Uri.UnescapeDataString(path))}");
+        }
+
+        _messenger.Unregister<RefreshNavigationRequestMessage>(this);
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        _messenger.Unregister<StartMultiSelectionMessage>(this);
+        _messenger.Unregister<InPageSearchRequestMessage>(this);
+        _messenger.Unregister<StorageItemNotFoundMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<SendToOtherFolderMessage>(this);
+        _messenger.Unregister<ImageSourceFavoriteChanged>(this);
+
+        base.OnNavigatedFrom(parameters);
     }
 
     void ClearContent()
@@ -391,6 +395,7 @@ public sealed partial class FolderListupPageViewModel
         return false;
     }
 
+    CancellationTokenSource? _filterQueryCts;
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;
@@ -410,9 +415,11 @@ public sealed partial class FolderListupPageViewModel
                     if (_imageCollectionContext is FolderImageCollectionContext context
                         && context.Folder.Path == newPath)
                     {
-                        context.Context.ForceUpdateRequestForNotImages();
+                        //context.Context.ForceUpdateRequestForNotImages();
                     }
-                    await ResetContent(newPath, pageName, ct);
+
+                    FilterText = "";
+                    await ResetContent(newPath, pageName, ct);                    
                 }
                 else
                 {
@@ -425,6 +432,7 @@ public sealed partial class FolderListupPageViewModel
             {
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
+                FilterText = "";
                 await ResetContentWithAlbam(albamIdString, ct);                
             }
 
@@ -463,29 +471,43 @@ public sealed partial class FolderListupPageViewModel
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.FilterText, false)
-            .Debounce(TimeSpan.FromSeconds(0.25))
-            .Subscribe(_ =>
+            .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
+            .SubscribeAwait(async (s, ct) =>
             {
-                if (_folderListingSettings.IsInPageSearchWithMigemo)
+                using (FileItemsView.DeferRefresh())
                 {
-                    try
+                    if (_filterQueryCts != null)
                     {
-                        _migemoQueryRegex = MigemoService.Query(_filterText);
+                        _filterQueryCts.Cancel();
+                        _filterQueryCts.Dispose();
                     }
-                    catch
+                    _filterQueryCts = new CancellationTokenSource();
+                    var lastQueryCt = _filterQueryCts.Token;
+                    if (_folderListingSettings.IsInPageSearchWithMigemo)
                     {
-                        _migemoQueryRegex = null;
+                        try
+                        {
+                            _migemoQueryRegex = MigemoService.Query(s);
+                        }
+                        catch
+                        {
+                            _migemoQueryRegex = null;
+                        }
                     }
+                    else { _migemoQueryRegex = null; }
+                    FileItemsView.RefreshFilter(lastQueryCt);
                 }
-                else { _migemoQueryRegex = null; }
-                FileItemsView.RefreshFilter();
-            })
+            }, AwaitOperation.Switch)
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.SelectedChildImagesFolderOpenMode, false)
             .Subscribe((_displaySettingsByPathRepository, _currentImageSource!.Path), (x, s) => s._displaySettingsByPathRepository.SetParentFolderImagesOpenMode(s.Path, x))
             .AddTo(ref db);
 
+
+        this.ObservePropertyChanged(x => x.FolderItemDisplayWithLandscape, false)
+            .Subscribe((_displaySettingsByPathRepository, _currentImageSource!.Path), (x, s) => s._displaySettingsByPathRepository.SetParentFolderItemDisplayWithLandscape(s.Path, x))
+            .AddTo(ref db);
 
 
         // アプリ内部操作も含めて変更を検知する
@@ -509,14 +531,6 @@ public sealed partial class FolderListupPageViewModel
                     }, AwaitOperation.Drop)
                     .AddTo(ref db);
         }
-
-        _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
-        {
-            Guard.IsNotNull(_imageCollectionContext);
-            // TODO: 現在のフォルダ名、ないしアーカイブ名が変わっていないかチェック
-            ReloadItemsAsync(_imageCollectionContext, ct).FireAndForgetSafe();
-        });
-
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
         {
             if (Selection.IsSelectionModeEnabled)
@@ -636,6 +650,9 @@ public sealed partial class FolderListupPageViewModel
         SelectedChildImagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
         SelectedChildFileSortType = parentSettings?.ChildItemDefaultSort;
 
+        var upStreamSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(path);
+        FolderItemDisplayWithLandscape = upStreamSettings?.FolderItemDisplayWithLandscape ?? parentSettings?.FolderItemDisplayWithLandscape ?? false;
+
         try
         {
             await ReloadItemsAsync(_imageCollectionContext, ct);
@@ -664,9 +681,11 @@ public sealed partial class FolderListupPageViewModel
         ClearContent();
 
         string path = albam._id.ToString();
+        var folderDisplaySettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path);
         //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
         SelectedChildFileSortType = FileSortType.None;
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
+        FolderItemDisplayWithLandscape = folderDisplaySettings?.FolderItemDisplayWithLandscape ?? false;
         SetSortAsyncUnsafe(SelectedFileSortType, path);        
 
         AlbamImageCollectionContext imageCollectionContext = new (albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
@@ -754,9 +773,9 @@ public sealed partial class FolderListupPageViewModel
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
-                Func<FolderStructureFileEntry, IStorageItem?, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry, file) =>
+                Func<FolderStructureFileEntry, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry) =>
                 {                   
-                    return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, new StorageItemImageSource(file), _messenger,
+                    return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
@@ -770,8 +789,7 @@ public sealed partial class FolderListupPageViewModel
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
                         var ignore = col.Context.HandleDiffNotImages(
-                            (ObservableCollection<IStorageItemViewModel>)items.Source,
-                            items.DeferRefresh,
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                            
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -780,58 +798,40 @@ public sealed partial class FolderListupPageViewModel
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
 
-                await _messenger.WorkWithBusyWallAsync(async (ct) =>
+                using (FileItemsView.DeferRefresh())
                 {
-                    using (FileItemsView.DeferRefresh())
+                    IsFavoriteFilteredDisplayEnabled = false;
+
+                    FolderItems.Clear();
+                    FolderItems.AddRange(col.Context.GetCacheNotImages()
+                    .Select(entry =>
                     {
-                        IsFavoriteFilteredDisplayEnabled = false;
-                        FolderItems.Clear();
+                        return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
+                            _sourceStorageItemsRepository,
+                            _bookmarkManager,
+                            _thumbnailManager,
+                            _albamRepository,
+                            Selection);
+                    }));
 
-                        FolderItems.AddRange(col.Context.GetCacheNotImages()
-                            .Select(entry =>
-                            {
-                                return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
-                                    _sourceStorageItemsRepository,
-                                    _bookmarkManager,
-                                    _thumbnailManager,
-                                    _albamRepository,
-                                    Selection);
-                            }));
-
-                        if (FolderItems.Count == 0)
-                        {
-                            await col.Context.HandleDiffNotImages(
-                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    FileItemsView.DeferRefresh,
-                                    cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
-                                    ct);
-                        }
-
-                        IsReadyToFavoriteFilterDisplay = true;
-                    }
-                }, ct);
-
-                DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
-                {
-                    try
+                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
-                        await Task.Delay(500, ct);
-                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        try
                         {
-                            using (FileItemsView.DeferRefresh())
+                            if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                             {
                                 await col.Context.HandleDiffNotImages(
-                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    FileItemsView.DeferRefresh,
-                                    cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
-                                    ct);
+                                (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                cacheImageViewModelFactory,
+                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                ct);
                             }
                         }
-                    }
-                    catch (OperationCanceledException) { }
-                }).FireAndForgetSafe();
+                        catch (OperationCanceledException) { }
+                    }).FireAndForgetSafe();
+
+                    IsReadyToFavoriteFilterDisplay = true;
+                }
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
@@ -881,15 +881,16 @@ public sealed partial class FolderListupPageViewModel
 
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
+            await Task.Delay(150);
             try
             {
-                if (_currentImageSource?.StorageItem != null)
-                {
-                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
-                    _sourceItemLastUpdatedTime = prop.DateModified;
-                }
                 bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
                 HasFileItem = exist;
+                if (_currentImageSource?.StorageItem != null)
+                {
+                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync().AsTask(ct).ConfigureAwait(false);
+                    _sourceItemLastUpdatedTime = prop.DateModified;
+                }
             }
             catch (OperationCanceledException) { }
         }).FireAndForgetSafe();

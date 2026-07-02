@@ -121,6 +121,7 @@ SelectSourceFolder = 将文件夹添加到TsubameViewer
 #### FolderListupPage
 ChangeViewToFolderListupPage = 文件夹视图
 ChangeViewToImageListupPage = 图片视图
+FolderItemDisplayWithLandscape = 横向显示物品
 FileSortTitle = 排序
 FileSortType.TitleAscending = 文件名（升序）
 FileSortType.TitleDecending = 文件名（降序）

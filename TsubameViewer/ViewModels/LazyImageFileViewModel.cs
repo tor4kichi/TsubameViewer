@@ -61,8 +61,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     [ObservableProperty]
     private bool _isFavorite;
 
-    [ObservableProperty]
-    StorageItemTypes _type;
+    public StorageItemTypes Type => StorageItemTypes.Image;
 
     [ObservableProperty]
     private double _readParcentage;
@@ -94,9 +93,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         Index = itemIndex;
         _fileSortType = fileSortType;
         _messenger = messenger;
-
-        _type = Core.Models.StorageItemTypes.Image;
-
     }
 
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
@@ -118,10 +114,11 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     {
         Status = LoadingStatus.None;
         Image = null;
+        Item = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
-    readonly static Core.AsyncLock _imageLoadingLock = new();
+    readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -145,7 +142,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 Name = Item.Name;
                 Path = Item.Path;
                 DateCreated = Item.DateCreated;
-                Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
                 UpdateLastReadPosition();
                 IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             }
@@ -184,6 +180,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
@@ -300,8 +297,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     [ObservableProperty]
     private bool _isFavorite;
 
-    [ObservableProperty]
-    StorageItemTypes _type;
+    public StorageItemTypes Type => StorageItemTypes.Image;
 
     [ObservableProperty]
     private double _readParcentage;
@@ -315,7 +311,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         FolderImageCollectionContext imageCollectionContext,
         FileSortType fileSortType,
         FolderStructureFileEntry cacheEntry,
-        IImageSource? imageSource,
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
@@ -333,28 +328,15 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         _fileSortType = fileSortType;
         _cacheEntry = cacheEntry;
         _messenger = messenger;
-        if (imageSource != null)
-        {
-            _item = imageSource;
-            _name = _item.Name;
-            _path = _item.Path;
-            _dateCreated = _item.DateCreated;
-            _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
 
-            // Note: ItemVM生成とコレクションへの詰め込み処理がボトルネックになってる
-            // 表示対象のみ必要な情報を引き出すようにして応答性を改善したい
-            //_isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
-            //_imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_item.Path)?.RatioWH;
-        }
-        else
-        {
-            _name = _cacheEntry.Name;
-            _path = _cacheEntry.Path;
-            _dateCreated = _cacheEntry.DateCreated;
-            _type = StorageItemTypes.Image;
-            //_isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-            //_imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
-        }
+        _name = _cacheEntry.Name;
+        _path = _cacheEntry.Path;
+        _dateCreated = _cacheEntry.DateCreated;        
+
+        // Note: ItemVM生成とコレクションへの詰め込み処理がボトルネックになってる
+        // 表示対象のみ必要な情報を引き出すようにして応答性を改善したい
+        //_isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+        //_imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_item.Path)?.RatioWH;
     }
 
     LoadingStatus _status = LoadingStatus.None;
@@ -375,7 +357,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
-    readonly static Core.AsyncLock _imageLoadingLock = new();
+    readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
@@ -397,6 +379,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (_status is not LoadingStatus.NowLoading) { return; }
+                if (Item == null) { return; }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
@@ -453,6 +436,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     {
         Status = LoadingStatus.None;
         Image = null;
+        Item = null;
     }
 
     async ValueTask EnsureStorageItemAsync(CancellationToken ct)
@@ -483,14 +467,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             //Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
             //UpdateLastReadPosition();
             IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
-        }
-
-        if (Type == StorageItemTypes.Movie
-            && Duration == null
-            && Item.StorageItem is StorageFile movieFile)
-        {
-            var videoProps = await movieFile.Properties.GetVideoPropertiesAsync();
-            Duration = TimeSpanHelper.FormatTimeSpan(videoProps?.Duration ?? TimeSpan.Zero);
         }
     }
 

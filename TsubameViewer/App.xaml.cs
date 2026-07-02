@@ -8,6 +8,7 @@ using Microsoft.Toolkit.Uwp.Helpers;
 using R3.UWP;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -67,7 +68,7 @@ sealed partial class App : Application
         UnhandledException += App_UnhandledException;
 
         RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
-        WinRTProviderInitializer.SetDefaultObservableSystem(OnTimerProviderException);
+        WinRTProviderInitializer.SetDefaultObservableSystem(HandleException);
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
@@ -92,23 +93,16 @@ sealed partial class App : Application
     void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         e.Handled = true;
-        if (e.Exception is OperationCanceledException)
-        {
-            return; 
-        }
-
-        Debug.WriteLine(e.Message);
-        Debug.WriteLine(e.Exception.ToString());
+        HandleException(e.Exception);
     }
 
-    void OnTimerProviderException(Exception exception)
+
+    public void HandleException(Exception exception)
     {
         if (exception == null) { return; }
         if (exception is OperationCanceledException) { return; }
 
         Debug.WriteLine(exception);
-
-        //Container.Resolve<IMessenger>()?.Send<AppExceptionMessage>(new(exception));
     }
 
 
@@ -331,40 +325,37 @@ sealed partial class App : Application
         if (SystemInformation.Instance.IsAppUpdated)
         {
             // Note: IsFirstRunを条件とした場合、設定をクリアされた結果として次回起動時が必ずIsFirstRunに引っかかってしまうことに注意
-
+            // Note: Task.Runで処理囲むと初期化シーケンス中に固まることがあった
             List<Exception> exceptions = new List<Exception>();
-            await Task.Run(async () =>
+            Version prevVersion = new Version(SystemInformation.Instance.PreviousVersionInstalled.ToFormattedString(3));
+            foreach (var migrater in Container.ResolveMany<IAsyncMigrater>())
             {
-                Version prevVersion = new Version(SystemInformation.Instance.PreviousVersionInstalled.ToFormattedString(3));
-                foreach (var migrater in Container.ResolveMany<IAsyncMigrater>())
+                try
                 {
-                    try
+                    var migratorType = migrater.GetType();
+                    if (migrater.TargetVersion == null || migrater.TargetVersion >= prevVersion)
                     {
-                        var migratorType = migrater.GetType();
-                        if (migrater.TargetVersion == null || migrater.TargetVersion >= prevVersion)
-                        {
-                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
+                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
-                            await migrater.MigrateAsync();
+                        await migrater.MigrateAsync();
 
-                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
-                        }                        
-                        else
-                        {
-                            Debug.WriteLine($"Skip migrate: {migratorType.Name}");
-                        }
+                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        exceptions.Add(ex);
+                        Debug.WriteLine($"Skip migrate: {migratorType.Name}");
                     }
                 }
-
-                if (exceptions.Any())
+                catch (Exception ex)
                 {
-                    throw new AggregateException(exceptions);
+                    exceptions.Add(ex);
                 }
-            });
+            }
+
+            if (exceptions.Any())
+            {
+                throw new AggregateException(exceptions);
+            }
         }
     }
 
@@ -386,24 +377,22 @@ sealed partial class App : Application
             } 
         }
 
-        await Task.Run(async () =>
+        // Note: Task.Runで囲むと初回インストール時にハングアップしていた
+        foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenanceAsync>())
         {
-            foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenanceAsync>())
-            {
-                var maintenanceType = maintenanceInst.GetType();
-                Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
+            var maintenanceType = maintenanceInst.GetType();
+            Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
-                try
-                {
-                    await maintenanceInst.MaintenanceAsync();
-                    Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
-                }
-                catch
-                {
-                    Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
-                }
-            }               
-        });
+            try
+            {
+                await maintenanceInst.MaintenanceAsync();
+                Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+            }
+            catch
+            {
+                Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
+            }
+        }
     }
 
     bool _isInitialized = false;

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Windows.UI.Xaml.Data;
 
 namespace CommunityToolkit.WinUI
@@ -65,7 +66,7 @@ namespace CommunityToolkit.WinUI
         /// <summary>
         /// Manually refreshes the filter on the view
         /// </summary>
-        void RefreshFilter();
+        void RefreshFilter(CancellationToken ct = default);
 
         /// <summary>
         /// Manually refreshes the sorting on the view

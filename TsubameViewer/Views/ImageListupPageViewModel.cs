@@ -159,7 +159,7 @@ public sealed partial class ImageListupPageViewModel
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly FolderListingSettings _folderListingSettings;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-    private bool _nowProcessing;
+    private bool _nowProcessing = true;
     public bool NowProcessing
     {
         get { return _nowProcessing; }
@@ -338,6 +338,9 @@ public sealed partial class ImageListupPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
+        _filterQueryCts?.Cancel();
+        _filterQueryCts?.Dispose();
+        _filterQueryCts = null;
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
@@ -380,11 +383,11 @@ public sealed partial class ImageListupPageViewModel
         return false;
     }
 
+    CancellationTokenSource? _filterQueryCts;
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
-        NowProcessing = true;
         try
         {
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
@@ -393,7 +396,9 @@ public sealed partial class ImageListupPageViewModel
                 if (await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
                     RequireRefresh = false;
-                    await ResetContentWithStorageItem(newPath, pageName, ct);
+                    FilterText = "";
+
+                    await ResetContentWithStorageItem(newPath, pageName, ct);                    
                 }
                 else
                 {
@@ -405,6 +410,7 @@ public sealed partial class ImageListupPageViewModel
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
                 await ResetContentWithAlbam(albamIdString, ct);
+                FilterText = "";
             }
             if (mode != NavigationMode.New)
             {
@@ -491,23 +497,33 @@ public sealed partial class ImageListupPageViewModel
                 .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
-                .Debounce(TimeSpan.FromSeconds(0.25))
-                .Subscribe(this, static (_, s)=>
+                .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
+                .SubscribeAwait(this, static async (x, s, ct)=>
                 {
-                    if (s._folderListingSettings.IsInPageSearchWithMigemo)
+                    using (s.FileItemsView.DeferRefresh())
                     {
-                        try
+                        if (s._filterQueryCts != null)
                         {
-                            s._migemoQueryRegex = MigemoService.Query(s._filterText);
+                            s._filterQueryCts.Cancel();
+                            s._filterQueryCts.Dispose();
                         }
-                        catch
+                        s._filterQueryCts = new CancellationTokenSource();
+                        var lastQueryCt = s._filterQueryCts.Token;
+                        if (s._folderListingSettings.IsInPageSearchWithMigemo)
                         {
-                            s._migemoQueryRegex = null;
+                            try
+                            {
+                                s._migemoQueryRegex = MigemoService.Query(x);
+                            }
+                            catch
+                            {
+                                s._migemoQueryRegex = null;
+                            }
                         }
+                        else { s._migemoQueryRegex = null; }
+                        s.FileItemsView.RefreshFilter(lastQueryCt);
                     }
-                    else { s._migemoQueryRegex = null; }
-                    s.FileItemsView.RefreshFilter();
-                })
+                }, AwaitOperation.Switch)
                 .AddTo(ref db);
 
             // アプリ内部操作も含めて変更を検知する
@@ -553,6 +569,7 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
+        NowProcessing = true;
         using (FileItemsView.DeferRefresh())
         {
             ImageFileItems.Clear();
@@ -576,12 +593,12 @@ public sealed partial class ImageListupPageViewModel
 
         sw.ElapsedWrite("LockAsync");
 
-        HasFileItem = false;
         DisplayCurrentPath = ""; 
 
         // 表示情報の解決
         ClearContent();
 
+        await Task.Delay(1);
         try
         {
             (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct);
@@ -638,8 +655,6 @@ public sealed partial class ImageListupPageViewModel
 
         sw.ElapsedWrite("After ReloadItemsAsync");
 
-        HasFileItem = ImageFileItems.Any();
-
         OnPropertyChanged(nameof(ImageFileItems));
     }
 
@@ -647,7 +662,6 @@ public sealed partial class ImageListupPageViewModel
     {
         using var lockReleaser = await _navigationLock.LockAsync(ct);
 
-        HasFileItem = false;
         DisplayCurrentPath = "";
         ClearContent();
         if (Guid.TryParse(albamIdString, out Guid albamId) is false)
@@ -697,6 +711,7 @@ public sealed partial class ImageListupPageViewModel
     {
         _itemsDisposable?.Dispose();
         _itemsDisposable = null;
+        HasFileItem = true;
         if (!IsIndexAccessListingEnabled)
         {
             var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
@@ -754,6 +769,8 @@ public sealed partial class ImageListupPageViewModel
                 disposable.Add(d2);
                 _itemsDisposable = disposable;
             }
+
+            HasFileItem = ImageFileItems.Any();
         }
         else
         {
@@ -762,9 +779,9 @@ public sealed partial class ImageListupPageViewModel
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
-                Func<FolderStructureFileEntry, StorageFile?, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry, file) => 
+                Func<FolderStructureFileEntry, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry) => 
                 {
-                    return new LazyCacheImageFileViewModel(col, sortType, entry, new StorageItemImageSource(file), _messenger,
+                    return new LazyCacheImageFileViewModel(col, sortType, entry, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
@@ -778,8 +795,7 @@ public sealed partial class ImageListupPageViewModel
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
                         var ignore = col.Context.HandleDiffImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source, 
-                            items.DeferRefresh,
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                             
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -798,7 +814,7 @@ public sealed partial class ImageListupPageViewModel
 
                         ImageFileItems.AddRange(col.Context.GetCacheImages().Select(entry =>
                         {
-                            return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                            return new LazyCacheImageFileViewModel(col, sortType, entry, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
@@ -806,23 +822,23 @@ public sealed partial class ImageListupPageViewModel
                                 Selection);
                         }));
 
+                        HasFileItem = ImageFileItems.Any();
+
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
                             try
                             {
-                                await Task.Delay(500, ct);
+                                await Task.Delay(100, ct);
                                 if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
                                 {
-                                    using (FileItemsView.DeferRefresh())
-                                    {
-                                        await col.Context.HandleDiffImages(
-                                            (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                            FileItemsView.DeferRefresh,
-                                            cacheImageViewModelFactory,
-                                            (IStorageItemViewModel itemVM) => itemVM.Path,
-                                            ct);
-                                    }
+                                    await col.Context.HandleDiffImages(
+                                        (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                        cacheImageViewModelFactory,
+                                        (IStorageItemViewModel itemVM) => itemVM.Path,
+                                        ct);
                                 }
+
+                                HasFileItem = ImageFileItems.Any();
                             }
                             catch (OperationCanceledException) { }
                         }).FireAndForgetSafe();
@@ -830,27 +846,27 @@ public sealed partial class ImageListupPageViewModel
                 }
                 else                    
                 {
-                    ImageFileItems.Clear();
-                    await SetSort(SelectedFileSortType, ct);
-                    IsFavoriteFilteredDisplayEnabled = false;
                     DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
                         try
                         {
                             using (FileItemsView.DeferRefresh())
                             {
+                                ImageFileItems.Clear();
+                                await SetSort(SelectedFileSortType, ct);
+                                IsFavoriteFilteredDisplayEnabled = false;
                                 await col.Context.HandleDiffImages(
-                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    FileItemsView.DeferRefresh,
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,                                    
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
                             }
+
+                            HasFileItem = ImageFileItems.Any();
                         }
                         catch (OperationCanceledException) { }
                     }).FireAndForgetSafe();
                 }
-
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
@@ -875,13 +891,13 @@ public sealed partial class ImageListupPageViewModel
                                 _albamRepository,
                                 Selection);
                         }));
-                }                
+                }
+                HasFileItem = ImageFileItems.Any();
             }
         }
 
         ct.ThrowIfCancellationRequested();
-
-        HasFileItem = ImageFileItems.Any();
+        
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
             bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);

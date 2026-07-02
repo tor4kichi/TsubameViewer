@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -119,9 +120,9 @@ namespace CommunityToolkit.WinUI
         }
 
         /// <inheritdoc/>
-        public void RefreshFilter()
+        public void RefreshFilter(CancellationToken ct = default)
         {
-            HandleFilterChanged();
+            HandleFilterChanged(ct);
         }
 
         /// <inheritdoc/>
@@ -536,12 +537,13 @@ namespace CommunityToolkit.WinUI
             OnVectorChanged(new VectorChangedEventArgs(CollectionChange.Reset));
         }
 
-        private void HandleFilterChanged()
+        private void HandleFilterChanged(CancellationToken ct = default)
         {
             if (_filter != null)
             {
                 for (var index = 0; index < _view.Count; index++)
                 {
+                    if (ct.IsCancellationRequested) { return; }
                     var item = _view.ElementAt(index);
                     if (_filter(item))
                     {
@@ -557,6 +559,7 @@ namespace CommunityToolkit.WinUI
             var viewIndex = 0;
             for (var index = 0; index < _source.Count; index++)
             {
+                if (ct.IsCancellationRequested) { return; }
                 var item = _source[index];
                 if (viewHash.Contains(item))
                 {
@@ -567,7 +570,7 @@ namespace CommunityToolkit.WinUI
                 if (HandleItemAdded(index, item, viewIndex))
                 {
                     viewIndex++;
-                }
+                }                
             }
         }
 
@@ -713,8 +716,12 @@ namespace CommunityToolkit.WinUI
                 CurrentPosition++;
             }
 
-            var e = new VectorChangedEventArgs(CollectionChange.ItemInserted, newViewIndex, newItem);
-            OnVectorChanged(e);
+            if (_deferCounter == 0)
+            {
+                var e = new VectorChangedEventArgs(CollectionChange.ItemInserted, newViewIndex, newItem);
+                OnVectorChanged(e);
+            }
+
             return true;
         }
 
@@ -735,6 +742,7 @@ namespace CommunityToolkit.WinUI
                 return;
             }
 
+
             RemoveFromView(oldStartingIndex, oldItem);
         }
 
@@ -745,9 +753,11 @@ namespace CommunityToolkit.WinUI
             {
                 CurrentPosition--;
             }
-
-            var e = new VectorChangedEventArgs(CollectionChange.ItemRemoved, itemIndex, item);
-            OnVectorChanged(e);
+            if (_deferCounter == 0)
+            {
+                var e = new VectorChangedEventArgs(CollectionChange.ItemRemoved, itemIndex, item);
+                OnVectorChanged(e);
+            }
         }
 
         private void SortDescriptions_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
