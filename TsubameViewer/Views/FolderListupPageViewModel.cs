@@ -905,15 +905,16 @@ public sealed partial class FolderListupPageViewModel
 
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
+            await Task.Delay(150);
             try
             {
-                if (_currentImageSource?.StorageItem != null)
-                {
-                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
-                    _sourceItemLastUpdatedTime = prop.DateModified;
-                }
                 bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
                 HasFileItem = exist;
+                if (_currentImageSource?.StorageItem != null)
+                {
+                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync().AsTask(ct).ConfigureAwait(false);
+                    _sourceItemLastUpdatedTime = prop.DateModified;
+                }
             }
             catch (OperationCanceledException) { }
         }).FireAndForgetSafe();
