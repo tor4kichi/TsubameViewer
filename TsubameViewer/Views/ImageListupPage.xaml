@@ -1041,7 +1041,7 @@
               </uwpControls:Case>
             </uwpControls:SwitchPresenter>
 
-            <Grid Visibility="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}"
+            <Grid Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
                   Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
               <TextBlock Text="{i18nExt:Localize Key=NoItems}"
                          Style="{StaticResource SubtitleTextBlockStyle}"

@@ -141,7 +141,7 @@ public sealed partial class FolderListupPageViewModel
     }
 
     [ObservableProperty]
-    bool _nowProcessing;
+    bool _nowProcessing = true;
 
     readonly IMessenger _messenger;
     readonly LocalBookmarkRepository _bookmarkManager;
@@ -283,40 +283,34 @@ public sealed partial class FolderListupPageViewModel
     
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-        d().FireAndForgetSafe();
-        async Task d()
+        var mode = parameters.GetNavigationMode();
+        Selection.EndSelection();
+        NowProcessing = true;
+        try
         {
-            var mode = parameters.GetNavigationMode();
-            Selection.EndSelection();
-            using (await _navigationLock.LockAsync(default))
-            {
-                try
-                {
-                    _filterQueryCts?.Cancel();
-                    _filterQueryCts?.Dispose();
-                    _filterQueryCts = null;
-                }
-                catch { }
-                if (_currentImageSource != null
-                    && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
-                    && mode == NavigationMode.New)
-                {
-                    _folderLastIntractItemManager.SetLastIntractItemName(_currentImageSource.Path, Uri.UnescapeDataString(path));
-                    Debug.WriteLine($"{Path.GetFileName(_currentImageSource.Path)} : {Path.GetFileName(Uri.UnescapeDataString(path))}");
-                }
-
-                _messenger.Unregister<RefreshNavigationRequestMessage>(this);
-                _messenger.Unregister<BackNavigationRequestingMessage>(this);
-                _messenger.Unregister<StartMultiSelectionMessage>(this);
-                _messenger.Unregister<InPageSearchRequestMessage>(this);
-                _messenger.Unregister<StorageItemNotFoundMessage>(this);
-                _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
-                _messenger.Unregister<SendToOtherFolderMessage>(this);
-                _messenger.Unregister<ImageSourceFavoriteChanged>(this);
-
-                base.OnNavigatedFrom(parameters);
-            }
+            _filterQueryCts?.Cancel();
+            _filterQueryCts?.Dispose();
+            _filterQueryCts = null;
         }
+        catch { }
+        if (_currentImageSource != null
+            && parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path)
+            && mode == NavigationMode.New)
+        {
+            _folderLastIntractItemManager.SetLastIntractItemName(_currentImageSource.Path, Uri.UnescapeDataString(path));
+            Debug.WriteLine($"{Path.GetFileName(_currentImageSource.Path)} : {Path.GetFileName(Uri.UnescapeDataString(path))}");
+        }
+
+        _messenger.Unregister<RefreshNavigationRequestMessage>(this);
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        _messenger.Unregister<StartMultiSelectionMessage>(this);
+        _messenger.Unregister<InPageSearchRequestMessage>(this);
+        _messenger.Unregister<StorageItemNotFoundMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<SendToOtherFolderMessage>(this);
+        _messenger.Unregister<ImageSourceFavoriteChanged>(this);
+
+        base.OnNavigatedFrom(parameters);
     }
 
     void ClearContent()
