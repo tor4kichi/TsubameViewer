@@ -247,6 +247,18 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                         await _vm.ObservePropertyChanged(x => x.NowProcessing)
                             .Take(2)
                             .WaitAsync(ct);
+                        if (e.NavigationMode is NavigationMode.Back
+                            && _vm.GetLastIntractIndexAndItem() is { } lastItem)
+                        {
+                            int index = lastItem.Index;
+                            await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
+                            if (listView.ContainerFromIndex(index) is Control itemContainer)
+                            {
+                                itemContainer.Focus(FocusState.Keyboard);
+                            }
+                        }
+
+                        await Task.Delay(5);
                         if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
                         {
                             await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
@@ -265,16 +277,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                             else
                             {
                                 sv.ChangeView(null, 0, null, true);
-                            }
-                        }
-
-                        if (_vm.GetLastIntractIndexAndItem() is { } lastItem)
-                        {
-                            int index = lastItem.Index;
-                            await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
-                            if (listView.ContainerFromIndex(index) is Control itemContainer)
-                            {
-                                itemContainer.Focus(FocusState.Keyboard);
                             }
                         }
                     });
