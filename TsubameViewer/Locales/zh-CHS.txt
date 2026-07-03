@@ -20,7 +20,7 @@ ApplicationTheme.Dark = 深色主题
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = 向开发者发送小费
+PurchaseAddon_ButtonTitle = 购买开发支持附加组件
 PurchaseAddon_ShowPurchaseUI = 继续购买屏幕
 PurchaseAddon_ShowPurchaseHistory = 查看您的购买记录
 PurchaseAddon_PurchasedThanksMessage = 感谢您的支持！
@@ -31,8 +31,9 @@ AddNewFolder = 新增文件夹
 Import = 导入
 RefreshLatest = 刷新页面
 Settings = 设置
-SendFeedbackWithMashmallow = 发送反馈
+SendFeedbackForMsForm = 请将反馈意见发送至意见箱。
 SendFeedbackWithStoreReview = 评价此应用
+CopyAppInfoToClipboard = 复制应用信息
 SourceStorageItemsPage = 我的文件夹
 CollectionPage = 库
 OpenImageCodecExtensionStorePageWithFileType = {0} 需要安装扩展以显示图像格式。打开应用商店？

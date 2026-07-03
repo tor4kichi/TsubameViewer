@@ -20,7 +20,7 @@ ApplicationTheme.Dark = Thème sombre
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = Envoyez un pourboire au développeur
+PurchaseAddon_ButtonTitle = Modules complémentaires d'assistance au développement d'achats
 PurchaseAddon_ShowPurchaseUI = Procéder à l'achat de l'écran
 PurchaseAddon_ShowPurchaseHistory = Consultez votre historique d'achats
 PurchaseAddon_PurchasedThanksMessage = Merci pour votre soutien !
@@ -31,8 +31,9 @@ AddNewFolder = Ajouter un dossier
 Import = Importer
 RefreshLatest = Actualiser la page
 Settings = Paramètres
-SendFeedbackWithMashmallow = Soumettre un feedback
+SendFeedbackForMsForm = Envoyez vos commentaires via la boîte à suggestions
 SendFeedbackWithStoreReview = Soumettre un avis sur le store
+CopyAppInfoToClipboard = Copier les informations de l'application
 SourceStorageItemsPage = Mon dossier
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} Une extension est nécessaire pour afficher ce format d'image. Voulez-vous ouvrir le store ?

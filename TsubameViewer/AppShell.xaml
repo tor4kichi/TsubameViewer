@@ -384,6 +384,44 @@
           <SymbolIcon Symbol="Send" Style="{StaticResource TitlebarSymbolIcon}" />
 
           <Button.Flyout>
+            <Flyout>
+              <StackPanel MaxWidth="320" Spacing="8">
+                <Button Content="{i18Ext:Localize Key=SendFeedbackForMsForm}"
+                        Command="{x:Bind OpenMsFormFeedbackPageCommand}"
+                        HorizontalAlignment="Stretch" />
+                <Button Content="{i18Ext:Localize Key=SendFeedbackWithStoreReview}"
+                        Command="{x:Bind OpenStoreRatingPageCommand}"
+                        HorizontalAlignment="Stretch" />
+
+                <uwpControls:DockPanel Height="32" Margin="0 8 0 0">
+                  <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyAppInfoToClipboard}"
+                          Command="{x:Bind AppInformationCopyToClipboardCommand}"
+                          uwpControls:DockPanel.Dock="Right"
+                          MinWidth="60"
+                          >
+                    <SymbolIcon Symbol="Copy" />
+                  </Button>
+                  <TextBlock Text="{i18Ext:Localize Key=CopyAppInfoToClipboard}"
+                             Style="{StaticResource CaptionTextBlockStyle}"
+                             VerticalAlignment="Center"
+                             TextWrapping="Wrap"
+                             MaxLines="3"/>
+
+                </uwpControls:DockPanel>
+                <TextBox IsReadOnly="True"
+                           x:Name="ApplicationInfomationText"
+                           TextWrapping="Wrap">
+                </TextBox>
+
+                <Button Click="ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click"
+                        HorizontalAlignment="Stretch"
+                        Margin="0 8 0 0">
+                  <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
+                             TextWrapping="Wrap" />
+                </Button>
+              </StackPanel>
+            </Flyout>
+            <!--
             <MenuFlyout Placement="Bottom">
               <MenuFlyoutItem Text="{i18Ext:Localize Key=SendFeedbackWithMashmallow}"
                               Command="{x:Bind _vm.SendFeedbackWithMashmallowCommand}" />
@@ -394,6 +432,7 @@
               <MenuFlyoutItem Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
                               Click="ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click" />
             </MenuFlyout>
+            -->
           </Button.Flyout>
         </Button>
       </StackPanel>

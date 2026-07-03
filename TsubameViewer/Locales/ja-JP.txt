@@ -20,7 +20,7 @@ ApplicationTheme.Dark = 暗いテーマ
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = 開発者にチップを送る
+PurchaseAddon_ButtonTitle = 開発支援アドオンを購入
 PurchaseAddon_ShowPurchaseUI = 購入画面へ
 PurchaseAddon_ShowPurchaseHistory = 購入履歴の確認
 PurchaseAddon_PurchasedThanksMessage = ご支援頂きありがとうございます！
@@ -31,8 +31,9 @@ AddNewFolder = フォルダを追加
 Import = インポート
 RefreshLatest = ページを更新
 Settings = 設定
-SendFeedbackWithMashmallow = フィードバックを送る
+SendFeedbackForMsForm = 目安箱にフィードバックを送る
 SendFeedbackWithStoreReview = ストアレビューを送る
+CopyAppInfoToClipboard = アプリ情報をコピー
 SourceStorageItemsPage = Myフォルダ
 CollectionPage = コレクション
 OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
