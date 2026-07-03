@@ -819,14 +819,12 @@ public sealed partial class FolderListupPageViewModel
                     {
                         try
                         {
-                            if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
-                            {
-                                await col.Context.HandleDiffNotImages(
+                            // Note: リネームを検知したいので同数チェックしない
+                            await col.Context.HandleDiffNotImages(
                                 (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                 cacheImageViewModelFactory,
                                 (IStorageItemViewModel itemVM) => itemVM.Path,
                                 ct);
-                            }
                         }
                         catch (OperationCanceledException) { }
                     }).FireAndForgetSafe();

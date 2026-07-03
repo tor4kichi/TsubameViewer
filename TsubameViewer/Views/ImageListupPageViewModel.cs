@@ -830,16 +830,13 @@ public sealed partial class ImageListupPageViewModel
                         {
                             try
                             {
-                                await Task.Delay(100, ct);
-                                if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
-                                {
-                                    await col.Context.HandleDiffImages(
-                                        (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                        cacheImageViewModelFactory,
-                                        (IStorageItemViewModel itemVM) => itemVM.Path,
-                                        ct);
-                                }
-
+                                // Note: リネームを検知したいので同数チェックしない
+                                await col.Context.HandleDiffImages(
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                            
                                 HasFileItem = ImageFileItems.Any();
                             }
                             catch (OperationCanceledException) { }
