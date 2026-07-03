@@ -919,6 +919,8 @@ public sealed partial class FolderListupPageViewModel
     [RelayCommand]
     void ChangeFileSort(object sort)
     {
+        if (_currentImageSource == null) { return; }
+
         FileSortType? sortType = null;
         if (sort is int num)
         {
