@@ -516,6 +516,7 @@ public sealed partial class FolderListupPageViewModel
         {
             Window.Current.WindowActivationStateChanged()
                     .ToObservable()
+                    .ObserveOnCurrentSynchronizationContext()
                     .Debounce(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>
                     {
@@ -784,10 +785,10 @@ public sealed partial class FolderListupPageViewModel
                 };
 
                 var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()                    
+                    .ObserveOnCurrentSynchronizationContext()
                     .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
-                        var (col, items, itemFacotry) = s;
-                        //await ReloadItemsAsync(col, ct);
+                        var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffNotImages(
                             (RangeObservableCollection<IStorageItemViewModel>)items.Source,                            
                             itemFacotry,
