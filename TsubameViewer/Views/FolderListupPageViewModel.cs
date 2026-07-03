@@ -315,11 +315,7 @@ public sealed partial class FolderListupPageViewModel
 
     void ClearContent()
     {
-        using (FileItemsView.DeferRefresh())
-        {
-            FolderItems.Clear();
-        }
-
+        FolderItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
         (_currentImageSource as IDisposable)?.Dispose();
         _currentImageSource = null;
         (_imageCollectionContext as IDisposable)?.Dispose();
