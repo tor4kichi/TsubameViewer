@@ -738,6 +738,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
             Window.Current.WindowActivationStateChanged()
                 .ToObservable()
+                .ObserveOnCurrentSynchronizationContext()
                 .SubscribeAwait(async (visible, ct) =>
                 {
                     if (visible && requireRefresh && _imageCollectionContext is not null)

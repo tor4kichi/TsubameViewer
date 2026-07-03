@@ -532,6 +532,7 @@ public sealed partial class ImageListupPageViewModel
             {
                 Window.Current.WindowActivationStateChanged()
                     .ToObservable()
+                    .ObserveOnCurrentSynchronizationContext()
                     .Debounce(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>
                     {
@@ -760,7 +761,8 @@ public sealed partial class ImageListupPageViewModel
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // アプリ内部操作も含めて変更を検知する
-                var d2 = _imageCollectionContext.CreateImageFileChangedObserver()                    
+                var d2 = _imageCollectionContext.CreateImageFileChangedObserver()
+                    .ObserveOnCurrentSynchronizationContext()
                     .SubscribeAwait(async (_, ct) =>
                     {
                         await ReloadItemsAsync(_imageCollectionContext, ct);
@@ -790,10 +792,10 @@ public sealed partial class ImageListupPageViewModel
                 };
 
                 var d1 = imageCollectionContext.CreateImageFileChangedObserver()
+                    .ObserveOnCurrentSynchronizationContext()   
                     .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
-                        var (col, items, itemFacotry) = s;
-                        //await ReloadItemsAsync(col, ct);
+                        var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffImages(
                             (RangeObservableCollection<IStorageItemViewModel>)items.Source,                             
                             itemFacotry,
@@ -828,16 +830,13 @@ public sealed partial class ImageListupPageViewModel
                         {
                             try
                             {
-                                await Task.Delay(100, ct);
-                                if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
-                                {
-                                    await col.Context.HandleDiffImages(
-                                        (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                        cacheImageViewModelFactory,
-                                        (IStorageItemViewModel itemVM) => itemVM.Path,
-                                        ct);
-                                }
-
+                                // Note: リネームを検知したいので同数チェックしない
+                                await col.Context.HandleDiffImages(
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                            
                                 HasFileItem = ImageFileItems.Any();
                             }
                             catch (OperationCanceledException) { }

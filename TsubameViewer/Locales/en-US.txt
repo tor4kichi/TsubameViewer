@@ -20,7 +20,7 @@ ApplicationTheme.Dark = Dark theme
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = Send a tip to the developer
+PurchaseAddon_ButtonTitle = Purchase development support add-ons
 PurchaseAddon_ShowPurchaseUI = Proceed to purchase screen
 PurchaseAddon_ShowPurchaseHistory = Check your purchase history
 PurchaseAddon_PurchasedThanksMessage = Thank you for your support!
@@ -31,8 +31,9 @@ AddNewFolder = Add Folder
 Import = Import
 RefreshLatest = Refresh page
 Settings = Setting
-SendFeedbackWithMashmallow = Send feedback
+SendFeedbackForMsForm = Send feedback to the suggestion box
 SendFeedbackWithStoreReview = Send a store review
+CopyAppInfoToClipboard = Copy app information
 SourceStorageItemsPage = My folder
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?

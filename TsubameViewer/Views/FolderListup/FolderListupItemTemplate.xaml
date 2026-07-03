@@ -159,7 +159,8 @@
              Stretch="UniformToFill"
              Opacity="1"
              VerticalAlignment="Center"
-             Grid.RowSpan="2"/>
+             Grid.RowSpan="2"
+             x:Name="ImageControl"/>
       <Grid Grid.Row="1">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"

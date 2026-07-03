@@ -577,7 +577,8 @@
                   IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                   KeyboardAcceleratorPlacementMode="Hidden"
                   KeyTipPlacementMode="Hidden"
-                  ctwu:FrameworkElementExtensions.Cursor="Hand">
+                  ctwu:FrameworkElementExtensions.Cursor="Hand"
+                  ctwu:UIElementExtensions.ClipToBounds="True">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>

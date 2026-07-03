@@ -195,6 +195,7 @@ public sealed class DisplaySettingsByPathRepository
 
     public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsUpStreamToRoot(string path)
     {
+        path = Path.GetDirectoryName(path);
         while (!string.IsNullOrEmpty(path))
         {
             if (_internalChildFileRepository.FindById(path) is not null and var entry)

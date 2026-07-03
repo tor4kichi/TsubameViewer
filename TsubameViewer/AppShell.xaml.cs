@@ -4,13 +4,13 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
 using DryIoc.ImTools;
 using Fluent.Icons;
 using I18NPortable;
-using CommunityToolkit.WinUI;
-using CommunityToolkit.WinUI.Animations;
 using R3;
 using Reactive.Bindings;
 using System;
@@ -22,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Navigation;
@@ -218,6 +219,8 @@ public sealed partial class AppShell : UserControl
                 Icon = new FluentIconElement(FluentSymbol.Settings24),
             }
         };
+
+        ApplicationInfomationText.Text = GetAppInfoText().ToString();
     }
 
     void AppShell_Loaded(object sender, RoutedEventArgs e)
@@ -1868,6 +1871,46 @@ public sealed partial class AppShell : UserControl
     void PackageUpdateDialogBGWall_Tapped(object sender, TappedRoutedEventArgs e)
     {
         PackageUpdateDialog.Hide();
+    }
+
+    #endregion
+
+
+    #region Feedback
+
+    [RelayCommand]
+    void OpenStoreRatingPage()
+    {
+        _ = Microsoft.Toolkit.Uwp.Helpers.SystemInformation.LaunchStoreForReviewAsync();
+    }
+
+    [RelayCommand]
+    void OpenMsFormFeedbackPage()
+    {
+        var appInfoText = ApplicationInfomationText.Text;
+        var uri = new Uri($"https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZAAObntfNUNVdWMThSTjFGMDhFWjI4TDJLSjUxTTM4SC4u&r8cc009228bff4265bf1eb48b0c408716={appInfoText}");
+        _ = Launcher.LaunchUriAsync(uri);
+    }
+
+    [RelayCommand]
+    void AppInformationCopyToClipboard()
+    {
+        var data = new DataPackage();
+        data.SetText(ApplicationInfomationText.Text.ToString());
+        Clipboard.SetContent(data);
+        _messenger.SendShowTextNotificationMessage($"✅{"Copy".Translate()}");
+    }
+
+    StringBuilder GetAppInfoText()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationName)
+            .Append(" v").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationVersion.ToFormattedString())
+            .Append(" ");
+        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystem).Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemArchitecture)
+            .Append("(").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemVersion).Append(")")
+            .Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily);
+        return sb;
     }
 
     #endregion
