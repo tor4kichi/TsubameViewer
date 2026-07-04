@@ -13,6 +13,7 @@ NoItems = 暂无商品可供展示。
 Enabled = 有效
 Disabled = 无效
 Overwrite = 覆盖
+Reset = 重置
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
 ApplicationTheme.Light = 浅色主题

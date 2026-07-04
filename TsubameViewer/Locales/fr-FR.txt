@@ -13,6 +13,7 @@ NoItems = Aucun article n'est disponible pour affichage.
 Enabled = Activé
 Disabled = Désactivé
 Overwrite = Écraser
+Reset = Réinitialiser
 ApplicationTheme = Thème
 ApplicationTheme.Default = Suivre les paramètres systèmes
 ApplicationTheme.Light = Thème clair

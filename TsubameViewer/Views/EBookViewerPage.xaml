@@ -203,37 +203,38 @@
 
 
         <StackPanel HorizontalAlignment="Stretch">
-          <TextBlock Text="{Binding Source=BackgroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
+          <TextBlock Text="{i18nExt:Localize Key=BackgroundColor}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
-            <Grid>
+            <Grid BorderBrush="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay,Converter={StaticResource ColorToBrush}}"
+                  BorderThickness="0 0 0 2">
               <TextBlock Text="{i18nExt:Localize Key=ChangeBackgroundColor}" />
             </Grid>
 
             <Button.Flyout>
               <Flyout Placement="Left">
-                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=TwoWay}"   
-                             IsAlphaEnabled="True"
-                               >
-
-                </ColorPicker>
+                <ColorPicker IsAlphaEnabled="True"
+                             x:Name="BackgroundColorPicker"
+                             Color="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=TwoWay}"/>
               </Flyout>
             </Button.Flyout>
           </Button>
         </StackPanel>
 
         <StackPanel HorizontalAlignment="Stretch">
-          <TextBlock Text="{Binding Source=ForegroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
+          <TextBlock Text="{i18nExt:Localize Key=ForegroundColor}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
-            <Grid>
+            <Grid BorderBrush="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay,Converter={StaticResource ColorToBrush}}"
+                  BorderThickness="0 0 0 2">
               <TextBlock Text="{i18nExt:Localize Key=ChangeForegroundColor}" />
             </Grid>
             <Button.Flyout>
-              <Flyout Placement="Left">
-                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay}"           
-                             IsAlphaEnabled="True"
-                             >
-
-                </ColorPicker>
+              <Flyout Placement="Left"
+                      Opened="ForegroundColorColorPickerFlyoutOpened"
+                      Closed="ForegroundColorColorPickerFlyoutClosed">
+                <ColorPicker IsAlphaEnabled="True"
+                             x:Name="ForegroundColorPicker"
+                             ColorChanged="ForegroundColorPicker_ColorChanged"
+                             />
               </Flyout>
             </Button.Flyout>
           </Button>
@@ -253,9 +254,8 @@
                 HorizontalAlignment="Stretch">
           <Button.Flyout>
             <MenuFlyout>
-              <MenuFlyoutItem Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}">
-                
-              </MenuFlyoutItem>
+              <MenuFlyoutItem Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}"
+                              Text="{i18nExt:Localize Key=Reset}" />
             </MenuFlyout>
           </Button.Flyout>
         </Button>

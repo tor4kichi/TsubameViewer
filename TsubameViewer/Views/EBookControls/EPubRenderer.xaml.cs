@@ -306,16 +306,20 @@ public sealed partial class EPubRenderer : UserControl
         {
             sb.Append($"font-family: \"{ContentsFontFamily}\" !important;");
         }
-        if (FontColor != Colors.Transparent)
+        if (FontColor.A != 0x00)
         {
             var color = FontColor;
             color.A = 0xff;
             sb.Append($"color: rgba({color.R},{color.G},{color.B},{color.A}) !important;");
         }
+        else 
+        {
+            sb.Append($"color: inherit !important;");
+        }
 
         sb.Append("}");
 
-        if (FontColor != Colors.Transparent)
+        if (FontColor.A != 0x00)
         {
             var color = FontColor;
             color.A = 0xff;
@@ -323,6 +327,13 @@ public sealed partial class EPubRenderer : UserControl
             sb.Append($"a:visited {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
             sb.Append($"a:hover {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
             sb.Append($"a:active {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
+        }
+        else
+        {
+            sb.Append($"a:link {{ color: inherit !important; }}");
+            sb.Append($"a:visited {{ color: inherit !important; }}");
+            sb.Append($"a:hover {{ color: inherit !important; }}");
+            sb.Append($"a:active {{ color: inherit !important; }}");
         }
 
         if (ColumnCount > 1)
@@ -378,6 +389,8 @@ public sealed partial class EPubRenderer : UserControl
     // html文字列に直接埋め込む
     string ToStyleEmbedHtml(XmlDocument pageHtml)
     {
+        if (pageHtml == null) { return ""; }
+
         string ePubRendererCss = GetOrCreateEmbedStyleText();
 
         //var xmlDoc = new XmlDocument();
@@ -483,20 +496,13 @@ public sealed partial class EPubRenderer : UserControl
             .DebounceFrame(1)
             .Where(x => !_isFirstContent)            
             .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
-            .ThrottleLast(TimeSpan.FromMilliseconds(500))
+            .ThrottleFirstFrame(3)
             .Where(x => !_isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
-            .Subscribe(async args =>
+            .SubscribeAwait(async (args, ct) =>
             {
-                using (await _domUpdateLock.LockAsync(default))
-                {
-                    // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                    await Task.Delay(50);
-
-                    // リサイズしたら再描画しないとレイアウトが崩れるっぽい
-                    WebView.Refresh();
-                }
-            })
+                WebView.Refresh();
+            }, AwaitOperation.Sequential)
             .AddTo(ref db);
 
         new[]
@@ -989,7 +995,7 @@ return JSON.stringify(Array.from(set));
                 var newPageCount = _innerPageCount;
                 var newCurrentPageIndex = _innerCurrentPage;
 
-                double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
+                double oldPageInPercentage = (oldCurrentPageIndex) / (double)oldPageCount;
                 _innerCurrentPage = Math.Min(_innerPageCount - 1, (int)Math.Round(_innerPageCount * oldPageInPercentage));
 
                 Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
