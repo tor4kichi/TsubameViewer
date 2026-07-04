@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.ViewModels;
@@ -19,6 +20,7 @@ using TsubameViewer.Views.EBookControls;
 using VersOne.Epub;
 using Windows.ApplicationModel.Core;
 using Windows.UI;
+using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -70,12 +72,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         EPubRenderer_2.WebResourceRequested += WebView_WebResourceRequested;
     }
 
+    CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         AnimationBuilder.Create()
             .Translation(Axis.X, -320, duration: TimeSpan.FromMilliseconds(1))
             .Start(TocContentPanel);
 
+        _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
         {
             if (TocContainer.Visibility == Visibility.Visible)
@@ -93,6 +97,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
         EPubRenderer_1_Translate.X = 50000;
         EPubRenderer_2_Translate.X = 50000;
+
+        DisposableBuilder db = new();
         _vm.ObservePropertyChanged(x => x.NowDisplayRendererIndex)
             .Subscribe(this, static (x, s) =>
             {
@@ -110,11 +116,39 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                     s.EPubRenderer_2_Translate.X = 0;
                 }
             })
-            .RegisterTo(this.GetCancellationTokenOnNavigatingFrom());
+            .AddTo(ref db);
+            ;
 
         EPubRenderer_1.Visibility = Visibility.Visible;
         EPubRenderer_2.Visibility = Visibility.Visible;
 
+        R3.Observable.Merge(
+            System.Reactive.Linq.Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+                h => Window.Current.SizeChanged += h,
+                h => Window.Current.SizeChanged -= h
+                ).ToObservable().AsUnitObservable()
+            , System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                h => SizeChanged += h,
+                h => SizeChanged -= h
+                ).ToObservable().AsUnitObservable().Skip(1)
+            )         
+            .ThrottleFirstFrame(1)
+            .Subscribe(_ => 
+            {
+                if (_vm.NowDisplayRendererIndex == 0)
+                {
+                    EPubRenderer_2.Visibility = Visibility.Collapsed;
+                    _fadeOutAnim.Start(EPubRenderer_1);                    
+                }
+                else
+                {
+                    EPubRenderer_1.Visibility = Visibility.Collapsed;
+                    _fadeOutAnim.Start(EPubRenderer_2);
+                }
+            })
+            .AddTo(ref db);
+
+        db.Build().RegisterTo(_navigationCt);
         base.OnNavigatedTo(e);
     }
 
@@ -259,7 +293,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
             .Opacity(0.00001, duration: TimeSpan.FromMilliseconds(50));
     AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
-            .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
+            .Opacity(1, delay: TimeSpan.FromMilliseconds(32), duration: TimeSpan.FromMilliseconds(125));
 
     void WebView_ContentRefreshStarting_1(object sender, EventArgs e)
     {            
@@ -267,7 +301,9 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     }
 
     void WebView_ContentRefreshComplete_1(object sender, EventArgs e)
-    {
+    {        
+        if (_navigationCt.IsCancellationRequested) { return; }
+        
         NowEnablePageMove_1 = true;
         if (_vm.SwapPages[0].PageHtml != null)
         {
@@ -275,6 +311,13 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         }
 
         _fadeInAnim.Start(EPubRenderer_1);
+
+        // リサイズ後の更新を順列制御したい
+        if (EPubRenderer_2.Visibility == Visibility.Collapsed)
+        {
+            EPubRenderer_2.Visibility = Visibility.Visible;
+            EPubRenderer_2.Refresh();
+        }
     }
 
     void WebView_ContentRefreshStarting_2(object sender, EventArgs e)
@@ -284,6 +327,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     void WebView_ContentRefreshComplete_2(object sender, EventArgs e)
     {
+        if (_navigationCt.IsCancellationRequested) { return; }
+
         NowEnablePageMove_2 = true;
         if (_vm.SwapPages[1].PageHtml != null)
         {
@@ -291,6 +336,13 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         }
 
         _fadeInAnim.Start(EPubRenderer_2);
+
+        // リサイズ後の更新を順列制御したい
+        if (EPubRenderer_1.Visibility == Visibility.Collapsed)
+        {
+            EPubRenderer_1.Visibility = Visibility.Visible;
+            EPubRenderer_1.Refresh();
+        }
     }
 
 

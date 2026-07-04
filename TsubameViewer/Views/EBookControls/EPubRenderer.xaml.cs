@@ -483,20 +483,13 @@ public sealed partial class EPubRenderer : UserControl
             .DebounceFrame(1)
             .Where(x => !_isFirstContent)            
             .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
-            .ThrottleLast(TimeSpan.FromMilliseconds(500))
+            .ThrottleFirstFrame(3)
             .Where(x => !_isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
-            .Subscribe(async args =>
+            .SubscribeAwait(async (args, ct) =>
             {
-                using (await _domUpdateLock.LockAsync(default))
-                {
-                    // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                    await Task.Delay(50);
-
-                    // リサイズしたら再描画しないとレイアウトが崩れるっぽい
                     WebView.Refresh();
-                }
-            })
+            }, AwaitOperation.Sequential)
             .AddTo(ref db);
 
         new[]
