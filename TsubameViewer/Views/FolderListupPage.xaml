@@ -459,18 +459,6 @@
                                       DragItemsCompleted="FoldersAdaptiveGridView_DragItemsCompleted"
                                       AllowDrop="True">
 
-          <GridView.Header>
-            <Grid IsHitTestVisible="False"
-                  Opacity="1"
-                  Visibility="Collapsed"
-                  x:Name="NoItemsNotifyContainer">
-              <TextBlock Text="{i18nExt:Localize Key=NoItems}"
-                         Style="{StaticResource SubtitleTextBlockStyle}"
-                         Opacity="0.5"
-                         HorizontalAlignment="Center"
-                         Margin="32" />
-            </Grid>
-          </GridView.Header>
           <GridView.ItemContainerTransitions>
             <TransitionCollection />
           </GridView.ItemContainerTransitions>
@@ -488,6 +476,16 @@
       </uwpControls:DockPanel>
 
     </SplitView>
+
+    <Grid IsHitTestVisible="False"
+          Visibility="Collapsed"
+          x:Name="NoItemsNotifyContainer">
+      <TextBlock Text="{i18nExt:Localize Key=NoItems}"
+                 Style="{StaticResource SubtitleTextBlockStyle}"
+                 Opacity="0.5"
+                 HorizontalAlignment="Center"
+                 Margin="32" />
+    </Grid>
 
     <ContentDialog x:Name="CreateFolderDialog"
                    Padding="0 48 0 0"
@@ -516,6 +514,7 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource NotZeroToTrueConverter}}" />
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -530,7 +529,7 @@
                   <Visibility>Collapsed</Visibility>
                 </DiscreteObjectKeyFrame.Value>
               </DiscreteObjectKeyFrame>
-              <DiscreteObjectKeyFrame KeyTime="0:0:0.5">
+              <DiscreteObjectKeyFrame KeyTime="0:0:1.5">
                 <DiscreteObjectKeyFrame.Value>
                   <Visibility>Visible</Visibility>
                 </DiscreteObjectKeyFrame.Value>
