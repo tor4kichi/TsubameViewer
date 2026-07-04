@@ -995,7 +995,7 @@ return JSON.stringify(Array.from(set));
                 var newPageCount = _innerPageCount;
                 var newCurrentPageIndex = _innerCurrentPage;
 
-                double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
+                double oldPageInPercentage = (oldCurrentPageIndex) / (double)oldPageCount;
                 _innerCurrentPage = Math.Min(_innerPageCount - 1, (int)Math.Round(_innerPageCount * oldPageInPercentage));
 
                 Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
