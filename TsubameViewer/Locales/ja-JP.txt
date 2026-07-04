@@ -13,6 +13,7 @@ NoItems = 表示可能なアイテムはありません
 Enabled = 有効
 Disabled = 無効
 Overwrite = 上書き
+Reset = リセット
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
 ApplicationTheme.Light = 明るいテーマ

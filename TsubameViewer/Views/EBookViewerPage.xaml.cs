@@ -525,6 +525,36 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
         Debug.WriteLine(args.Y);
     }
+
+
+    Color _foregroundDefaultColor;
+    private void ForegroundColorColorPickerFlyoutOpened(object sender, object e)
+    {
+        _foregroundDefaultColor = (_vm.GetCurrentTheme() == Core.Models.ApplicationTheme.Dark
+                ? Color.FromArgb(0xFF, 0xff, 0xe4, 0xd1)
+                : Color.FromArgb(0xFF, 0x1f, 0x1f, 0x1f));
+        ForegroundColorPicker.Color = _vm.EBookReaderSettings.ForegroundColor.A == 0x00
+            ? _foregroundDefaultColor
+            : _vm.EBookReaderSettings.ForegroundColor;
+    }
+
+    private void ForegroundColorColorPickerFlyoutClosed(object sender, object e)
+    {
+        if (ForegroundColorPicker.Color == _foregroundDefaultColor 
+            || ForegroundColorPicker.Color.A == 0)
+        {
+            _vm.EBookReaderSettings.ForegroundColor = Colors.Transparent;
+        }
+        else
+        {
+            _vm.EBookReaderSettings.ForegroundColor = ForegroundColorPicker.Color;
+        }
+    }
+
+    private void ForegroundColorPicker_ColorChanged(ColorPicker sender, ColorChangedEventArgs args)
+    {
+        _vm.EBookReaderSettings.ForegroundColor = ForegroundColorPicker.Color;
+    }
 }
 
 public sealed class FilePathToFileNameConverter : IValueConverter

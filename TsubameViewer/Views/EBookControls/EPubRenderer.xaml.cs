@@ -306,7 +306,7 @@ public sealed partial class EPubRenderer : UserControl
         {
             sb.Append($"font-family: \"{ContentsFontFamily}\" !important;");
         }
-        if (FontColor != Colors.Transparent)
+        if (FontColor.A != 0x00)
         {
             var color = FontColor;
             color.A = 0xff;
@@ -319,7 +319,7 @@ public sealed partial class EPubRenderer : UserControl
 
         sb.Append("}");
 
-        if (FontColor != Colors.Transparent)
+        if (FontColor.A != 0x00)
         {
             var color = FontColor;
             color.A = 0xff;
@@ -330,8 +330,6 @@ public sealed partial class EPubRenderer : UserControl
         }
         else
         {
-            var color = FontColor;
-            color.A = 0xff;
             sb.Append($"a:link {{ color: inherit !important; }}");
             sb.Append($"a:visited {{ color: inherit !important; }}");
             sb.Append($"a:hover {{ color: inherit !important; }}");

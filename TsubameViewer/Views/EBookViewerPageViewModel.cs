@@ -676,15 +676,21 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.IsLoaded = false;
     }
 
+    public ApplicationTheme GetCurrentTheme()
+    {
+        ApplicationTheme theme = _applicationSettings.Theme;
+        if (theme == ApplicationTheme.Default)
+        {
+            theme = SystemThemeHelper.GetSystemTheme();
+        }
+        return theme;
+    }
+
     async Task LoadPageAsync(EBookPageInfo pageInfo, CancellationToken ct)
     {
         pageInfo.PageHtml = await Task.Run(async () =>
         {
-            ApplicationTheme theme = _applicationSettings.Theme;
-            if (theme == ApplicationTheme.Default)
-            {
-                theme = SystemThemeHelper.GetSystemTheme();
-            }
+            var theme = GetCurrentTheme();
             Guard.IsNotNull(_currentBook);
             var currentPage = pageInfo.EpubFileRef;
             Guard.IsNotNull(currentPage);

@@ -13,6 +13,7 @@ NoItems = No items are available to display.
 Enabled = Enabled
 Disabled = Disabled
 Overwrite = Overwrite
+Reset = Reset
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
 ApplicationTheme.Light = Light theme
