@@ -312,6 +312,10 @@ public sealed partial class EPubRenderer : UserControl
             color.A = 0xff;
             sb.Append($"color: rgba({color.R},{color.G},{color.B},{color.A}) !important;");
         }
+        else 
+        {
+            sb.Append($"color: inherit !important;");
+        }
 
         sb.Append("}");
 
@@ -323,6 +327,15 @@ public sealed partial class EPubRenderer : UserControl
             sb.Append($"a:visited {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
             sb.Append($"a:hover {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
             sb.Append($"a:active {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
+        }
+        else
+        {
+            var color = FontColor;
+            color.A = 0xff;
+            sb.Append($"a:link {{ color: inherit !important; }}");
+            sb.Append($"a:visited {{ color: inherit !important; }}");
+            sb.Append($"a:hover {{ color: inherit !important; }}");
+            sb.Append($"a:active {{ color: inherit !important; }}");
         }
 
         if (ColumnCount > 1)
@@ -378,6 +391,8 @@ public sealed partial class EPubRenderer : UserControl
     // html文字列に直接埋め込む
     string ToStyleEmbedHtml(XmlDocument pageHtml)
     {
+        if (pageHtml == null) { return ""; }
+
         string ePubRendererCss = GetOrCreateEmbedStyleText();
 
         //var xmlDoc = new XmlDocument();
@@ -488,7 +503,7 @@ public sealed partial class EPubRenderer : UserControl
             .Where(x => this.Visibility == Visibility.Visible)
             .SubscribeAwait(async (args, ct) =>
             {
-                    WebView.Refresh();
+                WebView.Refresh();
             }, AwaitOperation.Sequential)
             .AddTo(ref db);
 
