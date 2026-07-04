@@ -253,9 +253,8 @@
                 HorizontalAlignment="Stretch">
           <Button.Flyout>
             <MenuFlyout>
-              <MenuFlyoutItem Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}">
-                
-              </MenuFlyoutItem>
+              <MenuFlyoutItem Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}"
+                              Text="{i18nExt:Localize Key=Reset}" />
             </MenuFlyout>
           </Button.Flyout>
         </Button>
