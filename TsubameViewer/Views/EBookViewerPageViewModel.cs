@@ -434,6 +434,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 var _this = s;
                 _this.PageHtml = null;
+                _this.CurrentPageInfo = null;
                 await _this.UpdateCurrentPage(_this.CurrentImageIndex, _this._navigationCt);
             })
             .AddTo(ref db);
