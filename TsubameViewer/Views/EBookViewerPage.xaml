@@ -205,7 +205,8 @@
         <StackPanel HorizontalAlignment="Stretch">
           <TextBlock Text="{Binding Source=BackgroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
-            <Grid>
+            <Grid BorderBrush="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay,Converter={StaticResource ColorToBrush}}"
+                  BorderThickness="0 0 0 2">
               <TextBlock Text="{i18nExt:Localize Key=ChangeBackgroundColor}" />
             </Grid>
 
@@ -224,13 +225,14 @@
         <StackPanel HorizontalAlignment="Stretch">
           <TextBlock Text="{Binding Source=ForegroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
-            <Grid>
+            <Grid BorderBrush="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay,Converter={StaticResource ColorToBrush}}"
+                  BorderThickness="0 0 0 2">
               <TextBlock Text="{i18nExt:Localize Key=ChangeForegroundColor}" />
             </Grid>
             <Button.Flyout>
               <Flyout Placement="Left">
                 <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay}"           
-                             IsAlphaEnabled="True"
+                             IsAlphaEnabled="False"
                              >
 
                 </ColorPicker>
