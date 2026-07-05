@@ -881,8 +881,11 @@ public sealed partial class FolderListupPageViewModel
                 HasFileItem = exist;
                 if (_currentImageSource?.StorageItem != null)
                 {
-                    var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync().AsTask(ct).ConfigureAwait(false);
-                    _sourceItemLastUpdatedTime = prop.DateModified;
+                    using (await _navigationLock.LockAsync(_navigationCt))
+                    {
+                        var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync().AsTask(ct).ConfigureAwait(false);
+                        _sourceItemLastUpdatedTime = prop.DateModified;
+                    }
                 }
             }
             catch (OperationCanceledException) { }

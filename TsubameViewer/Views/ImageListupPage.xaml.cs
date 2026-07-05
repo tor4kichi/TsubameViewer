@@ -123,11 +123,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) => 
         {            
-            if (_realizedItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false) is { } itemVM
-            && GetCurrentDisplayItemsRepeater() is { } itemsRepeater)
+            if (_realizedItems.FirstOrDefault(x => x.Value.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false) is { } itemVM
+                && GetCurrentDisplayItemsRepeater() is { } itemsRepeater)
             {
-                var index = _vm.FileItemsView.IndexOf(itemVM);
-                var image = itemsRepeater.GetOrCreateElement(index);
+                var index = _vm.FileItemsView.IndexOf(itemVM.Value);
+                var image = index < 0 ? null : itemsRepeater.GetOrCreateElement(index);
                 m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                 {
                     return (UIElement?)image;
@@ -176,12 +176,22 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
+
+        foreach (var (elem, itemVM) in _realizedItems)
+        {
+            _ = itemVM.EnsureImageSizeRatioAsync(ct);
+            if (GetImageControl((FrameworkElement)elem) is { } image
+                 && EnsureGetBitmapImage(image) is { } targetBitmap)
+            {
+                itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
+            }
+        }
+
         async Task d()
         {
-            var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
-
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
             await _vm.ObservePropertyChanged(x => x.NowProcessing)
                 .Where(x => x)
@@ -224,19 +234,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             HandleCreateFolderDialogTextChanging(ct);
-
-            // itemVM側の非同期ロックに期待して全部を一気に処理させる
-            // ここでawaitをつけるとUIの応答性が下がるので避けたい
-            //using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            //try
-            //{
-            //    foreach (var itemVM in items.ArraySegment)
-            //    {
-            //        _ = itemVM.EnsureImageSizeRatioAsync(ct);
-            //        itemVM.RestoreThumbnailLoadingTask(ct);
-            //    }
-            //}
-            //catch (OperationCanceledException) { }
         }
     }
 
@@ -356,7 +353,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         return mode.ToString();
     }
 
-    ObservableCollection<IStorageItemViewModel> _realizedItems = [];    
+    Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Environment.ProcessorCount / 2);
 
     Image? GetImageControl(FrameworkElement fe)
@@ -365,61 +362,54 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         var insideItem = cc?.Content as UIElement;
         return insideItem?.FindDescendant("Image") as Image;
     }
-    async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-    {        
-        if (args.Element is FrameworkElement fe)
-        {            
-            if (fe.DataContext is IStorageItemViewModel itemVM)
-            {
-                var image = GetImageControl(fe);
-                Guard.IsNotNull(image);
-                BitmapImage targetBitmap;
-                image.Opacity = 0;
-                if (image.Source is BitmapImage bitmap)
-                {
-                    targetBitmap = bitmap;
-                }
-                else
-                {
-                    targetBitmap = new BitmapImage()
-                    {
-                        AutoPlay = false
-                    };
-                    image.Source = targetBitmap;
-                }
 
-                _realizedItems.Add(itemVM);
-                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
-                if (itemVM.ImageAspectRatioWH != null)
-                {
-                    await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-                    image.Opacity = 1;
-                }
-                else
-                {
-                    try
-                    {
-                        using (await _imageGeneratingLock.LockAsync(_navigationCt))
-                        {
-                            await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-                            image.Opacity = 1;
-                        }
-                    }
-                    catch (OperationCanceledException) { }
-                }
+    BitmapImage EnsureGetBitmapImage(Image image)
+    {
+        BitmapImage targetBitmap;
+        if (image.Source is BitmapImage bitmap)
+        {
+            targetBitmap = bitmap;
+        }
+        else
+        {
+            targetBitmap = new BitmapImage()
+            {
+                AutoPlay = false
+            };
+            image.Source = targetBitmap;
+        }
+        return targetBitmap;
+    }
+    async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    {
+        if (args.Element is FrameworkElement fe
+            && fe.DataContext is IStorageItemViewModel itemVM)
+        {
+            _realizedItems.Add(args.Element, itemVM);
+
+            var image = GetImageControl(fe);
+            if (image == null) { return; }
+
+            image.Opacity = 0;
+
+            if (_navigationCt.IsCancellationRequested) { return; }
+
+            var targetBitmap = EnsureGetBitmapImage(image);
+            await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
+            try
+            {
+                await itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                image.Opacity = 1;
             }
+            catch (OperationCanceledException) { }
         }
     }
 
     void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
     {
-        if (args.Element is FrameworkElement fe)
+        if (_realizedItems.Remove(args.Element, out var itemVM))
         {
-            if (fe.DataContext is IStorageItemViewModel itemVM)
-            {
-                _realizedItems.Remove(itemVM);
-                itemVM.StopImageLoading();
-            }
+            itemVM.StopImageLoading();
         }
     }
 

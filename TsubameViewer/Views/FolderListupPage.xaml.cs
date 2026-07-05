@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
-using CommunityToolkit.WinUI;
 using R3;
 using R3.Extensions;
 using Reactive.Bindings.Extensions;
@@ -44,10 +43,10 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Media;
 
 #nullable enable
@@ -84,6 +83,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     {
         ContentViewTypeSelector.SelectedIndex = 0;
 
+        _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
@@ -121,81 +122,85 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
 
-    ObservableCollection<IStorageItemViewModel> _realizedItems = [];
+
+    BitmapImage EnsureGetBitmapImage(Windows.UI.Xaml.Controls.Image image)
+    {
+        BitmapImage targetBitmap;
+        if (image.Source is BitmapImage bitmap)
+        {
+            targetBitmap = bitmap;
+        }
+        else
+        {
+            targetBitmap = new BitmapImage()
+            {
+                AutoPlay = false
+            };
+            image.Source = targetBitmap;
+        }
+        return targetBitmap;
+    }
+
+    Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
         async Task d(ContainerContentChangingEventArgs args)
         {
-            if (args.Item is IStorageItemViewModel itemVM)
-            {
-                if (!args.InRecycleQueue)
-                {
-                    var image = args.ItemContainer.FindDescendant<Image>();
-                    Guard.IsNotNull(image);
-                    image.Opacity = 0;
-                    _realizedItems.Add(itemVM);
+            if (args.Item is not IStorageItemViewModel itemVM) { return; }
 
-                    BitmapImage targetBitmap;
-                    if (image.Source is BitmapImage bitmap)
+            if (!args.InRecycleQueue)
+            {
+                _realizedItems.Add(args.ItemContainer, itemVM);
+                var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+                if (image == null) { return; }
+
+                image.Opacity = 0;
+                BitmapImage targetBitmap = EnsureGetBitmapImage(image);
+                await itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                image.Opacity = 1;
+                // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
+                await itemVM.ObservePropertyChanged(x => x.IsInitialized)
+                    .Where(x => x)
+                    .Take(1)
+                    .WaitAsync(_navigationCt);
+                if (itemVM.Item != null)
+                {
+                    if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
+                        && tooltip is ToolTip tt
+                        && tt.Content is TextBlock tb)
                     {
-                        targetBitmap = bitmap;
+                        tb.Text = itemVM.Name;
                     }
                     else
                     {
-                        targetBitmap = new BitmapImage()
+                        var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                        if (size.Y == 0)
                         {
-                            AutoPlay = false
-                        };
-                        image.Source = targetBitmap;
-                    }
-                    await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-                    image.Opacity = 1;
-                    // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                    await itemVM.ObservePropertyChanged(x => x.IsInitialized)
-                        .Where(x => x)
-                        .Take(1)
-                        .WaitAsync(_navigationCt);                    
-                    if (itemVM.Item != null)
-                    {
-                        if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
-                            && tooltip is ToolTip tt
-                            && tt.Content is TextBlock tb)
-                        {
-                            tb.Text = itemVM.Name;
+                            size = new Vector2(120, 200);
                         }
-                        else
-                        {
-                            var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
-                            if (size.Y == 0)
-                            {
-                                size = new Vector2(120, 200);
-                            }
 
-                            ToolTipService.SetToolTip(args.ItemContainer,
-                                new ToolTip()
+                        ToolTipService.SetToolTip(args.ItemContainer,
+                            new ToolTip()
+                            {
+                                Content = new TextBlock()
                                 {
-                                    Content = new TextBlock()
-                                    {
-                                        Text = itemVM.Name,
-                                        TextWrapping = TextWrapping.Wrap
-                                    },
-                                    PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                                    Placement = PlacementMode.Bottom
-                                });
-                        }
-                    }
-                }
-                else
-                {
-                    _realizedItems.Remove(itemVM);     
-                    if (!_navigationCt.IsCancellationRequested)
-                    {
-                        itemVM.StopImageLoading();
+                                    Text = itemVM.Name,
+                                    TextWrapping = TextWrapping.Wrap
+                                },
+                                PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
+                                Placement = PlacementMode.Bottom
+                            });
                     }
                 }
             }
-            
+            else
+            {
+                var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+                image?.Opacity = 0;
+                _realizedItems.Remove(args.ItemContainer);
+                itemVM.StopImageLoading();
+            }
         }
     }
 
@@ -235,6 +240,21 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         ConnectedAnimationService.GetForCurrentView()
                     .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
+        // itemVM側の非同期ロックに期待して全部を一気に処理させる
+        // ここでawaitをつけるとUIの応答性が下がるので避けたい
+        try
+        {
+            foreach (var (elem, itemVM) in _realizedItems)
+            {
+                var image = elem.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+                if (image != null)
+                {
+                    BitmapImage targetBitmap = EnsureGetBitmapImage(image);
+                    itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
         d(e, ct).FireAndForgetSafe();
         async Task d(NavigationEventArgs e, CancellationToken ct)
         {
@@ -319,18 +339,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 //    }
                 //}
             }
-
-            // itemVM側の非同期ロックに期待して全部を一気に処理させる
-            // ここでawaitをつけるとUIの応答性が下がるので避けたい
-            //using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            //try
-            //{
-            //    foreach (var itemVM in items.ArraySegment)
-            //    {
-            //        itemVM.RestoreThumbnailLoadingTask(ct);
-            //    }
-            //}
-            //catch (OperationCanceledException) { }
         }
     }
 

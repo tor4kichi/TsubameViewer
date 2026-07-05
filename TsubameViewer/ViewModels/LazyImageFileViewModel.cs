@@ -170,7 +170,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
             await EnsureStorageItemAsync(ct);
             Guard.IsNotNull(Item);
 
-            _status = LoadingStatus.NowLoading;
+            _status = LoadingStatus.NowLoading;            
             using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
@@ -182,7 +182,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 {
                     if (stream is null || stream.Length == 0) { return; }
 
-                    ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+                    ImageAspectRatioWH = (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     using (var l = await _imageLoadingLock.LockAsync(ct))
@@ -245,7 +245,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     {
         await EnsureStorageItemAsync(ct);
         Guard.IsNotNull(Item);
-        ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+        ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 0.5f;
     }
     bool _disposed;
 }
@@ -362,6 +362,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             await EnsureStorageItemAsync(ct);
             Guard.IsNotNull(Item);
             _status = LoadingStatus.NowLoading;
+            
             using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
@@ -374,7 +375,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
-                    ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+                    ImageAspectRatioWH = (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     using (await _imageLoadingLock.LockAsync(ct))
@@ -491,7 +492,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         if (ImageAspectRatioWH == null)
         {
             IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
+            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH ?? 0.5f;
         }
     }
     bool _disposed;

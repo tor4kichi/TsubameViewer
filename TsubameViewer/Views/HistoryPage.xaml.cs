@@ -111,7 +111,8 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
 
 
             var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-            Guard.IsNotNull(image);
+            if (image == null) { return; }
+
             image.Opacity = 0;
             BitmapImage targetBitmap;
             if (image.Source is BitmapImage bitmap)
