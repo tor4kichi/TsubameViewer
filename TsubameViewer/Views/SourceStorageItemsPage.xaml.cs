@@ -60,9 +60,12 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
 
     async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM)
+        if (args.Item is not IStorageItemViewModel itemVM) { return; }
+        if (_navigationCt.IsCancellationRequested) { return; }
+
+        if (!args.InRecycleQueue)
         {
-            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCts?.IsCancellationRequested is false)
+            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
                 var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
                 if (size.Y == 0)
@@ -109,16 +112,18 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
                 }
             }
         }
+        else 
+        {
+            itemVM.StopImageLoading();
+            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+            if (image == null) { return; }
+            image.Opacity = 0;
+        }
     }
 
-    CancellationTokenSource? _navigationCts;
     CancellationToken _navigationCt;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
     }
@@ -128,9 +133,8 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-
-        _navigationCts = new CancellationTokenSource();
-        _navigationCt = _navigationCts.Token;
+        
+        _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         _isFirstItem = true;
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>

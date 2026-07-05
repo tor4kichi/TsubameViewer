@@ -87,7 +87,9 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
     async void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (_navigationCt.IsCancellationRequested) { return; }
-        if (args.Item is IStorageItemViewModel itemVM)
+        if (args.Item is not IStorageItemViewModel itemVM) { return; }
+
+        if (!args.InRecycleQueue)
         {
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
@@ -134,6 +136,14 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
                     args.ItemContainer.Focus(FocusState.Keyboard);
                 }
             }
+        }
+        else
+        {
+            itemVM.StopImageLoading();
+            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+            if (image == null) { return; }
+
+            image.Opacity = 0;
         }
     }
 

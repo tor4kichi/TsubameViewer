@@ -54,12 +54,12 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 
     async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM)
+        if (args.Item is not IStorageItemViewModel itemVM) { return; }
+        if (_navigationCt.IsCancellationRequested) { return; }
+
+        if (!args.InRecycleQueue)
         {
-            if (_navigationCts?.IsCancellationRequested is false)
-            {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
-            }
+            ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
 
             var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
             if (image == null) { return; }
@@ -77,17 +77,22 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
                 };
                 image.Source = targetBitmap;
             }
-            await itemVM.InitializeAsync(targetBitmap, _ct);
+            await itemVM.InitializeAsync(targetBitmap, _navigationCt);
             image.Opacity = 1;
+        }
+        else
+        {
+            itemVM.StopImageLoading();
+            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+            if (image == null) { return; }
+            image.Opacity = 0;
         }
     }
 
-    CancellationTokenSource? _navigationCts;
-    CancellationToken _ct;
+    CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        _navigationCts = new CancellationTokenSource();
-        _ct = _navigationCts.Token;
+        _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
         {
@@ -99,9 +104,6 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
     }

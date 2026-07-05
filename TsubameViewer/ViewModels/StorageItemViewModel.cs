@@ -152,6 +152,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
     {
+        IsInitialized = false;
         IsRequestImageLoading = false;
         _initializeCts?.Cancel();
     }

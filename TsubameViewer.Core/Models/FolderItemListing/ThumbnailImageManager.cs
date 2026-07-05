@@ -602,23 +602,6 @@ public sealed class ThumbnailImageManager
         }
     }
 
-
-    public ValueTask<Stream> GetThumbnailAsync(IStorageItem storageItem, CancellationToken ct)
-    {
-        if (storageItem is StorageFolder folder)
-        {
-            return GetFolderThumbnailImageFileAsync(folder, ct);
-        }
-        else if (storageItem is StorageFile file)
-        {
-            return GetFileThumbnailImageFileAsync(file, ct);
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }
-    }
-
     public async ValueTask<Stream> GetFolderThumbnailImageFileAsync(StorageFolder folder, CancellationToken ct)
     {
         var itemId = ToId(folder);
@@ -658,6 +641,7 @@ public sealed class ThumbnailImageManager
         {
             var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
             file = files[0];
+            Debug.WriteLine(file.Name);
         }
 
         if (file == null)
@@ -682,29 +666,12 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    public async ValueTask<Stream> GetFileThumbnailImageFileAsync(StorageFile file, CancellationToken ct)
-    {
-        var itemId = ToId(file.Path);
-        if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
-        {
-            return cachedFile;
-        }
-
-        Action<BitmapDecoder, BitmapEncoder> encoderSettingMapper = SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
-            ? EncodingForFolderOrArchiveFileThumbnailBitmap
-            : EncodingForImageFileThumbnailBitmap
-            ;
-
-        return await GenerateThumbnailImageAsync(file, itemId, encoderSettingMapper, ct);
-    }
-
     public async Task<Stream?> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
     {
         var outputStream = _recyclableMemoryStreamManager.GetStream();
         try
         {
-            if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
-                )
+            if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
             {
                 return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : null;
             }
@@ -719,156 +686,6 @@ public sealed class ThumbnailImageManager
             throw;
         }
     }
-
-    static readonly object _lockForReadArchiveEntry = new object();
-
-    //public async ValueTask<IRandomAccessStream> GetArchiveEntryThumbnailImageFileAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
-    //{
-    //    var path = GetArchiveEntryPath(sourceFile, archiveEntry);
-    //    var itemId = ToId(path);
-    //    if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
-    //    {
-    //        return cachedFile;
-    //    }
-
-    //    if (archiveEntry.IsDirectory) { return null; }
-
-    //    var outputStream = _recyclableMemoryStreamManager.GetStream();
-    //    var outputRas = outputStream.AsRandomAccessStream();
-    //    try
-    //    {
-    //        using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
-    //        {
-    //            // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける                    
-    //            lock (_lockForReadArchiveEntry)
-    //                using (var entryStream = archiveEntry.OpenEntryStream())
-    //                {
-    //                    entryStream.CopyTo(memoryStream);
-    //                    memoryStream.Seek(0, SeekOrigin.Begin);
-
-    //                    ct.ThrowIfCancellationRequested();
-    //                }
-
-    //            await TranscodeThumbnailImageToStreamAsync(path, memoryStream, outputRas, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
-    //            outputRas.Seek(0);
-
-    //            UploadWithRetry(itemId, Path.GetFileName(path), outputStream);
-
-    //            outputRas.Seek(0);
-    //            return outputRas;
-    //        }
-    //    }
-    //    catch
-    //    {
-    //        outputStream.Dispose();
-    //        throw;
-    //    }
-    //}
-
-    //public async Task<IRandomAccessStream> GetArchiveEntryThumbnailImageStreamAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
-    //{
-    //    var path = GetArchiveEntryPath(sourceFile, archiveEntry);
-    //    var itemId = ToId(path);
-    //    if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
-    //    {
-    //        return cachedFile;
-    //    }
-
-    //    if (archiveEntry.IsDirectory) { return null; }
-
-    //    var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
-    //    try
-    //    {
-    //        using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
-    //        {
-    //            // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
-    //            lock (_lockForReadArchiveEntry)
-    //                using (var entryStream = archiveEntry.OpenEntryStream())
-    //                {
-    //                    entryStream.CopyTo(memoryStream);
-    //                    memoryStream.Seek(0, SeekOrigin.Begin);
-
-    //                    ct.ThrowIfCancellationRequested();
-    //                }
-
-    //            await TranscodeThumbnailImageToStreamAsync(path, memoryStream.AsRandomAccessStream(), outputStream, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
-    //        }
-    //        return outputStream;
-    //    }
-    //    catch
-    //    {
-    //        outputStream.Dispose();
-    //        throw;
-    //    }
-    //}
-
-    //public async ValueTask<IRandomAccessStream> GetPdfPageThumbnailImageFileAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
-    //{
-    //    var path = GetArchiveEntryPath(sourceFile, pdfPage);
-    //    var itemId = ToId(path);
-    //    if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
-    //    {
-    //        return cachedFile;
-    //    }
-
-    //    var outputStream = _recyclableMemoryStreamManager.GetStream();
-    //    try
-    //    {
-    //        using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
-    //        {
-    //            var ras = memoryStream.AsRandomAccessStream();
-    //            using (await _fileReadWriteLock.LockAsync(ct))
-    //            {
-    //                await pdfPage.RenderToStreamAsync(ras).AsTask(ct);
-    //                ras.Seek(0);
-
-    //                ct.ThrowIfCancellationRequested();
-    //            }
-
-    //            await TranscodeThumbnailImageToStreamAsync(path, ras, outputStream.AsRandomAccessStream(), EncodingForImageFileThumbnailBitmap, ct);
-
-    //            UploadWithRetry(itemId, Path.GetFileName(path), outputStream);
-    //        }
-
-    //        outputStream.Seek(0, SeekOrigin.Begin);
-    //        return outputStream.AsRandomAccessStream();
-    //    }
-    //    catch
-    //    {
-    //        outputStream.Dispose();
-    //        throw;
-    //    }
-    //}
-
-    //public async Task<IRandomAccessStream> GetPdfPageThumbnailImageStreamAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
-    //{
-    //    var path = GetArchiveEntryPath(sourceFile, pdfPage);
-
-    //    var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
-    //    try
-    //    {
-    //        using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
-    //        {
-    //            var ras = memoryStream.AsRandomAccessStream();
-    //            using (await _fileReadWriteLock.LockAsync(ct))
-    //            {
-    //                await pdfPage.RenderToStreamAsync(ras).AsTask(ct);
-    //                ras.Seek(0);
-
-    //                ct.ThrowIfCancellationRequested();
-    //            }
-
-    //            await TranscodeThumbnailImageToStreamAsync(path, ras, outputStream, EncodingForImageFileThumbnailBitmap, ct);
-    //        }
-
-    //        return outputStream;
-    //    }
-    //    catch
-    //    {
-    //        outputStream.Dispose();
-    //        throw;
-    //    }
-    //}
 
     private async ValueTask<Stream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
