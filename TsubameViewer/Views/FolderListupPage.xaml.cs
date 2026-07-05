@@ -36,6 +36,7 @@ using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Storage;
@@ -87,6 +88,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
@@ -102,12 +105,26 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.Value, StringComparison.Ordinal) ?? false);
             itemVM?.UpdateLastReadPosition();
         });
+
+        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this, (r, m) => 
+        {
+            using var pooled = _realizedItems.AsValueEnumerable().ToArrayPool();
+            foreach (var (elem, itemVM) in pooled.Span)
+            {
+                if (elem.FindDescendant<Image>() is {} image
+                && EnsureGetBitmapImage(image) is { } targetBitmap)
+                {
+                    itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
+                }                
+            }
+        });
     }    
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
     }
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -158,9 +175,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 if (image == null) { return; }
 
                 image.Opacity = 0;
-                BitmapImage targetBitmap = EnsureGetBitmapImage(image);
+                BitmapImage targetBitmap = EnsureGetBitmapImage(image);                
                 await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-                image.Opacity = 1;
+                
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
                 await itemVM.ObservePropertyChanged(x => x.IsInitialized)
                     .Where(x => x)
@@ -168,6 +185,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     .WaitAsync(_navigationCt);
                 if (itemVM.Item != null)
                 {
+                    image.Opacity = 1;
                     if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
                         && tooltip is ToolTip tt
                         && tt.Content is TextBlock tb)
@@ -194,6 +212,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                                 Placement = PlacementMode.Bottom
                             });
                     }
+                }
+                else
+                {
+                    image.Opacity = 0;
+                    if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
+                        && tooltip is ToolTip tt
+                        && tt.Content is TextBlock tb)
+                    {
+                        tb.Text = "";
+                    }                    
                 }
             }
             else
@@ -310,7 +338,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                             await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
                             if (listView.ContainerFromIndex(index) is Control itemContainer)
                             {
-                                itemContainer.Focus(FocusState.Keyboard);
+                                itemContainer.Focus(FocusState.Keyboard);                                
                             }
                         }
 
@@ -328,7 +356,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                                 int index = indexAndLastItem.Index;
                                 await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
                                 var offset = sv.ScrollableHeight * (index / (float)_vm.FileItemsView.Count);
-                                sv.ChangeView(null, offset, null, true);
+                                sv.ChangeView(null, offset, null, true);                                
                             }
                             else
                             {
@@ -340,6 +368,18 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             else 
             {
                 bool result = sv.ChangeView(null, 0, null, true);
+            }
+
+            var (index, itemVM) = _vm.GetLastIntractIndexAndItem();
+            if (e.NavigationMode == NavigationMode.Back
+                && itemVM != null
+                && FoldersAdaptiveGridView.ContainerFromIndex(index) is FrameworkElement itemContainer)
+            {
+                if (itemContainer.FindDescendant<Image>() is { } image
+                    && EnsureGetBitmapImage(image) is { } targetBitmap)
+                {
+                    itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
+                }
             }
         }
     }
