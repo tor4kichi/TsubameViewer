@@ -29,8 +29,10 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Helpers;
 using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -42,12 +44,12 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
-using Windows.UI.Xaml.Media;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -240,10 +242,30 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         ConnectedAnimationService.GetForCurrentView()
                     .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
-        // itemVM側の非同期ロックに期待して全部を一気に処理させる
-        // ここでawaitをつけるとUIの応答性が下がるので避けたい
         try
         {
+            if (e.Parameter is INavigationParameters parameters
+                && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
+                && query is string dirtyPath
+                && Uri.UnescapeDataString(dirtyPath) is { } path
+                && path == _vm.DisplayCurrentPath)
+            {
+                _realizedItems.ToObservable()
+                    .ForEachAsync(async (x) =>
+                    {
+                        var (elem, itemVM) = x;
+                        if (elem.FindDescendant<Image>() is { } image
+                             && EnsureGetBitmapImage(image) is { } targetBitmap)
+                        {
+                            itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
+                        }
+
+                    }, ct).FireAndForgetSafe();
+            }
+            else
+            {
+                _realizedItems.Clear();
+            }
             foreach (var (elem, itemVM) in _realizedItems)
             {
                 var image = elem.FindDescendant<Windows.UI.Xaml.Controls.Image>();

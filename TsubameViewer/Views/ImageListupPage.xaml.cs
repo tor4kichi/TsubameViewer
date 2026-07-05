@@ -28,6 +28,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Helpers;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -180,16 +181,29 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
 
-        foreach (var (elem, itemVM) in _realizedItems)
+        if (e.Parameter is INavigationParameters parameters
+            && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
+            && query is string dirtyPath
+            && Uri.UnescapeDataString(dirtyPath) is { } path
+            && path == _vm.DisplayCurrentPath)
         {
-            _ = itemVM.EnsureImageSizeRatioAsync(ct);
-            if (GetImageControl((FrameworkElement)elem) is { } image
-                 && EnsureGetBitmapImage(image) is { } targetBitmap)
-            {
-                itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
-            }
-        }
+            _realizedItems.ToObservable()
+                .ForEachAsync(async (x) => 
+                {
+                    var (elem, itemVM) = x;
+                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
+                    if (GetImageControl((FrameworkElement)elem) is { } image
+                         && EnsureGetBitmapImage(image) is { } targetBitmap)
+                    {
+                        itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
+                    }
 
+                }, ct).FireAndForgetSafe();
+        }
+        else
+        {
+            _realizedItems.Clear();
+        }
         async Task d()
         {
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
