@@ -48,8 +48,6 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
-using static System.Net.Mime.MediaTypeNames;
-using Image = Windows.UI.Xaml.Controls.Image;
 
 #nullable enable
 namespace TsubameViewer.Views;
