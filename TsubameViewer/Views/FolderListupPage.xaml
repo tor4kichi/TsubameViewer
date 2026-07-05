@@ -479,7 +479,8 @@
 
     <Grid IsHitTestVisible="False"
           Visibility="Collapsed"
-          x:Name="NoItemsNotifyContainer">
+          x:Name="NoItemsNotifyContainer"
+          Margin="0 64 0 0">
       <TextBlock Text="{i18nExt:Localize Key=NoItems}"
                  Style="{StaticResource SubtitleTextBlockStyle}"
                  Opacity="0.5"
