@@ -80,27 +80,6 @@ public sealed class ThumbnailImageManager
         return Path.Combine(file.Path, entry?.Key ?? "_");
     }
 
-    Regex? _titlePriorityRegex;
-    string? _lasttitlePriorityRegexText = null;
-    Regex? GetTitlePriorityRegex()
-    {
-        if (_titlePriorityRegex != null)
-        {
-            if (_lasttitlePriorityRegexText != _folderListingSettings.ThumbnailPriorityTitleRegex)
-            {
-                _titlePriorityRegex = null;
-            }
-        }
-
-        try
-        {
-            _titlePriorityRegex ??= new Regex(_folderListingSettings.ThumbnailPriorityTitleRegex);
-        }
-        catch { }
-
-        return _titlePriorityRegex;
-    }
-
     private string ToId(string path)
     {
         return $"$/{path}".Replace('\\', '/');
@@ -1083,24 +1062,24 @@ public sealed class ThumbnailImageManager
         await TranscodeThumbnailImageToStreamAsync(file.Path, () => new (new FileStream(file.CreateSafeFileHandle(FileAccess.Read), FileAccess.Read)), outputStream, EncodingForImageFileThumbnailBitmap, ct);
         return true;
     }
+
+
+    readonly Regex _coverFileNameRegex = new Regex("cover", RegexOptions.IgnoreCase);
     private async ValueTask<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
     {
-        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read, options: FileOptions.SequentialScan))
+        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var zipArchive = new ZipArchive(fileStream))
         {
             ct.ThrowIfCancellationRequested();
 
-            ZipArchiveEntry? entry = null;
-            //if (GetTitlePriorityRegex() is not null and Regex regex)
-            //{
-            //    entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
-            //}
-
-            entry ??= zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
-            if (entry == null) { return false; }
-            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.Open()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-            return true;
+            if ((zipArchive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Name) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
+                ?? zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))) is { } entry)
+            {
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.Open()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return true;
+            }
+            else { return false; }
         }
     }
 
@@ -1110,16 +1089,13 @@ public sealed class ThumbnailImageManager
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var rarArchive = RarArchive.OpenArchive(fileStream))
         {
-            RarArchiveEntry? entry = null;
-            //if (GetTitlePriorityRegex() is not null and Regex regex)
-            //{
-            //    entry = (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
-            //}
-
-            entry ??= (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
-            if (entry == null) { return default; }
-            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-            return true;
+            if ((rarArchive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Key) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                ?? rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))) is RarArchiveEntry entry)
+            {
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return true;
+            }
+            else { return false; }
         }
     }
 
@@ -1129,16 +1105,13 @@ public sealed class ThumbnailImageManager
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var archive = SevenZipArchive.OpenArchive(fileStream))
         {
-            SevenZipArchiveEntry? entry = null;
-            //if (GetTitlePriorityRegex() is not null and Regex regex)
-            //{
-            //    entry = (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
-            //}
-
-            entry ??= (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
-            if (entry == null) { return default; }
-            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-            return true;
+            if ((archive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Key) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                ?? archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))) is SevenZipArchiveEntry entry)
+            {
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return true;
+            }
+            else { return false; }
         }
     }
 
@@ -1148,16 +1121,13 @@ public sealed class ThumbnailImageManager
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var archive = TarArchive.OpenArchive(fileStream))
         {
-            TarArchiveEntry? entry = null;
-            //if (GetTitlePriorityRegex() is not null and Regex regex)
-            //{
-            //    entry = (TarArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
-            //}
-
-            entry ??= (TarArchiveEntry)archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
-            if (entry == null) { return default; }
-            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-            return true;
+            if ((archive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Key) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                ?? archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))) is TarArchiveEntry entry)
+            {
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return true;
+            }
+            else { return false; }
         }
     }
 

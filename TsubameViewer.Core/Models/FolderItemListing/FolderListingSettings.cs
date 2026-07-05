@@ -11,8 +11,7 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     public const double DefaultFolderImageHeight = 262d;
     public const double DefaultFolderImageWidth = 200d;
     public const double DefaultFolderItemTitleHeight = 52d;
-
-    public const string DefaultThumbnailPriorityTitleRegexString = "";//"cover|Cover|COVER|カバー";
+    
     public FolderListingSettings()
     {
         _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
@@ -22,7 +21,6 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
         _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
-        _ThumbnailPriorityTitleRegex = Read(DefaultThumbnailPriorityTitleRegexString, nameof(ThumbnailPriorityTitleRegex));
         _ShowWithIndexedFolderItemAccess = Read(true, nameof(ShowWithIndexedFolderItemAccess));
         _isInPageSearchWithMigemo = Read(true, nameof(IsInPageSearchWithMigemo));
         _thumbnailDecodeType = Read(ThumbnailDecodeMethod.Skia, nameof(ThumbnailDecodeType));
@@ -85,13 +83,6 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         set { SetProperty(ref _FolderItemTitleHeight, value); }
     }
 
-
-    private string _ThumbnailPriorityTitleRegex;
-    public string ThumbnailPriorityTitleRegex
-    {
-        get { return _ThumbnailPriorityTitleRegex; }
-        set { SetProperty(ref _ThumbnailPriorityTitleRegex, value); }
-    }
 
     private bool _ShowWithIndexedFolderItemAccess;
     public bool ShowWithIndexedFolderItemAccess
