@@ -430,6 +430,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
                 .Start(image);
 
+            if (image.Source == null || image.Opacity == 0)
+            {
+                var itemVM = (image.DataContext as IStorageItemViewModel)!;
+                if (!itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
+                {
+                    var targetBitmap = EnsureGetBitmapImage(image);
+                    _ = itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                }
+            }
+
             if (image.Source is BitmapImage bitmapImage
                 && bitmapImage.IsAnimatedBitmap)
             {
@@ -451,7 +461,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (image.Source is BitmapImage bitmapImage
                 && bitmapImage.IsAnimatedBitmap)
         {
-            bitmapImage.Play();
+            bitmapImage.Stop();
         }
     }
 
