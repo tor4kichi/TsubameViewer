@@ -221,16 +221,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             // itemVM側の非同期ロックに期待して全部を一気に処理させる
             // ここでawaitをつけるとUIの応答性が下がるので避けたい
-            using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            try
-            {
-                foreach (var itemVM in items.ArraySegment)
-                {
-                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                }
-            }
-            catch (OperationCanceledException) { }
+            //using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
+            //try
+            //{
+            //    foreach (var itemVM in items.ArraySegment)
+            //    {
+            //        _ = itemVM.EnsureImageSizeRatioAsync(ct);
+            //        itemVM.RestoreThumbnailLoadingTask(ct);
+            //    }
+            //}
+            //catch (OperationCanceledException) { }
         }
     }
 

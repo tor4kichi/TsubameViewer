@@ -189,8 +189,17 @@ public sealed class ThumbnailImageManager
 
     private SizeF CulcThumbnailSize(int width, int height)
     {
-        var ratio = (double)_folderListingSettings.FolderItemThumbnailImageSize.Height / height;
-        return new (MathF.Floor(width * (float)ratio * _folderListingSettings.FolderItemThumbnailQuality), (float)_folderListingSettings.FolderItemThumbnailImageSize.Height * _folderListingSettings.FolderItemThumbnailQuality);
+        if (width > height)
+        {
+            var ratio = (double)_folderListingSettings.FolderItemThumbnailImageSize.Height / height;
+            return new(MathF.Floor(width * (float)ratio * _folderListingSettings.FolderItemThumbnailQuality), (float)_folderListingSettings.FolderItemThumbnailImageSize.Height * _folderListingSettings.FolderItemThumbnailQuality);
+        }
+        else
+        {
+            var ratio = (double)_folderListingSettings.FolderItemThumbnailImageSize.Width / width;
+            return new((float)(_folderListingSettings.FolderItemThumbnailImageSize.Width * _folderListingSettings.FolderItemThumbnailQuality),
+                (float)(ratio * height * _folderListingSettings.FolderItemThumbnailQuality));
+        }
     }
 
     class ThumbnailItemIdEntry
@@ -1177,6 +1186,8 @@ public sealed class ThumbnailImageManager
             ImageHeight = (uint)resizedBitmap.Height,
             RatioWH = resizedBitmap.Width / (float)resizedBitmap.Height
         });
+        
+        Debug.WriteLine($"thumb out <{path}> size: w= {scaledSize.Width} h= {scaledSize.Height}");
 
         // SKBitmap → SKImage → SKData (エンコード)
         using var image = SKImage.FromBitmap(resizedBitmap);
@@ -1452,7 +1463,17 @@ public sealed class ThumbnailImageManager
             {
                 using var fileStream = await file.OpenReadAsync().AsTask(ct);
                 using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
-                fg.DecodePixelHeight = (int)requestedSize;
+                var video = fg.CurrentVideoStream; 
+                if (video.DisplayAspectRatio > 1)
+                {
+                    fg.DecodePixelHeight = (int)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality);
+                    fg.DecodePixelWidth = (int)(requestedSize * video.DisplayAspectRatio * _folderListingSettings.FolderItemThumbnailQuality);
+                }
+                else
+                {
+                    fg.DecodePixelHeight = (int)(requestedSize * (1 / video.DisplayAspectRatio) * _folderListingSettings.FolderItemThumbnailQuality);
+                    fg.DecodePixelWidth = (int)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality);
+                }
                 using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(10)).AsTask(linkedCt);
                 if (frame.Timestamp > fg.Duration)
                 {
@@ -1468,7 +1489,7 @@ public sealed class ThumbnailImageManager
                 }
                 catch
                 {
-                    using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
+                    using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, (uint)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality));
                     await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
                 }
             }

@@ -138,7 +138,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         Item = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -428,7 +428,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         Item = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {

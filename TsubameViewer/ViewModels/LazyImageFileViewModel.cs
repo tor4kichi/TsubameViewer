@@ -117,7 +117,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         Item = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -356,7 +356,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public bool IsInitialized => _status == LoadingStatus.Loaded;
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public async ValueTask InitializeAsync(CancellationToken ct)
