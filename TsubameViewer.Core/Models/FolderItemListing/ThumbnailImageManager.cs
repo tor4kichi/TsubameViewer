@@ -640,27 +640,6 @@ public sealed class ThumbnailImageManager
 #endif
     }
 
-    public async Task<Stream> GetFolderThumbnailImageStreamAsync(StorageFolder folder, CancellationToken ct)
-    {
-#if WINDOWS_UWP
-
-        var file = await GetCoverThumbnailImageAsync(folder, ct);
-        if (file == null) { return Stream.Null; }
-
-        var outputStream = _recyclableMemoryStreamManager.GetStream();
-        try
-        {
-            return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : Stream.Null;
-        }
-        catch
-        {
-            outputStream.Dispose();
-            throw;
-        }
-#else
-        return null;
-#endif
-    }
 
     readonly static QueryOptions _coverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions)
     {

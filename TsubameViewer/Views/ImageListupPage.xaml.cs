@@ -52,32 +52,6 @@ using ZLinq;
 #nullable enable
 namespace TsubameViewer.Views;
 
-
-public static class ObservableCollectionExtensions
-{
-    public static void InsertSorted<T>(this IList<T> collection, T item, Comparison<T> comparison)
-    {
-        int index = 0;
-        while (index < collection.Count && comparison(collection[index], item) is int c && c < 0)
-        {
-            if (c == 0) { return; }
-            index++;
-        }
-        collection.Insert(index, item);
-    }
-
-    public static void InsertSortedDescending<T>(this IList<T> collection, T item, Comparison<T> comparison)
-    {
-        int index = 0;
-        while (index < collection.Count && comparison(collection[index], item) is int c && c > 0)
-        {
-            if (c == 0) { return; }
-            index++;
-        }
-        collection.Insert(index, item);
-    }
-}
-
 [ObservableObject]
 public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 {
@@ -202,6 +176,22 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         {
             _realizedItems.Clear();
         }
+        _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
+        {
+            if (_vm.Selection.IsSelectionModeEnabled)
+            {
+                _vm.Selection.EndSelection();
+            }
+            else
+            {
+                _vm.Selection.StartSelection();
+            }
+
+            _vm.FileDeleteCommand.NotifyCanExecuteChanged();
+        });
+
+        HandleCreateFolderDialogTextChanging(ct);
+        
         async Task d()
         {
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
@@ -215,20 +205,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .Take(1)
                 .WaitAsync(ct);
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
-
-            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
-            {
-                if (_vm.Selection.IsSelectionModeEnabled)
-                {
-                    _vm.Selection.EndSelection();
-                }
-                else
-                {
-                    _vm.Selection.StartSelection();
-                }
-
-                _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-            });
 
             try
             {
@@ -244,8 +220,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             catch (OperationCanceledException) { }
 
-            InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
-            HandleCreateFolderDialogTextChanging(ct);
+            InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");            
         }
     }
 

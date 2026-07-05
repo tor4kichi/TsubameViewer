@@ -40,6 +40,31 @@ using Windows.UI.Xaml.Navigation;
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
+public static class ObservableCollectionExtensions
+{
+    public static void InsertSorted<T>(this IList<T> collection, T item, Comparison<T> comparison)
+    {
+        int index = 0;
+        while (index < collection.Count && comparison(collection[index], item) is int c && c < 0)
+        {
+            if (c == 0) { return; }
+            index++;
+        }
+        collection.Insert(index, item);
+    }
+
+    public static void InsertSortedDescending<T>(this IList<T> collection, T item, Comparison<T> comparison)
+    {
+        int index = 0;
+        while (index < collection.Count && comparison(collection[index], item) is int c && c > 0)
+        {
+            if (c == 0) { return; }
+            index++;
+        }
+        collection.Insert(index, item);
+    }
+}
+
 public sealed partial class SourceStorageItemsPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<RemoveSourceStorageItemFromAppMessage>

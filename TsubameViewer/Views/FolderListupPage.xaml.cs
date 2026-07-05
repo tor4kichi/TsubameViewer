@@ -340,26 +340,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             else 
             {
                 bool result = sv.ChangeView(null, 0, null, true);
-
-                //if (_focusHelper.IsRequireSetFocus())
-                //{
-                //    await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
-                //    var firstItem = FoldersAdaptiveGridView.Items.First();
-                //    if (firstItem is not null)
-                //    {
-                //        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
-                //        Control? itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                //        if (itemContainer != null)
-                //        {
-                //            await Task.Delay(50, ct);
-                //            itemContainer.Focus(FocusState.Keyboard);
-                //        }
-                //    }
-                //    else
-                //    {
-                //        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
-                //    }
-                //}
             }
         }
     }
@@ -367,7 +347,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     // 前回スクロール位置への復帰に対応する
     // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
     readonly static Dictionary<ulong, double> _pathToLastScrollPosition = new();
-
 
     public void DeselectItem()
     {
@@ -379,7 +358,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var lastIntaractItem = _vm.GetLastIntractItem();
         if (lastIntaractItem == null)
         {
-            //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
             return;
         }
 
