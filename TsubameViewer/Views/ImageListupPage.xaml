@@ -312,8 +312,7 @@
             </ToolTip>
           </ToolTipService.ToolTip>
           <Grid>
-            <Image x:Name="Image"
-                   Source="{Binding Image, Mode=OneWay}"
+            <Image x:Name="Image"                   
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
@@ -413,8 +412,8 @@
                 ctwu:FrameworkElementExtensions.Cursor="Hand">
           <Grid>
             <Image x:Name="Image"
-                   Source="{Binding Image, Mode=OneWay}"
-                   Stretch="UniformToFill" />
+                   Stretch="UniformToFill"
+                   Opacity="0" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
                           IsChecked="{Binding IsSelected, Mode=TwoWay}"
@@ -512,7 +511,6 @@
           </ToolTipService.ToolTip>
           <Grid>
             <Image x:Name="Image"
-                   Source="{Binding Image, Mode=OneWay}"
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"

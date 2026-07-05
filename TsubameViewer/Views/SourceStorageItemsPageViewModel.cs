@@ -60,7 +60,6 @@ public sealed partial class SourceStorageItemsPageViewModel
             if (item.Path?.Equals(message.Value, StringComparison.Ordinal) ?? false)
             {
                 item.ThumbnailChanged();
-                item.InitializeAsync(default).FireAndForgetSafe();
                 break;
             }
         }
@@ -227,7 +226,6 @@ public sealed partial class SourceStorageItemsPageViewModel
                 if (folderItem.Name == lastIntaractItemPath)
                 {
                     folderItem.ThumbnailChanged();
-                    folderItem.InitializeAsync(ct).FireAndForgetSafe();
                 }
             }
 

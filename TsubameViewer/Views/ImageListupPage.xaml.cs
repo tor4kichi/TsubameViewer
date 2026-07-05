@@ -1,9 +1,11 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using I18NPortable;
+using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
+using I18NPortable;
 using Microsoft.UI.Xaml.Controls;
 using R3;
 using Reactive.Bindings;
@@ -42,9 +44,11 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
-using CommunityToolkit.WinUI;
+using static System.Net.Mime.MediaTypeNames;
+using Image = Windows.UI.Xaml.Controls.Image;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -162,6 +166,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<StartMultiSelectionMessage>(this);
 
         ClearSelection();
+
+        Debug.WriteLine($"Images RealizedItems: {_realizedItems.Count}");
 
         base.OnNavigatingFrom(e);
     }
@@ -352,17 +358,42 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     ObservableCollection<IStorageItemViewModel> _realizedItems = [];    
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Environment.ProcessorCount / 2);
+
+    Image? GetImageControl(FrameworkElement fe)
+    {
+        var cc = fe.GetContentControl() as ContentControl;
+        var insideItem = cc?.Content as UIElement;
+        return insideItem?.FindDescendant("Image") as Image;
+    }
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {        
         if (args.Element is FrameworkElement fe)
         {            
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
+                var image = GetImageControl(fe);
+                Guard.IsNotNull(image);
+                BitmapImage targetBitmap;
+                image.Opacity = 0;
+                if (image.Source is BitmapImage bitmap)
+                {
+                    targetBitmap = bitmap;
+                }
+                else
+                {
+                    targetBitmap = new BitmapImage()
+                    {
+                        AutoPlay = false
+                    };
+                    image.Source = targetBitmap;
+                }
+
                 _realizedItems.Add(itemVM);
                 await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
                 if (itemVM.ImageAspectRatioWH != null)
                 {
-                    await itemVM.InitializeAsync(_navigationCt);
+                    await itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                    image.Opacity = 1;
                 }
                 else
                 {
@@ -370,7 +401,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     {
                         using (await _imageGeneratingLock.LockAsync(_navigationCt))
                         {
-                            await itemVM.InitializeAsync(_navigationCt);
+                            await itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                            image.Opacity = 1;
                         }
                     }
                     catch (OperationCanceledException) { }
@@ -407,13 +439,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _zoomUpAnimation
                 .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
                 .Start(image);
-        }
 
-        if (item.DataContext is IStorageItemViewModel itemVM)
-        {
-            if (itemVM.Image?.IsAnimatedBitmap ?? false)
+            if (image.Source is BitmapImage bitmapImage
+                && bitmapImage.IsAnimatedBitmap)
             {
-                itemVM.Image.Play();
+                bitmapImage.Play();
             }
         }
     }
@@ -428,12 +458,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
             .Start(image);
 
-        if (item.DataContext is IStorageItemViewModel itemVM)
+        if (image.Source is BitmapImage bitmapImage
+                && bitmapImage.IsAnimatedBitmap)
         {
-            if (itemVM.Image?.IsAnimatedBitmap ?? false)
-            {
-                itemVM.Image.Stop();
-            }
+            bitmapImage.Play();
         }
     }
 
@@ -458,7 +486,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         SaveScrollStatus(item);
 
-        var image = item.FindDescendantOrSelf<Image>();
+        var image = item.FindDescendantOrSelf<Windows.UI.Xaml.Controls.Image>();
         if (image?.Source != null)
         {
             var anim = ConnectedAnimationService.GetForCurrentView()

@@ -50,9 +50,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     DateTimeOffset _dateCreated;
 
     [ObservableProperty]
-    private BitmapImage? _image;
-
-    [ObservableProperty]
     private float? _imageAspectRatioWH;
 
     [ObservableProperty]
@@ -113,7 +110,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     public void StopImageLoading()
     {
         Status = LoadingStatus.None;
-        Image = null;
         Item = null;
     }
 
@@ -159,7 +155,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     }
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
-    public async ValueTask InitializeAsync(CancellationToken ct)
+    public async ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -189,12 +185,9 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        await targetBitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);                        
                     }
                 }
                 
@@ -224,20 +217,19 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         //ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
     }
 
-    public void RestoreThumbnailLoadingTask(CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(BitmapImage targetBitmap, CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
-            InitializeAsync(ct).FireAndForgetSafe();
+            InitializeAsync(targetBitmap, ct).FireAndForgetSafe();
         }
     }
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
     }
 
@@ -247,7 +239,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
@@ -284,9 +275,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
     [ObservableProperty]
     DateTimeOffset _dateCreated;
-
-    [ObservableProperty]
-    private BitmapImage? _image;
 
     [ObservableProperty]
     private float? _imageAspectRatioWH;
@@ -359,7 +347,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
-    public async ValueTask InitializeAsync(CancellationToken ct)
+    public async ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -389,15 +377,13 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        await targetBitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);                        
                     }
                 }
 
+                OnPropertyChanged(nameof(ImageAspectRatioWH));
                 Status = LoadingStatus.Loaded;
             }
         }
@@ -435,7 +421,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public void StopImageLoading()
     {
         Status = LoadingStatus.None;
-        Image = null;
         Item = null;
     }
 
@@ -477,20 +462,19 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         //ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
     }
 
-    public void RestoreThumbnailLoadingTask(CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(BitmapImage targetBitmap, CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
-            InitializeAsync(ct).FireAndForgetSafe();
+            InitializeAsync(targetBitmap, ct).FireAndForgetSafe();
         }
     }
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
     }
 
@@ -500,7 +484,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)

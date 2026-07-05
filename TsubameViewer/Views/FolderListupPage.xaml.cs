@@ -47,6 +47,8 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
+using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI.Xaml.Media;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -129,9 +131,26 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             {
                 if (!args.InRecycleQueue)
                 {
+                    var image = args.ItemContainer.FindDescendant<Image>();
+                    Guard.IsNotNull(image);
+                    image.Opacity = 0;
                     _realizedItems.Add(itemVM);
-                    await itemVM.InitializeAsync(_navigationCt);
 
+                    BitmapImage targetBitmap;
+                    if (image.Source is BitmapImage bitmap)
+                    {
+                        targetBitmap = bitmap;
+                    }
+                    else
+                    {
+                        targetBitmap = new BitmapImage()
+                        {
+                            AutoPlay = false
+                        };
+                        image.Source = targetBitmap;
+                    }
+                    await itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                    image.Opacity = 1;
                     // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
                     await itemVM.ObservePropertyChanged(x => x.IsInitialized)
                         .Where(x => x)
@@ -203,6 +222,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 Debug.WriteLine(ex.ToString());
             }
         }
+
+        Debug.WriteLine($"Folder RealizedItems: {_realizedItems.Count}");
 
         base.OnNavigatingFrom(e);
     }
@@ -653,8 +674,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 try
                 {
                     var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
-                    var itemVM = _vm.ToStorageItemVM(newfodler);
-                    itemVM.InitializeAsync(_navigationCt).FireAndForgetSafe();
+                    var itemVM = _vm.ToStorageItemVM(newfodler);                    
                     _vm.FileItemsView.Insert(0, itemVM);
                     return;
                 }

@@ -63,9 +63,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     DateTimeOffset _dateCreated;
 
     [ObservableProperty]
-    private BitmapImage? _image;
-
-    [ObservableProperty]
     private float? _imageAspectRatioWH;
 
     [ObservableProperty]
@@ -134,7 +131,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public void StopImageLoading()
     {
         Status = LoadingStatus.None;
-        Image = null;
         Item = null;
     }
 
@@ -155,7 +151,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public bool IsThumbanilImageCached => Item == null ? false : _thumbnailImageService.GetCachedThumbnailSize(Item) != null;
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
-    public async ValueTask InitializeAsync(CancellationToken ct)
+    public async ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -182,12 +178,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        await targetBitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);                        
                     }
                 }
 
@@ -279,20 +272,19 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         }
     }
 
-    public void RestoreThumbnailLoadingTask(CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(BitmapImage targetImage, CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
-            InitializeAsync(ct).FireAndForgetSafe();
+            InitializeAsync(targetImage, ct).FireAndForgetSafe();
         }
     }
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
     }
 
@@ -302,7 +294,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
@@ -345,9 +336,6 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     [ObservableProperty]
     DateTimeOffset _dateCreated;
-
-    [ObservableProperty]
-    private BitmapImage? _image;
 
     [ObservableProperty]
     private float? _imageAspectRatioWH;
@@ -423,8 +411,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     public void StopImageLoading()
     {
-        Status = LoadingStatus.None;
-        Image = null;
+        Status = LoadingStatus.None;        
         Item = null;
     }
 
@@ -443,7 +430,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     }
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
-    public async ValueTask InitializeAsync(CancellationToken ct)
+    public async ValueTask InitializeAsync(BitmapImage targetImage, CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -469,13 +456,10 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        await targetImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                     }
                 }
 
@@ -587,20 +571,19 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         }
     }
 
-    public void RestoreThumbnailLoadingTask(CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(BitmapImage targetImage, CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
-            InitializeAsync(ct).FireAndForgetSafe();
+            InitializeAsync(targetImage, ct).FireAndForgetSafe();
         }
     }
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
     }
 
@@ -610,7 +593,6 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)

@@ -121,7 +121,6 @@ public sealed partial class FolderListupPageViewModel
             if (item.Path?.Equals(message.Value, StringComparison.Ordinal) ?? false)
             {
                 item.ThumbnailChanged();
-                item.InitializeAsync(default);
                 break;
             }
         }
@@ -445,8 +444,7 @@ public sealed partial class FolderListupPageViewModel
                 if (lastIntractItemVM != null)
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
-                    lastIntractItemVM.ThumbnailChanged();                    
-                    lastIntractItemVM.InitializeAsync(ct).FireAndForgetSafe("lastIntractItemVM.InitializeAsync");
+                    lastIntractItemVM.ThumbnailChanged();                                        
                     FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else
@@ -752,7 +750,7 @@ public sealed partial class FolderListupPageViewModel
                         }
                         else
                         {
-                            itemVM.RestoreThumbnailLoadingTask(ct);
+                            //itemVM.RestoreThumbnailLoadingTask(ct);
                         }
                     }
 

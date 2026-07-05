@@ -10,7 +10,6 @@ namespace TsubameViewer.ViewModels;
 public interface IStorageItemViewModel : INotifyPropertyChanged
 {
     DateTimeOffset DateCreated { get; }
-    BitmapImage Image { get; set; }
     float? ImageAspectRatioWH { get; set; }
     bool IsFavorite { get; set; }
     bool IsSelected { get; set; }
@@ -26,9 +25,9 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
 
     bool IsRequestImageLoading { get; }
     bool IsInitialized { get; }
-    ValueTask InitializeAsync(CancellationToken ct);
+    ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct);
     ValueTask EnsureImageSizeRatioAsync(CancellationToken ct);
-    void RestoreThumbnailLoadingTask(CancellationToken ct);
+    void RestoreThumbnailLoadingTask(BitmapImage targetBitmap, CancellationToken ct);
     void StopImageLoading();
     void ThumbnailChanged();
     void UpdateLastReadPosition();

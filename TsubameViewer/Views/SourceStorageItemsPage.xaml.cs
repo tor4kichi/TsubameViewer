@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
@@ -25,6 +26,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 #nullable enable
@@ -56,7 +58,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     readonly FocusHelper _focusHelper;
     readonly IMessenger _messenger;
 
-    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.Item is IStorageItemViewModel itemVM)
         {
@@ -79,8 +81,24 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
                         Placement = PlacementMode.Bottom 
                     });
             }
-
-            itemVM.InitializeAsync(_navigationCt);
+            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+            Guard.IsNotNull(image);
+            image.Opacity = 0;
+            BitmapImage targetBitmap;
+            if (image.Source is BitmapImage bitmap)
+            {
+                targetBitmap = bitmap;
+            }
+            else
+            {
+                targetBitmap = new BitmapImage()
+                {
+                    AutoPlay = false
+                };
+                image.Source = targetBitmap;
+            }
+            await itemVM.InitializeAsync(targetBitmap, _navigationCt);
+            image.Opacity = 1;
 
             if (_isFirstItem )
             {

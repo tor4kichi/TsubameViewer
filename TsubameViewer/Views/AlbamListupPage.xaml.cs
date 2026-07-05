@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.WinUI;
 using I18NPortable;
 using R3;
 using System.Threading;
@@ -7,6 +9,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 #nullable enable
@@ -37,16 +40,34 @@ public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
     }
 
     bool _isFirstItem = false;
-    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM && _navigationCts?.IsCancellationRequested is false)
+        if (_navigationCts == null || _navigationCts.IsCancellationRequested) { return; }
+        var ct = _navigationCts.Token;
+        if (args.Item is IStorageItemViewModel itemVM)
         {
+            var image = args.ItemContainer.FindDescendant<Image>();
+            image.Opacity = 0;
+            Guard.IsNotNull(image);            
+            BitmapImage targetBitmap;
+            if (image.Source is BitmapImage bitmap)
+            {
+                targetBitmap = bitmap;
+            }
+            else
+            {
+                targetBitmap = new BitmapImage()
+                {
+                    AutoPlay = false
+                };
+                image.Source = targetBitmap;
+            }
+            await itemVM.InitializeAsync(targetBitmap, ct);
+            image.Opacity = 1;
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
                 ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
             }
-
-            itemVM.InitializeAsync(_navigationCts.Token);
 
             if (_isFirstItem && itemVM.Type != Core.Models.StorageItemTypes.AddAlbam)
             {

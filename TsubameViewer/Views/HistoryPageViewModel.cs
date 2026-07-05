@@ -153,7 +153,6 @@ public sealed partial class HistoryPageViewModel
                     if (item.Name == lastIntaractItemPath)
                     {
                         item.ThumbnailChanged();
-                        item.InitializeAsync(ct).FireAndForgetSafe();
                     }
                 }
             }

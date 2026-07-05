@@ -87,9 +87,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     public StorageItemSettings Settings { get; }
 
     [ObservableProperty]
-    BitmapImage? _image;
-
-    [ObservableProperty]
     float? _imageAspectRatioWH;
 
 
@@ -170,7 +167,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     }
 
     public bool IsInitialized { get; private set; } = false;
-    public async ValueTask InitializeAsync(CancellationToken ct)
+    public async ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -200,12 +197,9 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
                 {
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        await targetBitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                     }
                 }
             }
@@ -266,19 +260,18 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         //}
     }
 
-    public void RestoreThumbnailLoadingTask(CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(BitmapImage bitmapImage, CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (_isRequireLoadImageWhenRestored && Image == null)
+        if (_isRequireLoadImageWhenRestored)
         {
-            InitializeAsync(ct).FireAndForgetSafe();
+            InitializeAsync(bitmapImage, ct).FireAndForgetSafe();
         }
     }
 
     public void ThumbnailChanged()
     {
-        Image = null;
         IsInitialized = false;
     }
 
@@ -288,7 +281,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        _image = null;
     }
     bool _disposed;
 }

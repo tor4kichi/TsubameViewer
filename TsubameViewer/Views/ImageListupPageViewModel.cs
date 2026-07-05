@@ -747,7 +747,7 @@ public sealed partial class ImageListupPageViewModel
                     }
                     else
                     {
-                        itemVM.RestoreThumbnailLoadingTask(ct);
+                        //itemVM.RestoreThumbnailLoadingTask(ct);
                     }
                 }
 
