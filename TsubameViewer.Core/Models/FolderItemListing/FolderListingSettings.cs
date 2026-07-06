@@ -21,7 +21,6 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
         _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
-        _ShowWithIndexedFolderItemAccess = Read(true, nameof(ShowWithIndexedFolderItemAccess));
         _isInPageSearchWithMigemo = Read(true, nameof(IsInPageSearchWithMigemo));
         _thumbnailDecodeType = Read(ThumbnailDecodeMethod.Skia, nameof(ThumbnailDecodeType));
         _FolderItemThumbnailQuality = Read(1f, nameof(FolderItemThumbnailQuality));
@@ -81,14 +80,6 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     {
         get { return _FolderItemTitleHeight; }
         set { SetProperty(ref _FolderItemTitleHeight, value); }
-    }
-
-
-    private bool _ShowWithIndexedFolderItemAccess;
-    public bool ShowWithIndexedFolderItemAccess
-    {
-        get => _ShowWithIndexedFolderItemAccess;
-        set => SetProperty(ref _ShowWithIndexedFolderItemAccess, value);
     }
 
     private bool _isInPageSearchWithMigemo;

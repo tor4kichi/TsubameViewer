@@ -707,7 +707,7 @@ public sealed partial class ImageListupPageViewModel
 
         OnPropertyChanged(nameof(ImageFileItems));
     }
-    bool IsIndexAccessListingEnabled => (_imageCollectionContext?.IsSupportFolderOrArchiveFilesIndexAccess ?? false) && _folderListingSettings.ShowWithIndexedFolderItemAccess;
+    bool IsIndexAccessListingEnabled => (_imageCollectionContext?.IsSupportFolderOrArchiveFilesIndexAccess ?? false);
     
     IDisposable? _itemsDisposable;
     async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)

@@ -199,14 +199,13 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
                 }
             },
-            new SettingsGroupViewModel
-            {
-                Label = "OtherSettings".Translate(),
-                Items =
-                {
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("ShowWithIndexedFolderItemAccess".Translate(), _folderListupSettings, x => x.ShowWithIndexedFolderItemAccess),
-                }
-            },
+            //new SettingsGroupViewModel
+            //{
+            //    Label = "OtherSettings".Translate(),
+            //    Items =
+            //    {
+            //    }
+            //},
         };
 
         AdvancedSettingGroups = new[]

@@ -582,7 +582,7 @@ public sealed partial class FolderListupPageViewModel
         await base.OnNavigatedToAsync(parameters, ct);
     }
 
-    bool IsIndexAccessListingEnabled => (_imageCollectionContext?.IsSupportFolderOrArchiveFilesIndexAccess ?? false) && FolderListingSettings.ShowWithIndexedFolderItemAccess;
+    bool IsIndexAccessListingEnabled => (_imageCollectionContext?.IsSupportFolderOrArchiveFilesIndexAccess ?? false);
 
     IImageCollectionContext? _imageCollectionContext;
 
