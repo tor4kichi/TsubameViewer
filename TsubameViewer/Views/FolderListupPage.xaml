@@ -368,17 +368,6 @@
                   </Flyout>
                 </Button.Flyout>
               </Button>
-              <uwpControls:DockPanel Visibility="{x:Bind _vm.IsFavoriteAlbam, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
-                <ToggleSwitch IsOn="{x:Bind _vm.IsFavoriteFilteredDisplayEnabled, Mode=TwoWay}"
-                              Style="{StaticResource ToggleSwitchNoHeader}"
-                              uwpControls:DockPanel.Dock="Right"
-                              Margin="0 0 0 0"
-                              IsEnabled="{x:Bind _vm.IsReadyToFavoriteFilterDisplay, Mode=OneWay}"
-                              ctwu:FrameworkElementExtensions.Cursor="Hand" />
-                <TextBlock Text="{i18nExt:Localize Key=Favorite_ShowOnlyFavorite}" VerticalAlignment="Center"
-                           Padding="0 0 8 0"
-                           />
-              </uwpControls:DockPanel>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal"
@@ -444,11 +433,13 @@
                                       DesiredWidth="{StaticResource FolderGridViewItemWidth}"
                                       ItemHeight="{StaticResource FolderGridViewItemHeight}"
                                       IsItemClickEnabled="True"
-                                      ItemClickCommand="{x:Bind OpenItemCommand}"
+                                       ItemClickCommand="{x:Bind OpenItemCommand}"
                                       IsSynchronizedWithCurrentItem="False"
                                       SelectionMode="None"
+                                       PointerPressed="FoldersAdaptiveGridView_PointerPressed"
+                                       PointerReleased="FoldersAdaptiveGridView_PointerReleased"
                                       IsMultiSelectCheckBoxEnabled="True"
-                                      IsTabStop="False"
+                                      IsTabStop="False"                                       
                                       ContextFlyout="{StaticResource StorageItemMenuFlyout}"
                                        tkWinUI:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
                                       XYFocusUp="{x:Bind FileSortButton}"

@@ -254,10 +254,10 @@ public sealed partial class FolderListupPageViewModel
         FavoriteToggleCommand = favoriteToggleCommand;
         FolderItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new AdvancedCollectionView(FolderItems);
+        FileItemsView.SortDescriptions.Add(new SortDescription(nameof(IStorageItemViewModel.IsFavorite), SortDirection.Descending));
         FileItemsView.Filter = s =>
         {
             if (s is not IStorageItemViewModel itemVM) { return true; }
-            if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }            
             if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
             if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
@@ -267,17 +267,6 @@ public sealed partial class FolderListupPageViewModel
 
     [ObservableProperty]
     bool _isFavoriteAlbam;
-
-    [ObservableProperty]
-    bool _isFavoriteFilteredDisplayEnabled;
-
-    partial void OnIsFavoriteFilteredDisplayEnabledChanged(bool value)
-    {   
-        using (FileItemsView.DeferRefresh())
-        {
-            FileItemsView.RefreshFilter();
-        }
-    }
 
     [ObservableProperty]
     bool _isReadyToFavoriteFilterDisplay;
@@ -722,7 +711,6 @@ public sealed partial class FolderListupPageViewModel
                 var existItemsHashSet = FolderItems.Select(x => x.Path).ToHashSet();
                 using (FileItemsView.DeferRefresh())
                 {
-                    IsFavoriteFilteredDisplayEnabled = false;
                     Debug.WriteLine($"items count : {FolderItems.Count}");
 
                     // 新規アイテム
@@ -800,8 +788,6 @@ public sealed partial class FolderListupPageViewModel
 
                 using (FileItemsView.DeferRefresh())
                 {
-                    IsFavoriteFilteredDisplayEnabled = false;
-
                     FolderItems.Clear();
                     FolderItems.AddRange(col.Context.GetCacheNotImages()
                     .Select(entry =>
@@ -840,7 +826,6 @@ public sealed partial class FolderListupPageViewModel
                 {
                     using (FileItemsView.DeferRefresh())
                     {
-                        IsFavoriteFilteredDisplayEnabled = false;
                         FolderItems.Clear();
                         var count = await imageCollectionContext.GetImageFileCountAsync(ct);
                         FolderItems.AddRange(Enumerable.Range(0, count)
@@ -994,7 +979,10 @@ public sealed partial class FolderListupPageViewModel
         var sortDescriptions = ToSortDescription(fileSort);
         using (FileItemsView.DeferRefresh())
         {
-            FileItemsView.SortDescriptions.Clear();
+            while (FileItemsView.Count >= 2)
+            {
+                FileItemsView.RemoveAt(1);
+            }
             foreach (var sort in sortDescriptions)
             {
                 FileItemsView.SortDescriptions.Add(sort);
