@@ -186,31 +186,33 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     .WaitAsync(_navigationCt);
                 if (itemVM.Item != null)
                 {
+                    var imageHeight = _vm.FolderItemDisplayWithLandscape ? 140 : 244;
+                    var imageWidth = _vm.FolderItemDisplayWithLandscape ? 200 : 140;
                     image.Opacity = 1;
                     if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
                         && tooltip is ToolTip tt
                         && tt.Content is TextBlock tb)
                     {
                         tb.Text = itemVM.Name;
+                        tt.PlacementRect = new Windows.Foundation.Rect(0, 0, imageWidth, imageHeight);
+                        tt.MaxWidth = imageWidth;
                     }
                     else
                     {
-                        var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
-                        if (size.Y == 0)
-                        {
-                            size = new Vector2(120, 200);
-                        }
-
+                        var bottomContainer = args.ItemContainer.FindDescendant("BottomContainer")
+                            ?? args.ItemContainer.FindDescendant<TextBlock>();
                         ToolTipService.SetToolTip(args.ItemContainer,
                             new ToolTip()
-                            {
+                            {                               
                                 Content = new TextBlock()
                                 {
                                     Text = itemVM.Name,
                                     TextWrapping = TextWrapping.Wrap
                                 },
-                                PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                                Placement = PlacementMode.Bottom
+                                MaxWidth = imageWidth,
+                                PlacementTarget = bottomContainer,
+                                PlacementRect = new Windows.Foundation.Rect(0, 0, imageWidth, imageHeight),
+                                Placement = PlacementMode.Bottom,                                
                             });
                     }
                 }

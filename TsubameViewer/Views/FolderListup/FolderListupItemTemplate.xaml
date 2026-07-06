@@ -140,7 +140,6 @@
     </local:StorageItemIconTemplateSelector.MovieIcon>
   </local:StorageItemIconTemplateSelector>
 
-
   <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
     <Grid Background="Transparent"
           IsHitTestVisible="True"
@@ -148,7 +147,8 @@
           DragEnter="Grid_DragEnter"
           Drop="Grid_Drop"
           uwpUI:UIElementExtensions.ClipToBounds="True"
-          CornerRadius="6">
+          CornerRadius="6"
+          >
       <Grid.RowDefinitions>
         <RowDefinition Height="1*" />
         <RowDefinition Height="{StaticResource FolderItemTitleHeight}" />
@@ -160,7 +160,8 @@
              VerticalAlignment="Center"
              Grid.RowSpan="2"
              x:Name="ImageControl" />
-      <Grid Grid.Row="1">
+      <Grid Grid.Row="1"
+            x:Name="BottomContainer">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
                           VerticalAlignment="Bottom"

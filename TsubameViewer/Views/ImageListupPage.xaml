@@ -306,7 +306,8 @@
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource SmallImageRect}"
                      Placement="Bottom"
-                     VerticalOffset="2">
+                     VerticalOffset="2"
+                     PlacementTarget="{Binding ElementName=MyButton}">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
             </ToolTip>
@@ -383,7 +384,8 @@
         <ToolTipService.ToolTip>
           <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
                    Placement="Bottom"
-                   VerticalOffset="4">
+                   VerticalOffset="4"
+                   PlacementTarget="{Binding ElementName=MyButton}">
             <TextBlock Text="{Binding Name}"
                        TextWrapping="Wrap" />
           </ToolTip>
@@ -504,6 +506,7 @@
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource LargeImageRect}"
                      Placement="Bottom"
+                     PlacementTarget="{Binding ElementName=MyButton}"
                      VerticalOffset="4">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
