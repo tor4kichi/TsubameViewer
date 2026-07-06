@@ -671,15 +671,12 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     private void FoldersAdaptiveGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
-        _isMiddleButtonPressed = fe.CapturePointer(e.Pointer) ?
-            e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed : false;
+        _isMiddleButtonPressed = e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed;
     }
 
     private void FoldersAdaptiveGridView_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
-        fe.ReleasePointerCapture(e.Pointer);
-
         if (_isMiddleButtonPressed
             && e.OriginalSource is FrameworkElement itemFe
             && itemFe.DataContext is IStorageItemViewModel itemVM)

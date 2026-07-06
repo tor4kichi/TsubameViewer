@@ -151,31 +151,6 @@
     <StaticResource x:Key="ToggleButtonBorderBrushPointerOver"
                     ResourceKey="ApplicationContentBackgroundBrush" />
 
-    <Style x:Key="ImageItemButtonStyle"
-           TargetType="RepeatButton">
-      <Setter Property="IsTabStop"
-              Value="True" />
-      <Setter Property="UseSystemFocusVisuals"
-              Value="True" />
-      <Setter Property="ContextFlyout"
-              Value="{StaticResource StorageItemMenuFlyout}" />
-      <Setter Property="CornerRadius"
-              Value="4" />
-      <Setter Property="BorderThickness"
-              Value="1" />
-      <Setter Property="BorderBrush"
-              Value="{ThemeResource SystemChromeDisabledHighColor}" />
-      <Setter Property="Background"
-              Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
-      <Setter Property="FocusVisualPrimaryBrush"
-              Value="{ThemeResource SystemAccentColor}" />
-      <Setter Property="FocusVisualPrimaryThickness"
-              Value="3" />
-      <Setter Property="Padding"
-              Value="0" />
-
-    </Style>
-
     <TranslateTransform x:Key="IconOffsetTransform"
                         Y="1"
                         X="1" />
@@ -292,8 +267,9 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
+        <!-- Note: Button系を使うとPonterReleasedがトリガーされないため、
+                   MiddleButton（センタークリック）を検出するためにButton系の使用を回避している -->
         <Grid x:Name="MyButton"
-                Style="{StaticResource ImageItemButtonStyle}"
                 Tag="{Binding Name}"
                 Height="{StaticResource SmallImageHeight}"
                 MinWidth="80"
