@@ -141,6 +141,9 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     bool _nowProcessing = true;
 
+    [ObservableProperty]
+    bool _nowLoading = false;
+
     readonly IMessenger _messenger;
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly AlbamRepository _albamRepository;
@@ -326,6 +329,7 @@ public sealed partial class FolderListupPageViewModel
         
         DisplayCurrentArchiveFolderName = null;
         RequireRefresh = false;
+        NowLoading = false;
     }
 
     public IStorageItemViewModel? GetLastIntractItem()
@@ -709,7 +713,7 @@ public sealed partial class FolderListupPageViewModel
     {
         _itemsDisposable?.Dispose();
         _itemsDisposable = null;
-
+        NowLoading = true;
         Guard.IsNotNull(imageCollectionContext);
         if (!IsIndexAccessListingEnabled)
         {
@@ -758,6 +762,8 @@ public sealed partial class FolderListupPageViewModel
                     Debug.WriteLine($"after deleted : {FolderItems.Count}");
                 }
             }, ct);
+
+            NowLoading = false;
         }
         else
         {
@@ -820,6 +826,8 @@ public sealed partial class FolderListupPageViewModel
                                 ct);
                         }
                         catch (OperationCanceledException) { }
+
+                        NowLoading = false;
                     }).FireAndForgetSafe();
 
                     IsReadyToFavoriteFilterDisplay = true;
@@ -866,6 +874,8 @@ public sealed partial class FolderListupPageViewModel
                         }).FireAndForgetSafe();
                     }
                 }, ct);
+
+                NowLoading = false;
             }
         }
 

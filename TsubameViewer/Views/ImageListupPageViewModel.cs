@@ -166,6 +166,9 @@ public sealed partial class ImageListupPageViewModel
         set { SetProperty(ref _nowProcessing, value); }
     }
 
+    [ObservableProperty]
+    bool _nowLoadingItems;
+
     public ISecondaryTileManager SecondaryTileManager { get; }
     
     public OpenImageViewerCommand OpenImageViewerCommand { get; }
@@ -338,6 +341,8 @@ public sealed partial class ImageListupPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
+        NowLoadingItems = false;
+        NowProcessing = false;
         _filterQueryCts?.Cancel();
         _filterQueryCts?.Dispose();
         _filterQueryCts = null;
@@ -388,6 +393,7 @@ public sealed partial class ImageListupPageViewModel
     {
         _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
+        NowProcessing = true;
         try
         {
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
@@ -570,7 +576,6 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
-        NowProcessing = true;
         ImageFileItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
 
         IsFavoriteAlbam = false;
@@ -710,6 +715,7 @@ public sealed partial class ImageListupPageViewModel
         _itemsDisposable?.Dispose();
         _itemsDisposable = null;
         HasFileItem = true;
+        NowLoadingItems = true;
         if (!IsIndexAccessListingEnabled)
         {
             var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
@@ -752,6 +758,7 @@ public sealed partial class ImageListupPageViewModel
                 }
 
                 Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
+                NowLoadingItems = false;
             }
 
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
@@ -794,7 +801,7 @@ public sealed partial class ImageListupPageViewModel
                     {
                         var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                             
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -827,14 +834,16 @@ public sealed partial class ImageListupPageViewModel
                         {
                             try
                             {
+                                await Task.Delay(50);
                                 // Note: リネームを検知したいので同数チェックしない
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
-                            
+                           
                                 HasFileItem = ImageFileItems.Any();
+                                NowLoadingItems = false;
                             }
                             catch (OperationCanceledException) { }
                         }).FireAndForgetSafe();
@@ -846,19 +855,21 @@ public sealed partial class ImageListupPageViewModel
                     {
                         try
                         {
+                            await Task.Delay(100);
                             using (FileItemsView.DeferRefresh())
                             {
                                 ImageFileItems.Clear();
-                                await SetSort(SelectedFileSortType, ct);
+                                await SetSort(SelectedFileSortType, ct);                                
                                 IsFavoriteFilteredDisplayEnabled = false;
                                 await col.Context.HandleDiffImages(
-                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,                                    
+                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
                             }
 
                             HasFileItem = ImageFileItems.Any();
+                            NowLoadingItems = false;
                         }
                         catch (OperationCanceledException) { }
                     }).FireAndForgetSafe();
@@ -889,6 +900,7 @@ public sealed partial class ImageListupPageViewModel
                         }));
                 }
                 HasFileItem = ImageFileItems.Any();
+                NowLoadingItems = false;
             }
         }
 

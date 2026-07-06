@@ -1055,6 +1055,12 @@
       </uwpControls:DockPanel>
     </SplitView>
 
+    <winUI:ProgressBar x:Name="LoadingProgressRing"
+                       IsEnabled="{x:Bind _vm.NowProcessing, Mode=OneWay}"
+                       Visibility="Collapsed"
+                       VerticalAlignment="Bottom"
+                       IsIndeterminate="True" />
+
     <ContentDialog x:Name="CreateFolderDialog"
                    Padding="0 48 0 0"
                    PrimaryButtonText="{i18nExt:Localize Key=Create}"
@@ -1080,7 +1086,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowLoadingItems, Mode=OneWay}" />
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -1104,7 +1110,40 @@
           </Storyboard>
         </VisualState>
       </VisualStateGroup>
-      
+
+      <!-- アイテム読込中 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowLoadingItems, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LoadingProgressRing.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowLoadingItems, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <Storyboard>
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LoadingProgressRing"
+                                           Storyboard.TargetProperty="Visibility">
+              <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                <DiscreteObjectKeyFrame.Value>
+                  <Visibility>Collapsed</Visibility>
+                </DiscreteObjectKeyFrame.Value>
+              </DiscreteObjectKeyFrame>
+              <DiscreteObjectKeyFrame KeyTime="0:0:1">
+                <DiscreteObjectKeyFrame.Value>
+                  <Visibility>Visible</Visibility>
+                </DiscreteObjectKeyFrame.Value>
+              </DiscreteObjectKeyFrame>
+            </ObjectAnimationUsingKeyFrames>
+          </Storyboard>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- 表示内容切替中の全体の表示切替 -->
       <VisualStateGroup>
         <VisualState>
