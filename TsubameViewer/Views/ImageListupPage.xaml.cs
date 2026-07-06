@@ -372,8 +372,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (args.Element is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM)
         {
-            _realizedItems.Add(args.Element, itemVM);
-
+            _realizedItems.TryAdd(args.Element, itemVM);
             var image = GetImageControl(fe);
             if (image == null) { return; }
 
@@ -382,6 +381,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             if (_navigationCt.IsCancellationRequested) { return; }
 
             var targetBitmap = EnsureGetBitmapImage(image);
+            itemVM.StopImageLoading();
             await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
             try
             {
@@ -397,6 +397,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (_realizedItems.Remove(args.Element, out var itemVM))
         {
             itemVM.StopImageLoading();
+            var image = GetImageControl((args.Element as FrameworkElement)!);
+            if (image == null) { return; }
+
+            image.Opacity = 0;
         }
     }
 

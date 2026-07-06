@@ -175,7 +175,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 if (image == null) { return; }
 
                 image.Opacity = 0;
-                BitmapImage targetBitmap = EnsureGetBitmapImage(image);                
+                BitmapImage targetBitmap = EnsureGetBitmapImage(image);
+                itemVM.StopImageLoading();
                 await itemVM.InitializeAsync(targetBitmap, _navigationCt);
                 
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
