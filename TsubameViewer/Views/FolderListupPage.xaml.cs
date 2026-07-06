@@ -346,25 +346,29 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                         }
 
                         await Task.Delay(5);
-                        if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
+                        if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward)
                         {
-                            await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
-                            bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
-                            Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {x}");
-                        }
-                        else
-                        {
-                            if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
+                            if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
+                            {
+                                await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
+                                bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
+                                Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {x}");
+                            }
+                            else if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
                             {
                                 int index = indexAndLastItem.Index;
                                 await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
                                 var offset = sv.ScrollableHeight * (index / (float)_vm.FileItemsView.Count);
-                                sv.ChangeView(null, offset, null, true);                                
+                                sv.ChangeView(null, offset, null, true);
                             }
                             else
                             {
                                 sv.ChangeView(null, 0, null, true);
                             }
+                        }
+                        else
+                        {
+                            sv.ChangeView(null, 0, null, true);
                         }
                     });
             }
@@ -373,17 +377,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 bool result = sv.ChangeView(null, 0, null, true);
             }
 
-            var (index, itemVM) = _vm.GetLastIntractIndexAndItem();
-            if (e.NavigationMode == NavigationMode.Back
-                && itemVM != null
-                && FoldersAdaptiveGridView.ContainerFromIndex(index) is FrameworkElement itemContainer)
-            {
-                if (itemContainer.FindDescendant<Image>() is { } image
-                    && EnsureGetBitmapImage(image) is { } targetBitmap)
-                {
-                    itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
-                }
-            }
+            //var (index, itemVM) = _vm.GetLastIntractIndexAndItem();
+            //if (e.NavigationMode == NavigationMode.Back
+            //    && itemVM != null
+            //    && FoldersAdaptiveGridView.ContainerFromIndex(index) is FrameworkElement itemContainer)
+            //{
+            //    if (itemContainer.FindDescendant<Image>() is { } image
+            //        && EnsureGetBitmapImage(image) is { } targetBitmap)
+            //    {
+            //        itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
+            //    }
+            //}
         }
     }
 
