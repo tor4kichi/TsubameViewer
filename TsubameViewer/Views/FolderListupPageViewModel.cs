@@ -979,9 +979,9 @@ public sealed partial class FolderListupPageViewModel
         var sortDescriptions = ToSortDescription(fileSort);
         using (FileItemsView.DeferRefresh())
         {
-            while (FileItemsView.Count >= 2)
+            while (FileItemsView.SortDescriptions.Count >= 2)
             {
-                FileItemsView.RemoveAt(1);
+                FileItemsView.SortDescriptions.RemoveAt(1);
             }
             foreach (var sort in sortDescriptions)
             {
