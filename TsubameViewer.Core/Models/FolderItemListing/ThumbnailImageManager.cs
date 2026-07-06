@@ -30,6 +30,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Contracts.Models;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -302,9 +303,11 @@ public sealed class ThumbnailImageManager
             if (await imageSource.TryGetSizedImageStreamAsync(200, stream, ct) is { } size)
             {
                 // サムネイルサイズ情報を記録                
+                var replacedId = ToId(imageSource.Path);
                 _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
                 {
-                    Path = ToId(imageSource.Path),
+                    Path = replacedId,
+                    PathHash = HashHelper.CalculateFNV1a64(replacedId),
                     ImageWidth = (uint)size.Width,
                     ImageHeight = (uint)size.Height,
                     RatioWH = size.Width / size.Height
@@ -433,9 +436,11 @@ public sealed class ThumbnailImageManager
 
     public ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight)
     {
+        var replacedId = ToId(imageSource.Path);
         var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = ToId(imageSource.Path),
+            Path = replacedId,
+            PathHash = HashHelper.CalculateFNV1a64(replacedId),
             ImageWidth = pixelWidth,
             ImageHeight = pixelHeight,            
             RatioWH = pixelWidth / (float)pixelHeight
@@ -954,9 +959,10 @@ public sealed class ThumbnailImageManager
             throw new Exception("SkiaSharp resize failed.");
 
         // サムネイルサイズ情報を記録
+        var replacedId = ToId(path);
         _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = ToId(path),
+            Path = replacedId,
             ImageWidth = (uint)resizedBitmap.Width,
             ImageHeight = (uint)resizedBitmap.Height,
             RatioWH = resizedBitmap.Width / (float)resizedBitmap.Height
@@ -985,9 +991,10 @@ public sealed class ThumbnailImageManager
             var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(ct).ConfigureAwait(false);
 
             // サムネイルサイズ情報を記録                
+            var replacedId = ToId(path);
             _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
             {
-                Path = ToId(path),
+                Path = replacedId,
                 ImageWidth = decoder.PixelWidth,
                 ImageHeight = decoder.PixelHeight,
                 RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
@@ -1038,9 +1045,11 @@ public sealed class ThumbnailImageManager
             }
 
             // サムネイルサイズ情報を記録                
+            var replacedId = ToId(path);
             _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
             {
-                Path = ToId(path),
+                Path = replacedId,
+                PathHash = HashHelper.CalculateFNV1a64(replacedId),
                 ImageWidth = (uint)scaledSize.Width,
                 ImageHeight = (uint)scaledSize.Height,
                 RatioWH = scaledSize.Width / scaledSize.Height
@@ -1140,11 +1149,15 @@ public sealed class ThumbnailImageManager
             Width = (int)_folderListingSettings.FolderItemThumbnailImageSize.Width,
             WithAspectRatio = true,
         });
-       
-        // サムネイルサイズ情報を記録                
+
+        // サムネイルサイズ情報を記録
+
+
+        var replacedId = ToId(file.Path);
         _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = ToId(file.Path),
+            Path = replacedId,
+            PathHash = HashHelper.CalculateFNV1a64(replacedId),
             ImageWidth = (uint)image.Width,
             ImageHeight = (uint)image.Height,
             RatioWH = (uint)image.Width / (float)image.Height
@@ -1286,9 +1299,11 @@ public sealed class ThumbnailImageManager
 
     public ThumbnailSize SetThumbnailSize(string path, BitmapImage image)
     {
+        var replacedId = ToId(path);
         var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = ToId(path),
+            Path = replacedId,
+            PathHash = HashHelper.CalculateFNV1a64(replacedId),
             ImageHeight = (uint)image.PixelHeight,
             ImageWidth = (uint)image.PixelWidth,
             RatioWH = image.PixelWidth / (float)image.PixelHeight
@@ -1304,9 +1319,11 @@ public sealed class ThumbnailImageManager
 
     private ThumbnailSize SetThumbnailSize(string path, SKImageInfo imageInfo)
     {
+        var replacedId = ToId(path);
         var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = ToId(path),
+            Path = replacedId,
+            PathHash = HashHelper.CalculateFNV1a64(replacedId),
             ImageHeight = (uint)imageInfo.Height,
             ImageWidth = (uint)imageInfo.Width,
             RatioWH = imageInfo.Width / (float)imageInfo.Height
@@ -1327,6 +1344,9 @@ public sealed class ThumbnailImageManager
         public string Path { get; set; } = "";
 
         [BsonField]
+        public ulong PathHash { get; set; } = 0;
+
+        [BsonField]
         public uint ImageWidth { get; set; }
 
         [BsonField]
@@ -1340,7 +1360,15 @@ public sealed class ThumbnailImageManager
     {
         public ThumbnailImageInfoRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
-            _collection.EnsureIndex(x => x.Path);
+            //_collection.EnsureIndex(x => x.Path);
+            if (_collection.EnsureIndex(x => x.PathHash))
+            {
+                foreach (var item in _collection.Query().ForUpdate().ToEnumerable())
+                {
+                    item.PathHash = HashHelper.CalculateFNV1a64(item.Path);
+                    _collection.Update(item);
+                }
+            }
         }
 
 
@@ -1348,7 +1376,8 @@ public sealed class ThumbnailImageManager
         {
             try
             {
-                var thumbInfo = _collection.FindById(path);
+                var hash = HashHelper.CalculateFNV1a64(path);
+                var thumbInfo = _collection.FindById(hash);
                 //Debug.WriteLine(path);
                 if (thumbInfo is not null)
                 {
@@ -1370,7 +1399,10 @@ public sealed class ThumbnailImageManager
                     return default;
                 }
             }
-            catch { return default; }
+            catch (LiteDB.LiteException liteEx)
+            {
+                return default; 
+            }
         }
 
         public ThumbnailSize GetSize(string path)
