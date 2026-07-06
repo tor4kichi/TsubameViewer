@@ -81,13 +81,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         Loaded += FolderListupPage_Loaded;
         Unloaded += FolderListupPage_Unloaded;
 
+        FileItemsRepeater_Line.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
 
+        FileItemsRepeater_Line.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
+        FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;        
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -345,9 +347,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     Image? GetImageControl(FrameworkElement fe)
     {
-        var cc = fe.GetContentControl() as ContentControl;
-        var insideItem = cc?.Content as UIElement;
-        return insideItem?.FindDescendant("Image") as Image;
+        return fe.GetContentControl()?.FindDescendant("Image") as Image;
     }
 
     BitmapImage EnsureGetBitmapImage(Image image)
@@ -487,40 +487,72 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     int _lastSelectedItemIndex = -1;
-    void ImageListItem_Clicked(object sender, RoutedEventArgs e)
+    
+    bool _isMiddleButtonPressed;
+    FrameworkElement? _lastMiddleButtonPressedItem;
+    private void ImageListItem_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
-        if (_vm.Selection.IsSelectionModeEnabled
-            || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
-            )
+        var ppp = e.GetCurrentPoint(null).Properties;
+        _isMiddleButtonPressed = false;
+        if (ppp.IsLeftButtonPressed)
         {
-            if (fe.DataContext is IStorageItemViewModel itemVM)
+            if (_vm.Selection.IsSelectionModeEnabled
+                || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
             {
-                itemVM.IsSelected = !itemVM.IsSelected;
-                ItemSelectedProcess(itemVM);
-            }
+                if (fe.DataContext is IStorageItemViewModel itemVM)
+                {
+                    itemVM.IsSelected = !itemVM.IsSelected;
+                    ItemSelectedProcess(itemVM);
+                    e.Handled = true;
+                }
 
-            return;
+                return;
+            }            
+            else if (fe.FindDescendantOrSelf<Image>() is { } image
+                && image.Source != null
+                && _vm.OpenImageViewerCommand is ICommand command
+                && command.CanExecute(image.DataContext)
+                )
+            {
+                if (image.Source != null)
+                {
+                    SaveScrollStatus(fe);
+
+                    var anim = ConnectedAnimationService.GetForCurrentView()
+                        .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
+                    anim.Configuration = new BasicConnectedAnimationConfiguration();
+                }
+
+                command.Execute(image.DataContext);
+                e.Handled = true;
+            }
+        }
+        else if (ppp.IsMiddleButtonPressed)
+        {
+            _isMiddleButtonPressed = true;
+            _lastMiddleButtonPressedItem = fe;
+            e.Handled = true;
         }
 
-        Image? image = fe.FindDescendantOrSelf<Image>();
-        if (image != null 
-            && _vm.OpenImageViewerCommand is ICommand command
-            && command.CanExecute(image.DataContext)
-            )
-        {
-            if (image.Source != null)
-            {
-                SaveScrollStatus(fe);
 
-                var anim = ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
-                anim.Configuration = new BasicConnectedAnimationConfiguration();
-            }
-
-            command.Execute(image.DataContext);
-        }
     }
+
+    private async void ImageListItem_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        fe.ReleasePointerCapture(e.Pointer);
+
+        if (_isMiddleButtonPressed
+            && e.OriginalSource is FrameworkElement itemFe
+            && itemFe.DataContext is IStorageItemViewModel itemVM)
+        {            
+            _vm.FavoriteToggleCommand.Execute(itemVM);
+        }
+
+        _isMiddleButtonPressed = false;
+    }
+
 
     [ObservableProperty]
     IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();
