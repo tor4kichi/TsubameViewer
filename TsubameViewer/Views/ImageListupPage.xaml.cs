@@ -404,6 +404,40 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
+    private void MyButton_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        if (_vm.Selection.IsSelectionModeEnabled
+                || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
+        {
+            if (fe.DataContext is IStorageItemViewModel itemVM)
+            {
+                itemVM.IsSelected = !itemVM.IsSelected;
+                ItemSelectedProcess(itemVM);
+                e.Handled = true;
+            }
+
+            return;
+        }
+        else if (fe.FindDescendantOrSelf<Image>() is { } image
+            && image.Source != null
+            && _vm.OpenImageViewerCommand is ICommand command
+            && command.CanExecute(image.DataContext)
+            )
+        {
+            if (image.Source != null)
+            {
+                SaveScrollStatus(fe);
+
+                var anim = ConnectedAnimationService.GetForCurrentView()
+                    .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
+                anim.Configuration = new BasicConnectedAnimationConfiguration();
+            }
+
+            command.Execute(image.DataContext);
+            e.Handled = true;
+        }
+    }
 
     readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
             .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50));
@@ -453,7 +487,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 && bitmapImage.IsAnimatedBitmap)
         {
             bitmapImage.Stop();
-        }
+        }        
     }
 
     [RelayCommand]
@@ -495,47 +529,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         var fe = (FrameworkElement)sender;
         var ppp = e.GetCurrentPoint(null).Properties;
         _isMiddleButtonPressed = false;
-        if (ppp.IsLeftButtonPressed)
-        {
-            if (_vm.Selection.IsSelectionModeEnabled
-                || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
-            {
-                if (fe.DataContext is IStorageItemViewModel itemVM)
-                {
-                    itemVM.IsSelected = !itemVM.IsSelected;
-                    ItemSelectedProcess(itemVM);
-                    e.Handled = true;
-                }
-
-                return;
-            }            
-            else if (fe.FindDescendantOrSelf<Image>() is { } image
-                && image.Source != null
-                && _vm.OpenImageViewerCommand is ICommand command
-                && command.CanExecute(image.DataContext)
-                )
-            {
-                if (image.Source != null)
-                {
-                    SaveScrollStatus(fe);
-
-                    var anim = ConnectedAnimationService.GetForCurrentView()
-                        .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
-                    anim.Configuration = new BasicConnectedAnimationConfiguration();
-                }
-
-                command.Execute(image.DataContext);
-                e.Handled = true;
-            }
-        }
-        else if (ppp.IsMiddleButtonPressed)
+        if (ppp.IsMiddleButtonPressed)
         {
             _isMiddleButtonPressed = true;
             _lastMiddleButtonPressedItem = fe;
             e.Handled = true;
         }
-
-
     }
 
     private async void ImageListItem_PointerReleased(object sender, PointerRoutedEventArgs e)
