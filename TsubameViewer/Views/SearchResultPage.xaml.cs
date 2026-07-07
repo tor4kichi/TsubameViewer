@@ -60,32 +60,11 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         if (!args.InRecycleQueue)
         {
             ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
-
-            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-            if (image == null) { return; }
-            image.Opacity = 0;
-            BitmapImage targetBitmap;
-            if (image.Source is BitmapImage bitmap)
-            {
-                targetBitmap = bitmap;
-            }
-            else
-            {
-                targetBitmap = new BitmapImage()
-                {
-                    AutoPlay = false
-                };
-                image.Source = targetBitmap;
-            }
-            await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-            image.Opacity = 1;
+            await itemVM.InitializeAsync(_navigationCt);
         }
         else
         {
             itemVM.StopImageLoading();
-            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-            if (image == null) { return; }
-            image.Opacity = 0;
         }
     }
 

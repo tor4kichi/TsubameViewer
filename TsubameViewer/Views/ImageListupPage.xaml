@@ -297,7 +297,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
           <Grid>
-            <Image x:Name="Image"                   
+            <Image x:Name="Image"
+                   Source="{x:Bind Image, Mode=OneWay}"
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
@@ -363,7 +364,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <ToolTipService.ToolTip>
           <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
                    Placement="Bottom"
@@ -400,8 +402,8 @@
               CornerRadius="4">
           <Grid>
             <Image x:Name="Image"
-                   Stretch="UniformToFill"
-                   Opacity="0" />
+                   Source="{x:Bind Image, Mode=OneWay}"
+                   Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
                           IsChecked="{Binding IsSelected, Mode=TwoWay}"
@@ -502,6 +504,7 @@
           </ToolTipService.ToolTip>
           <Grid>
             <Image x:Name="Image"
+                   Source="{x:Bind Image, Mode=OneWay}"
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"

@@ -46,24 +46,7 @@ public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
         var ct = _navigationCts.Token;
         if (args.Item is IStorageItemViewModel itemVM)
         {
-            var image = args.ItemContainer.FindDescendant<Image>();
-            image.Opacity = 0;
-            Guard.IsNotNull(image);            
-            BitmapImage targetBitmap;
-            if (image.Source is BitmapImage bitmap)
-            {
-                targetBitmap = bitmap;
-            }
-            else
-            {
-                targetBitmap = new BitmapImage()
-                {
-                    AutoPlay = false
-                };
-                image.Source = targetBitmap;
-            }
-            await itemVM.InitializeAsync(targetBitmap, ct);
-            image.Opacity = 1;
+            await itemVM.InitializeAsync(ct);
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
                 ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });

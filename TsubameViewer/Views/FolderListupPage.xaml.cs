@@ -98,6 +98,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
                 m.Reply(Task.FromResult<UIElement?>(image as UIElement));
             }
+            else
+            {
+                m.Reply(Task.FromResult<UIElement?>(null));
+            }
         });
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) => 
@@ -111,11 +115,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             using var pooled = _realizedItems.AsValueEnumerable().ToArrayPool();
             foreach (var (elem, itemVM) in pooled.Span)
             {
-                if (elem.FindDescendant<Image>() is {} image
-                && EnsureGetBitmapImage(image) is { } targetBitmap)
-                {
-                    itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
-                }                
+                itemVM.RestoreThumbnailLoadingTask(_navigationCt);
             }
         });
     }    
@@ -142,43 +142,31 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly FocusHelper _focusHelper;
 
 
-    BitmapImage EnsureGetBitmapImage(Windows.UI.Xaml.Controls.Image image)
-    {
-        BitmapImage targetBitmap;
-        if (image.Source is BitmapImage bitmap)
-        {
-            targetBitmap = bitmap;
-        }
-        else
-        {
-            targetBitmap = new BitmapImage()
-            {
-                AutoPlay = false
-            };
-            image.Source = targetBitmap;
-        }
-        return targetBitmap;
-    }
-
     Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
+    readonly List<BitmapImage> _cacheImages = [];
+
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
         async Task d(ContainerContentChangingEventArgs args)
         {
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
+            var imageControl = args.ItemContainer.FindDescendant<Image>();
+            imageControl?.Opacity = 0;
 
             if (!args.InRecycleQueue)
             {
                 _realizedItems.Add(args.ItemContainer, itemVM);
-                var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-                if (image == null) { return; }
 
-                image.Opacity = 0;
-                BitmapImage targetBitmap = EnsureGetBitmapImage(image);
-                itemVM.StopImageLoading();
-                await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-                
+                if (itemVM.Image == null &&
+                    _cacheImages.ElementAtOrDefault(0) is { } image)
+                {
+                    _cacheImages.RemoveAt(0);
+                    itemVM.Image = image;
+                }
+
+                await itemVM.InitializeAsync(_navigationCt);
+                imageControl?.Opacity = 1;
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
                 await itemVM.ObservePropertyChanged(x => x.IsInitialized)
                     .Where(x => x)
@@ -188,14 +176,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     var imageHeight = _vm.FolderItemDisplayWithLandscape ? 140 : 244;
                     var imageWidth = _vm.FolderItemDisplayWithLandscape ? 200 : 140;
-                    image.Opacity = 1;
+                    
                     if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
                         && tooltip is ToolTip tt
                         && tt.Content is TextBlock tb)
                     {
                         tb.Text = itemVM.Name;
                         tt.PlacementRect = new Windows.Foundation.Rect(0, 0, imageWidth, imageHeight);
-                        tt.MaxWidth = imageWidth;
                     }
                     else
                     {
@@ -209,7 +196,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                                     Text = itemVM.Name,
                                     TextWrapping = TextWrapping.Wrap
                                 },
-                                MaxWidth = imageWidth,
                                 PlacementTarget = bottomContainer,
                                 PlacementRect = new Windows.Foundation.Rect(0, 0, imageWidth, imageHeight),
                                 Placement = PlacementMode.Bottom,                                
@@ -218,7 +204,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
                 else
                 {
-                    image.Opacity = 0;
                     if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
                         && tooltip is ToolTip tt
                         && tt.Content is TextBlock tb)
@@ -229,9 +214,12 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
             else
             {
-                var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-                image?.Opacity = 0;
                 _realizedItems.Remove(args.ItemContainer);
+                var image = itemVM.Image;
+                if (image != null)
+                {
+                    _cacheImages.Add(image);
+                }
                 itemVM.StopImageLoading();
             }
         }
@@ -285,11 +273,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     .ForEachAsync(async (x) =>
                     {
                         var (elem, itemVM) = x;
-                        if (elem.FindDescendant<Image>() is { } image
-                             && EnsureGetBitmapImage(image) is { } targetBitmap)
-                        {
-                            itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
-                        }
+                        itemVM.RestoreThumbnailLoadingTask(ct);
 
                     }, ct).FireAndForgetSafe();
             }
@@ -302,8 +286,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 var image = elem.FindDescendant<Windows.UI.Xaml.Controls.Image>();
                 if (image != null)
                 {
-                    BitmapImage targetBitmap = EnsureGetBitmapImage(image);
-                    itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
+                    itemVM.RestoreThumbnailLoadingTask(ct);
                 }
             }
         }

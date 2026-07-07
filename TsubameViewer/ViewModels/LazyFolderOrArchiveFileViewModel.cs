@@ -81,6 +81,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     [ObservableProperty]
     string? _duration;
+    
+    [ObservableProperty]
+    BitmapImage? _image;
 
     public LazyFolderOrArchiveFileViewModel(
         IImageCollectionContext imageCollectionContext,
@@ -132,9 +135,10 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     {
         Status = LoadingStatus.None;
         Item = null;
+        Image = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -151,7 +155,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public bool IsThumbanilImageCached => Item == null ? false : _thumbnailImageService.GetCachedThumbnailSize(Item) != null;
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
-    public async ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct)
+    public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -180,7 +184,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await targetBitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);                        
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
 
@@ -272,20 +278,20 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         }
     }
 
-    public void RestoreThumbnailLoadingTask(BitmapImage targetImage, CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
-            InitializeAsync(targetImage, ct).FireAndForgetSafe();
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 
     public void ThumbnailChanged()
     {
-        Status = LoadingStatus.None;
+        Status = LoadingStatus.None;        
     }
 
     public void Dispose()
@@ -357,6 +363,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     [ObservableProperty]
     string? _duration;
 
+    [ObservableProperty]
+    BitmapImage? _image;
+
     public LazyCacheFolderOrArchiveFileViewModel(
         FolderImageCollectionContext imageCollectionContext,
         FolderStructureFileEntry cacheEntry,
@@ -413,6 +422,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     {
         Status = LoadingStatus.None;        
         Item = null;
+        Image = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
@@ -430,7 +440,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     }
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
-    public async ValueTask InitializeAsync(BitmapImage targetImage, CancellationToken ct)
+    public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -459,7 +469,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
-                        await targetImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
 
@@ -571,14 +583,14 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         }
     }
 
-    public void RestoreThumbnailLoadingTask(BitmapImage targetImage, CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
         {
             Status = LoadingStatus.PendingLoad;
-            InitializeAsync(targetImage, ct).FireAndForgetSafe();
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 

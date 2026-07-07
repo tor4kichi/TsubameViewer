@@ -108,6 +108,9 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     string? _duration;
 
+    [ObservableProperty]
+    BitmapImage? _image;
+
 #pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。'required' 修飾子を追加するか、Null 許容として宣言することを検討してください。
     public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)
 #pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。'required' 修飾子を追加するか、Null 許容として宣言することを検討してください。
@@ -168,7 +171,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     }
 
     public bool IsInitialized { get; private set; } = false;
-    public async ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct)
+    public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -200,10 +203,12 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await targetBitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
-            }
+            }            
 
             _isRequireLoadImageWhenRestored = false;
             IsInitialized = true;
@@ -261,13 +266,13 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         //}
     }
 
-    public void RestoreThumbnailLoadingTask(BitmapImage bitmapImage, CancellationToken ct)
+    public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (_isRequireLoadImageWhenRestored)
         {
-            InitializeAsync(bitmapImage, ct).FireAndForgetSafe();
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 

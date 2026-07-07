@@ -9,6 +9,7 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace TsubameViewer.ViewModels;
 public interface IStorageItemViewModel : INotifyPropertyChanged
 {
+    BitmapImage? Image { get; set; }
     DateTimeOffset DateCreated { get; }
     float? ImageAspectRatioWH { get; set; }
     bool IsFavorite { get; set; }
@@ -25,9 +26,9 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
 
     bool IsRequestImageLoading { get; }
     bool IsInitialized { get; }
-    ValueTask InitializeAsync(BitmapImage targetBitmap, CancellationToken ct);
+    ValueTask InitializeAsync(CancellationToken ct);
     ValueTask EnsureImageSizeRatioAsync(CancellationToken ct);
-    void RestoreThumbnailLoadingTask(BitmapImage targetBitmap, CancellationToken ct);
+    void RestoreThumbnailLoadingTask(CancellationToken ct);
     void StopImageLoading();
     void ThumbnailChanged();
     void UpdateLastReadPosition();

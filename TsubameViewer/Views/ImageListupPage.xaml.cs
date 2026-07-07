@@ -143,7 +143,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         ClearSelection();
 
         Debug.WriteLine($"Images RealizedItems: {_realizedItems.Count}");
-
+        
         base.OnNavigatingFrom(e);
     }
 
@@ -166,11 +166,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 {
                     var (elem, itemVM) = x;
                     _ = itemVM.EnsureImageSizeRatioAsync(ct);
-                    if (GetImageControl((FrameworkElement)elem) is { } image
-                         && EnsureGetBitmapImage(image) is { } targetBitmap)
-                    {
-                        itemVM.RestoreThumbnailLoadingTask(targetBitmap, ct);
-                    }
+                    itemVM.RestoreThumbnailLoadingTask(ct);
 
                 }, ct).FireAndForgetSafe();
         }
@@ -342,51 +338,41 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         return mode.ToString();
     }
 
-    Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
-    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Environment.ProcessorCount / 2);
+    readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
+    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly List<BitmapImage> _cacheImages = [];
 
-    Image? GetImageControl(FrameworkElement fe)
-    {
-        return fe.GetContentControl()?.FindDescendant("Image") as Image;
-    }
-
-    BitmapImage EnsureGetBitmapImage(Image image)
-    {
-        BitmapImage targetBitmap;
-        if (image.Source is BitmapImage bitmap)
-        {
-            targetBitmap = bitmap;
-        }
-        else
-        {
-            targetBitmap = new BitmapImage()
-            {
-                AutoPlay = false
-            };
-            image.Source = targetBitmap;
-        }
-        return targetBitmap;
-    }
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM)
         {
-            _realizedItems.TryAdd(args.Element, itemVM);
-            var image = GetImageControl(fe);
-            if (image == null) { return; }
+            if (_realizedItems.TryAdd(args.Element, itemVM) is false) { return; }
 
-            image.Opacity = 0;
+            if (itemVM.Image == null&&
+                _cacheImages.ElementAtOrDefault(0) is { } image)
+            {
+                _cacheImages.RemoveAt(0);
+                itemVM.Image = image;
+            }
 
-            if (_navigationCt.IsCancellationRequested) { return; }
-
-            var targetBitmap = EnsureGetBitmapImage(image);
-            itemVM.StopImageLoading();
-            await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
             try
             {
-                await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-                image.Opacity = 1;
+                var imageControl = fe.FindDescendant<Image>();
+                imageControl?.Opacity = 0;
+                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
+                if (itemVM.ImageAspectRatioWH != null)
+                {                    
+                    await itemVM.InitializeAsync(_navigationCt);                    
+                }
+                else
+                {
+                    using (await _imageGeneratingLock.LockAsync(_navigationCt))
+                    {
+                        await itemVM.InitializeAsync(_navigationCt);
+                    }
+                }
+                imageControl?.Opacity = 1;
             }
             catch (OperationCanceledException) { }
         }
@@ -396,11 +382,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         if (_realizedItems.Remove(args.Element, out var itemVM))
         {
-            itemVM.StopImageLoading();
-            var image = GetImageControl((args.Element as FrameworkElement)!);
-            if (image == null) { return; }
+            var imageControl = args.Element.FindDescendant<Image>();
+            imageControl?.Opacity = 0;
 
-            image.Opacity = 0;
+            var image = itemVM.Image;
+            if (image != null)
+            {
+                _cacheImages.Add(image);
+            }
+            itemVM.StopImageLoading();
         }
     }
 
@@ -470,13 +460,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
                 .Start(image);
 
-            if (image.Source == null || image.Opacity == 0)
+            if (image.DataContext is IStorageItemViewModel itemVM)
             {
-                var itemVM = (image.DataContext as IStorageItemViewModel)!;
                 if (!itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
                 {
-                    var targetBitmap = EnsureGetBitmapImage(image);
-                    _ = itemVM.InitializeAsync(targetBitmap, _navigationCt);
+                    _ = itemVM.InitializeAsync(_navigationCt);
                 }
             }
 

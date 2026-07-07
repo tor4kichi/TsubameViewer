@@ -110,24 +110,7 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
                         Placement = PlacementMode.Bottom
                     });
             }
-
-
-            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-            if (image == null) { return; }
-
-            image.Opacity = 0;
-            BitmapImage targetBitmap;
-            if (image.Source is BitmapImage bitmap)
-            {
-                targetBitmap = bitmap;
-            }
-            else
-            {
-                targetBitmap = new BitmapImage();
-                image.Source = targetBitmap;
-            }
-            await itemVM.InitializeAsync(targetBitmap, _navigationCt);
-            image.Opacity = 1;
+            await itemVM.InitializeAsync(_navigationCt);
             if (_isFirstItem)
             {
                 _isFirstItem = false;
@@ -140,10 +123,6 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
         else
         {
             itemVM.StopImageLoading();
-            var image = args.ItemContainer.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-            if (image == null) { return; }
-
-            image.Opacity = 0;
         }
     }
 
