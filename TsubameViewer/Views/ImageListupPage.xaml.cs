@@ -404,31 +404,44 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
+    bool _isMiddleButtonPressed;
+    private void ImageListItem_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        var ppp = e.GetCurrentPoint(null).Properties;
+        //fe.CapturePointer(e.Pointer);
+        _isMiddleButtonPressed = ppp.IsMiddleButtonPressed;
+    }
+
+    private void ImageListItem_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        //fe.ReleasePointerCapture(e.Pointer);
+    }
+
     private void MyButton_Tapped(object sender, TappedRoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
+        if (fe.DataContext is not IStorageItemViewModel itemVM) { return; }
         if (_vm.Selection.IsSelectionModeEnabled
-                || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
+            || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
         {
-            if (fe.DataContext is IStorageItemViewModel itemVM)
-            {
-                itemVM.IsSelected = !itemVM.IsSelected;
-                ItemSelectedProcess(itemVM);
-                e.Handled = true;
-            }
-
-            return;
+            itemVM.IsSelected = !itemVM.IsSelected;
+            ItemSelectedProcess(itemVM);
+            e.Handled = true;
+        }
+        else if (_isMiddleButtonPressed)
+        {
+            _vm.FavoriteToggleCommand.Execute(itemVM);
+            e.Handled = true;
         }
         else if (fe.FindDescendantOrSelf<Image>() is { } image
-            && image.Source != null
             && _vm.OpenImageViewerCommand is ICommand command
-            && command.CanExecute(image.DataContext)
-            )
+            && command.CanExecute(image.DataContext))
         {
             if (image.Source != null)
             {
                 SaveScrollStatus(fe);
-
                 var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();
@@ -437,6 +450,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             command.Execute(image.DataContext);
             e.Handled = true;
         }
+
+        _isMiddleButtonPressed = false;
     }
 
     readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
@@ -522,36 +537,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     int _lastSelectedItemIndex = -1;
     
-    bool _isMiddleButtonPressed;
-    FrameworkElement? _lastMiddleButtonPressedItem;
-    private void ImageListItem_PointerPressed(object sender, PointerRoutedEventArgs e)
-    {
-        var fe = (FrameworkElement)sender;
-        var ppp = e.GetCurrentPoint(null).Properties;
-        _isMiddleButtonPressed = false;
-        if (ppp.IsMiddleButtonPressed)
-        {
-            _isMiddleButtonPressed = true;
-            _lastMiddleButtonPressedItem = fe;
-            e.Handled = true;
-        }
-    }
-
-    private async void ImageListItem_PointerReleased(object sender, PointerRoutedEventArgs e)
-    {
-        var fe = (FrameworkElement)sender;
-        fe.ReleasePointerCapture(e.Pointer);
-
-        if (_isMiddleButtonPressed
-            && e.OriginalSource is FrameworkElement itemFe
-            && itemFe.DataContext is IStorageItemViewModel itemVM)
-        {            
-            _vm.FavoriteToggleCommand.Execute(itemVM);
-        }
-
-        _isMiddleButtonPressed = false;
-    }
-
 
     [ObservableProperty]
     IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();

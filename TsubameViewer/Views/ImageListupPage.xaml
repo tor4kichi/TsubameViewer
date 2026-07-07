@@ -178,6 +178,7 @@
               PointerExited="Image_PointerExited"
               PointerPressed="ImageListItem_PointerPressed"
                 PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
                 ctwu:FrameworkElementExtensions.Cursor="Hand"
               IsHitTestVisible="True"
               Background="{ThemeResource SystemAltLowColor}"
@@ -280,6 +281,7 @@
               Tapped="MyButton_Tapped"
                 PointerPressed="ImageListItem_PointerPressed"
                 PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
                 ctwu:FrameworkElementExtensions.Cursor="Hand"
               IsHitTestVisible="True"
               Background="{ThemeResource SystemAltLowColor}"
@@ -391,6 +393,7 @@
                 PointerExited="Image_PointerExited"
                 PointerPressed="ImageListItem_PointerPressed"
                 PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
                 ctwu:FrameworkElementExtensions.Cursor="Hand"
               IsHitTestVisible="True"
               Background="{ThemeResource SystemAltLowColor}"
@@ -483,6 +486,7 @@
               PointerExited="Image_PointerExited"
               PointerPressed="ImageListItem_PointerPressed"
               PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
               ctwu:FrameworkElementExtensions.Cursor="Hand"
               IsHitTestVisible="True"
               Background="{ThemeResource SystemAltLowColor}"
@@ -982,8 +986,7 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                      DataContext="{x:Null}"
                                      VerticalCacheLength="4"
-                                     CanDrag="True"
-                                     PointerReleased="ImageListItem_PointerReleased">
+                                     CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:FlowLayout MinColumnSpacing="4"
                                       MinRowSpacing="4"
@@ -1000,8 +1003,7 @@
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
                                      VerticalCacheLength="5"
-                                     CanDrag="True"
-                                     PointerReleased="ImageListItem_PointerReleased">
+                                     CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:FlowLayout MinColumnSpacing="6"
                                       MinRowSpacing="6"
@@ -1017,8 +1019,7 @@
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
                                      VerticalCacheLength="7"
-                                     CanDrag="True"
-                                     PointerReleased="ImageListItem_PointerReleased">
+                                     CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:FlowLayout MinColumnSpacing="8"
                                       MinRowSpacing="8"
