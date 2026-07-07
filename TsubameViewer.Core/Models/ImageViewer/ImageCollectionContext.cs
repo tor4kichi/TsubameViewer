@@ -619,6 +619,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                     var itemVM = cacheImageViewModelFactory(entry);
                     items.Add(itemVM);
                 }
+                await Task.Delay(1);
             }
         }
 

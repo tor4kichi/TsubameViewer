@@ -150,7 +150,7 @@ public sealed partial class FolderListupPageViewModel
     readonly ImageCollectionManager _imageCollectionManager;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
-    readonly ThumbnailImageManager _thumbnailManager;        
+    internal readonly ThumbnailImageManager _thumbnailManager;        
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     public FolderListingSettings FolderListingSettings { get; }
 
@@ -804,7 +804,8 @@ public sealed partial class FolderListupPageViewModel
                     {
                         try
                         {
-                            // Note: リネームを検知したいので同数チェックしない
+                            // Note: リネームを検知したいので同数チェックしない                            
+                            await Task.Delay(50);
                             await col.Context.HandleDiffNotImages(
                                 (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                 cacheImageViewModelFactory,

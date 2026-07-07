@@ -339,38 +339,26 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
-    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 2));
-    readonly List<BitmapImage> _cacheImages = [];
-
+    readonly AsyncLock _imageGeneratingLock = new AsyncLock(2);
+    
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM)
         {
-            if (_realizedItems.TryAdd(args.Element, itemVM) is false) { return; }
-
-            if (itemVM.Image == null&&
-                _cacheImages.ElementAtOrDefault(0) is { } image)
-            {
-                _cacheImages.RemoveAt(0);
-                itemVM.Image = image;
-            }
-
+            // Note: ここでreturnすると読み込まれないケースが頻発する
+            _realizedItems.TryAdd(args.Element, itemVM);
+            
             try
             {
                 var imageControl = fe.FindDescendant<Image>();
                 imageControl?.Opacity = 0;
+                itemVM.Image = imageControl?.Source as BitmapImage;
                 await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
-                if (itemVM.ImageAspectRatioWH != null)
-                {                    
-                    await itemVM.InitializeAsync(_navigationCt);                    
-                }
-                else
+                using (await _imageGeneratingLock.LockAsync(_navigationCt))
                 {
-                    using (await _imageGeneratingLock.LockAsync(_navigationCt))
-                    {
-                        await itemVM.InitializeAsync(_navigationCt);
-                    }
+                    // Note: ここでreturnすると読み込まれないケースが頻発する
+                    await itemVM.InitializeAsync(_navigationCt);
                 }
                 imageControl?.Opacity = 1;
             }
@@ -384,12 +372,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         {
             var imageControl = args.Element.FindDescendant<Image>();
             imageControl?.Opacity = 0;
-
-            var image = itemVM.Image;
-            if (image != null)
-            {
-                _cacheImages.Add(image);
-            }
             itemVM.StopImageLoading();
         }
     }
@@ -465,6 +447,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 if (!itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
                 {
                     _ = itemVM.InitializeAsync(_navigationCt);
+                    image.Opacity = 1;
                 }
             }
 

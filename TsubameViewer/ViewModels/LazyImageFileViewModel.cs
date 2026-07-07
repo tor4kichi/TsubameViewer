@@ -168,7 +168,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
             Guard.IsNotNull(Item);
 
             _status = LoadingStatus.NowLoading;            
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -182,7 +182,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    using (var l = await _imageLoadingLock.LockAsync(ct))
+                    //using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
                         var image = Image ?? new BitmapImage() { AutoPlay = false };
                         await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
@@ -373,7 +373,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             Guard.IsNotNull(Item);
             _status = LoadingStatus.NowLoading;
             
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
@@ -388,7 +388,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    using (await _imageLoadingLock.LockAsync(ct))
+                    //using (await _imageLoadingLock.LockAsync(ct))
                     {
                         var image = Image ?? new BitmapImage() { AutoPlay = false };
                         await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);

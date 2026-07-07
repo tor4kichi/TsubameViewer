@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.ViewModels;
@@ -58,6 +59,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     readonly FocusHelper _focusHelper;
     readonly IMessenger _messenger;
 
+    readonly AsyncLock _imageGenerationLock = new AsyncLock(2);
     async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.Item is not IStorageItemViewModel itemVM) { return; }
@@ -84,7 +86,11 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
                         Placement = PlacementMode.Bottom 
                     });
             }
-            await itemVM.InitializeAsync(_navigationCt);
+
+            using (await _imageGenerationLock.LockAsync(_navigationCt))
+            {
+                await itemVM.InitializeAsync(_navigationCt);
+            }
             if (_isFirstItem )
             {
                 _isFirstItem = false;
