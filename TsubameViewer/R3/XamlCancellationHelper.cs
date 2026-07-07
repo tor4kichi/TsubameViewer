@@ -29,7 +29,7 @@ public static class XamlCancellationHelper
                     cts.Dispose();
                 }
             }
-            Debug.WriteLineIf(canceled, $"GetCancellationTokenOnUnloaded unregistered: {element.GetType().Name}");
+            Debug.WriteLineIf(canceled, $"[GetCancellationTokenOnNavigatingFrom] unregistered: {element.GetType().Name}");
         }
 
         if (skipIfIsUnaloded && element.IsLoaded == false)
@@ -43,7 +43,7 @@ public static class XamlCancellationHelper
             _ctsMap.Add(element, cts);
             // Unloadedイベントを登録しておく
             element.Unloaded += Element_Unloaded;
-            Debug.WriteLine($"GetCancellationTokenOnUnloaded registered: {element.GetType().Name}");
+            Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] registered: {element.GetType().Name}");
         }
 
         return cts.Token;
@@ -57,7 +57,7 @@ public static class XamlCancellationHelper
             frame.Navigating -= Frame_Navigating;
             var page = (FrameworkElement)frame.Content;
             Cancel(page);
-            Debug.WriteLine($"GetCancellationTokenOnNavigatingFrom unregistered: {page.GetType().Name}");
+            Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] unregistered: {page.GetType().Name}");
         }
 
         // Frameベースでキャンセル対応する
@@ -76,7 +76,7 @@ public static class XamlCancellationHelper
             else
             {
                 page.Frame.Navigating += Frame_Navigating;
-                Debug.WriteLine($"GetCancellationTokenOnNavigatingFrom registered: {page.GetType().Name}");
+                Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] registered: {page.GetType().Name}");
             }
         }
         else if (cts.IsCancellationRequested)
@@ -89,12 +89,12 @@ public static class XamlCancellationHelper
             {
                 // 既に別のページに移動しているキャンセル済みとして扱う
                 cts.Cancel();
-                Debug.WriteLine($"GetCancellationTokenOnNavigatingFrom already canceled: {page.GetType().Name}");
+                Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] already canceled: {page.GetType().Name}");
             }
             else
             {
                 page.Frame.Navigating += Frame_Navigating;
-                Debug.WriteLine($"GetCancellationTokenOnNavigatingFrom registered: {page.GetType().Name}");
+                Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] registered: {page.GetType().Name}");
             }
         }
 
@@ -110,7 +110,7 @@ public static class XamlCancellationHelper
                 cts.Cancel();
             }
             catch { }
-            Debug.WriteLine($"XamlCancellationHelper Cancel: {element.GetType().Name}");
+            Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] Cancel: {element.GetType().Name}");
             return true;
         }
         else

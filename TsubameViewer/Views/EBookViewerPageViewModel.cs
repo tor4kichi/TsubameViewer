@@ -691,27 +691,39 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.PageHtml = await Task.Run(async () =>
         {
             var theme = GetCurrentTheme();
-            Guard.IsNotNull(_currentBook);
+            Guard.IsNotNull(CurrentBook);
             var currentPage = pageInfo.EpubFileRef;
             Guard.IsNotNull(currentPage);
             var xmlDoc = new XmlDocument();
             var pageContentText = await currentPage.ReadContentAsync();
             xmlDoc.LoadXml(pageContentText);
-
             var root = xmlDoc.DocumentElement;
-
             Stack<XmlNode> _nodes = new Stack<XmlNode>();
             _nodes.Push(root);
-            while (_nodes.Any())
+            bool isHeaderDecteted = false;
+            while (_nodes.TryPop(out var node))
             {
-                var node = _nodes.Pop();
-
-                if (node.Name.Equals("head", StringComparison.Ordinal))
+                if (node.Name.Equals("img", StringComparison.Ordinal))
                 {
+                    ReplaceDummyResourceUri_Image(node.Attributes["src"]);
+                }
+                else if (node.Name.Equals("image", StringComparison.Ordinal))
+                {
+                    ReplaceDummyResourceUri_Image(node.Attributes["href"] ?? node.Attributes["xlink:href"]);
+                }
+                else if (node.Name.Equals("link", StringComparison.Ordinal)
+                        && (node.Attributes["type"]?.Value.Equals("text/css", StringComparison.Ordinal) ?? false))
+                {
+                    ReplaceDummyResourceUri_Css(node.Attributes["href"]);
+                }
+                else if (!isHeaderDecteted && node.Name.Equals("head", StringComparison.Ordinal))
+                {
+                    isHeaderDecteted = true;
                     if (EBookReaderSettings.IsForceResetStylingInHeadElement)
                     {
                         // ヘッダー要素を全削除してカスタムなスタイルを表示させない
-                        node.InnerText = "";
+                        node.RemoveAll();
+                        continue;
                     }
 
                     var cssItems = new[] { theme == ApplicationTheme.Light ? _lightThemeCss : _darkThemeCss };
@@ -726,55 +738,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     }
                 }
 
-                // 画像リソースの埋め込み
-                {
-                    XmlAttribute? imageSourceAttr = null;
-                    if (node.Name.Equals("img", StringComparison.Ordinal))
-                    {
-                        imageSourceAttr = node.Attributes["src"];
-                    }
-                    else if (node.Name.Equals("image", StringComparison.Ordinal))
-                    {
-                        imageSourceAttr = node.Attributes["href"] ?? node.Attributes["xlink:href"];
-                    }
-                    if (imageSourceAttr != null)
-                    {
-                        foreach (var image in _currentBook.Content.Images.Local)
-                        {
-                            if (imageSourceAttr.Value.EndsWith(image.Key, StringComparison.Ordinal))
-                            {
-                                // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
-                                /// <see cref="ResolveWebResourceRequest"/>
-                                imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
-                            }
-                        }
-                    }
-                }
-
-                // cssの埋め込み
-                {
-                    if (node.Name.Equals("link", StringComparison.Ordinal)
-                        && (node.Attributes["type"]?.Value.Equals("text/css", StringComparison.Ordinal) ?? false))
-                    {
-                        var hrefAttr = node.Attributes["href"];
-                        if (hrefAttr != null)
-                        {
-                            var hrefValue = hrefAttr.Value.Split("/").Last();
-                            if (_currentBook.Content.Css.Local.FirstOrDefault(x => x.Key.EndsWith(hrefValue, StringComparison.Ordinal)) is not null and var cssContent)
-                            {
-                                var parent = node.ParentNode;
-                                parent.RemoveChild(node);
-                                var styleNode = xmlDoc.CreateElement("style");
-                                var typeAttr = xmlDoc.CreateAttribute("type");
-                                typeAttr.Value = cssContent.ContentMimeType;
-                                styleNode.Attributes.Append(typeAttr);
-                                styleNode.InnerText = await cssContent.ReadContentAsTextAsync();
-                                parent.AppendChild(styleNode);
-                            }
-                        }
-                    }
-                }
-
                 foreach (var child in node.ChildNodes)
                 {
                     _nodes.Push((XmlNode)child);
@@ -782,6 +745,36 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             }
 
             return xmlDoc;
+
+            void ReplaceDummyResourceUri_Image(XmlAttribute imageSourceAttr)
+            {
+                if (imageSourceAttr == null) { return; }
+                foreach (var image in CurrentBook.Content.Images.Local)
+                {
+                    if (imageSourceAttr.Value.EndsWith(image.Key, StringComparison.Ordinal))
+                    {
+                        // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
+                        /// <see cref="ResolveWebResourceRequest"/>
+                        imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
+                        break;
+                    }
+                }
+            }
+
+            void ReplaceDummyResourceUri_Css(XmlAttribute imageSourceAttr)
+            {
+                if (imageSourceAttr == null) { return; }
+                foreach (var image in CurrentBook.Content.Css.Local)
+                {
+                    if (imageSourceAttr.Value.EndsWith(image.Key, StringComparison.Ordinal))
+                    {
+                        // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
+                        /// <see cref="ResolveWebResourceRequest"/>
+                        imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
+                        break;
+                    }
+                }
+            }
         }, ct);        
     }
 
@@ -806,7 +799,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     StringBuilder _resourceSb = new();    
     public Stream? ResolveWebResourceRequest(Uri requestUri)
     {
-        if (_currentBook == null) { return null; }
+        if (CurrentBook == null) { return null; }
 
         // 注意: EPubReader側の非同期処理に２つのセンシティブな挙動がある
         // 1. 同時呼び出し不可。lockによる順列処理化が必要
@@ -820,12 +813,26 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             _resourceSb.Append(requestUri.OriginalString);
             _resourceSb.Remove(0, _dummyReosurceRequestDomain.Length);
             var key = _resourceSb.ToString();
-            foreach (var image in _currentBook.Content.Images.Local)
+            foreach (var image in CurrentBook.Content.Images.Local)
             {
                 if (image.Key.Equals(key, StringComparison.Ordinal))
                 {
                     var stream = _recyclableMemoryStreamManager.GetStream();
                     using (var imageStream = image.GetContentStream())
+                    {
+                        imageStream.CopyTo(stream);
+                    }
+                    stream.Seek(0, SeekOrigin.Begin);
+                    return stream;
+                }
+            }
+
+            foreach (var css in CurrentBook.Content.Css.Local)
+            {
+                if (css.Key.Equals(key, StringComparison.Ordinal))
+                {
+                    var stream = _recyclableMemoryStreamManager.GetStream();
+                    using (var imageStream = css.GetContentStream())
                     {
                         imageStream.CopyTo(stream);
                     }
@@ -867,10 +874,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         db.Add(epubBook);
         _readingSessionDisposer = db.Build();
 
-        _currentBook = epubBook;
-        CurrentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
+        CurrentBook = epubBook;
+        CurrentBookReadingOrder = await CurrentBook.GetReadingOrderAsync();
 
-        List<EpubNavigationItemRef>? navigations = _currentBook.GetNavigation();
+        List<EpubNavigationItemRef>? navigations = CurrentBook.GetNavigation();
         if (navigations != null)
         {
             TocItems = navigations.SelectMany(x =>
@@ -908,7 +915,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         Debug.WriteLine(totalSize);
 
         // タイトルを更新
-        Title = _currentBook.Title;
+        Title = CurrentBook.Title;
         _recentlyAccessRepository.AddWatched(_currentPath, DateTimeOffset.Now);
 
         Debug.WriteLine(epubBook.Title);

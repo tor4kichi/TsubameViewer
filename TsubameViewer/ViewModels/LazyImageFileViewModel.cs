@@ -50,9 +50,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     DateTimeOffset _dateCreated;
 
     [ObservableProperty]
-    private BitmapImage? _image;
-
-    [ObservableProperty]
     private float? _imageAspectRatioWH;
 
     [ObservableProperty]
@@ -71,6 +68,8 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     public bool IsSourceStorageItem => Path != null && (_sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false);
 
+    [ObservableProperty]
+    BitmapImage? _image;
 
     public LazyImageFileViewModel(
         IImageCollectionContext imageCollectionContext,
@@ -110,14 +109,8 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         }
     }
 
-    public void StopImageLoading()
-    {
-        Status = LoadingStatus.None;
-        Image = null;
-        Item = null;
-    }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -174,7 +167,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
             await EnsureStorageItemAsync(ct);
             Guard.IsNotNull(Item);
 
-            _status = LoadingStatus.NowLoading;
+            _status = LoadingStatus.NowLoading;            
             using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
@@ -189,12 +182,11 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
                 
@@ -218,6 +210,13 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         }       
     }
 
+    public void StopImageLoading()
+    {
+        Status = LoadingStatus.None;
+        Image = null;
+        Item = null;
+    }
+
     public void UpdateLastReadPosition()
     {
         //var parcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
@@ -237,8 +236,8 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
+        Image = null;
     }
 
     public void Dispose()
@@ -247,7 +246,6 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
@@ -284,9 +282,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
     [ObservableProperty]
     DateTimeOffset _dateCreated;
-
-    [ObservableProperty]
-    private BitmapImage? _image;
 
     [ObservableProperty]
     private float? _imageAspectRatioWH;
@@ -353,10 +348,13 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         }
     }
 
+    [ObservableProperty]
+    BitmapImage? _image;
+
     public bool IsInitialized => _status == LoadingStatus.Loaded;
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount*2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public async ValueTask InitializeAsync(CancellationToken ct)
@@ -374,6 +372,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             await EnsureStorageItemAsync(ct);
             Guard.IsNotNull(Item);
             _status = LoadingStatus.NowLoading;
+            
             using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
@@ -389,15 +388,15 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
 
+                OnPropertyChanged(nameof(ImageAspectRatioWH));
                 Status = LoadingStatus.Loaded;
             }
         }
@@ -435,8 +434,8 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public void StopImageLoading()
     {
         Status = LoadingStatus.None;
-        Image = null;
         Item = null;
+        Image = null;
     }
 
     async ValueTask EnsureStorageItemAsync(CancellationToken ct)
@@ -490,7 +489,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
     }
 
@@ -500,16 +498,17 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
-    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {        
         if (ImageAspectRatioWH == null)
         {
             IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
             ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
         }
+
+        return new();
     }
     bool _disposed;
 }

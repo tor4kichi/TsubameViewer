@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
@@ -23,6 +24,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 #nullable enable
@@ -82,11 +84,14 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
     }
 
     bool _isFirstItem;
-    void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    async void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM)
+        if (_navigationCt.IsCancellationRequested) { return; }
+        if (args.Item is not IStorageItemViewModel itemVM) { return; }
+
+        if (!args.InRecycleQueue)
         {
-            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCt.IsCancellationRequested is false)
+            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
                 var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
                 if (size.Y == 0)
@@ -105,9 +110,7 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
                         Placement = PlacementMode.Bottom
                     });
             }
-
-            itemVM.InitializeAsync(_navigationCt);
-
+            await itemVM.InitializeAsync(_navigationCt);
             if (_isFirstItem)
             {
                 _isFirstItem = false;
@@ -116,6 +119,10 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
                     args.ItemContainer.Focus(FocusState.Keyboard);
                 }
             }
+        }
+        else
+        {
+            itemVM.StopImageLoading();
         }
     }
 

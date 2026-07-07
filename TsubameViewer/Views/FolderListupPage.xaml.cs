@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
-using CommunityToolkit.WinUI;
 using R3;
 using R3.Extensions;
 using Reactive.Bindings.Extensions;
@@ -30,11 +29,14 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Helpers;
 using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Storage;
@@ -43,7 +45,9 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 using static CommunityToolkit.WinUI.Animations.Expressions.ExpressionValues;
@@ -82,6 +86,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     {
         ContentViewTypeSelector.SelectedIndex = 0;
 
+        _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
@@ -90,6 +98,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
                 m.Reply(Task.FromResult<UIElement?>(image as UIElement));
             }
+            else
+            {
+                m.Reply(Task.FromResult<UIElement?>(null));
+            }
         });
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) => 
@@ -97,12 +109,22 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.Value, StringComparison.Ordinal) ?? false);
             itemVM?.UpdateLastReadPosition();
         });
+
+        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this, (r, m) => 
+        {
+            using var pooled = _realizedItems.AsValueEnumerable().ToArrayPool();
+            foreach (var (elem, itemVM) in pooled.Span)
+            {
+                itemVM.RestoreThumbnailLoadingTask(_navigationCt);
+            }
+        });
     }    
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
     }
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -119,64 +141,87 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
 
-    ObservableCollection<IStorageItemViewModel> _realizedItems = [];
+
+    Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
+    readonly List<BitmapImage> _cacheImages = [];
+
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
         async Task d(ContainerContentChangingEventArgs args)
         {
-            if (args.Item is IStorageItemViewModel itemVM)
+            if (args.Item is not IStorageItemViewModel itemVM) { return; }
+            var imageControl = args.ItemContainer.FindDescendant<Image>();
+            imageControl?.Opacity = 0;
+
+            if (!args.InRecycleQueue)
             {
-                if (!args.InRecycleQueue)
+                _realizedItems.Add(args.ItemContainer, itemVM);
+
+                if (itemVM.Image == null &&
+                    _cacheImages.ElementAtOrDefault(0) is { } image)
                 {
-                    _realizedItems.Add(itemVM);
-                    await itemVM.InitializeAsync(_navigationCt);
+                    _cacheImages.RemoveAt(0);
+                    itemVM.Image = image;
+                }
 
-                    // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                    await itemVM.ObservePropertyChanged(x => x.IsInitialized)
-                        .Where(x => x)
-                        .Take(1)
-                        .WaitAsync(_navigationCt);                    
-                    if (itemVM.Item != null)
+                await itemVM.InitializeAsync(_navigationCt);
+                imageControl?.Opacity = 1;
+                // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
+                await itemVM.ObservePropertyChanged(x => x.IsInitialized)
+                    .Where(x => x)
+                    .Take(1)
+                    .WaitAsync(_navigationCt);
+                if (itemVM.Item != null)
+                {
+                    var imageHeight = _vm.FolderItemDisplayWithLandscape ? 140 : 244;
+                    var imageWidth = _vm.FolderItemDisplayWithLandscape ? 200 : 140;
+                    
+                    if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
+                        && tooltip is ToolTip tt
+                        && tt.Content is TextBlock tb)
                     {
-                        if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
-                            && tooltip is ToolTip tt
-                            && tt.Content is TextBlock tb)
-                        {
-                            tb.Text = itemVM.Name;
-                        }
-                        else
-                        {
-                            var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
-                            if (size.Y == 0)
-                            {
-                                size = new Vector2(120, 200);
-                            }
-
-                            ToolTipService.SetToolTip(args.ItemContainer,
-                                new ToolTip()
+                        tb.Text = itemVM.Name;
+                        tt.PlacementRect = new Windows.Foundation.Rect(0, 0, imageWidth, imageHeight);
+                    }
+                    else
+                    {
+                        var bottomContainer = args.ItemContainer.FindDescendant("BottomContainer")
+                            ?? args.ItemContainer.FindDescendant<TextBlock>();
+                        ToolTipService.SetToolTip(args.ItemContainer,
+                            new ToolTip()
+                            {                               
+                                Content = new TextBlock()
                                 {
-                                    Content = new TextBlock()
-                                    {
-                                        Text = itemVM.Name,
-                                        TextWrapping = TextWrapping.Wrap
-                                    },
-                                    PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                                    Placement = PlacementMode.Bottom
-                                });
-                        }
+                                    Text = itemVM.Name,
+                                    TextWrapping = TextWrapping.Wrap
+                                },
+                                PlacementTarget = bottomContainer,
+                                PlacementRect = new Windows.Foundation.Rect(0, 0, imageWidth, imageHeight),
+                                Placement = PlacementMode.Bottom,                                
+                            });
                     }
                 }
                 else
                 {
-                    _realizedItems.Remove(itemVM);     
-                    if (!_navigationCt.IsCancellationRequested)
+                    if (ToolTipService.GetToolTip(args.ItemContainer) is { } tooltip
+                        && tooltip is ToolTip tt
+                        && tt.Content is TextBlock tb)
                     {
-                        itemVM.StopImageLoading();
-                    }
+                        tb.Text = "";
+                    }                    
                 }
             }
-            
+            else
+            {
+                _realizedItems.Remove(args.ItemContainer);
+                var image = itemVM.Image;
+                if (image != null)
+                {
+                    _cacheImages.Add(image);
+                }
+                itemVM.StopImageLoading();
+            }
         }
     }
 
@@ -204,6 +249,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
         }
 
+        Debug.WriteLine($"Folder RealizedItems: {_realizedItems.Count}");
+
         base.OnNavigatingFrom(e);
     }
 
@@ -214,6 +261,36 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         ConnectedAnimationService.GetForCurrentView()
                     .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
+        try
+        {
+            if (e.Parameter is INavigationParameters parameters
+                && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
+                && query is string dirtyPath
+                && Uri.UnescapeDataString(dirtyPath) is { } path
+                && path == _vm.DisplayCurrentPath)
+            {
+                _realizedItems.ToObservable()
+                    .ForEachAsync(async (x) =>
+                    {
+                        var (elem, itemVM) = x;
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+
+                    }, ct).FireAndForgetSafe();
+            }
+            else
+            {
+                _realizedItems.Clear();
+            }
+            foreach (var (elem, itemVM) in _realizedItems)
+            {
+                var image = elem.FindDescendant<Windows.UI.Xaml.Controls.Image>();
+                if (image != null)
+                {
+                    itemVM.RestoreThumbnailLoadingTask(ct);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
         d(e, ct).FireAndForgetSafe();
         async Task d(NavigationEventArgs e, CancellationToken ct)
         {
@@ -247,20 +324,20 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                             await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
                             if (listView.ContainerFromIndex(index) is Control itemContainer)
                             {
-                                itemContainer.Focus(FocusState.Keyboard);
+                                itemContainer.Focus(FocusState.Keyboard);                                
                             }
                         }
 
                         await Task.Delay(5);
-                        if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
+                        if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward)
                         {
-                            await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
-                            bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
-                            Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {x}");
-                        }
-                        else
-                        {
-                            if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
+                            if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
+                            {
+                                await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
+                                bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
+                                Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {x}");
+                            }
+                            else if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
                             {
                                 int index = indexAndLastItem.Index;
                                 await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
@@ -272,51 +349,34 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                                 sv.ChangeView(null, 0, null, true);
                             }
                         }
+                        else
+                        {
+                            sv.ChangeView(null, 0, null, true);
+                        }
                     });
             }
             else 
             {
                 bool result = sv.ChangeView(null, 0, null, true);
-
-                //if (_focusHelper.IsRequireSetFocus())
-                //{
-                //    await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
-                //    var firstItem = FoldersAdaptiveGridView.Items.First();
-                //    if (firstItem is not null)
-                //    {
-                //        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
-                //        Control? itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                //        if (itemContainer != null)
-                //        {
-                //            await Task.Delay(50, ct);
-                //            itemContainer.Focus(FocusState.Keyboard);
-                //        }
-                //    }
-                //    else
-                //    {
-                //        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
-                //    }
-                //}
             }
 
-            // itemVM側の非同期ロックに期待して全部を一気に処理させる
-            // ここでawaitをつけるとUIの応答性が下がるので避けたい
-            using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            try
-            {
-                foreach (var itemVM in items.ArraySegment)
-                {
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                }
-            }
-            catch (OperationCanceledException) { }
+            //var (index, itemVM) = _vm.GetLastIntractIndexAndItem();
+            //if (e.NavigationMode == NavigationMode.Back
+            //    && itemVM != null
+            //    && FoldersAdaptiveGridView.ContainerFromIndex(index) is FrameworkElement itemContainer)
+            //{
+            //    if (itemContainer.FindDescendant<Image>() is { } image
+            //        && EnsureGetBitmapImage(image) is { } targetBitmap)
+            //    {
+            //        itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
+            //    }
+            //}
         }
     }
 
     // 前回スクロール位置への復帰に対応する
     // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
     readonly static Dictionary<ulong, double> _pathToLastScrollPosition = new();
-
 
     public void DeselectItem()
     {
@@ -328,7 +388,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var lastIntaractItem = _vm.GetLastIntractItem();
         if (lastIntaractItem == null)
         {
-            //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
             return;
         }
 
@@ -591,6 +650,27 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         (_vm.OpenFolderItemCommand as ICommand).Execute(itemVM);
     }
 
+    bool _isMiddleButtonPressed;
+    private void FoldersAdaptiveGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        _isMiddleButtonPressed = e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed;
+    }
+
+    private void FoldersAdaptiveGridView_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        if (_isMiddleButtonPressed
+            && e.OriginalSource is FrameworkElement itemFe
+            && itemFe.DataContext is IStorageItemViewModel itemVM)
+        {
+            _vm.FavoriteToggleCommand.Execute(itemVM);
+        }
+
+        _isMiddleButtonPressed = false;
+    }
+
+
     #region Create Folder
 
     [RelayCommand]
@@ -653,8 +733,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 try
                 {
                     var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
-                    var itemVM = _vm.ToStorageItemVM(newfodler);
-                    itemVM.InitializeAsync(_navigationCt).FireAndForgetSafe();
+                    var itemVM = _vm.ToStorageItemVM(newfodler);                    
                     _vm.FileItemsView.Insert(0, itemVM);
                     return;
                 }
@@ -815,8 +894,4 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         
     }
 
-    private void TextBlock_Tapped(object sender, TappedRoutedEventArgs e)
-    {
-        _vm.IsFavoriteFilteredDisplayEnabled = !_vm.IsFavoriteFilteredDisplayEnabled;
-    }
 }

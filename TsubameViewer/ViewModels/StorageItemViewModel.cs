@@ -87,9 +87,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     public StorageItemSettings Settings { get; }
 
     [ObservableProperty]
-    BitmapImage? _image;
-
-    [ObservableProperty]
     float? _imageAspectRatioWH;
 
 
@@ -110,6 +107,9 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     string? _duration;
+
+    [ObservableProperty]
+    BitmapImage? _image;
 
 #pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。'required' 修飾子を追加するか、Null 許容として宣言することを検討してください。
     public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)
@@ -155,6 +155,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
     {
+        IsInitialized = false;
         IsRequestImageLoading = false;
         _initializeCts?.Cancel();
     }
@@ -200,15 +201,14 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
                 {
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
-            }
+            }            
 
             _isRequireLoadImageWhenRestored = false;
             IsInitialized = true;
@@ -270,7 +270,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (_isRequireLoadImageWhenRestored && Image == null)
+        if (_isRequireLoadImageWhenRestored)
         {
             InitializeAsync(ct).FireAndForgetSafe();
         }
@@ -278,7 +278,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     public void ThumbnailChanged()
     {
-        Image = null;
         IsInitialized = false;
     }
 
@@ -288,7 +287,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        _image = null;
     }
     bool _disposed;
 }

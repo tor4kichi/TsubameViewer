@@ -40,6 +40,10 @@ namespace TsubameViewer.Views.StateTrigger
 
         void Item_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
+            if (e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch)
+            {
+                return;
+            }
             var oldIsActive = IsActive;
             SetActive(IsActive = true);
 
@@ -51,6 +55,10 @@ namespace TsubameViewer.Views.StateTrigger
 
         void Item_PointerExited(object sender, PointerRoutedEventArgs e)
         {
+            if (e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Touch)
+            {
+                return;
+            }
             var oldIsActive = IsActive;
             SetActive(IsActive = false);
 

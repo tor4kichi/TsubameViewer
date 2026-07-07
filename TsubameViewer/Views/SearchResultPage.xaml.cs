@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
@@ -20,6 +21,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 #nullable enable
@@ -50,25 +52,26 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
     }
 
-    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM)
-        {
-            if (_navigationCts?.IsCancellationRequested is false)
-            {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
-            }
+        if (args.Item is not IStorageItemViewModel itemVM) { return; }
+        if (_navigationCt.IsCancellationRequested) { return; }
 
-            itemVM.InitializeAsync(_ct);
+        if (!args.InRecycleQueue)
+        {
+            ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+            await itemVM.InitializeAsync(_navigationCt);
+        }
+        else
+        {
+            itemVM.StopImageLoading();
         }
     }
 
-    CancellationTokenSource? _navigationCts;
-    CancellationToken _ct;
+    CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        _navigationCts = new CancellationTokenSource();
-        _ct = _navigationCts.Token;
+        _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
         {
@@ -80,9 +83,6 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
     }

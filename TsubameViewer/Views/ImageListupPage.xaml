@@ -151,31 +151,6 @@
     <StaticResource x:Key="ToggleButtonBorderBrushPointerOver"
                     ResourceKey="ApplicationContentBackgroundBrush" />
 
-    <Style x:Key="ImageItemButtonStyle"
-           TargetType="Button">
-      <Setter Property="IsTabStop"
-              Value="True" />
-      <Setter Property="UseSystemFocusVisuals"
-              Value="True" />
-      <Setter Property="ContextFlyout"
-              Value="{StaticResource StorageItemMenuFlyout}" />
-      <Setter Property="CornerRadius"
-              Value="4" />
-      <Setter Property="BorderThickness"
-              Value="1" />
-      <Setter Property="BorderBrush"
-              Value="{ThemeResource SystemChromeDisabledHighColor}" />
-      <Setter Property="Background"
-              Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
-      <Setter Property="FocusVisualPrimaryBrush"
-              Value="{ThemeResource SystemAccentColor}" />
-      <Setter Property="FocusVisualPrimaryThickness"
-              Value="3" />
-      <Setter Property="Padding"
-              Value="0" />
-
-    </Style>
-
     <TranslateTransform x:Key="IconOffsetTransform"
                         Y="1"
                         X="1" />
@@ -185,7 +160,6 @@
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
                    DragStarting="ItemControl_DragStarting">
-
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -195,15 +169,23 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <Button x:Name="MyButton"
-                Style="{StaticResource ImageItemButtonStyle}"
+        <Grid x:Name="MyButton"
                 Tag="{Binding Name}"
-                Height="40"
-                Width="240"
-                VerticalContentAlignment="Stretch"
-                HorizontalContentAlignment="Left"
-                Click="ImageListItem_Clicked"
-                ctwu:FrameworkElementExtensions.Cursor="Hand">
+                Height="48"
+                Width="320"
+              Tapped="MyButton_Tapped"
+              PointerEntered="Image_PointerEntered"
+              PointerExited="Image_PointerExited"
+              PointerPressed="ImageListItem_PointerPressed"
+                PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+                ctwu:FrameworkElementExtensions.Cursor="Hand"
+              IsHitTestVisible="True"
+              Background="{ThemeResource SystemAltLowColor}"
+              CornerRadius="4"
+              BorderBrush="{ThemeResource SystemBaseLowColor}"
+              BorderThickness="1"
+              Padding="4">
           <ToolTipService.ToolTip>
             <ToolTip Placement="Bottom"
                      VerticalOffset="2">
@@ -217,7 +199,7 @@
               <ToggleButton x:Name="SelectionToggleButton"
                             Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
                             IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                            Margin="0"
+                            Margin="0 0 4 0"
                             Translation="0, 0, 8"
                             Tapped="ImageListToggleSelectButton_Tapped"
                             uwpControls:DockPanel.Dock="Left"
@@ -237,20 +219,18 @@
               </StackPanel>
             </uwpControls:DockPanel>
 
-            <Border Background="{ThemeResource SystemAccentColor}"
-                    Width="80"
-                    Height="24"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Opacity="{Binding IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                    RenderTransformOrigin="0.5, 0.5">
-              <Border.RenderTransform>
-                <CompositeTransform Rotation="45"
-                                    TranslateX="120"
-                                    TranslateY="0" />
-              </Border.RenderTransform>
-            </Border>
           </Grid>
+          <Border Background="{ThemeResource SystemAccentColor}"
+                  Width="4"
+                  HorizontalAlignment="Right"
+                  Opacity="{Binding IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  RenderTransformOrigin="0.5, 0.5">
+            <Border.RenderTransform>
+              <CompositeTransform Rotation="0"
+                                  TranslateX="0"
+                                  TranslateY="0" />
+            </Border.RenderTransform>
+          </Border>
 
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
@@ -271,7 +251,7 @@
               </VisualState>
             </VisualStateGroup>
           </VisualStateManager.VisualStateGroups>
-        </Button>
+        </Grid>
       </UserControl>
     </DataTemplate>
 
@@ -280,7 +260,6 @@
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
                    DragStarting="ItemControl_DragStarting">
-
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -290,30 +269,36 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <Button x:Name="MyButton"
-                Style="{StaticResource ImageItemButtonStyle}"
+        <!-- Note: Button系を使うとPonterReleasedがトリガーされないため、
+                   MiddleButton（センタークリック）を検出するためにButton系の使用を回避している -->
+        <Grid x:Name="MyButton"
                 Tag="{Binding Name}"
                 Height="{StaticResource SmallImageHeight}"
                 MinWidth="80"
-                VerticalContentAlignment="Stretch"
-                HorizontalContentAlignment="Stretch"
-                Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}, Mode=OneWay}"
-                Click="ImageListItem_Clicked"
+                Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}, Mode=OneWay}"                
                 PointerEntered="Image_PointerEntered"
                 PointerExited="Image_PointerExited"
-                ctwu:FrameworkElementExtensions.Cursor="Hand">
+              Tapped="MyButton_Tapped"
+                PointerPressed="ImageListItem_PointerPressed"
+                PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+                ctwu:FrameworkElementExtensions.Cursor="Hand"
+              IsHitTestVisible="True"
+              Background="{ThemeResource SystemAltLowColor}"
+              CornerRadius="4">
 
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource SmallImageRect}"
                      Placement="Bottom"
-                     VerticalOffset="2">
+                     VerticalOffset="2"
+                     PlacementTarget="{Binding ElementName=MyButton}">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
           <Grid>
             <Image x:Name="Image"
-                   Source="{Binding Image, Mode=OneWay}"
+                   Source="{x:Bind Image, Mode=OneWay}"
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
@@ -371,8 +356,7 @@
               </VisualState>
             </VisualStateGroup>
           </VisualStateManager.VisualStateGroups>
-
-        </Button>
+        </Grid>
       </UserControl>
     </DataTemplate>
 
@@ -380,11 +364,13 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <ToolTipService.ToolTip>
           <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
                    Placement="Bottom"
-                   VerticalOffset="4">
+                   VerticalOffset="4"
+                   PlacementTarget="{Binding ElementName=MyButton}">
             <TextBlock Text="{Binding Name}"
                        TextWrapping="Wrap" />
           </ToolTip>
@@ -399,21 +385,24 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <Button x:Name="MyButton"
-                Style="{StaticResource ImageItemButtonStyle}"
+        <Grid x:Name="MyButton"
                 Tag="{Binding Name}"
                 Height="{StaticResource MidiumImageHeight}"
                 MinWidth="80"
-                VerticalContentAlignment="Stretch"
-                HorizontalContentAlignment="Stretch"
                 Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}, Mode=OneWay}"
-                Click="ImageListItem_Clicked"
+              Tapped="MyButton_Tapped"
                 PointerEntered="Image_PointerEntered"
                 PointerExited="Image_PointerExited"
-                ctwu:FrameworkElementExtensions.Cursor="Hand">
+                PointerPressed="ImageListItem_PointerPressed"
+                PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+                ctwu:FrameworkElementExtensions.Cursor="Hand"
+              IsHitTestVisible="True"
+              Background="{ThemeResource SystemAltLowColor}"
+              CornerRadius="4">
           <Grid>
             <Image x:Name="Image"
-                   Source="{Binding Image, Mode=OneWay}"
+                   Source="{x:Bind Image, Mode=OneWay}"
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
@@ -471,7 +460,7 @@
               </VisualState>
             </VisualStateGroup>
           </VisualStateManager.VisualStateGroups>
-        </Button>
+        </Grid>
       </UserControl>
     </DataTemplate>
 
@@ -480,7 +469,6 @@
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
                    DragStarting="ItemControl_DragStarting">
-
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -490,21 +478,25 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <Button x:Name="MyButton"
-                Style="{StaticResource ImageItemButtonStyle}"
-                Tag="{Binding Name}"
-                Height="{StaticResource LargeImageHeight}"
-                MinWidth="120"
-                VerticalContentAlignment="Stretch"
-                HorizontalContentAlignment="Stretch"
-                Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}"
-                Click="ImageListItem_Clicked"
-                PointerEntered="Image_PointerEntered"
-                PointerExited="Image_PointerExited"
-                ctwu:FrameworkElementExtensions.Cursor="Hand">
+        <Grid x:Name="MyButton"
+              Tag="{Binding Name}"
+              Height="{StaticResource LargeImageHeight}"
+              MinWidth="120"
+              Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}"
+              Tapped="MyButton_Tapped"
+              PointerEntered="Image_PointerEntered"
+              PointerExited="Image_PointerExited"
+              PointerPressed="ImageListItem_PointerPressed"
+              PointerReleased="ImageListItem_PointerReleased"
+              ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+              ctwu:FrameworkElementExtensions.Cursor="Hand"
+              IsHitTestVisible="True"
+              Background="{ThemeResource SystemAltLowColor}"
+              CornerRadius="4">
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource LargeImageRect}"
                      Placement="Bottom"
+                     PlacementTarget="{Binding ElementName=MyButton}"
                      VerticalOffset="4">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
@@ -512,7 +504,7 @@
           </ToolTipService.ToolTip>
           <Grid>
             <Image x:Name="Image"
-                   Source="{Binding Image, Mode=OneWay}"
+                   Source="{x:Bind Image, Mode=OneWay}"
                    Stretch="UniformToFill" />
             <ToggleButton x:Name="SelectionToggleButton"
                           Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
@@ -570,9 +562,8 @@
               </VisualState>
             </VisualStateGroup>
           </VisualStateManager.VisualStateGroups>
-        </Button>
+        </Grid>
       </UserControl>
-
     </DataTemplate>
 
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
@@ -982,11 +973,12 @@
                                      ItemsSource="{x:Bind _vm.FileItemsView}"
                                      ItemTemplate="{StaticResource FileItemTemplate_Line}"
                                      DataContext="{x:Null}"
-                                     CanDrag="True">
+                                     CanDrag="True"
+                                     PointerReleased="ImageListItem_PointerReleased">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:UniformGridLayout Orientation="Horizontal"
-                                             MinRowSpacing="6"
-                                             MinColumnSpacing="6" />
+                                             MinRowSpacing="12"
+                                             MinColumnSpacing="12" />
                   </winUI:ItemsRepeater.Layout>
                 </winUI:ItemsRepeater>
               </uwpControls:Case>
@@ -999,8 +991,8 @@
                                      VerticalCacheLength="4"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <winUI:FlowLayout MinColumnSpacing="2"
-                                      MinRowSpacing="2"
+                    <winUI:FlowLayout MinColumnSpacing="4"
+                                      MinRowSpacing="4"
                                       Orientation="Horizontal"
                                       LineAlignment="Start"
                                       />
@@ -1016,8 +1008,8 @@
                                      VerticalCacheLength="5"
                                      CanDrag="True">
                   <winUI:ItemsRepeater.Layout>
-                    <winUI:FlowLayout MinColumnSpacing="4"
-                                      MinRowSpacing="4"
+                    <winUI:FlowLayout MinColumnSpacing="6"
+                                      MinRowSpacing="6"
                                       Orientation="Horizontal"
                                       LineAlignment="Start"/>
                   </winUI:ItemsRepeater.Layout>
@@ -1054,6 +1046,13 @@
       </uwpControls:DockPanel>
     </SplitView>
 
+    <winUI:ProgressBar x:Name="LoadingProgressRing"
+                       IsEnabled="{x:Bind _vm.NowProcessing, Mode=OneWay}"
+                       Visibility="Collapsed"
+                       VerticalAlignment="Bottom"
+                       IsIndeterminate="True"
+                       IsHitTestVisible="False"/>
+
     <ContentDialog x:Name="CreateFolderDialog"
                    Padding="0 48 0 0"
                    PrimaryButtonText="{i18nExt:Localize Key=Create}"
@@ -1079,7 +1078,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowLoadingItems, Mode=OneWay}" />
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -1103,7 +1102,40 @@
           </Storyboard>
         </VisualState>
       </VisualStateGroup>
-      
+
+      <!-- アイテム読込中 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowLoadingItems, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LoadingProgressRing.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowLoadingItems, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <Storyboard>
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LoadingProgressRing"
+                                           Storyboard.TargetProperty="Visibility">
+              <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                <DiscreteObjectKeyFrame.Value>
+                  <Visibility>Collapsed</Visibility>
+                </DiscreteObjectKeyFrame.Value>
+              </DiscreteObjectKeyFrame>
+              <DiscreteObjectKeyFrame KeyTime="0:0:1">
+                <DiscreteObjectKeyFrame.Value>
+                  <Visibility>Visible</Visibility>
+                </DiscreteObjectKeyFrame.Value>
+              </DiscreteObjectKeyFrame>
+            </ObjectAnimationUsingKeyFrames>
+          </Storyboard>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- 表示内容切替中の全体の表示切替 -->
       <VisualStateGroup>
         <VisualState>

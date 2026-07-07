@@ -63,9 +63,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     DateTimeOffset _dateCreated;
 
     [ObservableProperty]
-    private BitmapImage? _image;
-
-    [ObservableProperty]
     private float? _imageAspectRatioWH;
 
     [ObservableProperty]
@@ -84,6 +81,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     [ObservableProperty]
     string? _duration;
+    
+    [ObservableProperty]
+    BitmapImage? _image;
 
     public LazyFolderOrArchiveFileViewModel(
         IImageCollectionContext imageCollectionContext,
@@ -134,11 +134,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public void StopImageLoading()
     {
         Status = LoadingStatus.None;
-        Image = null;
         Item = null;
+        Image = null;
     }
 
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new(2);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
@@ -182,12 +182,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (var l = await _imageLoadingLock.LockAsync(ct))
                     {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
 
@@ -292,8 +291,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void ThumbnailChanged()
     {
-        Image = null;
-        Status = LoadingStatus.None;
+        Status = LoadingStatus.None;        
     }
 
     public void Dispose()
@@ -302,7 +300,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
@@ -347,9 +344,6 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     DateTimeOffset _dateCreated;
 
     [ObservableProperty]
-    private BitmapImage? _image;
-
-    [ObservableProperty]
     private float? _imageAspectRatioWH;
 
     [ObservableProperty]
@@ -368,6 +362,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     [ObservableProperty]
     string? _duration;
+
+    [ObservableProperty]
+    BitmapImage? _image;
 
     public LazyCacheFolderOrArchiveFileViewModel(
         FolderImageCollectionContext imageCollectionContext,
@@ -423,9 +420,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     public void StopImageLoading()
     {
-        Status = LoadingStatus.None;
-        Image = null;
+        Status = LoadingStatus.None;        
         Item = null;
+        Image = null;
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
@@ -469,13 +466,12 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = bitmapImage;
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
                     }
                 }
 
@@ -600,7 +596,6 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     public void ThumbnailChanged()
     {
-        Image = null;
         Status = LoadingStatus.None;
     }
 
@@ -610,7 +605,6 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        Image = null;
     }
 
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)

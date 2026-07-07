@@ -9,8 +9,8 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace TsubameViewer.ViewModels;
 public interface IStorageItemViewModel : INotifyPropertyChanged
 {
+    BitmapImage? Image { get; set; }
     DateTimeOffset DateCreated { get; }
-    BitmapImage Image { get; set; }
     float? ImageAspectRatioWH { get; set; }
     bool IsFavorite { get; set; }
     bool IsSelected { get; set; }

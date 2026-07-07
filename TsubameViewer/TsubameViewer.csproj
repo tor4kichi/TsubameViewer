@@ -189,6 +189,7 @@
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\IfImageSourceNotExistSendMessage.cs" />
+    <Compile Include="Views\Converters\SizeToRectConverter.cs" />
     <Compile Include="Views\Converters\ZeroToVisibleConverter.cs" />
     <Compile Include="Views\EBookViewerPageViewModel.cs" />
     <Compile Include="Views\Behaviors\ManipulationBehavior.cs" />

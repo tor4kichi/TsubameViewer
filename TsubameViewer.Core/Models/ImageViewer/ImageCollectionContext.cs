@@ -489,7 +489,7 @@ public sealed class FolderStructureCacheContext : IDisposable
 
 
     readonly static Core.AsyncLock _asyncLock = new();
-    public async Task HandleDiffImages<T>(RangeObservableCollection<T> items,
+    public async Task HandleDiffImages<T>(RangeObservableCollection<T> items,        
         Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
         Func<T, string> itemToPathConv,
         CancellationToken ct)
@@ -562,7 +562,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         }
     }
 
-    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,       
+    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,        
        Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
        Func<T, string> itemToPathConv,
        CancellationToken ct)
@@ -581,7 +581,7 @@ public sealed class FolderStructureCacheContext : IDisposable
 #if DEBUG
             PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
 #endif
-            uint oneTimeLoadCount = 250;
+            uint oneTimeLoadCount = 1000;
             cached = [];
             uint currentCount = 0;
             var loadTask = query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);

@@ -297,6 +297,10 @@ public sealed partial class EPubRenderer : UserControl
         {
             sb.Append($"writing-mode: vertical-lr !important;");
         }
+        else
+        {
+            sb.Append($"writing-mode: inherit !important;");
+        }
         sb.Append("}");
 
         sb.Append("body, p, span, strong, small, h1, h2, h3, h4, h5, h6{");

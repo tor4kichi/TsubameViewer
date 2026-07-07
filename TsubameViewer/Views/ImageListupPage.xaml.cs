@@ -1,9 +1,11 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using I18NPortable;
+using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
+using I18NPortable;
 using Microsoft.UI.Xaml.Controls;
 using R3;
 using Reactive.Bindings;
@@ -26,6 +28,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Helpers;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -42,38 +45,12 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
-using CommunityToolkit.WinUI;
 
 #nullable enable
 namespace TsubameViewer.Views;
-
-
-public static class ObservableCollectionExtensions
-{
-    public static void InsertSorted<T>(this IList<T> collection, T item, Comparison<T> comparison)
-    {
-        int index = 0;
-        while (index < collection.Count && comparison(collection[index], item) is int c && c < 0)
-        {
-            if (c == 0) { return; }
-            index++;
-        }
-        collection.Insert(index, item);
-    }
-
-    public static void InsertSortedDescending<T>(this IList<T> collection, T item, Comparison<T> comparison)
-    {
-        int index = 0;
-        while (index < collection.Count && comparison(collection[index], item) is int c && c > 0)
-        {
-            if (c == 0) { return; }
-            index++;
-        }
-        collection.Insert(index, item);
-    }
-}
 
 [ObservableObject]
 public sealed partial class ImageListupPage : Page, ITitlebarContentAware
@@ -104,13 +81,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         Loaded += FolderListupPage_Loaded;
         Unloaded += FolderListupPage_Unloaded;
 
+        FileItemsRepeater_Line.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
 
+        FileItemsRepeater_Line.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
+        FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;        
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -119,11 +98,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) => 
         {            
-            if (_realizedItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false) is { } itemVM
-            && GetCurrentDisplayItemsRepeater() is { } itemsRepeater)
+            if (_realizedItems.FirstOrDefault(x => x.Value.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false) is { } itemVM
+                && GetCurrentDisplayItemsRepeater() is { } itemsRepeater)
             {
-                var index = _vm.FileItemsView.IndexOf(itemVM);
-                var image = itemsRepeater.GetOrCreateElement(index);
+                var index = _vm.FileItemsView.IndexOf(itemVM.Value);
+                var image = index < 0 ? null : itemsRepeater.GetOrCreateElement(index);
                 m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                 {
                     return (UIElement?)image;
@@ -163,6 +142,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         ClearSelection();
 
+        Debug.WriteLine($"Images RealizedItems: {_realizedItems.Count}");
+        
         base.OnNavigatingFrom(e);
     }
 
@@ -170,12 +151,47 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
+
+        if (e.Parameter is INavigationParameters parameters
+            && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
+            && query is string dirtyPath
+            && Uri.UnescapeDataString(dirtyPath) is { } path
+            && path == _vm.DisplayCurrentPath)
+        {
+            _realizedItems.ToObservable()
+                .ForEachAsync(async (x) => 
+                {
+                    var (elem, itemVM) = x;
+                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
+                    itemVM.RestoreThumbnailLoadingTask(ct);
+
+                }, ct).FireAndForgetSafe();
+        }
+        else
+        {
+            _realizedItems.Clear();
+        }
+        _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
+        {
+            if (_vm.Selection.IsSelectionModeEnabled)
+            {
+                _vm.Selection.EndSelection();
+            }
+            else
+            {
+                _vm.Selection.StartSelection();
+            }
+
+            _vm.FileDeleteCommand.NotifyCanExecuteChanged();
+        });
+
+        HandleCreateFolderDialogTextChanging(ct);
+        
         async Task d()
         {
-            var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
-
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
             await _vm.ObservePropertyChanged(x => x.NowProcessing)
                 .Where(x => x)
@@ -187,20 +203,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .Take(1)
                 .WaitAsync(ct);
             Debug.WriteLine($"NowProcessing: {_vm.NowProcessing}");
-
-            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
-            {
-                if (_vm.Selection.IsSelectionModeEnabled)
-                {
-                    _vm.Selection.EndSelection();
-                }
-                else
-                {
-                    _vm.Selection.StartSelection();
-                }
-
-                _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-            });
 
             try
             {
@@ -216,21 +218,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             catch (OperationCanceledException) { }
 
-            InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
-            HandleCreateFolderDialogTextChanging(ct);
-
-            // itemVM側の非同期ロックに期待して全部を一気に処理させる
-            // ここでawaitをつけるとUIの応答性が下がるので避けたい
-            using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
-            try
-            {
-                foreach (var itemVM in items.ArraySegment)
-                {
-                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                }
-            }
-            catch (OperationCanceledException) { }
+            InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");            
         }
     }
 
@@ -350,47 +338,111 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         return mode.ToString();
     }
 
-    ObservableCollection<IStorageItemViewModel> _realizedItems = [];    
-    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Environment.ProcessorCount / 2);
+    readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
+    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly List<BitmapImage> _cacheImages = [];
+
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-    {        
-        if (args.Element is FrameworkElement fe)
-        {            
-            if (fe.DataContext is IStorageItemViewModel itemVM)
+    {
+        if (args.Element is FrameworkElement fe
+            && fe.DataContext is IStorageItemViewModel itemVM)
+        {
+            if (_realizedItems.TryAdd(args.Element, itemVM) is false) { return; }
+
+            if (itemVM.Image == null&&
+                _cacheImages.ElementAtOrDefault(0) is { } image)
             {
-                _realizedItems.Add(itemVM);
+                _cacheImages.RemoveAt(0);
+                itemVM.Image = image;
+            }
+
+            try
+            {
+                var imageControl = fe.FindDescendant<Image>();
+                imageControl?.Opacity = 0;
                 await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
                 if (itemVM.ImageAspectRatioWH != null)
-                {
-                    await itemVM.InitializeAsync(_navigationCt);
+                {                    
+                    await itemVM.InitializeAsync(_navigationCt);                    
                 }
                 else
                 {
-                    try
+                    using (await _imageGeneratingLock.LockAsync(_navigationCt))
                     {
-                        using (await _imageGeneratingLock.LockAsync(_navigationCt))
-                        {
-                            await itemVM.InitializeAsync(_navigationCt);
-                        }
+                        await itemVM.InitializeAsync(_navigationCt);
                     }
-                    catch (OperationCanceledException) { }
                 }
+                imageControl?.Opacity = 1;
             }
+            catch (OperationCanceledException) { }
         }
     }
 
     void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
     {
-        if (args.Element is FrameworkElement fe)
+        if (_realizedItems.Remove(args.Element, out var itemVM))
         {
-            if (fe.DataContext is IStorageItemViewModel itemVM)
+            var imageControl = args.Element.FindDescendant<Image>();
+            imageControl?.Opacity = 0;
+
+            var image = itemVM.Image;
+            if (image != null)
             {
-                _realizedItems.Remove(itemVM);
-                itemVM.StopImageLoading();
+                _cacheImages.Add(image);
             }
+            itemVM.StopImageLoading();
         }
     }
 
+    bool _isMiddleButtonPressed;
+    private void ImageListItem_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        var ppp = e.GetCurrentPoint(null).Properties;
+        //fe.CapturePointer(e.Pointer);
+        _isMiddleButtonPressed = ppp.IsMiddleButtonPressed;
+    }
+
+    private void ImageListItem_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        //fe.ReleasePointerCapture(e.Pointer);
+    }
+
+    private void MyButton_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        var fe = (FrameworkElement)sender;
+        if (fe.DataContext is not IStorageItemViewModel itemVM) { return; }
+        if (_vm.Selection.IsSelectionModeEnabled
+            || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
+        {
+            itemVM.IsSelected = !itemVM.IsSelected;
+            ItemSelectedProcess(itemVM);
+            e.Handled = true;
+        }
+        else if (_isMiddleButtonPressed)
+        {
+            _vm.FavoriteToggleCommand.Execute(itemVM);
+            e.Handled = true;
+        }
+        else if (fe.FindDescendantOrSelf<Image>() is { } image
+            && _vm.OpenImageViewerCommand is ICommand command
+            && command.CanExecute(image.DataContext))
+        {
+            if (image.Source != null)
+            {
+                SaveScrollStatus(fe);
+                var anim = ConnectedAnimationService.GetForCurrentView()
+                    .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
+                anim.Configuration = new BasicConnectedAnimationConfiguration();
+            }
+
+            command.Execute(image.DataContext);
+            e.Handled = true;
+        }
+
+        _isMiddleButtonPressed = false;
+    }
 
     readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
             .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50));
@@ -407,13 +459,19 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _zoomUpAnimation
                 .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
                 .Start(image);
-        }
 
-        if (item.DataContext is IStorageItemViewModel itemVM)
-        {
-            if (itemVM.Image?.IsAnimatedBitmap ?? false)
+            if (image.DataContext is IStorageItemViewModel itemVM)
             {
-                itemVM.Image.Play();
+                if (!itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
+                {
+                    _ = itemVM.InitializeAsync(_navigationCt);
+                }
+            }
+
+            if (image.Source is BitmapImage bitmapImage
+                && bitmapImage.IsAnimatedBitmap)
+            {
+                bitmapImage.Play();
             }
         }
     }
@@ -428,13 +486,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
             .Start(image);
 
-        if (item.DataContext is IStorageItemViewModel itemVM)
+        if (image.Source is BitmapImage bitmapImage
+                && bitmapImage.IsAnimatedBitmap)
         {
-            if (itemVM.Image?.IsAnimatedBitmap ?? false)
-            {
-                itemVM.Image.Stop();
-            }
-        }
+            bitmapImage.Stop();
+        }        
     }
 
     [RelayCommand]
@@ -458,7 +514,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         SaveScrollStatus(item);
 
-        var image = item.FindDescendantOrSelf<Image>();
+        var image = item.FindDescendantOrSelf<Windows.UI.Xaml.Controls.Image>();
         if (image?.Source != null)
         {
             var anim = ConnectedAnimationService.GetForCurrentView()
@@ -468,40 +524,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     int _lastSelectedItemIndex = -1;
-    void ImageListItem_Clicked(object sender, RoutedEventArgs e)
-    {
-        var fe = (FrameworkElement)sender;
-        if (_vm.Selection.IsSelectionModeEnabled
-            || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
-            )
-        {
-            if (fe.DataContext is IStorageItemViewModel itemVM)
-            {
-                itemVM.IsSelected = !itemVM.IsSelected;
-                ItemSelectedProcess(itemVM);
-            }
-
-            return;
-        }
-
-        Image? image = fe.FindDescendantOrSelf<Image>();
-        if (image != null 
-            && _vm.OpenImageViewerCommand is ICommand command
-            && command.CanExecute(image.DataContext)
-            )
-        {
-            if (image.Source != null)
-            {
-                SaveScrollStatus(fe);
-
-                var anim = ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
-                anim.Configuration = new BasicConnectedAnimationConfiguration();
-            }
-
-            command.Execute(image.DataContext);
-        }
-    }
+    
 
     [ObservableProperty]
     IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();
