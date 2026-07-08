@@ -800,6 +800,7 @@ public sealed partial class FolderListupPageViewModel
                             Selection);
                     }));
 
+                    NowLoading = false;
                     DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
                         try
@@ -814,7 +815,6 @@ public sealed partial class FolderListupPageViewModel
                         }
                         catch (OperationCanceledException) { }
 
-                        NowLoading = false;
                     }).FireAndForgetSafe();
 
                     IsReadyToFavoriteFilterDisplay = true;
