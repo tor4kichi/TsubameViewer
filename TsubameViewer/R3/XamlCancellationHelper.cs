@@ -70,7 +70,7 @@ public static class XamlCancellationHelper
             if (page.Frame.Content != page)
             {
                 // 既に別のページに移動しているキャンセル済みとして扱う
-                cts.Cancel();
+                _ = Task.Run(cts.Cancel);
                 Debug.WriteLine($"GetCancellationTokenOnNavigatingFrom already canceled: {page.GetType().Name}");
             }
             else
@@ -88,7 +88,7 @@ public static class XamlCancellationHelper
             if (page.Frame.Content != page)
             {
                 // 既に別のページに移動しているキャンセル済みとして扱う
-                cts.Cancel();
+                _ = Task.Run(cts.Cancel);
                 Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] already canceled: {page.GetType().Name}");
             }
             else
@@ -107,7 +107,7 @@ public static class XamlCancellationHelper
         {
             try
             {
-                cts.Cancel();
+                _ = Task.Run(cts.Cancel);
             }
             catch { }
             Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] Cancel: {element.GetType().Name}");

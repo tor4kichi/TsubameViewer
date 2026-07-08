@@ -142,9 +142,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly FocusHelper _focusHelper;
 
 
-    Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
-    readonly List<BitmapImage> _cacheImages = [];
-
+    // 2並列あればキャッシュ読み込みにも生成時にも十分なスピード
+    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
+    
+    readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
@@ -158,14 +159,14 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             {
                 _realizedItems.Add(args.ItemContainer, itemVM);
 
-                if (itemVM.Image == null &&
-                    _cacheImages.ElementAtOrDefault(0) is { } image)
-                {
-                    _cacheImages.RemoveAt(0);
-                    itemVM.Image = image;
+                itemVM.Image = imageControl?.Source as BitmapImage;
+                using (_vm._thumbnailManager.GetCachedThumbnailSize(itemVM.Path) != null
+                    ? Disposable.Empty
+                    : await _imageGeneratingLock.LockAsync(_navigationCt))
+                {                    
+                    if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
+                    await itemVM.InitializeAsync(_navigationCt);
                 }
-
-                await itemVM.InitializeAsync(_navigationCt);
                 imageControl?.Opacity = 1;
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
                 await itemVM.ObservePropertyChanged(x => x.IsInitialized)
@@ -215,11 +216,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             else
             {
                 _realizedItems.Remove(args.ItemContainer);
-                var image = itemVM.Image;
-                if (image != null)
-                {
-                    _cacheImages.Add(image);
-                }
                 itemVM.StopImageLoading();
             }
         }
@@ -255,7 +251,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     }
 
 
-    AsyncLock _imageGenerationLock = new AsyncLock(Environment.ProcessorCount / 2);
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();

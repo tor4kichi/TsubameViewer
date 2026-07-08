@@ -830,11 +830,12 @@ public sealed partial class ImageListupPageViewModel
 
                         HasFileItem = ImageFileItems.Any();
 
+                        NowLoadingItems = false;
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
                             try
                             {
-                                await Task.Delay(50);
+                                await Task.Delay(3000);
                                 // Note: リネームを検知したいので同数チェックしない
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
@@ -842,8 +843,7 @@ public sealed partial class ImageListupPageViewModel
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
                            
-                                HasFileItem = ImageFileItems.Any();
-                                NowLoadingItems = false;
+                                HasFileItem = ImageFileItems.Any();                                
                             }
                             catch (OperationCanceledException) { }
                         }).FireAndForgetSafe();

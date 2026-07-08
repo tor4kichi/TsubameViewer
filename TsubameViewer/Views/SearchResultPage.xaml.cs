@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -52,6 +53,7 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
     }
 
+    readonly AsyncLock _imageGenerationLock = new AsyncLock(2);
     async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.Item is not IStorageItemViewModel itemVM) { return; }
@@ -60,7 +62,10 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         if (!args.InRecycleQueue)
         {
             ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
-            await itemVM.InitializeAsync(_navigationCt);
+            using (await _imageGenerationLock.LockAsync(_navigationCt))
+            {
+                await itemVM.InitializeAsync(_navigationCt);
+            }
         }
         else
         {
