@@ -427,31 +427,17 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _isMiddleButtonPressed = false;
     }
-
-    readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
-            .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50));
-
-    readonly AnimationBuilder _zoomDownAnimation = AnimationBuilder.Create()
-            .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(50));
-
+    
     void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
         var item = (FrameworkElement)sender;
         var image = item.FindChild<Image>();
         if (image != null)
         {
-            _zoomUpAnimation
+            AnimationBuilder.Create()
+                .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(1))
                 .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
                 .Start(image);
-
-            if (image.DataContext is IStorageItemViewModel itemVM)
-            {
-                if (!itemVM.IsRequestImageLoading && !itemVM.IsInitialized)
-                {
-                    _ = itemVM.InitializeAsync(_navigationCt);
-                    image.Opacity = 1;
-                }
-            }
 
             if (image.Source is BitmapImage bitmapImage
                 && bitmapImage.IsAnimatedBitmap)
@@ -467,12 +453,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         var item = (FrameworkElement)sender;
         var image = item.FindChild<Image>();
         if (image == null) { return; }
-        _zoomDownAnimation
+        
+        AnimationBuilder.Create()
+            .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(1))
             .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
             .Start(image);
 
         if (image.Source is BitmapImage bitmapImage
-                && bitmapImage.IsAnimatedBitmap)
+            && bitmapImage.IsAnimatedBitmap)
         {
             bitmapImage.Stop();
         }        

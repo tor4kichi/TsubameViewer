@@ -708,9 +708,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         ).ToArray();
 
     int _currentZoomFactorIndex;
-    static readonly TimeSpan _defaultZoomingDuration = TimeSpan.FromMilliseconds(150);
-    readonly AnimationBuilder _zoomCenterAb = AnimationBuilder.Create();
-
+    static readonly TimeSpan _defaultZoomingDuration = TimeSpan.FromMilliseconds(150);    
     const float _controlerZoomCenterMoveAmount = 100.0f;
     float GetZoomCenterMoveingFactorForMouseTouch()
     {
@@ -767,7 +765,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 if (_nowZoomCenterMovingWithPointer is false)
                 {
-                    _zoomCenterAb.CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
+                    AnimationBuilder.Create().CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
                 }
             }),
             this.ObserveDependencyProperty(IsZoomingEnabledProperty)

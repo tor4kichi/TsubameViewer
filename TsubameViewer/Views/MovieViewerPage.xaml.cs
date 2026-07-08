@@ -2271,8 +2271,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     int _currentZoomFactorIndex;
     static readonly TimeSpan _defaultZoomingDuration = TimeSpan.FromMilliseconds(150);
-    readonly AnimationBuilder _zoomCenterAb = AnimationBuilder.Create();
-
+    
     const float _controlerZoomCenterMoveAmount = 100.0f;
     float GetZoomCenterMoveingFactorForMouseTouch()
     {
@@ -2325,7 +2324,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 if (_nowZoomCenterMovingWithPointer is false)
                 {
-                    _zoomCenterAb.CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(MyMediaPlayerElement);
+                    AnimationBuilder.Create().CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(MyMediaPlayerElement);
                 }
             })
             .AddTo(ref db);
