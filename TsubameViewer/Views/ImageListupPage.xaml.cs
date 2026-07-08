@@ -339,8 +339,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
-    readonly AsyncLock _imageGeneratingLock = new AsyncLock(2);
-    
+    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
+    readonly AsyncLock _loadingFromCacheLock = new AsyncLock(Math.Max(2, Environment.ProcessorCount - Environment.ProcessorCount / 4));
+
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
@@ -354,8 +355,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 var imageControl = fe.FindDescendant<Image>();
                 imageControl?.Opacity = 0;
                 itemVM.Image = imageControl?.Source as BitmapImage;
-                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
-                using (await _imageGeneratingLock.LockAsync(_navigationCt))
+                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);                
+                using (itemVM.ImageAspectRatioWH != null 
+                    ? await _loadingFromCacheLock.LockAsync(_navigationCt)
+                    : await _imageGeneratingLock.LockAsync(_navigationCt))
                 {
                     // Note: ここでreturnすると読み込まれないケースが頻発する
                     await itemVM.InitializeAsync(_navigationCt);
