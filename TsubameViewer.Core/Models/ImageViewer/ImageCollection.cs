@@ -9,9 +9,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using Windows.Storage;
+using ZLinq;
 using static TsubameViewer.Core.Models.ImageViewer.ArchiveFileInnerStructureCache;
 
 namespace TsubameViewer.Core.Models.ImageViewer;
@@ -31,7 +33,7 @@ public interface IImageCollectionDirectoryToken
     string Key { get; }
 }
 
-public record ArchiveDirectoryToken(string DirectoryPath, IArchive Archive, IArchiveEntry Entry, bool IsRoot) : IImageCollectionDirectoryToken
+public record ArchiveDirectoryToken(string DirectoryPath, IArchive Archive, IArchiveEntry? Entry, bool IsRoot) : IImageCollectionDirectoryToken
 {
     public string Key => DirectoryPath;
 
@@ -46,6 +48,18 @@ public interface IImageCollectionWithDirectory : IImageCollection
 }
 
 
+public sealed class ImageCollectionDirectoryTokenEqualityComparar : IEqualityComparer<IImageCollectionDirectoryToken>
+{
+    public bool Equals(IImageCollectionDirectoryToken x, IImageCollectionDirectoryToken y)
+    {
+        return x.Key.Equals(y.Key, StringComparison.Ordinal);
+    }
+
+    public int GetHashCode(IImageCollectionDirectoryToken obj)
+    {
+        return (int)HashHelper.CalculateFNV1a64(obj.Key);
+    }
+}
 
 public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDisposable
 {
@@ -54,9 +68,9 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
     private readonly ArchiveFileInnerSturcture _archiveFileInnerStructure;
     private readonly CompositeDisposable _disposables;
-    private readonly ImmutableList<ArchiveDirectoryToken> _directories;
+    private readonly ArchiveDirectoryToken[] _directories;
 
-    private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new();
+    private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new(new ImageCollectionDirectoryTokenEqualityComparar());
 
     private readonly IImageSource[] _imageSourcesCache;
     private readonly ImmutableSortedDictionary<string, int> _KeyToIndex;
@@ -126,44 +140,41 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         {
             var entry = Archive.Entries.First();
             RootDirectoryToken ??= new ArchiveDirectoryToken(entry.GetDirectoryPath(), Archive, entry, true);
-            _directories = new[] { RootDirectoryToken }.ToImmutableList();
+            _directories = [RootDirectoryToken];
         }
         else if (_FileByFolder.Count == 1)
         {
             var entry = GetEntryFromKey(_FileByFolder.Keys.ElementAt(0));
             RootDirectoryToken ??= new ArchiveDirectoryToken(entry.GetDirectoryPath(), Archive, entry, true);
-            _directories = new[] { RootDirectoryToken }.ToImmutableList();
+            _directories = [RootDirectoryToken];
         }
         else
         {
-            _directories = _FileByFolder.Where(x => x.Value.Any()).Select(x => x.Key).Select(x => 
-            {
-                if (x.EndsWith(Path.DirectorySeparatorChar) is false && x.EndsWith(Path.AltDirectorySeparatorChar) is false)
+            HashSet<string> _dirPathMap = new HashSet<string>(StringComparer.Ordinal);
+            _directories = _FileByFolder
+                .AsValueEnumerable()
+                .Where(x => x.Value.Any())
+                .SelectMany(x =>
                 {
-                    return x + structure.FolderPathSeparator;
-                }
-                else
-                {
-                    return x;
-                }
-            })
-                .SelectMany(x => 
-                {
-                    var sepChar = structure.FolderPathSeparator;
-                    var dirNames = _archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(x).Split(sepChar, StringSplitOptions.RemoveEmptyEntries);
-                    for (var i = 1; i < dirNames.Length; i++)
-                    {                            
-                        dirNames[i] = $"{dirNames[i - 1]}{sepChar}{dirNames[i]}";
+                    var allPaths = new List<(string, IArchiveEntry)> {  };
+                    var currentPath = x.Key;
+                    while (!string.IsNullOrEmpty(currentPath))
+                    {
+                        if (currentPath.Length > 1 && !_dirPathMap.Contains(currentPath, StringComparer.Ordinal))
+                        {
+                            allPaths.Add((currentPath + Path.DirectorySeparatorChar, GetEntryFromKey(x.Key)));
+                            _dirPathMap.Add(currentPath);
+                        }
+                        currentPath = Path.GetDirectoryName(currentPath);
                     }
 
-                    return dirNames;
-                })                    
-                .Select(GetEntryFromKey)
+                    return allPaths;
+                })
                 .Select(x => new ArchiveDirectoryToken(
-                    _archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(x.GetDirectoryPath()), Archive, x, false)
-                    )
-                .Distinct()
-                .OrderBy(x => x.Key).ToImmutableList();
+                    _archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(x.Item1),
+                    Archive, x.Item2, false))
+                .OrderBy(x => x.Key)
+                .ToArray();
 
             RootDirectoryToken ??= new ArchiveDirectoryToken(string.Empty, Archive, null, true);
         }
@@ -174,7 +185,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
     private IArchiveEntry GetEntryFromKey(string key)
     {
-        return Archive.Entries.ElementAt(GetIndexFromKey(key));
+        return Archive.Entries.ElementAt(GetIndexFromKey(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(key)));
     }
 
     private int GetIndexFromKey(string key)
@@ -235,42 +246,46 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
             : false;
     }
 
+    object _lock = new();
     public List<IImageSource> GetImagesFromDirectory(ArchiveDirectoryToken token)
     {
-        token ??= RootDirectoryToken;
-
-        if (_entriesCacheByDirectory.TryGetValue(token, out var entries)) { return entries; }
-        if (token != RootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
-
-        //if (token?.Key is not null && _FileByFolder.Keys.FirstOrDefault(x => token.Key.StartsWith(x)) is not null and var folderKey)
-        //{
-        //    var filesIndexies = _FileByFolder[folderKey];
-        //    var imageSourceItems = filesIndexies.Select(x => GetImageAt(x, FileSortType.None, token)).ToList();
-        //    _entriesCacheByDirectory.Add(token, imageSourceItems);
-        //    return imageSourceItems;
-        //}
-        //else
+        lock (_lock)
         {
-            var imageSourceItems = (token.IsRoot
-                ? Archive.Entries.Where(x => x.IsRootDirectoryEntry() || x.IsSameDirectoryPath(token.Entry))
-                : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
-                )
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x =>
-                {
-                    var index = GetIndexFromKey(x.Key);
-                    if (_imageSourcesCache[index] is not null and var image)
+            token ??= RootDirectoryToken;
+
+            if (_entriesCacheByDirectory.TryGetValue(token, out var entries)) { return entries; }
+            if (token != RootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
+
+            //if (token?.Key is not null && _FileByFolder.Keys.FirstOrDefault(x => token.Key.StartsWith(x)) is not null and var folderKey)
+            //{
+            //    var filesIndexies = _FileByFolder[folderKey];
+            //    var imageSourceItems = filesIndexies.Select(x => GetImageAt(x, FileSortType.None, token)).ToList();
+            //    _entriesCacheByDirectory.Add(token, imageSourceItems);
+            //    return imageSourceItems;
+            //}
+            //else
+            {
+                var imageSourceItems = (token.IsRoot
+                    ? Archive.Entries.Where(x => x.IsRootDirectoryEntry() || x.IsSameDirectoryPath(token.Entry))
+                    : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
+                    )
+                    .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                    .Select(x =>
                     {
-                        return image;
-                    }
+                        var index = GetIndexFromKey(x.Key);
+                        if (_imageSourcesCache[index] is not null and var image)
+                        {
+                            return image;
+                        }
 
-                    var dirToken = GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(x.Key)));
-                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this);
-                })
-                .ToList();
+                        var dirToken = GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(x.Key)));
+                        return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this);
+                    })
+                    .ToList();
 
-            _entriesCacheByDirectory.Add(token, imageSourceItems);
-            return imageSourceItems;
+                _entriesCacheByDirectory.Add(token, imageSourceItems);
+                return imageSourceItems;
+            }
         }
     }
 
@@ -282,7 +297,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
     public IEnumerable<IImageSource> GetAllImages()
     {
-        if (_directories.Count == 0)
+        if (_directories.Length == 0)
         {
             return GetImagesFromDirectory(RootDirectoryToken);
         }

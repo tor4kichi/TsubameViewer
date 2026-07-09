@@ -21,7 +21,9 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
     {
         _imageCollection = archiveImageCollection;
         _directoryToken = directoryToken;
-        Name = _directoryToken.Label is not null ? new string(_directoryToken.Label.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar && c != System.IO.Path.AltDirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
+        Name = _directoryToken.Label is not null 
+            ? System.IO.Path.GetFileName(_directoryToken.Label)
+            : _imageCollection.Name;
         Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, directoryToken.Key);
     }
 
