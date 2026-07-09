@@ -913,8 +913,7 @@
         </ComboBox>
 
         <Slider x:Name="PageSelector"
-                uwpControls:DockPanel.Dock="Bottom"
-                Value="{Binding CurrentImageIndex, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                uwpControls:DockPanel.Dock="Bottom"                
                 Minimum="0"
                 Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
                 ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"

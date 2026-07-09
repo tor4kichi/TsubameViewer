@@ -110,6 +110,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    private void PageSelector_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        //_vm.CurrentImageIndex = (int)e.NewValue;
+    }
+
+
     [ObservableProperty]
     int _pageSelectorCandidateImageIndex;
 
@@ -161,11 +167,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 PageSelector.Value = _vm.CurrentImageIndex;
             }
         }
-    }
+    }    
 
     readonly CoreApplicationView _coreAppView;
     Vector2 _lastPointerPosition;
-    int _lastPageChangeRequestImageIndex;
+    int _lastPageChangeRequestImageIndex;    
     void RefreshPageSelectorTooltipContainerTranslation()
     {
         bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
@@ -271,7 +277,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 ToggleOpenCloseBottomUI();
             }            
         });
-        
+
+        DisposableBuilder db = new();
         _messenger.CreateObservable<ImageLoadedMessage>()
             .ToObservable()
             .Take(1)
@@ -279,7 +286,17 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 _ = StartNavigatedAnimationAsync(_navigationCt);
             })
-            .RegisterTo(_navigationCt);
+            .AddTo(ref db);
+
+        _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
+            .Subscribe(x =>
+            {
+                if (!_nowPressedOnPageSlider)
+                {
+                    PageSelector.Value = x;
+                }
+            })
+            .AddTo(ref db);
 
         var thumbnailManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
         this.ObservePropertyChanged(x => x.PageSelectorCandidateImageIndex, false)
@@ -312,7 +329,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 s.MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
                 Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
             }, AwaitOperation.Drop)
-            .RegisterTo(_navigationCt);
+            .AddTo(ref db);
+
+        db.Build().RegisterTo(_navigationCt);
 
         AnimationBuilder.Create()
             .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
