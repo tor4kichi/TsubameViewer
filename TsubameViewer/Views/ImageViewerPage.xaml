@@ -442,8 +442,9 @@
     <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
     
     <!-- ボタン類 -->
-    <Grid x:Name="ButtonsContainer" 
-                Background="{ThemeResource SystemChromeMediumHighColor}"  
+    <Grid x:Name="ButtonsContainer"
+          Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+          Background="{ThemeResource SystemChromeMediumHighColor}"  
                 Grid.ColumnSpan="3"
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Center"
@@ -646,7 +647,9 @@
 
 
 
-    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemChromeMediumHighColor}" 
+    <Border x:Name="ImageSelectorContainer" 
+            Background="{ThemeResource SystemChromeMediumHighColor}"
+            Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"

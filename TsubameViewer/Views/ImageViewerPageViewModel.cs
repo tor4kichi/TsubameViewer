@@ -45,9 +45,11 @@ using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 
 namespace TsubameViewer.ViewModels;
 
-public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
+public sealed class ImageLoadedMessage : ValueChangedMessage<Unit>
 {
-    
+    public ImageLoadedMessage() : base(Unit.Default)
+    {
+    }
 }
 
 
@@ -1020,7 +1022,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                 NowImageLoadingLongRunning = false;
 
-                await _messenger.Send(new ImageLoadedMessage());
+                _messenger.Send(new ImageLoadedMessage());
 
                 await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
             }
@@ -1189,7 +1191,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                                 imageSource2, await thumbnailLoadTask2
                                     );
 
-                            await _messenger.Send(new ImageLoadedMessage());
+                            _messenger.Send(new ImageLoadedMessage());
                         }                            
                     }
 
@@ -1251,7 +1253,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                                 sizeCheckResult.Slot1Image, await thumbnailLoadTask
                                     );
 
-                            await _messenger.Send(new ImageLoadedMessage());
+                            _messenger.Send(new ImageLoadedMessage());
                         }
                     }
 
