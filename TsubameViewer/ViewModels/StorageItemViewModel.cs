@@ -157,12 +157,9 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     {
         IsInitialized = false;
         IsRequestImageLoading = false;
-        _initializeCts?.Cancel();
     }
 
-    CancellationTokenSource? _initializeCts;
-
-    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new();
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
@@ -184,7 +181,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
 
-            //using var d = await _asyncLock.LockAsync(ct);
+            using var d = await _asyncLock.LockAsync(ct);
 
             //if (Type == StorageItemTypes.Movie
             //    && Item.StorageItem is Windows.Storage.StorageFile file)
@@ -200,20 +197,17 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
                 ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 if (IsRequestImageLoading is false) { return; }
 
+                stream.Seek(0, System.IO.SeekOrigin.Begin);
+                using (await _imageLoadingLock.LockAsync(ct))
                 {
-                    stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    using (var l = await _imageLoadingLock.LockAsync(ct))
-                    {
-                        var image = Image ?? new BitmapImage() { AutoPlay = false };
-                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                        Image = image;
-                    }
+                    var image = Image ?? new BitmapImage() { AutoPlay = false };
+                    await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                    Image = image;
                 }
-            }            
+           }            
 
             _isRequireLoadImageWhenRestored = false;
             IsInitialized = true;
-
         }
         catch (OperationCanceledException)
         {
@@ -243,10 +237,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             Debug.WriteLine(ex.ToString());
-        }
-        finally
-        {
-            _initializeCts = null;
         }
     }
 

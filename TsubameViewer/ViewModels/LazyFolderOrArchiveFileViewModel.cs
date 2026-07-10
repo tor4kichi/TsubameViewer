@@ -172,7 +172,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             Guard.IsNotNull(Item);
 
             _status = LoadingStatus.NowLoading;
-            //using (await _asyncLock.LockAsync(ct))
+            using (await _asyncLock.LockAsync(ct))
             {
                 if (_status is not LoadingStatus.NowLoading) { return; }
                 if (Item == null) { return; }
@@ -182,7 +182,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    //using (var l = await _imageLoadingLock.LockAsync(ct))
+                    using (await _imageLoadingLock.LockAsync(ct))
                     {
                         var image = Image ?? new BitmapImage() { AutoPlay = false };
                         await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
@@ -426,6 +426,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     }
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
+    readonly static Core.AsyncLock _imageLoadingLock = new(1);
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
         return new ValueTask();
@@ -467,9 +468,14 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     if (_status is not LoadingStatus.NowLoading) { return; }
-                    var image = Image ?? new BitmapImage() { AutoPlay = false };
-                    await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
-                    Image = image;
+
+                    // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
+                    using (await _imageLoadingLock.LockAsync(ct))
+                    {
+                        var image = Image ?? new BitmapImage() { AutoPlay = false };
+                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        Image = image;
+                    }
                 }
 
                 // Note: 20msぐらい掛かるのでInitializeで実行
