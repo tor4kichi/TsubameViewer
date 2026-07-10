@@ -17,6 +17,7 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using VersOne.Epub;
 using Windows.Storage;
 using Windows.Storage.Search;
 
@@ -135,6 +136,12 @@ public sealed class ImageCollectionManager
                     (imageCollectionContext as IDisposable)?.Dispose();
                     throw new NotImplementedException();
                 }
+            }
+            else if (file.IsSupportedEBookFile())
+            {
+                var epubBookRef = await EpubReader.OpenBookAsync(await file.OpenStreamForReadAsync());
+                var imageCollectionContext = new EPubImageCollectionContext(new EPubImageCollection(file, epubBookRef));
+                return (new StorageItemImageSource(file), imageCollectionContext);
             }
             else if (file.IsSupportedMovieFile())
             {

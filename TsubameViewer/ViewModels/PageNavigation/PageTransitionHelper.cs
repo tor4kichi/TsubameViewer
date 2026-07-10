@@ -53,6 +53,10 @@ namespace TsubameViewer.ViewModels.PageNavigation
             {
                 return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(imageSource.StorageItem.Path, imageSource.Name))));
             }
+            else if (imageSource is EpubLocalImageSource epubImageSource)
+            {
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
+            }
             else if (imageSource is ArchiveDirectoryImageSource archiveFolderImageSource)
             {
                 return CreatePageParameter(archiveFolderImageSource);

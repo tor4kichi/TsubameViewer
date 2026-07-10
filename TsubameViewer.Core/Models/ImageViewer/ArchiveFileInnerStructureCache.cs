@@ -141,12 +141,13 @@ public sealed class ArchiveFileInnerStructureCache
             items.Add(entry.Key);
             if (entry.IsDirectory)
             {
-                directoryEntryIndex.Add(entry.Key, index);
-
-                var directoryName = entry.Key;
-                if (filesByFolder.TryGetValue(directoryName, out var filesIndexiesInFolder) is false)
+                if (directoryEntryIndex.TryAdd(entry.Key, index))
                 {
-                    filesByFolder.Add(directoryName, filesIndexiesInFolder = new());                    
+                    var directoryName = entry.Key;
+                    if (filesByFolder.TryGetValue(directoryName, out var filesIndexiesInFolder) is false)
+                    {
+                        filesByFolder.Add(directoryName, filesIndexiesInFolder = new());
+                    }
                 }
             }
             else

@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.Navigation;
+using VersOne.Epub;
 using Windows.ApplicationModel.Payments;
 using Windows.Storage;
 using ZLinq;
@@ -451,5 +453,83 @@ public sealed class PdfImageCollection : IImageCollection
             FileSortType.UpdateTimeDecending => (int)_sizes.Length - index - 1,
             _ => throw new NotSupportedException(sort.ToString())
         });
+    }
+}
+
+
+public sealed class EPubImageCollection : IImageCollection
+{
+    public EPubImageCollection(StorageFile file, EpubBookRef epubBookRef)
+    {
+        File = file;
+        EpubBookRef = epubBookRef;
+    }
+
+    public string Name => File.Name;
+
+    public StorageFile File { get; }
+    public EpubBookRef EpubBookRef { get; }
+
+    public IEnumerable<IImageSource> GetAllImages()
+    {
+        foreach (var image in EpubBookRef.Content.Images.Local)
+        {
+            yield return new EpubLocalImageSource(File, image);
+        }
+    }
+
+    public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
+    {
+        return new(new EpubLocalImageSource(File, EpubBookRef.Content.Images.Local.ElementAtOrDefault(index)));
+    }
+
+    public ValueTask<int> GetImageCountAsync(CancellationToken ct)
+    {
+        return new (EpubBookRef.Content.Images.Local.Count);
+    }
+
+    public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    {
+        var item = EpubBookRef.Content.Images.GetLocalFileRefByKey(key);
+        return new(EpubBookRef.Content.Images.Local.IndexOf(item));
+    }
+}
+
+public sealed class EpubLocalImageSource : IImageSource
+{
+    private readonly EpubLocalByteContentFileRef _imageFileRef;
+
+    public EpubLocalImageSource(StorageFile file, EpubLocalByteContentFileRef imageFileRef)
+    {
+        File = file;
+        _imageFileRef = imageFileRef;
+        Path = PageNavigationConstants.MakeStorageItemIdWithPage(File.Path, imageFileRef.Key);
+    }
+
+    public IStorageItem StorageItem => File;
+
+    public string Name => System.IO.Path.GetFileName(_imageFileRef.Key);
+
+    public string Path { get; }
+
+    public DateTime DateCreated => DateTime.Today;
+
+    public SizeF? PreCulcuratedSize => null;
+
+    public StorageFile File { get; }
+
+    public bool Equals(IImageSource other)
+    {
+        return _imageFileRef == (other as EpubLocalImageSource)?._imageFileRef;
+    }
+
+    public ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default)
+    {        
+        return new (_imageFileRef.GetContentStream());
+    }
+
+    public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
+    {
+        return default;
     }
 }

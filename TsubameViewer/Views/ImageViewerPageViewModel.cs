@@ -2146,7 +2146,17 @@ public class PrefetchImageInfo : IDisposable
                     {
                         try
                         {
-                            await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(linkedCt);
+                            if (stream.CanSeek)
+                            {
+                                await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(linkedCt);
+                            }
+                            else
+                            {
+                                using var memoryStream = _recyclable.GetStream();
+                                stream.CopyTo(memoryStream);
+                                memoryStream.Seek(0, SeekOrigin.Begin);
+                                await image.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(linkedCt);
+                            }
                         }
                         catch (Exception ex) when (ex.HResult == -1072868846)
                         {

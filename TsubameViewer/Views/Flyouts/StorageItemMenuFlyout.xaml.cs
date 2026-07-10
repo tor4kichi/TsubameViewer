@@ -96,13 +96,13 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         if (itemVM.Item is StorageItemImageSource or ArchiveEntryImageSource or PdfPageImageSource)
         {
             OpenListupItem.CommandParameter = itemVM;
-            OpenListupItem.Visibility = (itemVM.Type == Core.Models.StorageItemTypes.Archive || itemVM.Type == Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            OpenListupItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.EBook).TrueToVisible();
 
             OpenViewerItem.CommandParameter = itemVM;
-            OpenViewerItem.Visibility = (itemVM.Type == Core.Models.StorageItemTypes.Archive || itemVM.Type == Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            OpenViewerItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.EBook).TrueToVisible();
             
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
-            SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Movie).TrueToVisible();
+            SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.EBook or Core.Models.StorageItemTypes.Movie).TrueToVisible();
             RemoveFromAccessListMenuItem.CommandParameter = itemVM;
             RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
 

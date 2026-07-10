@@ -92,6 +92,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         Index = itemIndex;
         _fileSortType = fileSortType;
         _messenger = messenger;
+        ImageAspectRatioWH = 0.5f;
     }
 
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
@@ -178,7 +179,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 {
                     if (stream is null || stream.Length == 0) { return; }
 
-                    ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+                    ImageAspectRatioWH = (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var image = Image ?? new BitmapImage() { AutoPlay = false };

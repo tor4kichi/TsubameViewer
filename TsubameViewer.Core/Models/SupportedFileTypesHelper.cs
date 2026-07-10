@@ -212,6 +212,7 @@ public static class SupportedFileTypesHelper
         {
             StorageItemImageSource storageItem => storageItem.ItemTypes,
             PdfPageImageSource _ => StorageItemTypes.Image,
+            EpubLocalImageSource => StorageItemTypes.EBook,
             ArchiveEntryImageSource _ => StorageItemTypes.Image,
             ArchiveDirectoryImageSource _ => StorageItemTypes.ArchiveFolder,
             Albam.AlbamImageSource _ => StorageItemTypes.Albam,
