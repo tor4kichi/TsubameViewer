@@ -163,10 +163,12 @@ public sealed class ImageCollectionManager
         if (imageCollection is ArchiveImageCollection aic)
         {
             var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : aic.RootDirectoryToken;
-            if (archiveDirectoryPath is not null && directoryToken is null)
+            while ((directoryToken?.Children.Count ?? 0) == 1)
             {
-                throw new ArgumentException("not found directory in Archive file : " + archiveDirectoryPath);
+                directoryToken = directoryToken.Children[0];
             }
+
+            directoryToken ??= aic.RootDirectoryToken;
             return new ArchiveImageCollectionContext(aic, directoryToken);
         }
         else if (imageCollection is PdfImageCollection pdfImageCollection)

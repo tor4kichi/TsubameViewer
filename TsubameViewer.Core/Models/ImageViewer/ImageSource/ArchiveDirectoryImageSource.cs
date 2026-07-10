@@ -79,12 +79,12 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 
     public bool IsContainsImage()
     {
-        return _imageCollection.GetImagesFromDirectory(_directoryToken).Any();
+        return _directoryToken.FileIndexes.Length > 0;
     }
 
     public bool IsContainsSubDirectory()
     {
-        return _imageCollection.GetSubDirectories(_directoryToken).Any();
+        return _directoryToken.Children.Count >= 2;
     }
 
     public IArchiveEntry GetParentDirectoryEntry()

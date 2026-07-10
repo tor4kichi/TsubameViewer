@@ -26,13 +26,13 @@ public sealed class ArchiveFileInnerStructureCache
         /// </summary>
         public int[] FileIndexies { get; set; }
 
-        public int[] FolderIndexies { get; set; }
-
+        //public int[] FolderIndexies { get; set; }
         public int[] FileIndexiesSortWithDateTime { get; set; }
 
         public string RootDirectoryPath { get; set; }
 
         public Dictionary<string, int[]> FilesByFolder { get; set; }
+        public Dictionary<string, int> DirectoryEntryIndex { get; set; }
         
         public char FolderPathSeparator { get; set; }
 
@@ -133,7 +133,7 @@ public sealed class ArchiveFileInnerStructureCache
     {
         List<string> items = new List<string>();
         List<(IArchiveEntry Entry, int Index)> fileIndexies = new();
-        List<int> folderIndexies = new();
+        Dictionary<string, int> directoryEntryIndex = new();
         Dictionary<string, List<int>> filesByFolder = new();
         char? folderPathSepalator = null;
         foreach (var (entry, index) in archive.Entries.Select((x, i) => (x, i)))
@@ -141,12 +141,12 @@ public sealed class ArchiveFileInnerStructureCache
             items.Add(entry.Key);
             if (entry.IsDirectory)
             {
-                folderIndexies.Add(index);
+                directoryEntryIndex.Add(entry.Key, index);
 
                 var directoryName = entry.Key;
                 if (filesByFolder.TryGetValue(directoryName, out var filesIndexiesInFolder) is false)
                 {
-                    filesByFolder.Add(directoryName, filesIndexiesInFolder = new());
+                    filesByFolder.Add(directoryName, filesIndexiesInFolder = new());                    
                 }
             }
             else
@@ -162,6 +162,11 @@ public sealed class ArchiveFileInnerStructureCache
 
                 filesIndexiesInFolder.Add(index);
 
+                if (!directoryEntryIndex.ContainsKey(directoryName))
+                {
+                    directoryEntryIndex.Add(directoryName, index);
+                }
+
                 if (folderPathSepalator == null)
                 {
                     if (entry.Key.Any(c => c == Path.DirectorySeparatorChar))
@@ -173,6 +178,23 @@ public sealed class ArchiveFileInnerStructureCache
                         folderPathSepalator = Path.AltDirectorySeparatorChar;
                     }
                 }
+            }
+
+            // FilesByFolder を作るループ内に、各 file のディレクトリ parent を遡る処理を追加
+            var dir = Path.GetDirectoryName(entry.Key) ?? string.Empty;
+            while (dir != null)
+            {
+                if (!filesByFolder.ContainsKey(dir))
+                {
+                    filesByFolder[dir] = new List<int>(); // 空のリスト（直下ファイルは後で追加）
+                }
+
+                if (!directoryEntryIndex.ContainsKey(dir))
+                {
+                    directoryEntryIndex.Add(dir, index);
+                }
+
+                dir = Path.GetDirectoryName(dir);
             }
 
             ct.ThrowIfCancellationRequested();
@@ -197,7 +219,8 @@ public sealed class ArchiveFileInnerStructureCache
             Path = path,
             Items = items.ToArray(),
             FileIndexies = fileIndexies.Select(x => x.Index).ToArray(),
-            FolderIndexies = folderIndexies.ToArray(),
+            //FolderIndexies = folderIndexies.ToArray(),
+            DirectoryEntryIndex = directoryEntryIndex,
             FileIndexiesSortWithDateTime = fileIndexiesSortWithDateTime,
             FilesByFolder = filesByFolder.ToDictionary(x => x.Key, x => x.Value.ToArray()),
             FolderPathSeparator = folderPathSepalator.Value,

@@ -715,7 +715,7 @@ public sealed partial class FolderListupPageViewModel
 
                     // 新規アイテム
                     List<StorageItemViewModel> items = [];
-                    await foreach (var item in imageCollectionContext.GetLeafFoldersAsync(ct).WithCancellation(ct))
+                    await foreach (var item in imageCollectionContext.GetFolderOrArchiveFilesAsync(ct).WithCancellation(ct))
                     {
                         if (item == null) { continue; }
 
