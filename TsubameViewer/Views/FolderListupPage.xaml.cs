@@ -168,11 +168,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     await itemVM.InitializeAsync(_navigationCt);
                 }
                 imageControl?.Opacity = 1;
-                // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                await itemVM.ObservePropertyChanged(x => x.IsInitialized)
-                    .Where(x => x)
-                    .Take(1)
-                    .WaitAsync(_navigationCt);
+                // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない                
                 if (itemVM.Item != null)
                 {
                     var imageHeight = _vm.FolderItemDisplayWithLandscape ? 140 : 244;

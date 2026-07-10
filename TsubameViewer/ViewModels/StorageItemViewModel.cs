@@ -184,7 +184,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
 
-            using var d = await _asyncLock.LockAsync(ct);
+            //using var d = await _asyncLock.LockAsync(ct);
 
             //if (Type == StorageItemTypes.Movie
             //    && Item.StorageItem is Windows.Storage.StorageFile file)
@@ -196,7 +196,8 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Length == 0) { return; }
-                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
+                
+                ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 if (IsRequestImageLoading is false) { return; }
 
                 {

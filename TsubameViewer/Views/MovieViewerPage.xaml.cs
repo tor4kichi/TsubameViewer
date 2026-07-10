@@ -2228,8 +2228,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void VolumeChange(double normalizedRelativeValue)
     {
-        double vol = SoundVolume_Display == 0 ? _vm.PageSettings.SoundVolume : SoundVolume_Display + normalizedRelativeValue;
-        SetSoundVolumeFromCode(Math.Clamp(vol, 0.0, 1.0));
+        double vol = Math.Clamp(SoundVolume_Display == 0 ? _vm.PageSettings.SoundVolume : SoundVolume_Display + normalizedRelativeValue, 0.0, 1.0);        
+        SetSoundVolumeFromCode(vol);
+        _vm.PageSettings.SoundVolume = vol;
     }
 
 

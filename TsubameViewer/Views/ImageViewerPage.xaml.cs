@@ -89,8 +89,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
         _coreAppView = CoreApplication.GetCurrentView();
-        Loaded += OnLoaded;
-        Unloaded += OnUnloaded;            
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -112,79 +110,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    void OnUnloaded(object sender, RoutedEventArgs e)
+    private void PageSelector_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
-        IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
-        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
-        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
-
-        KeyDown -= ImageViewerPage_KeyDown;
-
-        Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
+        //_vm.CurrentImageIndex = (int)e.NewValue;
     }
 
-    void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        CloseBottomUI();
-
-        IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-        IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
-        IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
-
-        IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
-        IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
-        IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-
-        KeyDown += ImageViewerPage_KeyDown;
-
-        Window.Current.CoreWindow.PointerPressed += CoreWindow_PageSlider_PointerPressed;
-        Window.Current.CoreWindow.PointerReleased += CoreWindow_PageSlider_PointerReleased;
-        Window.Current.CoreWindow.PointerMoved += CoreWindow_PageSlider_PointerMoved;
-
-        var thumbnailManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
-        this.ObservePropertyChanged(x => x.PageSelectorCandidateImageIndex, false)
-            .DistinctUntilChanged()
-            .Debounce(TimeSpan.FromMilliseconds(10))
-            .SubscribeAwait((this, thumbnailManager), static async (x, state, ct) => 
-            {
-                var (s, thumbnailManager) = state;
-                //if (s._lastPointerDeviceType == PointerDeviceType.Touch)
-                {
-                    //s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
-                    //return;
-                }
-
-                long ts = TimeProvider.System.GetTimestamp();
-
-                var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
-                using (var imageStream = await thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct))
-                {
-                    if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
-                    {
-                        s.MovieSeekbarTooltipImage.Source  = image = new BitmapImage();
-                    }
-
-                    await image.SetSourceAsync(imageStream.AsRandomAccessStream());
-
-                    s.MovieSeekbarTooltipImage.Source = image;                    
-                }
-
-                s.MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
-                Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
-            }, AwaitOperation.Drop)
-            .RegisterTo(this.GetCancellationTokenOnUnloaded());
-
-        AnimationBuilder.Create()
-            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
-            .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
-            .Start(ButtonsContainer);
-        AnimationBuilder.Create()
-            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
-            .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
-            .Start(ImageSelectorContainer);
-    }
 
     [ObservableProperty]
     int _pageSelectorCandidateImageIndex;
@@ -237,11 +167,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 PageSelector.Value = _vm.CurrentImageIndex;
             }
         }
-    }
+    }    
 
     readonly CoreApplicationView _coreAppView;
     Vector2 _lastPointerPosition;
-    int _lastPageChangeRequestImageIndex;
+    int _lastPageChangeRequestImageIndex;    
     void RefreshPageSelectorTooltipContainerTranslation()
     {
         bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
@@ -317,13 +247,27 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         (_vm.BackNavigationCommand as ICommand).Execute(null);
     }
 
-    R3.CompositeDisposable? _navigationDisposables;
-    CancellationTokenSource? _navigaitonCts;
     CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
-        _navigationDisposables = new R3.CompositeDisposable();
+        
+        _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        CloseBottomUI();
+
+        IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
+        IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
+        IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
+
+        IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
+        IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
+        IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
+
+        KeyDown += ImageViewerPage_KeyDown;
+
+        Window.Current.CoreWindow.PointerPressed += CoreWindow_PageSlider_PointerPressed;
+        Window.Current.CoreWindow.PointerReleased += CoreWindow_PageSlider_PointerReleased;
+        Window.Current.CoreWindow.PointerMoved += CoreWindow_PageSlider_PointerMoved;
 
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
         {
@@ -334,30 +278,69 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }            
         });
 
-        _navigaitonCts = new CancellationTokenSource();
-        var ct = _navigationCt = _navigaitonCts.Token;
-        bool isFirst = true;
-        _messenger.Register<ImageLoadedMessage>(this, (r, m) => 
-        {
-            async Task<R3.Unit> DelayReply()
-            { 
-                _navigationDisposables.Add(InitializeZoomReaction());
-
-                await StartNavigatedAnimationAsync(ct);
-
-                return R3.Unit.Default;
-            }
-
-            if (isFirst)
+        DisposableBuilder db = new();
+        _messenger.CreateObservable<ImageLoadedMessage>()
+            .ToObservable()
+            .Take(1)
+            .Subscribe(m =>
             {
-                isFirst = false;
-                m.Reply(DelayReply());
-            }
-            else
+                _ = StartNavigatedAnimationAsync(_navigationCt);
+            })
+            .AddTo(ref db);
+
+        _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
+            .Subscribe(x =>
             {
-                m.Reply(R3.Unit.Default);
-            }
-        });
+                if (!_nowPressedOnPageSlider)
+                {
+                    PageSelector.Value = x;
+                }
+            })
+            .AddTo(ref db);
+
+        var thumbnailManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
+        this.ObservePropertyChanged(x => x.PageSelectorCandidateImageIndex, false)
+            .DistinctUntilChanged()
+            .Debounce(TimeSpan.FromMilliseconds(10))
+            .SubscribeAwait((this, thumbnailManager), static async (x, state, ct) =>
+            {
+                var (s, thumbnailManager) = state;
+                //if (s._lastPointerDeviceType == PointerDeviceType.Touch)
+                {
+                    //s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    //return;
+                }
+
+                long ts = TimeProvider.System.GetTimestamp();
+
+                var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
+                using (var imageStream = await thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct))
+                {
+                    if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
+                    {
+                        s.MovieSeekbarTooltipImage.Source = image = new BitmapImage();
+                    }
+
+                    await image.SetSourceAsync(imageStream.AsRandomAccessStream());
+
+                    s.MovieSeekbarTooltipImage.Source = image;
+                }
+
+                s.MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+                Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
+            }, AwaitOperation.Drop)
+            .AddTo(ref db);
+
+        db.Build().RegisterTo(_navigationCt);
+
+        AnimationBuilder.Create()
+            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+            .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
+            .Start(ButtonsContainer);
+        AnimationBuilder.Create()
+            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+            .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
+            .Start(ImageSelectorContainer);
 
         AnimationBuilder.Create()
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
@@ -368,14 +351,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationDisposables?.Dispose();
-
-        _navigaitonCts?.Cancel();
-        _navigaitonCts?.Dispose();
-        _navigaitonCts = null;
-
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);
-        _messenger.Unregister<ImageLoadedMessage>(this);
+        IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
+        IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
+        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
+        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
+        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
+        KeyDown -= ImageViewerPage_KeyDown;
+        Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);        
 
         d().FireAndForgetSafe();
         async Task d()
@@ -416,6 +399,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
     {
+        InitializeZoomReaction()
+            .RegisterTo(navigationCt);
+
         IsReadyToImageDisplay = true;
         while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
         {
@@ -646,8 +632,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     void ShowBottomUI()
     {
         IsOpenBottomMenu = true;
-        ButtonsContainer.Visibility = Visibility.Visible;
-        ImageSelectorContainer.Visibility = Visibility.Visible;
 
         if (_focusHelper.IsRequireSetFocus())
         {
@@ -658,8 +642,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     void CloseBottomUI()
     {
         IsOpenBottomMenu = false;
-        ButtonsContainer.Visibility = Visibility.Collapsed;
-        ImageSelectorContainer.Visibility = Visibility.Collapsed;
     }
 
 

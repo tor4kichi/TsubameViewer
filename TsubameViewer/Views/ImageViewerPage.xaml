@@ -442,8 +442,9 @@
     <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
     
     <!-- ボタン類 -->
-    <Grid x:Name="ButtonsContainer" 
-                Background="{ThemeResource SystemChromeMediumHighColor}"  
+    <Grid x:Name="ButtonsContainer"
+          Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+          Background="{ThemeResource SystemChromeMediumHighColor}"  
                 Grid.ColumnSpan="3"
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Center"
@@ -646,7 +647,9 @@
 
 
 
-    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemChromeMediumHighColor}" 
+    <Border x:Name="ImageSelectorContainer" 
+            Background="{ThemeResource SystemChromeMediumHighColor}"
+            Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
@@ -692,7 +695,7 @@
                           ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
                           uwpControls:DockPanel.Dock="Left"    
                           IsEnabled="True"
-                          Height="40"
+                          Height="48"
                           Width="56"
                           Padding="8 0"
                           ctwu:FrameworkElementExtensions.Cursor="Hand">
@@ -724,7 +727,7 @@
             <muxc:DropDownButton x:Name="Page1ActionButton"
                                  HorizontalAlignment="Stretch"
                                  HorizontalContentAlignment="Stretch"
-                                 Height="40"
+                                 Height="48"
                                  Margin="8 0 0 0"
                                  IsAccessKeyScope="True"
                                  AccessKey="1"
@@ -738,10 +741,9 @@
                            VerticalAlignment="Center"
                            FontSize="12"
                            Margin="0 0 0 0"
-                           HorizontalAlignment="Center"
+                           MaxLines="2"    
                            TextWrapping="Wrap"
-                           MaxLines="2"
-                           TextTrimming="CharacterEllipsis">
+                           TextAlignment="Center">
                   <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
                 </TextBlock>
               </uwpControls:DockPanel>
@@ -787,7 +789,7 @@
                           CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}"
                           ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
                           uwpControls:DockPanel.Dock="Right"
-                          Height="40"
+                          Height="48"
                           Width="56"
                           Padding="8 0"
                           ctwu:FrameworkElementExtensions.Cursor="Hand">
@@ -819,7 +821,7 @@
             <muxc:DropDownButton x:Name="Page2ActionButton"
                                  HorizontalAlignment="Stretch"
                                  HorizontalContentAlignment="Stretch"
-                                 Height="40"
+                                 Height="48"
                                  Margin="0 0 8 0"
                                  IsAccessKeyScope="True"
                                  AccessKey="2"
@@ -882,7 +884,8 @@
         <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
              XYFocus*を使って強制的に移動先を指定している 
         -->
-        <ComboBox x:Name="PageFolderNamesSelector" uwpControls:DockPanel.Dock="Top"
+        <ComboBox x:Name="PageFolderNamesSelector"
+                  uwpControls:DockPanel.Dock="Top"
                   ItemsSource="{Binding PageFolderNames}"
                   SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
                   SelectionChangedTrigger="Committed"
@@ -891,8 +894,14 @@
                   HorizontalContentAlignment="Center"
                   Margin="0 4"
                   AccessKey="3"
-                  ctwu:FrameworkElementExtensions.Cursor="Hand"
-                  >
+                  ctwu:FrameworkElementExtensions.Cursor="Hand">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}"
+                         TextAlignment="DetectFromContent"
+                         TextWrapping="Wrap"/>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
           <i:Interaction.Behaviors>
             <i:EventTriggerBehavior EventName="SelectionChanged">
               <i:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" >
@@ -910,8 +919,7 @@
         </ComboBox>
 
         <Slider x:Name="PageSelector"
-                uwpControls:DockPanel.Dock="Bottom"
-                Value="{Binding CurrentImageIndex, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                uwpControls:DockPanel.Dock="Bottom"                
                 Minimum="0"
                 Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
                 ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"

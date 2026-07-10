@@ -47,7 +47,12 @@ public sealed class OpenImageViewerCommand : CommandBase
             await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
 
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
+            if (type is StorageItemTypes.Image 
+                or Core.Models.StorageItemTypes.EBook
+                or StorageItemTypes.Archive 
+                or StorageItemTypes.Folder 
+                or StorageItemTypes.Albam 
+                or StorageItemTypes.AlbamImage)
             {
                 var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                 var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
@@ -55,7 +60,7 @@ public sealed class OpenImageViewerCommand : CommandBase
             else if (type == StorageItemTypes.EBook)
             {
                 var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                var result = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+                var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
             }
             else if (type == StorageItemTypes.Movie)
             {

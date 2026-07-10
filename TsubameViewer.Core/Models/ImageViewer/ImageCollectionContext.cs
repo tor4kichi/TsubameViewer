@@ -1188,3 +1188,88 @@ public sealed class PdfImageCollectionContext : IImageCollectionContext
         throw new NotSupportedException();
     }
 }
+
+
+
+
+public sealed class EPubImageCollectionContext : IImageCollectionContext
+{
+    private readonly EPubImageCollection _ePubImageCollection;
+
+    public EPubImageCollectionContext(EPubImageCollection ePubImageCollection)
+    {
+        _ePubImageCollection = ePubImageCollection;
+    }
+
+    public string Name => _ePubImageCollection.Name;
+
+    public bool IsSupportedFolderContentsChanged => false;
+
+    public bool IsSupportFolderOrArchiveFilesIndexAccess => false;
+
+    public Observable<Unit> CreateFolderAndArchiveFileChangedObserver() => Observable.Empty<Unit>();
+    public Observable<Unit> CreateImageFileChangedObserver() => Observable.Empty<Unit>();
+
+    public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+    {
+        return AsyncEnumerable.Empty<IImageSource>();
+    }
+
+    public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
+    {
+        return AsyncEnumerable.Empty<IImageSource>();
+    }
+
+    public IAsyncEnumerable<IImageSource> GetAllImageFilesAsync(CancellationToken ct)
+    {
+        return _ePubImageCollection.GetAllImages().ToAsyncEnumerable();
+    }
+
+    public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
+    {
+        return _ePubImageCollection.GetAllImages().ToAsyncEnumerable();
+    }
+
+    public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+    {
+        return new(false);
+    }
+
+    public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
+    {
+        return new(_ePubImageCollection.GetAllImages().Any());
+    }
+
+
+    public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
+    {
+        return _ePubImageCollection.GetImageCountAsync(ct);
+    }
+
+    public ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+    {
+        return _ePubImageCollection.GetImageAtAsync(index, sort, ct);
+    }
+
+    public ValueTask<int> GetImageFileIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    {
+        return _ePubImageCollection.GetIndexFromKeyAsync(key, sort, ct);
+    }
+
+    public ValueTask<int> GetFolderOrArchiveFilesCountAsync(CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+
+    public ValueTask<IImageSource> GetFolderOrArchiveFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+
+    public ValueTask<int> GetFolderOrArchiveFilesIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+

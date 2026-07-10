@@ -327,9 +327,14 @@ public sealed class ThumbnailImageManager
             {
                 try
                 {
-                    await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputStream;
+                    using (imageSource is EpubLocalImageSource 
+                        ? await _renderLock.LockAsync(ct)
+                        : Disposable.Empty)
+                    {
+                        await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                        UploadWithRetry(itemId, imageSource.Name, outputStream);
+                        return outputStream;
+                    }
                 }
                 catch
                 {
@@ -963,6 +968,7 @@ public sealed class ThumbnailImageManager
         _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
             Path = replacedId,
+            PathHash = HashHelper.CalculateFNV1a64(replacedId),
             ImageWidth = (uint)resizedBitmap.Width,
             ImageHeight = (uint)resizedBitmap.Height,
             RatioWH = resizedBitmap.Width / (float)resizedBitmap.Height
@@ -995,6 +1001,7 @@ public sealed class ThumbnailImageManager
             _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
             {
                 Path = replacedId,
+                PathHash = HashHelper.CalculateFNV1a64(replacedId),
                 ImageWidth = decoder.PixelWidth,
                 ImageHeight = decoder.PixelHeight,
                 RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
@@ -1377,7 +1384,7 @@ public sealed class ThumbnailImageManager
             try
             {
                 var hash = HashHelper.CalculateFNV1a64(path);
-                var thumbInfo = _collection.FindById(hash);
+                var thumbInfo = _collection.FindOne(x => x.PathHash == hash);
                 //Debug.WriteLine(path);
                 if (thumbInfo is not null)
                 {

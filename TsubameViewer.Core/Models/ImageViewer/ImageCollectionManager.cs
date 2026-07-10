@@ -17,6 +17,7 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using VersOne.Epub;
 using Windows.Storage;
 using Windows.Storage.Search;
 
@@ -136,6 +137,12 @@ public sealed class ImageCollectionManager
                     throw new NotImplementedException();
                 }
             }
+            else if (file.IsSupportedEBookFile())
+            {
+                var epubBookRef = await EpubReader.OpenBookAsync(await file.OpenStreamForReadAsync());
+                var imageCollectionContext = new EPubImageCollectionContext(new EPubImageCollection(file, epubBookRef));
+                return (new StorageItemImageSource(file), imageCollectionContext);
+            }
             else if (file.IsSupportedMovieFile())
             {
                 // TODO: 動画列挙のコレクションコンテキスト対応
@@ -163,10 +170,12 @@ public sealed class ImageCollectionManager
         if (imageCollection is ArchiveImageCollection aic)
         {
             var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : aic.RootDirectoryToken;
-            if (archiveDirectoryPath is not null && directoryToken is null)
+            while ((directoryToken?.Children.Count ?? 0) == 1)
             {
-                throw new ArgumentException("not found directory in Archive file : " + archiveDirectoryPath);
+                directoryToken = directoryToken.Children[0];
             }
+
+            directoryToken ??= aic.RootDirectoryToken;
             return new ArchiveImageCollectionContext(aic, directoryToken);
         }
         else if (imageCollection is PdfImageCollection pdfImageCollection)

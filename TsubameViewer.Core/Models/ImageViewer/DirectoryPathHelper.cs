@@ -144,7 +144,7 @@ public static class ArchivePathExtensions
             return IsRootDirectoryEntry(target);
         }
 
-        if (target.Entry.IsDirectory)
+        if (target.Entry?.IsDirectory ?? target.DirectoryPath.Last() == Path.DirectorySeparatorChar)
         {
             return DirectoryPathHelper.IsSameDirectoryPath(parent.DirectoryPath, Path.GetDirectoryName(target.DirectoryPath));
         }

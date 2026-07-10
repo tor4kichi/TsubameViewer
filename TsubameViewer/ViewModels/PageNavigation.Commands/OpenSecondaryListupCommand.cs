@@ -174,6 +174,11 @@ public sealed class OpenSecondaryListupCommand : CommandBase
                     throw new NotSupportedException();
                 }                    
             }
+            else if (type == StorageItemTypes.EBook)
+            {
+                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+            }
             else if (imageSource is AlbamImageSource albam)
             {
                 var parameters = PageTransitionHelper.CreatePageParameter(albam);

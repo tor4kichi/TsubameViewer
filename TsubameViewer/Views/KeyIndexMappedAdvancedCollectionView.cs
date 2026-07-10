@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.ViewModels;
+using Windows.Foundation.Collections;
 
 namespace TsubameViewer.Views;
 
@@ -33,7 +34,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                 ClearKeyIndexCache();
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemInserted:
-                ClearKeyIndexCache();
+                InsertKeyIndexCache(@event);
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemRemoved:
                 {
@@ -54,6 +55,25 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                 }
                 break;
         }
+    }
+
+    private void InsertKeyIndexCache(IVectorChangedEventArgs @event)
+    {
+        int insertedIndex = (int)@event.Index;
+
+        // Dictionary を直接走査してインデックスを更新
+        foreach (var entry in _keyIndexMap)
+        {
+            if (entry.Value >= insertedIndex)
+            {
+                _keyIndexMap[entry.Key] = entry.Value + 1;
+            }
+        }
+
+        // 挿入されたアイテムのキーを取得してマップに追加
+        var insertedItem = this[insertedIndex];
+        var key = _toKey((T)insertedItem);
+        _keyIndexMap.Add(key, insertedIndex);
     }
 
     readonly Func<T, string> _toKey;

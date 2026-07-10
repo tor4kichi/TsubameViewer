@@ -14,6 +14,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
+using VersOne.Epub;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
