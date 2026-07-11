@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Animations;
 using I18NPortable;
 using R3;
 using System;
@@ -59,7 +60,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     readonly FocusHelper _focusHelper;
     readonly IMessenger _messenger;
 
-    readonly AsyncLock _imageGenerationLock = new AsyncLock(2);
+    readonly AsyncLock _imageGenerationLock = new AsyncLock(4);
     async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.Item is not IStorageItemViewModel itemVM) { return; }

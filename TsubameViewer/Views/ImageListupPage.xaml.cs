@@ -340,7 +340,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];    
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
-    
+
+    readonly AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
+        .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
+    readonly AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
+        .Opacity(0, duration: TimeSpan.FromMilliseconds(1));
+
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
@@ -352,8 +357,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             try
             {
                 var imageControl = fe.FindDescendant<Image>();
-                imageControl?.Opacity = 0;
-                itemVM.Image = imageControl?.Source as BitmapImage;
+                if (imageControl == null) { return; }
+                _fadeOutAnim.Start(imageControl);                
+                itemVM.Image = imageControl.Source as BitmapImage;
                 await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
                 using (itemVM.ImageAspectRatioWH != null 
                     ? Disposable.Empty
@@ -362,7 +368,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     // Note: ここでreturnすると読み込まれないケースが頻発する
                     await itemVM.InitializeAsync(_navigationCt);
                 }
-                imageControl?.Opacity = 1;
+
+                await _fadeInAnim.StartAsync(imageControl, _navigationCt);                
             }
             catch (OperationCanceledException) { }
         }
@@ -373,7 +380,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (_realizedItems.Remove(args.Element, out var itemVM))
         {
             var imageControl = args.Element.FindDescendant<Image>();
-            imageControl?.Opacity = 0;
+            if (imageControl != null)
+            {
+                _fadeOutAnim.Start(imageControl);
+            }
             itemVM.StopImageLoading();
         }
     }

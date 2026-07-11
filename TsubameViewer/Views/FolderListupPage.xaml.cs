@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Animations;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
 using R3;
@@ -141,6 +142,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
 
+    readonly AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
+        .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
+    readonly AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
+        .Opacity(0, duration: TimeSpan.FromMilliseconds(1));
 
     // 2並列あればキャッシュ読み込みにも生成時にも十分なスピード
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
@@ -153,7 +158,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         {
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
             var imageControl = args.ItemContainer.FindDescendant<Image>();
-            imageControl?.Opacity = 0;
+            if (imageControl != null)
+            {
+                _fadeOutAnim.Start(imageControl);
+            }
 
             if (!args.InRecycleQueue)
             {
@@ -167,7 +175,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
                     await itemVM.InitializeAsync(_navigationCt);
                 }
-                imageControl?.Opacity = 1;
+                if (imageControl != null)
+                {
+                    _ = _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                }
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない                
                 if (itemVM.Item != null)
                 {
@@ -213,6 +224,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             {
                 _realizedItems.Remove(args.ItemContainer);
                 itemVM.StopImageLoading();
+                if (imageControl != null)
+                {
+                    _fadeOutAnim.Start(imageControl);
+                }
             }
         }
     }
