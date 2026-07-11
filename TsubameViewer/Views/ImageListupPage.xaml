@@ -159,7 +159,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -259,7 +260,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -327,6 +329,18 @@
               </Border.RenderTransform>
             </Border>
           </Grid>
+
+          <Border Background="{ThemeResource SystemAltMediumColor}"
+                  CornerRadius="8"
+                  Padding="6 2"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="2"
+                  Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  IsHitTestVisible="False">
+            <TextBlock Text="GIF"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
 
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
@@ -432,6 +446,18 @@
             </Border>
           </Grid>
 
+          <Border Background="{ThemeResource SystemAltMediumColor}"
+                  CornerRadius="8"
+                  Padding="6 2"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="2"
+                  Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  IsHitTestVisible="False">
+            <TextBlock Text="GIF"
+                       Style="{StaticResource CaptionTextBlockStyle}"/>
+          </Border>
+          
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
               <VisualState x:Name="VS_ToggleButtonCollapsed" />
@@ -468,7 +494,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -533,6 +560,18 @@
               </Border.RenderTransform>
             </Border>
           </Grid>
+
+          <Border Background="{ThemeResource SystemAltMediumColor}"
+                  CornerRadius="8"
+                  Padding="6 2"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="2"
+                  Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  IsHitTestVisible="False">
+            <TextBlock Text="GIF"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
 
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>

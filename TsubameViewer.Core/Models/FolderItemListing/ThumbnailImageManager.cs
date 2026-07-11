@@ -332,9 +332,10 @@ public sealed class ThumbnailImageManager
                         : Disposable.Empty)
                     {
                         await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                        UploadWithRetry(itemId, imageSource.Name, outputStream);
-                        return outputStream;
                     }
+
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
+                    return outputStream;
                 }
                 catch
                 {
