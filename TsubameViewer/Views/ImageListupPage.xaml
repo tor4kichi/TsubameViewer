@@ -159,7 +159,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -259,7 +260,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">
@@ -468,7 +470,8 @@
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
                    CanDrag="True"
-                   DragStarting="ItemControl_DragStarting">
+                   DragStarting="ItemControl_DragStarting"
+                   DataContext="{x:Bind}">
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
                                                     IsRequireFocus="True">

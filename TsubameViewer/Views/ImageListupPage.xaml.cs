@@ -419,20 +419,20 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _vm.FavoriteToggleCommand.Execute(itemVM);
             e.Handled = true;
         }
-        else if (fe.FindDescendantOrSelf<Image>() is { } image
-            && _vm.OpenImageViewerCommand is ICommand command
-            && command.CanExecute(image.DataContext))
+        else if (_vm.OpenImageViewerCommand is ICommand command
+            && command.CanExecute(itemVM))
         {
-            if (image.Source != null)
+            command.Execute(itemVM);
+            e.Handled = true;
+
+            if (fe.FindDescendantOrSelf<Image>() is { } image
+                && image.Source != null)
             {
                 SaveScrollStatus(fe);
                 var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();
             }
-
-            command.Execute(image.DataContext);
-            e.Handled = true;
         }
 
         _isMiddleButtonPressed = false;
