@@ -330,6 +330,18 @@
             </Border>
           </Grid>
 
+          <Border Background="{ThemeResource SystemAltMediumColor}"
+                  CornerRadius="8"
+                  Padding="6 2"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="2"
+                  Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  IsHitTestVisible="False">
+            <TextBlock Text="GIF"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
               <VisualState x:Name="VS_ToggleButtonCollapsed" />
@@ -434,6 +446,18 @@
             </Border>
           </Grid>
 
+          <Border Background="{ThemeResource SystemAltMediumColor}"
+                  CornerRadius="8"
+                  Padding="6 2"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="2"
+                  Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  IsHitTestVisible="False">
+            <TextBlock Text="GIF"
+                       Style="{StaticResource CaptionTextBlockStyle}"/>
+          </Border>
+          
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
               <VisualState x:Name="VS_ToggleButtonCollapsed" />
@@ -536,6 +560,18 @@
               </Border.RenderTransform>
             </Border>
           </Grid>
+
+          <Border Background="{ThemeResource SystemAltMediumColor}"
+                  CornerRadius="8"
+                  Padding="6 2"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="2"
+                  Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+                  IsHitTestVisible="False">
+            <TextBlock Text="GIF"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
 
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
