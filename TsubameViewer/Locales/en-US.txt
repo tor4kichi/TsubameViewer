@@ -285,8 +285,11 @@ MovieViewer_Settings = Movie viewer settings
 IsAutoRepeatEnablingEnabled = Enable automatic loop playback.
 AutoRepeatEnablingTime = Maximum playback time (in seconds) for automatically enabling loop playback.
 AutoRepeatEnabling = Loop playback: Enabled (automatic)
-
-
+IsDetectSimiralyFileNameNeighborsEnabled = Detect Previous and Next Video Files
+IsDetectSimiralyFileNameNeighborsEnabled_Desc = This feature detects video files before and after the currently playing video that have similar filenames, allowing you to navigate to them.
+ThresholdOfSimilarityFileNameNaighborsNormalized = Similarity Threshold for Identifying Previous and Next Files
+ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = Similarity is calculated based on the Levenshtein distance between filename strings. Taking into account a generous amount of supplementary information beyond just the episode title, the default threshold is set to 60%.
+IsAutoMoveToNextEnabled = Automatically Skip to the Next Video File When Playback Finishes
 
 
 #### SearchResult
@@ -314,7 +317,6 @@ Favorite_AddItem = Add to Favorites
 Favorite_RemoveItem = Remove from Favorites
 Favorite_Added = Add {0} to Favorites
 Favorite_Removed = Remove {0} from Favorites
-Favorite_ShowOnlyFavorite = Favorites only
 
 
 #### FolderOrArchiveResturcture

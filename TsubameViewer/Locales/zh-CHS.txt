@@ -285,8 +285,11 @@ MovieViewer_Settings = 视频查看器设置
 IsAutoRepeatEnablingEnabled = 启用自动循环播放。
 AutoRepeatEnablingTime = 自动启用循环播放的最大播放时间（以秒为单位）。
 AutoRepeatEnabling = 循环播放：已启用（自动）
-
-
+IsDetectSimiralyFileNameNeighborsEnabled = 检测前后视频文件
+IsDetectSimiralyFileNameNeighborsEnabled_Desc = 可检测与正在播放视频文件名相似的前后视频文件，并实现跳转
+ThresholdOfSimilarityFileNameNaighborsNormalized = 识别前后文件的文件名相似度
+ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = 基于文件名字符串之间的莱文斯坦距离计算相似度。考虑到除剧集名称以外的补充信息较多，默认相似度阈值设为60%。
+IsAutoMoveToNextEnabled = 播放完毕后自动跳转至下一视频文件
 
 
 #### SearchResult
@@ -314,7 +317,6 @@ Favorite_AddItem = 添加到收藏夹
 Favorite_RemoveItem = 从收藏夹中移除
 Favorite_Added = 将 {0} 添加到收藏夹
 Favorite_Removed = 将 {0} 从收藏夹中移除
-Favorite_ShowOnlyFavorite = 仅显示收藏项
 
 
 #### FolderOrArchiveResturcture

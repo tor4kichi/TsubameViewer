@@ -71,6 +71,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 using static TsubameViewer.Core.Models.FolderItemListing.ThumbnailImageManager;
+using TsubameViewer.Services.Navigation;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -476,6 +477,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         MediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
+        MediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;
 
         _playbackResources?.Dispose();
         _playbackResources = null;        
@@ -542,6 +544,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
         MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
+        MediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
@@ -602,7 +605,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
             .ToReadOnlyReactiveProperty()
             .AddTo(ref db);
-
+        
         _vm.ObservePropertyChanged(x => x.MovieFile)
             .SubscribeAwait((this, bookmarkRp, _mouseCursorAutoHideTimer), static async (x, state, ct) =>
             {
@@ -997,6 +1000,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
+    private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
+    {
+        if (_vm.NextImageSource != null
+            && _vm.PageSettings.IsAutoMoveToNextEnabled
+            && !sender.IsLoopingEnabled)
+        {
+            Observable.NextFrame()
+                .Subscribe(_ =>
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(_vm.NextImageSource);
+                    _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                });
+        }
+    }
+
     async Task OpenMediaWithDefaultAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
     {
         var mediaSource = MediaSource.CreateFromStorageFile(x);
@@ -1117,7 +1135,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _audioPlayer.Source = null;
         }
 
-        _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);
+        _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);        
     }
 
     void ClearExternalAudioTracks()

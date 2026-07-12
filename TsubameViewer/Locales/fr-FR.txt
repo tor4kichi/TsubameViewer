@@ -285,8 +285,11 @@ MovieViewer_Settings = Paramètres du visualiseur vidéo
 IsAutoRepeatEnablingEnabled = Activer la lecture en boucle automatique.
 AutoRepeatEnablingTime = Durée de lecture maximale (en secondes) pour l'activation automatique de la lecture en boucle.
 AutoRepeatEnabling = Lecture en boucle : Activée (automatique)
-
-
+IsDetectSimiralyFileNameNeighborsEnabled = Détection des fichiers vidéo précédents et suivants
+IsDetectSimiralyFileNameNeighborsEnabled_Desc = Permet de détecter les fichiers vidéo précédents et suivants dont le nom est similaire à celui du fichier en cours de lecture, afin de pouvoir y accéder.
+ThresholdOfSimilarityFileNameNaighborsNormalized = Degré de similitude des noms de fichiers considérés comme précédents ou suivants
+ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = Le degré de similitude est calculé à partir de la distance de Levenshtein entre les chaînes de caractères des noms de fichiers. En tenant compte d'un nombre important d'informations complémentaires autres que le titre de l'épisode, la valeur par défaut est fixée à 60 %.
+IsAutoMoveToNextEnabled = Passage automatique au fichier vidéo suivant à la fin de la lecture
 
 
 #### SearchResult
@@ -314,7 +317,6 @@ Favorite_AddItem = Ajouter aux favoris
 Favorite_RemoveItem = Supprimer des favoris
 Favorite_Added = Ajouter {0} aux favoris
 Favorite_Removed = Supprimer {0} des favoris
-Favorite_ShowOnlyFavorite = Uniquement mes favoris
 
 
 #### FolderOrArchiveResturcture

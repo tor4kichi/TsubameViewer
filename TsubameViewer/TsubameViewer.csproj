@@ -132,6 +132,7 @@
     </Compile>
     <Compile Include="Contracts\Navigation\IViewLocator.cs" />
     <Compile Include="Helpers\MoveFolderToOhterFolderHelper.cs" />
+    <Compile Include="Helpers\StringLevenshteinHelper.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="Locales\LocalizeConverter.cs" />
@@ -477,6 +478,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.UI.Xaml">
       <Version>2.8.7-prerelease.241119001</Version>
+    </PackageReference>
+    <PackageReference Include="Quickenshtein">
+      <Version>1.5.1</Version>
     </PackageReference>
     <PackageReference Include="R3">
       <Version>1.3.0</Version>

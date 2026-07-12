@@ -142,7 +142,24 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         30,
                         f => _movieSettings.AutoRepeatEnablingTimeInSeconds = TimeSpan.FromSeconds(f),
                         f => TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(f))
-                        ),                    
+                        ),
+                    new ToggleSwitchSettingItemViewModel<MovieViewerPageSettings>(
+                        "IsDetectSimiralyFileNameNeighborsEnabled".Translate(),
+                        "IsDetectSimiralyFileNameNeighborsEnabled_Desc".Translate(),
+                        _movieSettings,
+                        x => x.IsDetectSimiralyFileNameNeighborsEnabled),
+                    new SliderSettingItemViewModel(
+                        "ThresholdOfSimilarityFileNameNaighborsNormalized".Translate(),
+                        "ThresholdOfSimilarityFileNameNaighborsNormalized_Desc".Translate(),
+                        _movieSettings.ThresholdOfSimilarityFileNameNaighborsNormalized,
+                        0.01,
+                        0.99,
+                        0.01,
+                        f => _movieSettings.ThresholdOfSimilarityFileNameNaighborsNormalized = f),
+                    new ToggleSwitchSettingItemViewModel<MovieViewerPageSettings>(
+                        "IsAutoMoveToNextEnabled".Translate(),
+                        _movieSettings,
+                        x => x.IsAutoMoveToNextEnabled),
                 }
             },
             new SettingsGroupViewModel

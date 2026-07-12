@@ -7,6 +7,8 @@ using Microsoft.IO;
 using R3;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -18,14 +20,18 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.Storage;
+using Windows.Storage.Search;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media;
 #nullable enable
@@ -39,6 +45,9 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isRepeat = Read(false, nameof(IsRepeat));
         _isAutoRepeatEnablingEnabled = Read(true, nameof(IsAutoRepeatEnablingEnabled));
         _autoRepeatEnablingTimeInSeconds = Read(60, nameof(AutoRepeatEnablingTimeInSeconds));
+        _isDetectSimiralyFileNameNeighborsEnabled = Read(true, nameof(IsDetectSimiralyFileNameNeighborsEnabled));
+        _thresholdOfSimilarityFileNameNaighborsNormalized = Read(0.60, nameof(ThresholdOfSimilarityFileNameNaighborsNormalized));
+        _isAutoMoveToNextEnabled = Read(true, nameof(IsAutoMoveToNextEnabled));
         _isMuted = Read(false, nameof(IsMuted));
         _playbackRate = Read(1d, nameof(PlaybackRate));
         _isHorizontalMirror = Read(false, nameof(IsHorizontalMirror));
@@ -50,7 +59,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isFFmpegUseFirstToMediaSourceFactory = Read(true, nameof(IsFFmpegUseFirstToMediaSourceFactory));
         _videoFrameThumbnailSize = Read(240, nameof(VideoFrameThumbnailSize));
         _subtitleEnabledByLanguage = Read(new Dictionary<string, bool>(), "SubtitleEnabledByLanguage");
-        _isSubtitleDisplayEnabled = Read(false, nameof(IsSubtitleDisplayEnabled));
+        _isSubtitleDisplayEnabled = Read(false, nameof(IsSubtitleDisplayEnabled));        
     }
     
     bool _isRepeat;
@@ -67,12 +76,32 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         set => SetProperty(ref _isAutoRepeatEnablingEnabled, value);
     }
 
-
     int _autoRepeatEnablingTimeInSeconds;
     public TimeSpan AutoRepeatEnablingTimeInSeconds
     {
         get => TimeSpan.FromSeconds( _autoRepeatEnablingTimeInSeconds);
         set => SetProperty(ref _autoRepeatEnablingTimeInSeconds, (int)value.TotalSeconds);
+    }
+
+    bool _isDetectSimiralyFileNameNeighborsEnabled;
+    public bool IsDetectSimiralyFileNameNeighborsEnabled
+    {
+        get => _isDetectSimiralyFileNameNeighborsEnabled;
+        set => SetProperty(ref _isDetectSimiralyFileNameNeighborsEnabled, value);
+    }
+
+    double _thresholdOfSimilarityFileNameNaighborsNormalized;
+    public double ThresholdOfSimilarityFileNameNaighborsNormalized
+    {
+        get => _thresholdOfSimilarityFileNameNaighborsNormalized;
+        set => SetProperty(ref _thresholdOfSimilarityFileNameNaighborsNormalized, Math.Clamp(value, 0, 1));
+    }
+
+    bool _isAutoMoveToNextEnabled;
+    public bool IsAutoMoveToNextEnabled
+    {
+        get => _isAutoMoveToNextEnabled;
+        set => SetProperty(ref _isAutoMoveToNextEnabled, value);
     }
 
     bool _isMuted;
@@ -247,6 +276,12 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     IImageSource? _currentImageSource;
 
+    [ObservableProperty]
+    IImageSource? _prevImageSource;
+
+    [ObservableProperty]
+    IImageSource? _nextImageSource;
+
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;
@@ -281,6 +316,39 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                 }
 
                 CurrentImageSource = imageSource;
+
+                NextImageSource = null;
+                PrevImageSource = null;
+                try
+                {
+                    if (PageSettings.IsDetectSimiralyFileNameNeighborsEnabled
+                        && await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(newPath)) is StorageFolder parentFolder)
+                    {
+                        var query = parentFolder.CreateFileQuery();
+                        query.ApplyNewQueryOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedMovieFileExtensions));
+                        var currentItemIndex = await query.FindStartIndexAsync(imageSource.Name);
+
+                        if (currentItemIndex - 1 >= 0
+                            && await query.GetFilesAsync(currentItemIndex - 1, 1) is { } prevFiles
+                            && prevFiles.ElementAtOrDefault(0) is { } prevFile
+                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, prevFile.Name) >= PageSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                        {
+                            PrevImageSource = new StorageItemImageSource(prevFile);
+                        }
+
+                        if (await query.GetFilesAsync(currentItemIndex + 1, 1) is { } nextFiles
+                            && nextFiles.ElementAtOrDefault(0) is { } nextFile
+                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, nextFile.Name) >= PageSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                        {
+                            NextImageSource = new StorageItemImageSource(nextFile);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.ToString());
+                }
+
             }, ct);
 
             Guard.IsNotNull(CurrentImageSource);
@@ -303,17 +371,26 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
                     }
                 })
-                .RegisterTo(_navigationCt);
+                .RegisterTo(_navigationCt);            
         }
     }
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
-    {        
+    {
+        NextImageSource = null;
         if (MovieFile?.Path is { } path)
         {
             _messenger.Send(new LatestContentViewUpdateMessage(path));
         }
 
         base.OnNavigatedFrom(parameters);
+    }
+
+    [RelayCommand]
+    async Task OpenMovieFileAsync(IImageSource? imageSource)
+    {
+        if (imageSource == null) { return; }
+        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+        _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
     }
 }
