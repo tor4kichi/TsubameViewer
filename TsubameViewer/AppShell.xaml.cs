@@ -357,7 +357,6 @@ public sealed partial class AppShell : UserControl
         typeof(EBookViewerPage),
         typeof(MovieViewerPage),
         typeof(SettingsPage),
-        typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
 
     readonly static ImmutableHashSet<Type> _canGoBackPageTypes = new Type[]
@@ -369,7 +368,6 @@ public sealed partial class AppShell : UserControl
         typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(SettingsPage),
-        typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
 
     readonly static ImmutableHashSet<Type> _uniqueOnNavigtionStackPageTypes = new Type[]
@@ -378,7 +376,6 @@ public sealed partial class AppShell : UserControl
         typeof(EBookViewerPage),
         typeof(MovieViewerPage),
         typeof(SearchResultPage),
-        typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
 
 
@@ -396,7 +393,6 @@ public sealed partial class AppShell : UserControl
         typeof(EBookViewerPage),
         typeof(MovieViewerPage),
         typeof(SettingsPage),
-        typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
 
     bool IsOpenWithViewerPageType(Type? pageType)

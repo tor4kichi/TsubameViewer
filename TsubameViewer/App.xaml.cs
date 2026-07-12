@@ -133,7 +133,6 @@ sealed partial class App : Application
         container.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
         container.Register<IViewLocator, ViewLocator>();
         container.Register<IImageCodecService, ImageCodecService>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
-        container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
         container.Register<LocalBookmarkRepository>(reuse: Reuse.Singleton);
         container.Register<NavigationStackRepository>(reuse: Reuse.Singleton);
         container.Register<LastIntractItemRepository>(reuse: Reuse.Singleton);
@@ -152,7 +151,6 @@ sealed partial class App : Application
         container.Register<SettingsPage>();
         container.Register<SearchResultPage>();
         container.Register<AlbamListupPage>();
-        container.Register<FolderOrArchiveRestructurePage>();
         container.Register<HistoryPage>();
     }
 
@@ -203,7 +201,6 @@ sealed partial class App : Application
         container.Register<IFileControlDialogService, FileControlDialogService>();
         container.Register<IAlbamDialogService, AlbamDialogService>();
         container.Register<IStorageItemDeleteConfirmation, StorageItemDeleteConfirmDialog>();
-        container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
     }
 #if DEBUG
     class DummyMigrator : IAsyncMigrater

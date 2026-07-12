@@ -42,7 +42,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();
         SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteToggleCommand>();
         StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
-        FolderOrArchiveRestructureItem.Command = Ioc.Default.GetService<FolderOrArchiveResturctureCommand>();
         AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
         RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
         OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
@@ -124,9 +123,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             StorageItemDeleteMenuItem.CommandParameter = itemVM;
             StorageItemDeleteMenuItem.Visibility = (IsRootPage is false && itemVM.Item is StorageItemImageSource).TrueToVisible();
 
-            FolderOrArchiveRestructureItem.CommandParameter = itemVM;
-            FolderOrArchiveRestructureItem.Visibility = (!IsRootPage && itemVM.Type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder).TrueToVisible();
-
             OpenWithExplorerItem.CommandParameter = itemVM;                
             OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
 
@@ -155,7 +151,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
 
             SendOtherFolderMenuItem.Visibility = Visibility.Collapsed;
-            FolderOrArchiveRestructureItem.Visibility = Visibility.Collapsed;
         }
         else if (itemVM.Item is AlbamImageSource albamImageSource)
         {
@@ -179,8 +174,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             OpenWithExternalAppMenuItem.CommandParameter = itemVM;
             OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
-
-            FolderOrArchiveRestructureItem.Visibility = Visibility.Collapsed;
         }
         else if (itemVM.Item is AlbamItemImageSource albamItem)
         {
@@ -205,10 +198,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
                 or Core.Models.StorageItemTypes.EBook 
                 or Core.Models.StorageItemTypes.Movie 
                 or Core.Models.StorageItemTypes.Image)
-                .TrueToVisible();
-
-            FolderOrArchiveRestructureItem.CommandParameter = itemVM;
-            FolderOrArchiveRestructureItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder)
                 .TrueToVisible();
 
             OpenWithExplorerItem.CommandParameter = itemVM;
