@@ -839,6 +839,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(NextImageSource);
                     _ = _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                    _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(NextImageSource.Name));
                 }
             })
             .AddTo(ref db);

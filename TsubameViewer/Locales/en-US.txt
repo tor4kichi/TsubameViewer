@@ -191,6 +191,9 @@ IsDetectSimiralyFileNameNeighborsEnabled_Desc = Enables the detection of previou
 ThresholdOfSimilarityFileNameNaighborsNormalized = Similarity Threshold for Filenames Recognized as Previous/Next Files
 ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = Similarity is calculated based on the Levenshtein distance between filename strings. If certain cases are not being detected, lower the threshold (e.g., to 40%); conversely, if unintended content is being detected, raise the threshold (e.g., to 80%).
 IsAutoMoveToNextEnabled = Automatically Move to the Next Content Upon Completion
+AutoMoveToNext_Notice = Displaying the next “{0}”
+NextContent = Next
+PreviousContent = Previous
 
 
 #### ImageViewerPage

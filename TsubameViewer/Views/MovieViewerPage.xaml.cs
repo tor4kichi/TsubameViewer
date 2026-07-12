@@ -1011,6 +1011,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(_vm.NextImageSource);
                     _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                    _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(_vm.NextImageSource.Name));
                 });
         }
     }

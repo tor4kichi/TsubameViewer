@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI.Animations;
+using I18NPortable;
 using R3;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -378,7 +380,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     async Task ExecuteGoNextCommand()
     {
-        using (await _movePageLock.LockAsync(default))
+        using (await _movePageLock.LockAsync(_navigationCt))
         {
             var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
                 ? EPubRenderer_1
@@ -418,8 +420,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                                     true
                                     );
                     }
-
                     _vm.OpenEpubFileCommand.Execute(_vm.NextImageSource);
+                    _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(_vm.NextImageSource.Name));
                 }
             }
         }
@@ -428,7 +430,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task ExecuteGoPrevCommand()
     {
-        using (await _movePageLock.LockAsync(default))
+        using (await _movePageLock.LockAsync(_navigationCt))
         {
             var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
                 ? EPubRenderer_1

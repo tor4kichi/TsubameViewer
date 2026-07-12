@@ -191,6 +191,9 @@ IsDetectSimiralyFileNameNeighborsEnabled_Desc = Permet de détecter les contenus
 ThresholdOfSimilarityFileNameNaighborsNormalized = Degré de similitude des noms de fichiers considérés comme précédents ou suivants
 ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = Le degré de similitude est calculé à partir de la distance de Levenshtein entre les chaînes de caractères des noms de fichiers. Si certains cas ne sont pas détectés, réduisez ce pourcentage (par exemple à 40 %) ; à l'inverse, si des contenus non souhaités sont détectés, augmentez-le (par exemple à 80 %).
 IsAutoMoveToNextEnabled = Passer automatiquement au contenu suivant une fois l'affichage terminé
+AutoMoveToNext_Notice = Affichage du « {0} » suivant
+NextContent = Suivant
+PreviousContent = Précédent
 
 
 #### ImageViewerPage
