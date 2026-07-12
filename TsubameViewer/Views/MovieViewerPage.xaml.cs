@@ -1117,13 +1117,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var playbackItem = ms.CreateMediaPlaybackItem();
         playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
         await ms.OpenWithMediaPlayerAsync(MediaPlayer);
-        try
-        {
-            var mss = ms.GetMediaStreamSource();
-            mss.MaxSupportedPlaybackRate = 4.0;
-        }
-        catch { }
-
+        
         var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
         if (ms.AudioStreams.Count == 0 && ms.Duration != TimeSpan.Zero && ms.Duration != TimeSpan.MaxValue)
         {
