@@ -68,7 +68,7 @@ public sealed class StorageItemSettings : FlagsRepositoryBase
 }
 
 
-public sealed partial class StorageItemViewModel : ObservableObject, IDisposable, IStorageItemViewModel
+public sealed partial class StorageItemViewModel : ObservableObject, IStorageItemViewModel
 {
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -177,7 +177,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         try
         {
             if (IsInitialized) { return; }
-            if (_disposed) { return; }
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
 
@@ -270,14 +269,6 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     public void ThumbnailChanged()
     {
         IsInitialized = false;
+        InitializeAsync(default).FireAndForgetSafe();
     }
-
-    public void Dispose()
-    {
-        if (_disposed) { return; }
-
-        _disposed = true;
-        (Item as IDisposable)?.Dispose();
-    }
-    bool _disposed;
 }

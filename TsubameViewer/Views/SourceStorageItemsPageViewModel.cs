@@ -247,8 +247,9 @@ public sealed partial class SourceStorageItemsPageViewModel
             {
                 if (folderItem.Path == null) { continue; }
 
+                folderItem.RestoreThumbnailLoadingTask(ct);
                 folderItem.UpdateLastReadPosition();
-                if (folderItem.Name == lastIntaractItemPath)
+                if (folderItem.Name.Equals(lastIntaractItemPath, StringComparison.Ordinal))
                 {
                     folderItem.ThumbnailChanged();
                 }
@@ -278,7 +279,6 @@ public sealed partial class SourceStorageItemsPageViewModel
         var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == path);
         if (existInFolders != null)
         {
-            existInFolders.Dispose();
             Folders.Remove(existInFolders);
         }
     }

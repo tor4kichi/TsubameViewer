@@ -165,7 +165,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         try
         {
             if (IsInitialized) { return; }
-            if (_disposed) { return; }
             _status = LoadingStatus.PendingLoad;
 
             await EnsureStorageItemAsync(ct);
@@ -291,15 +290,8 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void ThumbnailChanged()
     {
-        Status = LoadingStatus.None;        
-    }
-
-    public void Dispose()
-    {
-        if (_disposed) { return; }
-
-        _disposed = true;
-        (Item as IDisposable)?.Dispose();
+        Status = LoadingStatus.None;
+        InitializeAsync(default).FireAndForgetSafe();
     }
 
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
@@ -311,8 +303,6 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     {
         return this.Path?.Equals(other.Path) ?? false;
     }
-
-    bool _disposed;
 }
 
 
@@ -451,9 +441,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         try
         {
             if (IsInitialized) { return; }
-            if (_disposed) { return; }
 
             await EnsureStorageItemAsync(ct);
+            ct.ThrowIfCancellationRequested();
             Guard.IsNotNull(Item);
             _status = LoadingStatus.NowLoading;
             using (await _asyncLock.LockAsync(ct))
@@ -589,8 +579,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
-
-        if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
+        if (Item == null || Image == null)
         {
             Status = LoadingStatus.PendingLoad;
             InitializeAsync(ct).FireAndForgetSafe();
@@ -602,18 +591,8 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         Status = LoadingStatus.None;
     }
 
-    public void Dispose()
-    {
-        if (_disposed) { return; }
-
-        _disposed = true;
-        (Item as IDisposable)?.Dispose();
-    }
-
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
         throw new NotImplementedException();
     }
-
-    bool _disposed;
 }

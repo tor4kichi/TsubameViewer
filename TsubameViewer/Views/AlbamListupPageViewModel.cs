@@ -74,7 +74,6 @@ internal sealed class AlbamListupPageViewModel : NavigationAwareViewModelBase
             var albam = Albams.Skip(1).FirstOrDefault(x => (x.Item as AlbamImageSource).AlbamId == albamId);
             if (albam is not null)
             {
-                albam.Dispose();
                 Albams.Remove(albam);
             }
         });
@@ -87,7 +86,6 @@ internal sealed class AlbamListupPageViewModel : NavigationAwareViewModelBase
             {
                 var index = Albams.IndexOf(albamVM);
                 Albams.Remove(albamVM);
-                albamVM.Dispose();
                 Albams.Insert(index, new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
             }
         });

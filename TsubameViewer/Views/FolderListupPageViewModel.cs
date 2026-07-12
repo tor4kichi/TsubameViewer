@@ -311,7 +311,6 @@ public sealed partial class FolderListupPageViewModel
         (_imageCollectionContext as IDisposable)?.Dispose();
         _imageCollectionContext = null;
 
-        CurrentFolderItem?.Dispose();
         CurrentFolderItem = null;
         _itemsDisposable?.Dispose();
         _itemsDisposable = null;
@@ -411,7 +410,6 @@ public sealed partial class FolderListupPageViewModel
                 else
                 {
                     _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
-
                     FileItemsView.RefreshFilter();
                 }
             }
@@ -436,7 +434,7 @@ public sealed partial class FolderListupPageViewModel
                 if (lastIntractItemVM != null)
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
-                    lastIntractItemVM.ThumbnailChanged();                                        
+                    lastIntractItemVM.ThumbnailChanged();
                     FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else

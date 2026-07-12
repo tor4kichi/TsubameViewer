@@ -124,11 +124,6 @@ public sealed partial class HistoryPageViewModel
             var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(100);
             if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
             {
-                foreach (var itemVM in RecentlyItems)
-                {
-                    itemVM.Dispose();
-                }
-
                 RecentlyItems.Clear();
                 foreach (var item in recentlyAccessItems)
                 {
@@ -150,9 +145,11 @@ public sealed partial class HistoryPageViewModel
                 var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
                 foreach (var item in RecentlyItems)
                 {
-                    if (item.Name == lastIntaractItemPath)
+                    item.RestoreThumbnailLoadingTask(ct);
+                    if (item.Name.Equals(lastIntaractItemPath, StringComparison.Ordinal))
                     {
                         item.ThumbnailChanged();
+                        break;
                     }
                 }
             }
