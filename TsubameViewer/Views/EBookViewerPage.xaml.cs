@@ -404,6 +404,23 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                     }
                     await _vm.GoNextImageAsync();
                 }
+                else if (_vm.ViewerSettings.IsAutoMoveToNextEnabled
+                        && _vm.NextImageSource != null)
+                {
+                    if (_vm.CurrentFolderItem != null
+                        && _vm.CurrentBookReadingOrder != null)
+                    {
+                        _vm.BookmarkManager.AddBookmarkForEBookViewer(
+                                    _vm.CurrentFolderItem.Path,
+                                    _vm.CurrentBookReadingOrder[0].FilePath,
+                                    0,
+                                    default,
+                                    true
+                                    );
+                    }
+
+                    _vm.OpenEpubFileCommand.Execute(_vm.NextImageSource);
+                }
             }
         }
     }

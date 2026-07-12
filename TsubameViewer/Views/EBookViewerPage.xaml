@@ -20,6 +20,7 @@
       xmlns:epub="using:VersOne.Epub"
       xmlns:models="using:TsubameViewer.Core.Models.EBook"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
+      xmlns:fluentIcon="using:Fluent.Icons"
       mc:Ignorable="d"
       NavigationCacheMode="Enabled"
       xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)">
@@ -536,22 +537,24 @@
         <animation:Implicit.HideAnimations>
           <animation:OpacityAnimation To="0" Duration="0:0:0.25" />
         </animation:Implicit.HideAnimations>
-        
+
         <i:Interaction.Behaviors>
           <i:EventTriggerBehavior EventName="Tapped">
             <i:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
           </i:EventTriggerBehavior>
-          <i:DataTriggerBehavior Binding="{x:Bind _vm.CurrentImageIndex, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
+          <i:DataTriggerBehavior Binding="{x:Bind _vm.CurrentImageIndex, Mode=OneWay}"
+                                 Value="{x:Null}"
+                                 ComparisonCondition="NotEqual">
             <i:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
           </i:DataTriggerBehavior>
 
         </i:Interaction.Behaviors>
       </Grid>
-      <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
+      <Grid x:Name="TocContentPanel"
+            MinWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
             Background="{ThemeResource ApplicationContentBackgroundBrush}"
-            Windows10version1903:Translation="0, 0, 16"
-            >
+            Windows10version1903:Translation="0, 0, 16">
         
         <animation:Implicit.ShowAnimations>
           <animation:TranslationAnimation To="0, 0" Duration="0:0:0.25" />
@@ -569,6 +572,36 @@
                  FlowDirection="RightToLeft"
                         x:Name="TocItemsContainer">
             <StackPanel Padding="0 0 0 32">
+
+              <Grid Margin="8" ColumnSpacing="4"
+                    x:Name="NeighborsContentButtonsContainer"
+                    FlowDirection="RightToLeft"
+                    Visibility="{x:Bind _vm.ViewerSettings.IsDetectSimiralyFileNameNeighborsEnabled, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="1*" />
+                  <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Button HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Command="{x:Bind _vm.OpenEpubFileCommand}"
+                        CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+                        IsEnabled="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"
+                        Grid.Column="0"
+                        ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
+                  <fluentIcon:FluentSymbolIcon Symbol="ArrowLeft24" />
+                </Button>
+                <Button HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Command="{x:Bind _vm.OpenEpubFileCommand}"
+                        CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+                        IsEnabled="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"                        
+                        Grid.Column="1"
+                        ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
+                  <fluentIcon:FluentSymbolIcon Symbol="ArrowRight24" />
+                </Button>
+
+              </Grid>
+              
               <Border uwpControls:DockPanel.Dock="Top"
                       Windows10version1903:Translation="0, 0, 16"
                       Margin="0 16 0 0">
@@ -580,6 +613,8 @@
                        Height="240">
                 </Image>
               </Border>
+
+              
               <ListView x:Name="TocItemsListView"
                         ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
                         SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
@@ -776,11 +811,13 @@
           <VisualState.Setters>
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
+            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
+                    Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding ElementName=EPubRenderer, Path=IsVerticalLayout, Converter={StaticResource BoolNegationConverter}}" />
+            <StateTrigger IsActive="{Binding ElementName=EPubRenderer_1, Path=IsVerticalLayout, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.(Grid.Column)" Value="0" />
@@ -800,6 +837,9 @@
 
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
+            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
+                    Value="LeftToRight" />
+
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

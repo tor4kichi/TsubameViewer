@@ -195,6 +195,7 @@ namespace TsubameViewer.Views.Behaviors
         
         void CursorVisibilityChanged(bool isVisible)
         {
+            if (AssociatedObject == null) { return; }
             if (_DefaultCursor == null) { throw new InvalidOperationException($"Default cursor is can not be null."); }
 
             // 表示状態変化のトリガーを検出して処理する
