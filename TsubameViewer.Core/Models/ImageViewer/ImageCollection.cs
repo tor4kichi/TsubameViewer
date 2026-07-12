@@ -508,7 +508,7 @@ public sealed class EpubLocalImageSource : IImageSource
 
     public IStorageItem StorageItem => File;
 
-    public string Name => System.IO.Path.GetFileName(_imageFileRef.Key);
+    public string Name => _imageFileRef.Key;
 
     public string Path { get; }
 

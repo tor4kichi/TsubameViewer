@@ -45,9 +45,6 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isRepeat = Read(false, nameof(IsRepeat));
         _isAutoRepeatEnablingEnabled = Read(true, nameof(IsAutoRepeatEnablingEnabled));
         _autoRepeatEnablingTimeInSeconds = Read(60, nameof(AutoRepeatEnablingTimeInSeconds));
-        _isDetectSimiralyFileNameNeighborsEnabled = Read(true, nameof(IsDetectSimiralyFileNameNeighborsEnabled));
-        _thresholdOfSimilarityFileNameNaighborsNormalized = Read(0.60, nameof(ThresholdOfSimilarityFileNameNaighborsNormalized));
-        _isAutoMoveToNextEnabled = Read(true, nameof(IsAutoMoveToNextEnabled));
         _isMuted = Read(false, nameof(IsMuted));
         _playbackRate = Read(1d, nameof(PlaybackRate));
         _isHorizontalMirror = Read(false, nameof(IsHorizontalMirror));
@@ -81,27 +78,6 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     {
         get => TimeSpan.FromSeconds( _autoRepeatEnablingTimeInSeconds);
         set => SetProperty(ref _autoRepeatEnablingTimeInSeconds, (int)value.TotalSeconds);
-    }
-
-    bool _isDetectSimiralyFileNameNeighborsEnabled;
-    public bool IsDetectSimiralyFileNameNeighborsEnabled
-    {
-        get => _isDetectSimiralyFileNameNeighborsEnabled;
-        set => SetProperty(ref _isDetectSimiralyFileNameNeighborsEnabled, value);
-    }
-
-    double _thresholdOfSimilarityFileNameNaighborsNormalized;
-    public double ThresholdOfSimilarityFileNameNaighborsNormalized
-    {
-        get => _thresholdOfSimilarityFileNameNaighborsNormalized;
-        set => SetProperty(ref _thresholdOfSimilarityFileNameNaighborsNormalized, Math.Clamp(value, 0, 1));
-    }
-
-    bool _isAutoMoveToNextEnabled;
-    public bool IsAutoMoveToNextEnabled
-    {
-        get => _isAutoMoveToNextEnabled;
-        set => SetProperty(ref _isAutoMoveToNextEnabled, value);
     }
 
     bool _isMuted;
@@ -224,6 +200,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         RecyclableMemoryStreamManager recyclableMemoryStreamManager,
+        ViewerSettings viewerSettings,
         MovieViewerPageSettings pageSettings)
     {
         _messenger = messenger;
@@ -239,6 +216,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         RecyclableMemoryStreamManager = recyclableMemoryStreamManager;
+        ViewerSettings = viewerSettings;
         PageSettings = pageSettings;
     }
 
@@ -258,7 +236,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; }
-    
+    public ViewerSettings ViewerSettings { get; }
+
     [ObservableProperty]
     StorageFile? _movieFile;
 
@@ -321,7 +300,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                 PrevImageSource = null;
                 try
                 {
-                    if (PageSettings.IsDetectSimiralyFileNameNeighborsEnabled
+                    if (ViewerSettings.IsDetectSimiralyFileNameNeighborsEnabled
                         && await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(newPath)) is StorageFolder parentFolder)
                     {
                         var query = parentFolder.CreateFileQuery();
@@ -331,14 +310,14 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                         if (currentItemIndex - 1 >= 0
                             && await query.GetFilesAsync(currentItemIndex - 1, 1) is { } prevFiles
                             && prevFiles.ElementAtOrDefault(0) is { } prevFile
-                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, prevFile.Name) >= PageSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, prevFile.Name) >= ViewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
                         {
                             PrevImageSource = new StorageItemImageSource(prevFile);
                         }
 
                         if (await query.GetFilesAsync(currentItemIndex + 1, 1) is { } nextFiles
                             && nextFiles.ElementAtOrDefault(0) is { } nextFile
-                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, nextFile.Name) >= PageSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, nextFile.Name) >= ViewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
                         {
                             NextImageSource = new StorageItemImageSource(nextFile);
                         }

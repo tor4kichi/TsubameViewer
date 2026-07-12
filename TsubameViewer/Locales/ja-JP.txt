@@ -183,6 +183,16 @@ SelectItems_ActionAs = 選択中アイテムを…
 StartMultiSelection = 複数選択
 ImageListupPage_DragAndDrop_Unsupported = ドラッグ＆ドロップに非対応
 
+
+#### ViewerSettings
+ViewerSettings = ビューア共通設定
+IsDetectSimiralyFileNameNeighborsEnabled = 前後のコンテンツを検出する
+IsDetectSimiralyFileNameNeighborsEnabled_Desc = 表示中コンテンツのファイル名に近似した前後のコンテンツを検出して移動できるようにします
+ThresholdOfSimilarityFileNameNaighborsNormalized = 前後ファイルと認識するファイル名の近似度
+ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = ファイル名文字列同士のレーベンシュタイン距離を元に近似度を計算しています。捕捉できないケースがある場合は40%などに下げ、逆に意図しないコンテンツも捕捉してしまう場合は80%に上げるなど調整してください。
+IsAutoMoveToNextEnabled = 完了時に次のコンテンツへ自動的に移動する
+
+
 #### ImageViewerPage
 CurrentFolder_InArchive = フォルダ
 Page = ページ
@@ -285,11 +295,6 @@ MovieViewer_Settings = 動画ビューア設定
 IsAutoRepeatEnablingEnabled = ループ再生の自動有効化を有効にする
 AutoRepeatEnablingTime = ループ再生を自動有効化する最大再生時間（秒単位）
 AutoRepeatEnabling = ループ再生：有効（自動）
-IsDetectSimiralyFileNameNeighborsEnabled = 前後の動画ファイルを検出する
-IsDetectSimiralyFileNameNeighborsEnabled_Desc = 再生中動画のファイル名に近似した前後の動画ファイルを検出して移動できるようにします
-ThresholdOfSimilarityFileNameNaighborsNormalized = 前後ファイルと認識するファイル名の近似度
-ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = ファイル名文字列同士のレーベンシュタイン距離を元に近似度を計算しています。エピソード名以外の補足情報を多めに見積もって60%をデフォルトとしています。
-IsAutoMoveToNextEnabled = 再生完了時に次動画ファイルへ自動的に移動する
 
 
 #### SearchResult
@@ -317,7 +322,7 @@ Favorite_AddItem = お気に入りに登録
 Favorite_RemoveItem = お気に入りから解除
 Favorite_Added = {0} をお気に入りに登録
 Favorite_Removed = {0} をお気に入りから解除
-
+Favorite_ShowOnlyFavorite = お気に入りのみ
 
 #### FolderOrArchiveResturcture
 FolderOrArchiveRestructure = 内部構造を編集

@@ -155,7 +155,7 @@
           <VisualState.Setters>
             <Setter Target="ImageSelectorContainer.Visibility"
                     Value="Visible" />
-            <Setter Target="NeighborsMovieButtonsContainer.Visibility"
+            <Setter Target="NeighborsContentButtonsContainer.Visibility"
                     Value="Visible" />
           </VisualState.Setters>
         </VisualState>
@@ -166,7 +166,7 @@
           <VisualState.Setters>
             <Setter Target="ImageSelectorContainer.Visibility"
                     Value="Collapsed" />
-            <Setter Target="NeighborsMovieButtonsContainer.Visibility"
+            <Setter Target="NeighborsContentButtonsContainer.Visibility"
                     Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
@@ -516,7 +516,7 @@
       </i:Interaction.Behaviors>
     </Grid>
 
-    <uwpControls:DockPanel x:Name="NeighborsMovieButtonsContainer">
+    <uwpControls:DockPanel x:Name="NeighborsContentButtonsContainer">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
                                     Duration="0:0:0.125" />

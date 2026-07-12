@@ -645,7 +645,56 @@
 
     </Grid>
 
+    <uwpControls:DockPanel x:Name="NeighborsContentButtonsContainer"
+                           Visibility="{x:Bind ImageSelectorContainer.Visibility, Mode=OneWay}"
+                           FlowDirection="RightToLeft">
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
 
+      <Border uwpControls:DockPanel.Dock="Bottom"
+              Height="180" />
+      <Grid Height="180"
+            VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Visibility="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToVisibleConverter}}"
+                    ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
+          <Border Background="{ThemeResource SystemChromeMediumColor}"
+                  CornerRadius="0 6 6 0">
+            <Button HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Command="{x:Bind _vm.OpenMangaFileCommand}"
+                    CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+                    CornerRadius="0 6 6 0">
+              <fluentIcon:FluentSymbolIcon Symbol="ArrowLeft24" />
+            </Button>
+          </Border>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Stretch"
+                    Visibility="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToVisibleConverter}}"
+                    ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
+          <Border Background="{ThemeResource SystemChromeMediumColor}"
+                  CornerRadius="6 0 0 6">
+            <Button HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Command="{x:Bind _vm.OpenMangaFileCommand}"
+                    CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+                    CornerRadius="6 0 0 6">
+              <fluentIcon:FluentSymbolIcon Symbol="ArrowRight24" />
+            </Button>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </uwpControls:DockPanel>
 
     <Border x:Name="ImageSelectorContainer" 
             Background="{ThemeResource SystemChromeMediumHighColor}"
@@ -1367,6 +1416,8 @@
             <Setter Target="PageSelector.FlowDirection"
                     Value="LeftToRight" />
             <Setter Target="ReadOnlySeekBar.FlowDirection"
+                    Value="LeftToRight" />
+            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
                     Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>

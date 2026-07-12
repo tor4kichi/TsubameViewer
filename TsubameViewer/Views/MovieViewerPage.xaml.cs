@@ -1003,7 +1003,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
     {
         if (_vm.NextImageSource != null
-            && _vm.PageSettings.IsAutoMoveToNextEnabled
+            && _vm.ViewerSettings.IsAutoMoveToNextEnabled
             && !sender.IsLoopingEnabled)
         {
             Observable.NextFrame()

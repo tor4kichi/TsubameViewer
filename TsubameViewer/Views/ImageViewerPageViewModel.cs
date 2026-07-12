@@ -35,6 +35,7 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
+using Windows.Storage.Search;
 using Windows.System;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
@@ -200,6 +201,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
     public ApplicationSettings ApplicationSettings { get; }
+    public ViewerSettings ViewerSettings { get; }
     public ImageViewerSettings ImageViewerSettings { get; }
 
     [ObservableProperty]
@@ -219,7 +221,21 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     [ObservableProperty]
     bool _isFavoriteAlbamDisplay;
-    
+
+    [ObservableProperty]
+    IImageSource? _prevImageSource;
+
+    [ObservableProperty]
+    IImageSource? _nextImageSource;
+
+    [RelayCommand]
+    async Task OpenMangaFileAsync(IImageSource? imageSource)
+    {
+        if (imageSource == null) { return; }
+        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+        _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+    }
+
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly AlbamRepository _albamRepository;
@@ -241,6 +257,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         AlbamRepository albamRepository,
         FavoriteAlbam favoriteAlbam,
         ImageCollectionManager imageCollectionManager,
+        ViewerSettings viewerSettings,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
         StorageItemSettings storageItemSettings,
@@ -265,6 +282,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _albamRepository = albamRepository;
         _favoriteAlbam = favoriteAlbam;
         _imageCollectionManager = imageCollectionManager;
+        ViewerSettings = viewerSettings;
         ImageViewerSettings = imageCollectionSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
         BackNavigationCommand = backNavigationCommand;
@@ -481,6 +499,39 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                     await RefreshItems(imageSource, imageCollectionContext, ct);
 
+
+                    NextImageSource = null;
+                    PrevImageSource = null;
+                    try
+                    {
+                        if (imageCollectionContext is ArchiveImageCollectionContext or EPubImageCollectionContext
+                            && ViewerSettings.IsDetectSimiralyFileNameNeighborsEnabled
+                            && await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(newPath)) is StorageFolder parentFolder)
+                        {
+                            var query = parentFolder.CreateFileQuery();
+                            query.ApplyNewQueryOptions(new QueryOptions(CommonFileQuery.DefaultQuery, [..SupportedFileTypesHelper.SupportedArchiveFileExtensions, .. SupportedFileTypesHelper.SupportedEBookFileExtensions]));
+                            var currentItemIndex = await query.FindStartIndexAsync(imageSource.Name);
+
+                            if (currentItemIndex - 1 >= 0
+                                && await query.GetFilesAsync(currentItemIndex - 1, 1) is { } prevFiles
+                                && prevFiles.ElementAtOrDefault(0) is { } prevFile
+                                && StringLevenshteinHelper.GetSimilarityNormalized(_currentImageSource.Name, prevFile.Name) >= ViewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                            {
+                                PrevImageSource = new StorageItemImageSource(prevFile);
+                            }
+
+                            if (await query.GetFilesAsync(currentItemIndex + 1, 1) is { } nextFiles
+                                && nextFiles.ElementAtOrDefault(0) is { } nextFile
+                                && StringLevenshteinHelper.GetSimilarityNormalized(_currentImageSource.Name, nextFile.Name) >= ViewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                            {
+                                NextImageSource = new StorageItemImageSource(nextFile);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.ToString());
+                    }
                 }, ct);
             }
             else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string escapedAlbamPath))
@@ -536,6 +587,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         time = TimeProvider.System.GetTimestamp();
 #endif
 
+        var bkmk = _bookmarkManager.GetBookmarkFacade(_pathForSettings);
         // 以下の場合に表示内容を更新する
         //    1. 表示フォルダが変更された場合
         //    2. 前回の更新が未完了だった場合
@@ -549,12 +601,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             if (_imageCollectionContext == null) { return; }
             if (string.IsNullOrEmpty(_pathForSettings) is false)
             {
-                var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
-                if (bookmarkPageName != null)
+                if (!string.IsNullOrEmpty(bkmk.PageName))
                 {
                     try
                     {
-                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType, ct);
+                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bkmk.PageName, SelectedFileSortType, ct);
                     }
                     catch
                     {
@@ -606,7 +657,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             {
                 //using (_imageLoadingLock.LockAsync(ct))
                 {
-                    if (Images == null) { return; }
+                    if (Images == null || Images.Length == 0) { return; }
                     if (_imageCollectionContext is null) { return; }
                     int imageIndex = CurrentImageIndex;
                     var imageSources = GetSourceImages(PrefetchIndexType.Current);
@@ -634,20 +685,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     }
 
                     OnPropertyChanged(nameof(CurrentDisplayImageSources));
-
-                    var imageSource = imageSources[0];
-                    if (imageSource == null) { return; }
-                    if (_currentImageSource.StorageItem is IStorageItem)
-                    {
-                        var v = new NormalizedPagePosition(Images.Length, imageIndex);
-                        bool isFinished = _pageMovedCount > 0 && v.Value > _storageItemSettings.ReadingFinishedThresholdForImageViewer;
-                        _bookmarkManager.AddBookmarkForImageViewer(_pathForSettings, imageSource.Name, v, isFinished: isFinished);
-                        _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
-                    }
-                    else if (_currentImageSource is AlbamImageSource albam)
-                    {
-                        _folderLastIntractItemManager.SetLastIntractItemName(albam.AlbamId, imageSource.Path);
-                    }
                 }
             }).AddTo(ref db);
 
@@ -768,6 +805,44 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 })
                 .AddTo(ref db);
         }
+        
+        this.ObservePropertyChanged(x => x.CurrentImageIndex, false)
+            .Pairwise()
+            .Subscribe(x => 
+            {
+                var (prev, imageIndex) = x;
+                var imageSources = GetSourceImages(PrefetchIndexType.Current);
+                var imageSource = imageSources[0];
+                if (imageSource == null) { return; }
+                if (_currentImageSource.StorageItem is IStorageItem)
+                {
+                    using (bkmk.GetDeferSave())
+                    {
+                        bkmk.SetReadPosition(imageIndex, Images.Length);
+                        bkmk.PageName = imageSource.Name;
+                        if (!bkmk.IsFinishedReading)
+                        {
+                            bkmk.IsFinishedReading = _pageMovedCount > 0 && bkmk.ReadPosition.Value > _storageItemSettings.ReadingFinishedThresholdForImageViewer;
+                        }
+                    }
+                    _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
+                }
+                else if (_currentImageSource is AlbamImageSource albam)
+                {
+                    _folderLastIntractItemManager.SetLastIntractItemName(albam.AlbamId, imageSource.Path);
+                }
+                if (bkmk.IsFinishedReading
+                    && prev >= Images.Length - 1
+                    && imageIndex == 0
+                    && ViewerSettings.IsAutoMoveToNextEnabled
+                    && NextImageSource != null)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(NextImageSource);
+                    _ = _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                }
+            })
+            .AddTo(ref db);
+
 
         if (_currentImageSource.StorageItem != null)
         {

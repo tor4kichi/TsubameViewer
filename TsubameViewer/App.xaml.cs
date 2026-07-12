@@ -134,15 +134,15 @@ sealed partial class App : Application
         container.Register<IViewLocator, ViewLocator>();
         container.Register<IImageCodecService, ImageCodecService>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
-        container.Register<LocalBookmarkRepository>(reuse: new SingletonReuse());
-        container.Register<NavigationStackRepository>(reuse: new SingletonReuse());
-        container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
-        container.Register<RecentlyAccessRepository>(reuse: new SingletonReuse());
-        container.Register<ThumbnailImageManager>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+        container.Register<LocalBookmarkRepository>(reuse: Reuse.Singleton);
+        container.Register<NavigationStackRepository>(reuse: Reuse.Singleton);
+        container.Register<LastIntractItemRepository>(reuse: Reuse.Singleton);
+        container.Register<RecentlyAccessRepository>(reuse: Reuse.Singleton);
+        container.Register<ThumbnailImageManager>(reuse: Reuse.Singleton, made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
-        container.Register<AppShell>(reuse: new SingletonReuse());
+        container.Register<AppShell>(reuse: Reuse.Singleton);
         container.Register<SourceStorageItemsPage>();
         container.Register<ImageListupPage>();
         container.Register<FolderListupPage>();
@@ -159,13 +159,14 @@ sealed partial class App : Application
     void RegisterTypes(Container container)
     {
         container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
-        container.Register<Core.Models.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
-        container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
-        container.Register<FileControlSettings>(reuse: new SingletonReuse());
-        container.Register<ApplicationSettings>(reuse: new SingletonReuse());
-        container.Register<StorageItemSettings>(reuse: new SingletonReuse());
+        container.Register<Core.Models.ImageViewer.ImageViewerSettings>(reuse: Reuse.Singleton);
+        container.Register<ViewerSettings>(reuse: Reuse.Singleton);
+        container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: Reuse.Singleton);
+        container.Register<FileControlSettings>(reuse: Reuse.Singleton);
+        container.Register<ApplicationSettings>(reuse: Reuse.Singleton);
+        container.Register<StorageItemSettings>(reuse: Reuse.Singleton);
 
-        container.Register<ISecondaryTileManager, SecondaryTileManager>(reuse: new SingletonReuse());
+        container.Register<ISecondaryTileManager, SecondaryTileManager>(reuse: Reuse.Singleton);
 
         container.Register<SecondaryTileMaintenance>();
         container.Register<RemoveSourceStorageItemWhenPathIsEmpty>();
@@ -190,12 +191,12 @@ sealed partial class App : Application
 #endif
 
 
-        container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
-        //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
-        //container.Register<FolderListupPageViewModel>(reuse: new SingletonReuse());
-        container.Register<ImageViewerPageViewModel>(reuse: new SingletonReuse());
-        container.Register<EBookViewerPageViewModel>(reuse: new SingletonReuse());
-        //container.Register<SearchResultPageViewModel>(reuse: new SingletonReuse());
+        container.Register<SourceStorageItemsPageViewModel>(reuse: Reuse.Singleton);
+        //container.Register<ImageListupPageViewModel>(reuse: Reuse.Singleton);
+        //container.Register<FolderListupPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<ImageViewerPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<EBookViewerPageViewModel>(reuse: Reuse.Singleton);
+        //container.Register<SearchResultPageViewModel>(reuse: Reuse.Singleton);
 
         // Services
         container.Register<IMessageDialogService, MessageDialogService>();
