@@ -117,10 +117,10 @@ namespace TsubameViewer.Views.Behaviors
 
         public PointerCursolAutoHideBehavior()
         {
+            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;
             _AutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
             _AutoHideTimer.Tick += AutoHideTimer_Tick;
             _AutoHideTimer.IsRepeating = false;
-            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;            
         }
 
         protected override void OnAttached()
@@ -171,6 +171,8 @@ namespace TsubameViewer.Views.Behaviors
 
         protected override void OnDetaching()
         {
+            _AutoHideTimer.Stop();
+
             Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
             AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
             AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
