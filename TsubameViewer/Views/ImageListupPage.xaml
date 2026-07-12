@@ -337,7 +337,8 @@
                   VerticalAlignment="Bottom"
                   Margin="2"
                   Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                  IsHitTestVisible="False">
+                  IsHitTestVisible="False"
+                  Visibility="{x:Bind IsInitialized, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
             <TextBlock Text="GIF"
                        Style="{StaticResource CaptionTextBlockStyle}" />
           </Border>
@@ -453,7 +454,8 @@
                   VerticalAlignment="Bottom"
                   Margin="2"
                   Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                  IsHitTestVisible="False">
+                  IsHitTestVisible="False"
+                  Visibility="{x:Bind IsInitialized, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
             <TextBlock Text="GIF"
                        Style="{StaticResource CaptionTextBlockStyle}"/>
           </Border>
@@ -568,7 +570,8 @@
                   VerticalAlignment="Bottom"
                   Margin="2"
                   Opacity="{x:Bind Image.IsAnimatedBitmap, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                  IsHitTestVisible="False">
+                  IsHitTestVisible="False"
+                  Visibility="{x:Bind IsInitialized, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
             <TextBlock Text="GIF"
                        Style="{StaticResource CaptionTextBlockStyle}" />
           </Border>
