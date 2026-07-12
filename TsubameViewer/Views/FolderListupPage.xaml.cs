@@ -279,20 +279,15 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     {
                         var (elem, itemVM) = x;
                         itemVM.RestoreThumbnailLoadingTask(ct);
-
+                        if (elem.FindDescendant<Image>() is { } imageControl)
+                        {
+                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                        }
                     }, ct).FireAndForgetSafe();
             }
             else
             {
                 _realizedItems.Clear();
-            }
-            foreach (var (elem, itemVM) in _realizedItems)
-            {
-                var image = elem.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-                if (image != null)
-                {
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                }
             }
         }
         catch (OperationCanceledException) { }
