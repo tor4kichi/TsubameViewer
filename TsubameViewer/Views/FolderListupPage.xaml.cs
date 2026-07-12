@@ -172,7 +172,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     ? Disposable.Empty
                     : await _imageGeneratingLock.LockAsync(_navigationCt))
                 {                    
-                    if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
                     await itemVM.InitializeAsync(_navigationCt);
                 }
                 if (imageControl != null)
