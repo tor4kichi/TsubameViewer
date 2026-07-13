@@ -391,6 +391,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void ControlUIInteractionWall_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
+        if (NowEditTransformMode) { return; }
+
         var pt = e.GetCurrentPoint(null);
         VolumeChange(pt.Properties.MouseWheelDelta > 0 ? 0.05 : -0.05);
     }
@@ -996,6 +998,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
         HandlePlaybackRateChanged(ref db);
+        SubscribeTransformEdit(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
@@ -3285,6 +3288,167 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.PageSettings.IsRepeat = !_vm.PageSettings.IsRepeat;
         StartLiteNotification($"{"MovieViewer_IsRepeat".Translate()}: {(_vm.PageSettings.IsRepeat ? "Enabled" : "Disabled").Translate()}");
     }
+
+
+    [ObservableProperty]
+    bool _nowEditTransformMode;
+
+    Vector2 _lastPointerPos;
+
+    void SubscribeTransformEdit(ref DisposableBuilder db)
+    {
+        R3.Observable.Merge(
+            Window.Current.CoreWindow.ObserveKeyDown().Where(x => (x.EventArgs.VirtualKey & VirtualKey.Control) != 0).Select(_ => true),
+            Window.Current.CoreWindow.ObserveKeyUp().Where(x => (x.EventArgs.VirtualKey & VirtualKey.Control) != 0).Select(_ => false)
+            )            
+            .Subscribe(this, (isControlDown, s) => 
+            {
+                if (s.NowEditTransformMode != isControlDown)
+                {
+                    s.NowEditTransformMode = isControlDown;
+                    Debug.WriteLine($"NowEditTransformMode: {s.NowEditTransformMode}");
+                }
+            })
+            .AddTo(ref db);
+
+        // マウス・ペン
+        Observable.CombineLatest(
+            this.ObservePointerMoved().Where(x => x.Pointer.PointerDeviceType != PointerDeviceType.Touch).Select(this, (x, s) => x.GetCurrentPoint(s.PageRoot).Position.ToVector2()),
+            R3.Observable.Merge(
+                this.ObservePointerPressed().Where(x => x.Pointer.PointerDeviceType != PointerDeviceType.Touch).Select(this, (x, s) => { s._lastPointerPos = x.GetCurrentPoint(s).Position.ToVector2(); return true; }),
+                this.ObservePointerReleased().Where(x => x.Pointer.PointerDeviceType != PointerDeviceType.Touch).Select(x => false)
+                )
+            , (pos, isPressed) => (pos, isPressed)
+            )
+            .Where(this, (x, s) => s.NowEditTransformMode && x.isPressed)
+            .Pairwise()
+            .Subscribe(this, (x, s) => 
+            {
+                var halfSize = s.PlayerContainer.ActualSize * 0.5f;
+                var (prev, current) = x;
+                var deltaPos = (current.pos - s._lastPointerPos) * 1 / (float)s.PlayerScale.ScaleX;
+                s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + deltaPos.X, -halfSize.X, halfSize.X);
+                s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + deltaPos.Y, -halfSize.Y, halfSize.Y);
+                s._lastPointerPos = current.pos;
+
+                Debug.WriteLine($"Pos = {s.PlayerTranslate.X:F0}, {s.PlayerTranslate.Y:F0}");
+            })
+            .AddTo(ref db);
+
+        this.ObservePointerWheelChanged()
+            .Where(this, (x, s) => s.NowEditTransformMode)
+            .Subscribe(this, (e, s) => 
+            {
+                var halfSize = s.PlayerContainer.ActualSize * 0.5f;
+                // ポインタ位置（PlayerContainer座標系）
+                var pt = e.GetCurrentPoint(s.PlayerContainer).Position.ToVector2() - halfSize;
+
+                // 現在のスケール（X/Yは同じ前提）
+                var oldScale = s.PlayerScale.ScaleX;
+                if (oldScale <= 0) oldScale = 1.0;
+
+                // ホイール方向でスケールを決定
+                var wheel = e.GetCurrentPoint(null).Properties.MouseWheelDelta;
+                var newScale = Math.Clamp((wheel > 0 ? GetNextScale(oldScale) : GetPrevScale(oldScale)), 0.5, 8.0);
+
+                if (Math.Abs(newScale - oldScale) < double.Epsilon) return;
+                
+                if (newScale == 1d)
+                {
+                    s.PlayerTranslate.X = 0;
+                    s.PlayerTranslate.Y = 0;
+                }
+                else if (newScale < 1d && newScale > oldScale)
+                {
+                    // 1に近づく場合に
+                    s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (oldScale - newScale), -halfSize.X, halfSize.X);
+                    s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (oldScale - newScale), -halfSize.Y, halfSize.Y);
+                }
+                else if (newScale > 1d && newScale < oldScale)
+                {
+                    // 1に近づく場合に
+                    s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (newScale - oldScale), -halfSize.X, halfSize.X);
+                    s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (newScale - oldScale), -halfSize.Y, halfSize.Y);
+                }
+                else
+                {
+                    // ポインタ位置を固定するための平行移動を計算
+                    // T_new = T_old + P * (1/S_new - 1/S_old)
+                    var invOld = 1.0 / oldScale;
+                    var invNew = 1.0 / newScale;
+                    var dx = pt.X * (invNew - invOld);
+                    var dy = pt.Y * (invNew - invOld);
+                    
+                    s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X);
+                    s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y);
+                }
+                s.PlayerScale.ScaleX = newScale;
+                //s.PlayerScale.ScaleY = newScale;
+
+                //Debug.WriteLine($"Scale: {oldScale:F2} -> {newScale:F2}");
+                Debug.WriteLine($"Pos: {s.PlayerTranslate.X:F2} -> {s.PlayerTranslate.Y:F2}");
+            })
+            .AddTo(ref db);
+
+
+        // タッチ
+        PlayerContainer.ManipulationStarting += PlayerContainer_ManipulationStarting;
+        PlayerContainer.ManipulationStarted += PlayerContainer_ManipulationStarted;
+        PlayerContainer.ManipulationDelta += PlayerContainer_ManipulationDelta;
+        PlayerContainer.ManipulationCompleted += PlayerContainer_ManipulationCompleted;
+    }
+
+    double[] _playerScaleItems { get; } = 
+        [0.5, 0.75, 1, 1.125, 1.25, 1.5, 2, 4, 8, 16, 32];
+
+    double GetNextScale(double current)
+    {
+        foreach (var f in _playerScaleItems)
+        {
+            if (f > current)
+            {
+                return f;
+            }
+        }
+
+        return _playerScaleItems.Last();
+    }
+
+    double GetPrevScale(double current)
+    {
+        foreach (var f in _playerScaleItems.AsValueEnumerable().Reverse())
+        {
+            if (f < current)
+            {
+                return f;
+            }
+        }
+
+        return _playerScaleItems.First();
+    }
+
+
+    private void PlayerContainer_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
+    {
+        e.Mode = ManipulationModes.Rotate | ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+    }
+
+    private void PlayerContainer_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+    {
+        
+    }
+
+    private void PlayerContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+    {
+        
+    }
+
+    private void PlayerContainer_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
+    {
+        
+    }
+
+
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter

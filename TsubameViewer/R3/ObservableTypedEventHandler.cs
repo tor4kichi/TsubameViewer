@@ -30,6 +30,36 @@ public static class ObservableEventExtensions
         );
     }
 
+    public static Observable<EventPattern<CoreWindow, KeyEventArgs>> ObserveKeyDown(this CoreWindow coreWindow)
+    {
+        return FromTypedEvent<CoreWindow, KeyEventArgs>(
+            h => coreWindow.KeyDown += h,
+            h => coreWindow.KeyDown -= h);
+    }
+
+    public static Observable<EventPattern<CoreWindow, KeyEventArgs>> ObserveKeyUp(this CoreWindow coreWindow)
+    {
+        return FromTypedEvent<CoreWindow, KeyEventArgs>(
+            h => coreWindow.KeyUp += h,
+            h => coreWindow.KeyUp -= h);
+    }
+
+    public static Observable<KeyRoutedEventArgs> ObserveKeyDown(this FrameworkElement control)
+    {        
+        return Observable.FromEvent<KeyEventHandler, KeyRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.KeyDown += h,
+            h => control.KeyDown -= h);
+    }
+
+    public static Observable<KeyRoutedEventArgs> ObserveKeyUp(this FrameworkElement control)
+    {
+        return Observable.FromEvent<KeyEventHandler, KeyRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.KeyUp += h,
+            h => control.KeyUp -= h);
+    }
+
     public static Observable<EventPattern<MouseDevice, MouseEventArgs>> ObserveMouseMoved(this MouseDevice mouseDevice)
     {
         return ObservableEventExtensions.FromTypedEvent<MouseDevice, MouseEventArgs>(
@@ -54,6 +84,49 @@ public static class ObservableEventExtensions
             h => window.Activated -= h);
     }
 
+    public static Observable<PointerRoutedEventArgs> ObservePointerPressed(this FrameworkElement control, bool withCapture = true)
+    {
+        var observer = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.PointerPressed += h,
+            h => control.PointerPressed -= h);
+
+        if (withCapture)
+        {
+            return observer.Select(control, (x, control) =>
+            {
+                control.CapturePointer(x.Pointer);
+                return x;
+            });
+        }
+        else
+        {
+            return observer;
+        }
+            
+    }
+
+    public static Observable<PointerRoutedEventArgs> ObservePointerReleased(this FrameworkElement control, bool withReleaseCapture = true)
+    {
+        var observer = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.PointerReleased += h,
+            h => control.PointerReleased -= h);
+
+        if (withReleaseCapture)
+        {
+            return observer.Select(control, (x, control) =>
+            {
+                control.ReleasePointerCapture(x.Pointer);
+                return x;
+            });
+        }
+        else
+        {
+            return observer;
+        }
+    }
+
     public static Observable<PointerRoutedEventArgs> ObservePointerMoved(this FrameworkElement control)
     {
         return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
@@ -76,6 +149,14 @@ public static class ObservableEventExtensions
             conversion => (sender, args) => conversion(args),
             h => control.PointerExited += h,
             h => control.PointerExited -= h);
+    }
+
+    public static Observable<PointerRoutedEventArgs> ObservePointerWheelChanged(this FrameworkElement control)
+    {
+        return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.PointerWheelChanged += h,
+            h => control.PointerWheelChanged -= h);
     }
 
 

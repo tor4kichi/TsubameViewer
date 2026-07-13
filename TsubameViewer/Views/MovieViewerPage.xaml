@@ -225,6 +225,56 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      
+      <!-- スワイプによる操作 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind NowEditTransformMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MySwipeDistanceBehavior.IsEnabled"
+                    Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MySwipeDistanceBehavior.IsEnabled"
+                    Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- 変形情報の表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <ctwu:IsNotEqualStateTrigger Value="{x:Bind PlayerTranslate.X, Mode=OneWay}">
+              <ctwu:IsNotEqualStateTrigger.To>
+                <x:Double>0</x:Double>
+              </ctwu:IsNotEqualStateTrigger.To>
+            </ctwu:IsNotEqualStateTrigger>
+            <ctwu:IsNotEqualStateTrigger Value="{x:Bind PlayerTranslate.Y, Mode=OneWay}">
+              <ctwu:IsNotEqualStateTrigger.To>
+                <x:Double>0</x:Double>
+              </ctwu:IsNotEqualStateTrigger.To>
+            </ctwu:IsNotEqualStateTrigger>
+            <ctwu:IsNotEqualStateTrigger Value="{x:Bind PlayerScale.ScaleX, Mode=OneWay}">
+              <ctwu:IsNotEqualStateTrigger.To>
+                <x:Double>1</x:Double>
+              </ctwu:IsNotEqualStateTrigger.To>
+            </ctwu:IsNotEqualStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PlayerTransformInfoContainer.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- 全画面表示 -->
       <VisualStateGroup>
         <VisualState>
@@ -490,7 +540,9 @@
                           RenderTransformOrigin="0.5, 0.5">
         <UIElement.RenderTransform>
           <TransformGroup>
-            <TranslateTransform x:Name="PlayerTransform" />
+            <TranslateTransform x:Name="PlayerTranslate" />
+            <ScaleTransform x:Name="PlayerScale"
+                            ScaleY="{Binding RelativeSource={RelativeSource Mode=Self}, Path=ScaleX}"/>
 
             <ScaleTransform x:Name="MirrorScaleTransform" />
           </TransformGroup>
@@ -508,8 +560,7 @@
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch">
       <i:Interaction.Behaviors>
-        <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
-                                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
+        <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"   
                                            Invoked="MySwipeDistanceBehavior_Invoked"                                           
                                            XPixelsToOneUnit="8"
                                            YPixelsToOneUnit="16"/>
@@ -952,6 +1003,29 @@
         </uwpControls:DockPanel>
       </StackPanel>
     </Grid>
+    
+    <Grid x:Name="PlayerTransformInfoContainer"           
+          Visibility="Collapsed"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Top"
+          Padding="8"
+          Margin="32 16"
+          Background="{ThemeResource SystemControlAcrylicElementBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource SystemBaseLowColor}"
+          CornerRadius="6">
+      <StackPanel>
+        <TextBlock FontSize="18">
+        <Run Text="{x:Bind PlayerScale.ScaleX, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" />
+        </TextBlock>
+
+        <TextBlock>
+          <Run Text="{x:Bind PlayerTranslate.X, Mode=OneWay}" />,<Run Text="{x:Bind PlayerTranslate.Y, Mode=OneWay}" />
+
+        </TextBlock>
+      </StackPanel>
+    </Grid>
+    
 
     <Grid x:Name="ShortcutKeyGuideUIContainer"
           Visibility="Collapsed"
