@@ -195,6 +195,13 @@ AutoMoveToNext_Notice = Displaying the next “{0}”
 NextContent = Next
 PreviousContent = Previous
 
+EditViewerTransform = Viewer transformation
+EditViewerTransform_Done = Completion
+EditViewerTransform_Reset = Reset
+
+
+
+
 
 #### ImageViewerPage
 CurrentFolder_InArchive = Folder
@@ -326,49 +333,3 @@ Favorite_RemoveItem = Remove from Favorites
 Favorite_Added = Add {0} to Favorites
 Favorite_Removed = Remove {0} from Favorites
 Favorite_ShowOnlyFavorite = Favorites only
-
-#### FolderOrArchiveResturcture
-FolderOrArchiveRestructure = Edit internal structure
-Output = Output
-Find = Search
-ReplaceAll = Replace all
-ReplaceNext = Replace next
-Replace = Replace
-RestructurePage_SelectAllSearchTarget = Select all applicable items
-RestructurePage_OutputToArchiveFile = Output to zip
-RestructurePage_OutputToFolder = Output to folder
-RestructurePage_OutputToArchiveSplitWithPart = Output to zip (divided by volume)
-RestructurePage_IsOutput = Output target
-RestructurePage_ToggleIsOutput = Switch output target
-RestructurePage_EditPath = Path string
-RestructurePage_Description = You can edit the path strings one by one, or edit them all at once by searching and replacing.
-Uncheck the output target for unnecessary files
-
-RestructurePage_Caution = The original compressed file or folder will not be changed until it is output.
-If you are worried, please back up yourself
-Items other than file items disappear when zip is output (some archive software is not supported)
-RestructurePage_InvalidPath = Contains a string that cannot be used as a path string: {0}
-RestructurePage_DupulicatePath = There are duplicate entries in the path string: {0}
-RestructurePage_InvalidFileType = The path string contains an extension that the app does not support folder output: {0}
-RestructurePage_DigitCompletion = Perform title digit completion
-RestructurePage_SplitImage = Image segmentation
-RestructurePage_SplitImage_AspectRatio = Aspect ratio
-RestructurePage_SplitImage_IsLeftBinding = Left open
-RestructurePage_IsSplitImage = Image segmentation
-RestructurePage_ToggleIsSplitImage = Switching image segmentation
-RestructurePage_OverwriteSave_Confirm = Can I overwrite the file? \ n {0}
-RestructurePage_OverwriteSave = Overwrite save
-RestructurePage_ProcessAllActions = Batch processing
-RestructurePage_UnavairableOverwriteFile = The current file is read-only and cannot be overwritten
-
-
-#### SplitImageInput
-SplitImage = Image split
-BookBindingDirection.Left = Left binding
-BookBindingDirection.Right = Right binding
-SplitImageInput_NoSelected = No change
-SplitImageInput_Title = Image split
-SplitImageInput_BindingDirectionHeader = Direction to open page
-SplitImageInput_AspectRatioHeader = Aspect ratio of 1 page (Enter 0 for halving)
-SplitImageInput_AspectRatioPlaceholderText = Decimal point or width / height
-SplitImageInput_EncoderTypeHeader = Image encoding

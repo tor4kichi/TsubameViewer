@@ -261,6 +261,9 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     IImageSource? _nextImageSource;
 
+    [ObservableProperty]
+    bool _nowEditTransformMode;
+
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;

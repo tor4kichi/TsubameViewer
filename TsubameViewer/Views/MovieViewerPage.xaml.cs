@@ -391,7 +391,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void ControlUIInteractionWall_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
-        if (NowEditTransformMode) { return; }
+        if (_vm.NowEditTransformMode) { return; }
 
         var pt = e.GetCurrentPoint(null);
         VolumeChange(pt.Properties.MouseWheelDelta > 0 ? 0.05 : -0.05);
@@ -874,8 +874,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 s.IsActive = state == MediaPlaybackState.Playing;
             }, (result, s) => s.Dispose())
             .AddTo(ref db);
-
-        InitializeZoomReaction(ref db);
 
         Observable.Merge(
             MouseDevice.GetForCurrentView().ObserveMouseMoved().AsUnitObservable(),
@@ -3289,9 +3287,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         StartLiteNotification($"{"MovieViewer_IsRepeat".Translate()}: {(_vm.PageSettings.IsRepeat ? "Enabled" : "Disabled").Translate()}");
     }
 
+    [RelayCommand]
+    void ToggleEditTransformMode()
+    {
+        _vm.NowEditTransformMode = !_vm.NowEditTransformMode;
+    }
 
-    [ObservableProperty]
-    bool _nowEditTransformMode;
+    [RelayCommand]
+    void ResetPlayerTransform()
+    {
+        PlayerScale.ScaleX = 1;
+        PlayerTranslate.X = 0;
+        PlayerTranslate.Y = 0;
+    }
 
     Vector2 _lastPointerPos;
 
@@ -3303,10 +3311,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             )            
             .Subscribe(this, (isControlDown, s) => 
             {
-                if (s.NowEditTransformMode != isControlDown)
+                if (s._vm.NowEditTransformMode != isControlDown)
                 {
-                    s.NowEditTransformMode = isControlDown;
-                    Debug.WriteLine($"NowEditTransformMode: {s.NowEditTransformMode}");
+                    s._vm.NowEditTransformMode = isControlDown;
+                    Debug.WriteLine($"NowEditTransformMode: {s._vm.NowEditTransformMode}");
                 }
             })
             .AddTo(ref db);
@@ -3320,15 +3328,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 )
             , (pos, isPressed) => (pos, isPressed)
             )
-            .Where(this, (x, s) => s.NowEditTransformMode && x.isPressed)
+            .Where(this, (x, s) => s._vm.NowEditTransformMode && x.isPressed)
             .Pairwise()
             .Subscribe(this, (x, s) => 
             {
                 var halfSize = s.PlayerContainer.ActualSize * 0.5f;
                 var (prev, current) = x;
                 var deltaPos = (current.pos - s._lastPointerPos) * 1 / (float)s.PlayerScale.ScaleX;
-                s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + deltaPos.X, -halfSize.X, halfSize.X);
-                s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + deltaPos.Y, -halfSize.Y, halfSize.Y);
+                s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + deltaPos.X, -halfSize.X, halfSize.X));
+                s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + deltaPos.Y, -halfSize.Y, halfSize.Y));
                 s._lastPointerPos = current.pos;
 
                 Debug.WriteLine($"Pos = {s.PlayerTranslate.X:F0}, {s.PlayerTranslate.Y:F0}");
@@ -3336,7 +3344,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         this.ObservePointerWheelChanged()
-            .Where(this, (x, s) => s.NowEditTransformMode)
+            .Where(this, (x, s) => s._vm.NowEditTransformMode)
             .Subscribe(this, (e, s) => 
             {
                 var halfSize = s.PlayerContainer.ActualSize * 0.5f;
@@ -3361,14 +3369,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 else if (newScale < 1d && newScale > oldScale)
                 {
                     // 1に近づく場合に
-                    s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (oldScale - newScale), -halfSize.X, halfSize.X);
-                    s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (oldScale - newScale), -halfSize.Y, halfSize.Y);
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (oldScale - newScale), -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (oldScale - newScale), -halfSize.Y, halfSize.Y));
                 }
                 else if (newScale > 1d && newScale < oldScale)
                 {
                     // 1に近づく場合に
-                    s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (newScale - oldScale), -halfSize.X, halfSize.X);
-                    s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (newScale - oldScale), -halfSize.Y, halfSize.Y);
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (newScale - oldScale), -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (newScale - oldScale), -halfSize.Y, halfSize.Y));
                 }
                 else
                 {
@@ -3379,8 +3387,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     var dx = pt.X * (invNew - invOld);
                     var dy = pt.Y * (invNew - invOld);
                     
-                    s.PlayerTranslate.X = Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X);
-                    s.PlayerTranslate.Y = Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y);
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y));
                 }
                 s.PlayerScale.ScaleX = newScale;
                 //s.PlayerScale.ScaleY = newScale;
@@ -3389,13 +3397,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 Debug.WriteLine($"Pos: {s.PlayerTranslate.X:F2} -> {s.PlayerTranslate.Y:F2}");
             })
             .AddTo(ref db);
-
-
-        // タッチ
-        PlayerContainer.ManipulationStarting += PlayerContainer_ManipulationStarting;
-        PlayerContainer.ManipulationStarted += PlayerContainer_ManipulationStarted;
-        PlayerContainer.ManipulationDelta += PlayerContainer_ManipulationDelta;
-        PlayerContainer.ManipulationCompleted += PlayerContainer_ManipulationCompleted;
     }
 
     double[] _playerScaleItems { get; } = 
@@ -3427,28 +3428,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         return _playerScaleItems.First();
     }
 
-
-    private void PlayerContainer_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
-    {
-        e.Mode = ManipulationModes.Rotate | ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
-    }
-
-    private void PlayerContainer_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-    {
-        
-    }
-
-    private void PlayerContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-    {
-        
-    }
-
-    private void PlayerContainer_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-    {
-        
-    }
-
-
+    double HalfDouble(double d) => d * 0.5d;
+    double HalfDoubleNegation(double d) => d * -0.5d;
+    double InverseDouble(double d) => 1 / d;
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter
