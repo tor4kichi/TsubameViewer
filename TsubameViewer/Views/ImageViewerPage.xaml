@@ -1005,10 +1005,9 @@
           Windows10version1903:Translation="0, 0, 16"
           VerticalAlignment="Top"
           HorizontalAlignment="Center"
-          Margin="16 48 16 0"
-          Padding="16 8"
-          CornerRadius="8"
-          IsHitTestVisible="False"
+          Margin="16 4 16 0" 
+          Padding="8"
+          CornerRadius="8"          
           >
       <Windows10version1903:Grid.Shadow>
         <Windows10version1903:ThemeShadow />
@@ -1023,7 +1022,7 @@
 
       <animation:Explicit.Animations>
         <animation:AnimationSet x:Name="ShowWithinButtonsContainer">
-          <animation:TranslationAnimation To="0, 56" EasingType="Cubic" Duration="0:0:0.175" />
+          <animation:TranslationAnimation To="0, 100" EasingType="Cubic" Duration="0:0:0.175" />
         </animation:AnimationSet>
         <animation:AnimationSet x:Name="ShowWithoutButtonsContainer">
           <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
@@ -1040,10 +1039,12 @@
         </i:DataTriggerBehavior>
       </i:Interaction.Behaviors>
 
-
-      <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" >
-        x<Run Text="{x:Bind ToDisplayString(ZoomFactor), Mode=OneWay}" />
-      </TextBlock>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}"
+                   Padding="8 8 8 8">
+          x<Run Text="{x:Bind ToDisplayString(ZoomFactor), Mode=OneWay}" />
+        </TextBlock>
+      </StackPanel>
     </Grid>
 
     <!-- コントロールUI非表示時に下部に読了状況を表示する -->
@@ -1351,7 +1352,6 @@
           <VisualState.StateTriggers>
             <myStateTriggers:VirualKeyPressingTrigger Key="Control"
                                                       myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
-            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="DefaultMouseWheelTrigger.IsEnabled"

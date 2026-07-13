@@ -562,7 +562,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         var lastMnipulating = _nowZoomCenterMovingWithPointer;
         _nowZoomCenterMovingWithPointer = false;
         if (e.Handled) { return; }
-        if (!lastMnipulating && !IsZoomingEnabled)
+        if (!lastMnipulating)
         {
             var pointer = e.GetCurrentPoint(RootGrid);
             if (!_isLastPointerPressedLeft) { return; }
@@ -686,7 +686,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     static readonly float[] _zoomFactorList = Enumerable.Concat(
         new[] { 0.5f, .75f }, 
-        new[] { 1.0f, 1.5f, 2.0f, 4.0f, 8f, 16f, 32f }
+        new[] { 1.0f, 1.125f, 1.25f, 1.5f, 2.0f, 4.0f, 8f, 16f, 32f }
         ).ToArray();
 
     int _currentZoomFactorIndex;
@@ -724,32 +724,26 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 h => ImagesContainer.SizeChanged += h,
                 h => ImagesContainer.SizeChanged -= h
                 )
-            .Subscribe(x => 
-            {
-                _canvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
-            }),
-            _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
-            .Subscribe(_ =>
-            {
-                ZoomFactor = 1.0;
-                _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
-            }),
-            this.ObserveDependencyProperty(ZoomFactorProperty)
-            .Select(x => this.ZoomFactor)
-            .Subscribe(zoom =>
-            {
-                IsZoomingEnabled = zoom != 1.0;
-                AnimationBuilder.Create().Scale(zoom, duration: ZoomDuration).Start(ImagesContainer);
-            }),
-            this.ObserveDependencyProperty(ZoomCenterProperty)
-            .Select(x => this.ZoomCenter)
-            .Subscribe(center =>
-            {
-                if (_nowZoomCenterMovingWithPointer is false)
+                .Subscribe(x => 
                 {
-                    AnimationBuilder.Create().CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
-                }
-            }),
+                    _canvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
+                }),
+            this.ObserveDependencyProperty(ZoomFactorProperty)
+                .Select(x => this.ZoomFactor)
+                .Subscribe(zoom =>
+                {
+                    IsZoomingEnabled = zoom != 1.0;
+                    AnimationBuilder.Create().Scale(zoom, duration: ZoomDuration).Start(ImagesContainer);
+                }),
+            this.ObserveDependencyProperty(ZoomCenterProperty)
+                .Select(x => this.ZoomCenter)
+                .Subscribe(center =>
+                {
+                    if (_nowZoomCenterMovingWithPointer is false)
+                    {
+                        AnimationBuilder.Create().CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
+                    }
+                }),
             this.ObserveDependencyProperty(IsZoomingEnabledProperty)
                 .SubscribeAwait(async (isEnabledZomming, ct) =>
             {
@@ -851,8 +845,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void ZoomUp(PointerRoutedEventArgs args)
     {
-        CloseBottomUI();
-
         var targetUI = ImagesContainer;
         var lastZoom = (float)ZoomFactor;
         var nextCenter = args.GetCurrentPoint(targetUI).Position.ToVector2();
@@ -882,8 +874,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void ZoomDown(PointerRoutedEventArgs args)
     {
-        CloseBottomUI();
-
         var targetUI = ImagesContainer;
         var lastZoom = (float)ZoomFactor;
         var lastCenter = ZoomCenter;
