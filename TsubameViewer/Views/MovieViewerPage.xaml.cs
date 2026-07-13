@@ -1016,9 +1016,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             Observable.NextFrame()
                 .Subscribe(_ =>
                 {
-                    var parameters = PageTransitionHelper.CreatePageParameter(_vm.NextImageSource);
+                    var imageSource = _vm.NextImageSource;
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
-                    _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(_vm.NextImageSource.Name));
+                    _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(imageSource.Name));
                 });
         }
     }
@@ -2923,8 +2924,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         PlayerTranslate.Y = 0;
     }
 
-    Vector2 _lastPointerPos;
-
     void SubscribeTransformEdit(ref DisposableBuilder db)
     {
         R3.Observable.Merge(
@@ -2938,30 +2937,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     s._vm.NowEditTransformMode = isControlDown;
                     Debug.WriteLine($"NowEditTransformMode: {s._vm.NowEditTransformMode}");
                 }
-            })
-            .AddTo(ref db);
-
-        // マウス・ペン
-        Observable.CombineLatest(
-            this.ObservePointerMoved().Where(x => x.Pointer.PointerDeviceType != PointerDeviceType.Touch).Select(this, (x, s) => x.GetCurrentPoint(s.PageRoot).Position.ToVector2()),
-            R3.Observable.Merge(
-                this.ObservePointerPressed().Where(x => x.Pointer.PointerDeviceType != PointerDeviceType.Touch).Select(this, (x, s) => { s._lastPointerPos = x.GetCurrentPoint(s).Position.ToVector2(); return true; }),
-                this.ObservePointerReleased().Where(x => x.Pointer.PointerDeviceType != PointerDeviceType.Touch).Select(x => false)
-                )
-            , (pos, isPressed) => (pos, isPressed)
-            )
-            .Where(this, (x, s) => s._vm.NowEditTransformMode && x.isPressed)
-            .Pairwise()
-            .Subscribe(this, (x, s) => 
-            {
-                var halfSize = s.PlayerContainer.ActualSize * 0.5f;
-                var (prev, current) = x;
-                var deltaPos = (current.pos - s._lastPointerPos) * 1 / (float)s.PlayerScale.ScaleX;
-                s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + deltaPos.X, -halfSize.X, halfSize.X));
-                s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + deltaPos.Y, -halfSize.Y, halfSize.Y));
-                s._lastPointerPos = current.pos;
-
-                Debug.WriteLine($"Pos = {s.PlayerTranslate.X:F0}, {s.PlayerTranslate.Y:F0}");
             })
             .AddTo(ref db);
 

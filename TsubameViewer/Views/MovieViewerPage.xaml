@@ -556,7 +556,7 @@
                                            XPixelsToOneUnit="8"
                                            YPixelsToOneUnit="16"/>
         <myBehaviour:ScaleManipulationBehavior x:Name="ScaleBehavior"
-                                               Max="32"
+                                               Max="8"
                                                Min="0.5"
                                                Scale="{x:Bind PlayerScale.ScaleX, Mode=TwoWay}"
                                                IsEnabled="False"/>

@@ -312,8 +312,8 @@ public sealed class TranslationManipulationBehavior : ManipulationBehaviorBase
     double _startTranslationY;
     void SetTranslation(double x, double y)
     {
-        TranslationX = Math.Round(Math.Clamp(x * ParentScale, MinX, MaxX));
-        TranslationY = Math.Round(Math.Clamp(y * ParentScale, MinY, MaxY));        
+        TranslationX = Math.Round(Math.Clamp(x, MinX, MaxX));
+        TranslationY = Math.Round(Math.Clamp(y, MinY, MaxY));        
     }
 
     protected override bool ManipulationStating(object sender, ManipulationStartingRoutedEventArgs e)
@@ -331,13 +331,13 @@ public sealed class TranslationManipulationBehavior : ManipulationBehaviorBase
 
     protected override bool ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
     {
-        SetTranslation(_startTranslationX + e.Cumulative.Translation.X, _startTranslationY + e.Cumulative.Translation.Y);
+        SetTranslation(_startTranslationX + e.Cumulative.Translation.X * ParentScale, _startTranslationY + e.Cumulative.Translation.Y * ParentScale);
         return true;
     }
 
     protected override bool ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
     {
-        SetTranslation(_startTranslationX + e.Cumulative.Translation.X, _startTranslationY + e.Cumulative.Translation.Y);        
+        SetTranslation(_startTranslationX + e.Cumulative.Translation.X * ParentScale, _startTranslationY + e.Cumulative.Translation.Y * ParentScale);        
         return true;
     }
 }
