@@ -2100,7 +2100,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
-        SetSoundVolume(_vm.PageSettings.SoundVolume, _vm.PageSettings.IsMuted);
+        SetSoundVolume(_vm.PageSettings.SoundVolume);
+        MediaPlayer.IsMuted = _vm.PageSettings.IsMuted;
+        _audioPlayer.IsMuted = _vm.PageSettings.IsMuted;
         MediaPlayer.Volume = 0;
         _audioPlayer.Volume = 0;
         float increaseVolumeUnit = (float)_vm.PageSettings.SoundVolume / 30f; // 0.5秒
@@ -2144,7 +2146,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Select(MySwipeDistanceBehavior, (_, s) => Math.Abs(s.ProgressY) >= 1)
             .Subscribe(this, (pair, s) => 
             {
-                s.SetSoundVolume(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1), s._vm.PageSettings.IsMuted);
+
+                s.SetSoundVolume(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1));
             })
             .AddTo(ref db);
 
@@ -2166,43 +2169,28 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void ToggleIsMuted()
     {
-        _vm.PageSettings.IsMuted = !_vm.PageSettings.IsMuted;
-        MediaPlayer.IsMuted = _vm.PageSettings.IsMuted;
-        _audioPlayer.IsMuted = _vm.PageSettings.IsMuted;
-        if (_vm.PageSettings.IsMuted)
-        {
-            SetSoundVolume(0, true);
-        }
-        else
-        {
-            SetSoundVolume(_vm.PageSettings.SoundVolume, false);
-        }
-        
+        bool isMuted = !_vm.PageSettings.IsMuted;
+        _vm.PageSettings.IsMuted = isMuted;
+        MediaPlayer.IsMuted = isMuted;
+        _audioPlayer.IsMuted = isMuted;
+        SetSoundVolumeFromCode(isMuted ? 0 : _vm.PageSettings.SoundVolume);
     }
 
 
-    void SetSoundVolume(double vol, bool isMute)
+    void SetSoundVolume(double vol)
     {
         _nowSoundVolumeChanging = true;
         try
         {
-            if (isMute)
-            {
-                SoundVolume_Display = 0;
-            }
-            else
-            {
-                SoundVolume_Display = vol;
-            }
-
-            MediaPlayer.IsMuted = isMute;
-            _audioPlayer.IsMuted = isMute;
+            SoundVolume_Display = vol;
         }
         finally
         {
             _nowSoundVolumeChanging = false;
         }
     }
+
+
 
     bool _nowSoundVolumeChanging;
     void ControlUI_SoundVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -2224,13 +2212,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _nowSoundVolumeChanging = true;
         try
         {
-            bool isMute = volume == 0;
             SoundVolume_Display = volume;            
             MediaPlayer.Volume = volume;
-            MediaPlayer.IsMuted = isMute;
             _audioPlayer.Volume = volume;
-            _audioPlayer.IsMuted = isMute;
-            _vm.PageSettings.IsMuted = isMute;
         }
         finally
         {
@@ -2251,7 +2235,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         double vol = Math.Clamp(SoundVolume_Display == 0 ? _vm.PageSettings.SoundVolume : SoundVolume_Display + normalizedRelativeValue, 0.0, 1.0);        
         SetSoundVolumeFromCode(vol);
-        _vm.PageSettings.SoundVolume = vol;
+        if (vol != 0)
+        {
+            _vm.PageSettings.SoundVolume = vol;
+        }
     }
 
 
