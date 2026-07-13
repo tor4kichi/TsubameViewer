@@ -3368,15 +3368,22 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }
                 else if (newScale < 1d && newScale > oldScale)
                 {
+                    var factor = (oldScale - newScale) / (1 - _playerScaleItems[0]);
                     // 1に近づく場合に
-                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (oldScale - newScale), -halfSize.X, halfSize.X));
-                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (oldScale - newScale), -halfSize.Y, halfSize.Y));
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * factor, -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * factor, -halfSize.Y, halfSize.Y));
                 }
                 else if (newScale > 1d && newScale < oldScale)
                 {
-                    // 1に近づく場合に
-                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * (newScale - oldScale), -halfSize.X, halfSize.X));
-                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * (newScale - oldScale), -halfSize.Y, halfSize.Y));
+                    // ポインタ位置を固定するための平行移動を計算
+                    // T_new = T_old + P * (1/S_new - 1/S_old)
+                    var invOld = 1.0 / oldScale;
+                    var invNew = 1.0 / newScale;
+                    var dx = _lastZoomUpPos.X * (invNew - invOld);
+                    var dy = _lastZoomUpPos.Y * (invNew - invOld);
+
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y));
                 }
                 else
                 {
@@ -3389,6 +3396,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     
                     s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X));
                     s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y));
+                    _lastZoomUpPos = new(pt.X, pt.Y);
                 }
                 s.PlayerScale.ScaleX = newScale;
                 //s.PlayerScale.ScaleY = newScale;
@@ -3398,6 +3406,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
     }
+
+    Vector2 _lastZoomUpPos;
 
     double[] _playerScaleItems { get; } = 
         [0.5, 0.75, 1, 1.125, 1.25, 1.5, 2, 4, 8, 16, 32];
