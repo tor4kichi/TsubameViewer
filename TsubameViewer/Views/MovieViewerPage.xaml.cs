@@ -364,7 +364,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void ControlUIInteractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        if (MySwipeDistanceBehavior.NowManipulation)
+        if (MySwipeDistanceBehavior.NowManipulation || _vm.NowEditTransformMode)
         {
             _nextIsDisplayControlUI = null;
         }
@@ -886,6 +886,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 var (_this, insideWindowRp, insideControlUIRp, timer) = s;                
                 _this.ShowMouseCursor();
                 timer.Stop();
+
+                if (_this._vm.NowEditTransformMode)
+                {
+                    return;
+                }
+                
                 if (TimeProvider.System.GetElapsedTime(_this._lastTappedTime) < TimeSpan.FromMilliseconds(250))
                 {
                     // タップ動作中はスキップ
