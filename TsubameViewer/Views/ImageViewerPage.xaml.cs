@@ -252,10 +252,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
-        
+
+        _vm.NowEditTransformMode = false;
+        _vm.TransformScale = 1;
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         CloseBottomUI();
-
+        
         IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
 
