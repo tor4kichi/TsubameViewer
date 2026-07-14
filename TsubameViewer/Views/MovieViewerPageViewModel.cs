@@ -7,6 +7,8 @@ using Microsoft.IO;
 using R3;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -18,14 +20,18 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.Storage;
+using Windows.Storage.Search;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media;
 #nullable enable
@@ -50,7 +56,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isFFmpegUseFirstToMediaSourceFactory = Read(true, nameof(IsFFmpegUseFirstToMediaSourceFactory));
         _videoFrameThumbnailSize = Read(240, nameof(VideoFrameThumbnailSize));
         _subtitleEnabledByLanguage = Read(new Dictionary<string, bool>(), "SubtitleEnabledByLanguage");
-        _isSubtitleDisplayEnabled = Read(false, nameof(IsSubtitleDisplayEnabled));
+        _isSubtitleDisplayEnabled = Read(false, nameof(IsSubtitleDisplayEnabled));        
     }
     
     bool _isRepeat;
@@ -66,7 +72,6 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         get => _isAutoRepeatEnablingEnabled;
         set => SetProperty(ref _isAutoRepeatEnablingEnabled, value);
     }
-
 
     int _autoRepeatEnablingTimeInSeconds;
     public TimeSpan AutoRepeatEnablingTimeInSeconds
@@ -195,6 +200,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         RecyclableMemoryStreamManager recyclableMemoryStreamManager,
+        ViewerSettings viewerSettings,
         MovieViewerPageSettings pageSettings)
     {
         _messenger = messenger;
@@ -210,6 +216,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         RecyclableMemoryStreamManager = recyclableMemoryStreamManager;
+        ViewerSettings = viewerSettings;
         PageSettings = pageSettings;
     }
 
@@ -229,7 +236,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; }
-    
+    public ViewerSettings ViewerSettings { get; }
+
     [ObservableProperty]
     StorageFile? _movieFile;
 
@@ -246,6 +254,15 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
     [ObservableProperty]
     IImageSource? _currentImageSource;
+
+    [ObservableProperty]
+    IImageSource? _prevImageSource;
+
+    [ObservableProperty]
+    IImageSource? _nextImageSource;
+
+    [ObservableProperty]
+    bool _nowEditTransformMode;
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -281,6 +298,39 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                 }
 
                 CurrentImageSource = imageSource;
+
+                NextImageSource = null;
+                PrevImageSource = null;
+                try
+                {
+                    if (ViewerSettings.IsDetectSimiralyFileNameNeighborsEnabled
+                        && await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(newPath)) is StorageFolder parentFolder)
+                    {
+                        var query = parentFolder.CreateFileQuery();
+                        query.ApplyNewQueryOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedMovieFileExtensions));
+                        var currentItemIndex = await query.FindStartIndexAsync(imageSource.Name);
+
+                        if (currentItemIndex - 1 >= 0
+                            && await query.GetFilesAsync(currentItemIndex - 1, 1) is { } prevFiles
+                            && prevFiles.ElementAtOrDefault(0) is { } prevFile
+                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, prevFile.Name) >= ViewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                        {
+                            PrevImageSource = new StorageItemImageSource(prevFile);
+                        }
+
+                        if (await query.GetFilesAsync(currentItemIndex + 1, 1) is { } nextFiles
+                            && nextFiles.ElementAtOrDefault(0) is { } nextFile
+                            && StringLevenshteinHelper.GetSimilarityNormalized(CurrentImageSource.Name, nextFile.Name) >= ViewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized)
+                        {
+                            NextImageSource = new StorageItemImageSource(nextFile);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.ToString());
+                }
+
             }, ct);
 
             Guard.IsNotNull(CurrentImageSource);
@@ -303,17 +353,26 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
                     }
                 })
-                .RegisterTo(_navigationCt);
+                .RegisterTo(_navigationCt);            
         }
     }
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
-    {        
+    {
+        NextImageSource = null;
         if (MovieFile?.Path is { } path)
         {
             _messenger.Send(new LatestContentViewUpdateMessage(path));
         }
 
         base.OnNavigatedFrom(parameters);
+    }
+
+    [RelayCommand]
+    async Task OpenMovieFileAsync(IImageSource? imageSource)
+    {
+        if (imageSource == null) { return; }
+        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+        _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
     }
 }

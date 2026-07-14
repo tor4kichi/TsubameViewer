@@ -3,10 +3,10 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using Microsoft.Graphics.Canvas;
-using Microsoft.Graphics.Canvas.UI.Xaml;
 using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Controls;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
 using R3.Extensions;
 using System;
@@ -47,6 +47,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 #nullable enable
 namespace TsubameViewer.Views;
 
@@ -251,17 +252,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
-        
+
+        _vm.NowEditTransformMode = false;
+        _vm.TransformScale = 1;
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         CloseBottomUI();
-
-        IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
+        
         IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
-
-        IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
-        IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
-        IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
 
         KeyDown += ImageViewerPage_KeyDown;
 
@@ -331,6 +329,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }, AwaitOperation.Drop)
             .AddTo(ref db);
 
+        SubscribeTransformEdit(ref db);
+
         db.Build().RegisterTo(_navigationCt);
 
         AnimationBuilder.Create()
@@ -353,9 +353,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     {
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
-        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
-        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
         KeyDown -= ImageViewerPage_KeyDown;
         Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
         _messenger.Unregister<BackNavigationRequestingMessage>(this);        
@@ -399,8 +396,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
     {
-        InitializeZoomReaction()
-            .RegisterTo(navigationCt);
+        //InitializeZoomReaction()
+        //    .RegisterTo(navigationCt);
 
         IsReadyToImageDisplay = true;
         while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
@@ -558,11 +555,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void IntaractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
-
-        var lastMnipulating = _nowZoomCenterMovingWithPointer;
-        _nowZoomCenterMovingWithPointer = false;
         if (e.Handled) { return; }
-        if (!lastMnipulating && !IsZoomingEnabled)
+        if (!_vm.NowEditTransformMode)
         {
             var pointer = e.GetCurrentPoint(RootGrid);
             if (!_isLastPointerPressedLeft) { return; }
@@ -570,8 +564,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             var pt = pointer.Position;
             if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
             if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
-            if (_nowZoomCenterMovingWithPointer) { return; }
-
+            
             if (!IsOpenBottomMenu)
             {
                 var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
@@ -635,7 +628,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         if (_focusHelper.IsRequireSetFocus())
         {
-            ZoomInButton.Focus(FocusState.Keyboard);
+            TransformEditModeButton.Focus(FocusState.Keyboard);
         }            
     }
 
@@ -681,391 +674,158 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     #region ZoomInOut
 
 
-    const float _maxZoomFactor = 8.0f;
-    const float _minZoomFactor = 0.5f;        
 
-    static readonly float[] _zoomFactorList = Enumerable.Concat(
-        new[] { 0.5f, .75f }, 
-        new[] { 1.0f, 1.5f, 2.0f, 4.0f, 8f, 16f, 32f }
-        ).ToArray();
-
-    int _currentZoomFactorIndex;
-    static readonly TimeSpan _defaultZoomingDuration = TimeSpan.FromMilliseconds(150);    
-    const float _controlerZoomCenterMoveAmount = 100.0f;
-    float GetZoomCenterMoveingFactorForMouseTouch()
+    [RelayCommand]
+    void ToggleEditTransformMode()
     {
-        return (_maxZoomFactor - (float)ZoomFactor) / (_maxZoomFactor) + 0.375f;
+        _vm.NowEditTransformMode = !_vm.NowEditTransformMode;
     }
 
-    float GetZoomCenterMoveingFactorForController()
+    [RelayCommand]
+    void ResetPlayerTransform()
     {
-        return (_maxZoomFactor - (float)ZoomFactor) / (_maxZoomFactor) + 0.1f;
+        _vm.TransformScale = 1;
+        PlayerTranslate.X = 0;
+        PlayerTranslate.Y = 0;
     }
 
-
-    Vector2 _canvasHalfSize;
-
-    int GetDefaultZoomFactorListIndex()
+    void SubscribeTransformEdit(ref DisposableBuilder db)
     {
-        return Array.IndexOf(_zoomFactorList, 1.0f);
-    }
-
-    IDisposable InitializeZoomReaction()
-    {
-        _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
-        _canvasHalfSize = ImagesContainer.ActualSize * 0.5f;
-        ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(_canvasHalfSize, 0);
-
-        var scheduler = CoreDispatcherScheduler.Current;
-
-        var disposables = new R3.CompositeDisposable(new[]
-        {
-            System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
-                h => ImagesContainer.SizeChanged += h,
-                h => ImagesContainer.SizeChanged -= h
-                )
-            .Subscribe(x => 
+        _vm.ObservePropertyChanged(x => x.NowEditTransformMode)
+            .Subscribe(this, (isEnabled, s) => 
             {
-                _canvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
-            }),
-            _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
-            .Subscribe(_ =>
-            {
-                ZoomFactor = 1.0;
-                _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
-            }),
-            this.ObserveDependencyProperty(ZoomFactorProperty)
-            .Select(x => this.ZoomFactor)
-            .Subscribe(zoom =>
-            {
-                IsZoomingEnabled = zoom != 1.0;
-                AnimationBuilder.Create().Scale(zoom, duration: ZoomDuration).Start(ImagesContainer);
-            }),
-            this.ObserveDependencyProperty(ZoomCenterProperty)
-            .Select(x => this.ZoomCenter)
-            .Subscribe(center =>
-            {
-                if (_nowZoomCenterMovingWithPointer is false)
+                if (isEnabled)
                 {
-                    AnimationBuilder.Create().CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
+                    s.CloseBottomUI();
                 }
-            }),
-            this.ObserveDependencyProperty(IsZoomingEnabledProperty)
-                .SubscribeAwait(async (isEnabledZomming, ct) =>
-            {
-                if (ZoomFactor > 1.0)
+                else
                 {
-                    await _vm.DisableImageDecodeWhenImageSmallerCanvasSize();
+                    s.ShowBottomUI();
                 }
-            }),
-        });
+            })
+            .AddTo(ref db);
 
-        ZoomCenter = _canvasHalfSize;
-
-        return disposables;
-    }
-
-    void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-    {
-        bool isMoveCenter = _nowZoomCenterMovingWithPointer;
-
-        if (IsZoomingEnabled)
-        {
-            IsZoomingEnabled = ZoomFactor != 1.0f;
-
-            if (isMoveCenter is false)
+        R3.Observable.Merge(
+            Window.Current.CoreWindow.ObserveKeyDown().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => true),
+            Window.Current.CoreWindow.ObserveKeyUp().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => false)
+            )
+            .Subscribe(this, static (isControlDown, s) =>
             {
-                ToggleOpenCloseBottomUI();
-                e.Handled = true;
-            }
-        }
-        else
-        {
-            if (e.Cumulative.Translation.X > 30)
-            {
-                // 右スワイプ
-                ReversableGoNext();
-            }
-            else if (e.Cumulative.Translation.X < -30)
-            {
-                // 左スワイプ
-                ReversableGoPrev();
-            }
-            else
-            {
-                _nowZoomCenterMovingWithPointer = false;
-            }
-        }
-    }
-
-    bool _nowZoomCenterMovingWithPointer;
-
-    void IntaractionWall_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-    {
-        _startZoomFactor = (float)ZoomFactor;
-        _nowZoomCenterMovingWithPointer = true;
-    }
-
-    float _startZoomFactor;
-    float _sumScale;
-    void ImagesContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-    {
-        var factor = GetZoomCenterMoveingFactorForMouseTouch();
-        if (e.PointerDeviceType is PointerDeviceType.Touch)
-        {
-            // ズーム操作と移動操作は排他的に行う
-            if (e.Delta.Scale is not 1.0f)
-            {
-                // 拡縮開始時との差分で計算する
-                _sumScale += (e.Delta.Scale - (e.Delta.Scale * 0.01f) - 1.0f);
-                var nextZoom = Math.Clamp(_startZoomFactor * (_sumScale + 1.0f), _minZoomFactor, _maxZoomFactor);
-                if (nextZoom < 1.0f)
+                if (s._vm.NowEditTransformMode != isControlDown)
                 {
-                    nextZoom = 1.0f;
+                    s._vm.NowEditTransformMode = isControlDown;
+                    Debug.WriteLine($"NowEditTransformMode: {s._vm.NowEditTransformMode}");
                 }
+            })
+            .AddTo(ref db);
 
-                ZoomFactor = nextZoom;                    
-            }
-            else
+        this.ObservePointerWheelChanged()
+            .Where(this, (x, s) => s._vm.NowEditTransformMode)
+            .Subscribe(this, static (e, s) =>
             {
-                if (ZoomFactor > 1.0)
+                var halfSize = s.ContentContainer.ActualSize * 0.5f;
+                // ポインタ位置（PlayerContainer座標系）
+                var pt = e.GetCurrentPoint(s.ContentContainer).Position.ToVector2() - halfSize;
+
+                // 現在のスケール（X/Yは同じ前提）
+                var oldScale = s._vm.TransformScale;
+                if (oldScale <= 0) oldScale = 1.0;
+
+                // ホイール方向でスケールを決定
+                var wheel = e.GetCurrentPoint(null).Properties.MouseWheelDelta;
+                var newScale = Math.Clamp((wheel > 0 ? s.GetNextScale(oldScale) : s.GetPrevScale(oldScale)), 0.5, 8.0);
+
+                if (Math.Abs(newScale - oldScale) < double.Epsilon) return;
+
+                if (newScale == 1d)
                 {
-                    ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
-                    var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
-                    visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                    s.PlayerTranslate.X = 0;
+                    s.PlayerTranslate.Y = 0;
                 }
-            }
-        }
-        else
-        {
-            if (ZoomFactor > 1.0)
+                else if (newScale < 1d && newScale > oldScale)
+                {
+                    var factor = (oldScale - newScale) / (1 - s._playerScaleItems[0]);
+                    // 1に近づく場合に
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + s.PlayerTranslate.X * factor, -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + s.PlayerTranslate.Y * factor, -halfSize.Y, halfSize.Y));
+                }
+                else if (newScale > 1d && newScale < oldScale)
+                {
+                    // ポインタ位置を固定するための平行移動を計算
+                    // T_new = T_old + P * (1/S_new - 1/S_old)
+                    var invOld = 1.0 / oldScale;
+                    var invNew = 1.0 / newScale;
+                    var dx = s._lastZoomUpPos.X * (invNew - invOld);
+                    var dy = s._lastZoomUpPos.Y * (invNew - invOld);
+
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y));
+                }
+                else
+                {
+                    // ポインタ位置を固定するための平行移動を計算
+                    // T_new = T_old + P * (1/S_new - 1/S_old)
+                    var invOld = 1.0 / oldScale;
+                    var invNew = 1.0 / newScale;
+                    var dx = pt.X * (invNew - invOld);
+                    var dy = pt.Y * (invNew - invOld);
+
+                    s.PlayerTranslate.X = Math.Round(Math.Clamp(s.PlayerTranslate.X + dx, -halfSize.X, halfSize.X));
+                    s.PlayerTranslate.Y = Math.Round(Math.Clamp(s.PlayerTranslate.Y + dy, -halfSize.Y, halfSize.Y));
+                    s._lastZoomUpPos = new(pt.X, pt.Y);
+                }
+                s._vm.TransformScale = newScale;
+                //s.PlayerScale.ScaleY = newScale;
+
+                //Debug.WriteLine($"Scale: {oldScale:F2} -> {newScale:F2}");
+                Debug.WriteLine($"Pos: {s.PlayerTranslate.X:F2} -> {s.PlayerTranslate.Y:F2}");
+            })
+            .AddTo(ref db);
+        _vm.ObservePropertyChanged(x => x.TransformScale, false)
+            .SubscribeAwait(this, static async (scale, s, ct) =>
             {
-                // ズームが強くなるほど視点移動速度を下げて「滑ってる感」を小さくしたい
-                ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
-                var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
-                visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                if (scale > 1.0)
+                {
+                    await s._vm.DisableImageDecodeWhenImageSmallerCanvasSize();
+                }
+            })
+            .AddTo(ref db);
+    }
+
+    Vector2 _lastZoomUpPos;
+
+    double[] _playerScaleItems { get; } =
+        [0.5, 0.75, 1, 1.125, 1.25, 1.5, 2, 4, 8, 16, 32];
+
+    double GetNextScale(double current)
+    {
+        foreach (var f in _playerScaleItems)
+        {
+            if (f > current)
+            {
+                return f;
             }
         }
+
+        return _playerScaleItems.Last();
     }
 
-    [RelayCommand]
-    void ZoomUp(PointerRoutedEventArgs args)
+    double GetPrevScale(double current)
     {
-        CloseBottomUI();
-
-        var targetUI = ImagesContainer;
-        var lastZoom = (float)ZoomFactor;
-        var nextCenter = args.GetCurrentPoint(targetUI).Position.ToVector2();
-        var nextZoom = _zoomFactorList[_currentZoomFactorIndex + 1 < _zoomFactorList.Length ? ++_currentZoomFactorIndex : _currentZoomFactorIndex];
-        if (lastZoom < 1.0f && nextZoom >= 1.0f)
+        foreach (var f in _playerScaleItems.AsValueEnumerable().Reverse())
         {
-            nextZoom = 1.0f;
-            nextCenter = _canvasHalfSize;
-        }
-        else if (nextZoom == lastZoom)
-        {
-            return;
-        }
-        else if (nextZoom <= 1.0f)
-        {
-            // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-            var imageCenterPos = targetUI.ActualSize;
-            Vector2 lastCenterPos = new Vector2(targetUI.CenterPoint.X, targetUI.CenterPoint.Y);
-            nextCenter = (imageCenterPos - lastCenterPos) * 0.5f + lastCenterPos;
+            if (f < current)
+            {
+                return f;
+            }
         }
 
-        ZoomFactor = nextZoom;
-        ZoomCenter = nextCenter;
-        IsZoomingEnabled = nextZoom != 1.0f;
+        return _playerScaleItems.First();
     }
 
-    [RelayCommand]
-    void ZoomDown(PointerRoutedEventArgs args)
-    {
-        CloseBottomUI();
-
-        var targetUI = ImagesContainer;
-        var lastZoom = (float)ZoomFactor;
-        var lastCenter = ZoomCenter;
-        var nextCenter = Vector2.Zero;
-        var nextZoom = _zoomFactorList[_currentZoomFactorIndex - 1 >= 0 ? --_currentZoomFactorIndex : _currentZoomFactorIndex];
-        if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
-        {
-            nextZoom = 1.0f;
-            nextCenter = lastCenter;
-        }
-        else if (nextZoom == lastZoom)
-        {
-            return;
-        }
-        else if (nextZoom > 1.0f)
-        {
-            // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-            var imageCenterPos = _canvasHalfSize;
-            nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
-        }
-        else
-        {
-            nextCenter = _canvasHalfSize;
-        }
-
-        ZoomFactor = nextZoom;
-        IsZoomingEnabled = nextZoom != 1.0f;
-        ZoomCenter = nextCenter;
-    }
-
-    [RelayCommand]
-    void ZoomReset()
-    {
-        _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
-        ZoomCenter = _canvasHalfSize;
-        ZoomFactor = 1.0;
-    }
-
-    Vector2 ToZoomCenterInsideCanvas(Vector2 center)
-    {
-        var range = ImagesContainer.ActualSize;
-        var x = Math.Clamp(center.X, -range.X, range.X);
-        var y = Math.Clamp(center.Y, -range.Y, range.Y);
-        return new Vector2(x, y);
-    }
-
-    [RelayCommand]
-    void ZoomUpWithController()
-    {
-        var targetUI = ImagesContainer;
-        var lastZoom = (float)ZoomFactor;
-        var nextZoom = _zoomFactorList[_currentZoomFactorIndex + 1 < _zoomFactorList.Length ? ++_currentZoomFactorIndex : _currentZoomFactorIndex];
-        if (lastZoom < 1.0f && nextZoom >= 1.0f)
-        {
-            nextZoom = 1.0f;
-        }
-        else if (nextZoom == lastZoom)
-        {
-            return;
-        }
-
-        ZoomFactor = nextZoom;
-        IsZoomingEnabled = nextZoom != 1.0f;
-    }
-
-    [RelayCommand]
-    void ZoomDownWithController()
-    {
-        var targetUI = ImagesContainer;
-        var lastZoom = (float)ZoomFactor;
-        var lastCenter = ZoomCenter;
-        var nextCenter = Vector2.Zero;
-        var nextZoom = _zoomFactorList[_currentZoomFactorIndex - 1 >= 0 ? --_currentZoomFactorIndex : _currentZoomFactorIndex];
-        if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
-        {
-            nextZoom = 1.0f;
-            nextCenter = lastCenter;
-        }
-        else if (nextZoom == lastZoom)
-        {
-            return;
-        }
-        else if (nextZoom > 1.0f)
-        {
-            // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-            var imageCenterPos = _canvasHalfSize;
-            nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
-        }
-        else
-        {
-            nextCenter = _canvasHalfSize;
-        }
-
-        ZoomFactor = nextZoom;
-        IsZoomingEnabled = nextZoom != 1.0f;
-        ZoomCenter = nextCenter;
-    }
-    [RelayCommand]
-    void ZoomCenterMoveRight()
-    {
-        var targetUI = ImagesContainer;
-        if (ZoomFactor > 1.0f)
-        {
-            ZoomCenter += new Vector2(_controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
-        }
-    }
-    [RelayCommand]
-    void ZoomCenterMoveLeft()
-    {
-        var targetUI = ImagesContainer;
-        if (ZoomFactor > 1.0f)
-        {
-            ZoomCenter += new Vector2(-_controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
-        }
-    }
-    [RelayCommand]
-    void ZoomCenterMoveUp()
-    {
-        var targetUI = ImagesContainer;
-        if (ZoomFactor > 1.0f)
-        {
-            ZoomCenter += new Vector2(0, -_controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
-        }
-    }
-
-    [RelayCommand]
-    void ZoomCenterMoveDown()
-    {
-        var targetUI = ImagesContainer;
-        if (ZoomFactor > 1.0f)
-        {
-            ZoomCenter += new Vector2(0, _controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
-        }
-    }
-
-    public bool IsZoomingEnabled
-    {
-        get { return (bool)GetValue(IsZoomingEnabledProperty); }
-        set { SetValue(IsZoomingEnabledProperty, value); }
-    }
-
-    public static readonly DependencyProperty IsZoomingEnabledProperty =
-        DependencyProperty.Register("IsZoomingEnabled", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
-
-
-
-    public TimeSpan ZoomDuration
-    {
-        get { return (TimeSpan)GetValue(ZoomDurationProperty); }
-        set { SetValue(ZoomDurationProperty, value); }
-    }
-
-    public static readonly DependencyProperty ZoomDurationProperty =
-        DependencyProperty.Register("ZoomDuration", typeof(TimeSpan), typeof(ImageViewerPage), new PropertyMetadata(_defaultZoomingDuration));
-
-
-    string ToDisplayString(double zoomFactor)
-    {
-        return zoomFactor.ToString("F1");
-    }
-
-    public double ZoomFactor
-    {
-        get { return (double)GetValue(ZoomFactorProperty); }
-        set { SetValue(ZoomFactorProperty, value); }
-    }
-
-    public static readonly DependencyProperty ZoomFactorProperty =
-        DependencyProperty.Register("ZoomFactor", typeof(double), typeof(ImageViewerPage), new PropertyMetadata(1.0));
-
-
-
-
-    public Vector2 ZoomCenter
-    {
-        get { return (Vector2)GetValue(ZoomCenterProperty); }
-        set { SetValue(ZoomCenterProperty, value); }
-    }
-
-    public static readonly DependencyProperty ZoomCenterProperty =
-        DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
-
+    double HalfDouble(double d) => d * 0.5d;
+    double HalfDoubleNegation(double d) => d * -0.5d;
+    double InverseDouble(double d) => 1 / d;
 
 
     #endregion

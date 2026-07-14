@@ -404,6 +404,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         catch (OperationCanceledException)
         {
             Status = LoadingStatus.PendingLoad;
+            Image = null;
         }
         catch (NotSupportedImageFormatException ex)
         {
@@ -481,7 +482,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     {
         IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
-        if (Status is not LoadingStatus.LoadFailed and not LoadingStatus.Loaded)
+        if (Item == null || Image == null)
         {
             Status = LoadingStatus.PendingLoad;
             InitializeAsync(ct).FireAndForgetSafe();

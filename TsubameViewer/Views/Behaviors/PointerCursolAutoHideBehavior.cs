@@ -36,7 +36,7 @@ namespace TsubameViewer.Views.Behaviors
     public class PointerCursolAutoHideBehavior : Behavior<FrameworkElement>
     {
         // カーソルを元に戻すためのやつ
-        CoreCursor _DefaultCursor;
+        static CoreCursor _DefaultCursor;
 
         Point _LastCursorPosition;
 
@@ -117,10 +117,10 @@ namespace TsubameViewer.Views.Behaviors
 
         public PointerCursolAutoHideBehavior()
         {
+            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;
             _AutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
             _AutoHideTimer.Tick += AutoHideTimer_Tick;
             _AutoHideTimer.IsRepeating = false;
-            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;            
         }
 
         protected override void OnAttached()
@@ -171,6 +171,9 @@ namespace TsubameViewer.Views.Behaviors
 
         protected override void OnDetaching()
         {
+            _AutoHideTimer.Stop();
+
+            Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
             AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
             AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
 
@@ -195,14 +198,17 @@ namespace TsubameViewer.Views.Behaviors
         
         void CursorVisibilityChanged(bool isVisible)
         {
-            if (_DefaultCursor == null) { throw new InvalidOperationException($"Default cursor is can not be null."); }
+            if (AssociatedObject == null) { return; }
 
             // 表示状態変化のトリガーを検出して処理する
             if (_prevIsVisible != isVisible)
             {
                 if (isVisible)
                 {
-                    Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
+                    if (_DefaultCursor != null)
+                    {
+                        Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
+                    }
                     RestoreCursorPosition();
 
                     Debug.WriteLineIf(IsDebugOutputEnabled, $"Show Mouse Cursor.");

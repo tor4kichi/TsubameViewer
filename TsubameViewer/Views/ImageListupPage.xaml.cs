@@ -167,6 +167,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     var (elem, itemVM) = x;
                     _ = itemVM.EnsureImageSizeRatioAsync(ct);
                     itemVM.RestoreThumbnailLoadingTask(ct);
+                    if (elem.FindDescendant<Image>() is { } imageControl)
+                    {
+                        await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                    }
+
 
                 }, ct).FireAndForgetSafe();
         }

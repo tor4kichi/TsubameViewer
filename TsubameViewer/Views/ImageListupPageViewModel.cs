@@ -581,7 +581,6 @@ public sealed partial class ImageListupPageViewModel
         IsFavoriteAlbam = false;
         (_imageCollectionContext as IDisposable)?.Dispose();
         _imageCollectionContext = null;
-        (CurrentFolderItem as IDisposable)?.Dispose();
         CurrentFolderItem = null;
         DisplayCurrentArchiveFolderName = null;
         _itemsDisposable?.Dispose();

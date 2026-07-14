@@ -172,7 +172,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     ? Disposable.Empty
                     : await _imageGeneratingLock.LockAsync(_navigationCt))
                 {                    
-                    if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
                     await itemVM.InitializeAsync(_navigationCt);
                 }
                 if (imageControl != null)
@@ -280,20 +279,15 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     {
                         var (elem, itemVM) = x;
                         itemVM.RestoreThumbnailLoadingTask(ct);
-
+                        if (elem.FindDescendant<Image>() is { } imageControl)
+                        {
+                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                        }
                     }, ct).FireAndForgetSafe();
             }
             else
             {
                 _realizedItems.Clear();
-            }
-            foreach (var (elem, itemVM) in _realizedItems)
-            {
-                var image = elem.FindDescendant<Windows.UI.Xaml.Controls.Image>();
-                if (image != null)
-                {
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                }
             }
         }
         catch (OperationCanceledException) { }

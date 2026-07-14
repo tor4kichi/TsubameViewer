@@ -125,10 +125,10 @@ ChangeViewToFolderListupPage = Affichage des dossiers
 ChangeViewToImageListupPage = Affichage des images
 FolderItemDisplayWithLandscape = Afficher les éléments en orientation paysage
 FileSortTitle = Trier
-FileSortType.TitleAscending = Titre (Asc)
-FileSortType.TitleDecending = Titre (Desc)
-FileSortType.UpdateTimeAscending = Date d'ajout (Du plus vieux au plus récent)
-FileSortType.UpdateTimeDecending = Date d'ajout (Du plus récent au plus vieux)
+FileSortType.TitleAscending = Par titre (croissant)
+FileSortType.TitleDecending = Par titre (décroissant)
+FileSortType.UpdateTimeAscending = Par date (ancienne)
+FileSortType.UpdateTimeDecending = Par date (récente)
 Sort_InheritancePath = Tri des sources d'héritage
 Sort_Unselected = Non spécifier
 Sort_DefaultChildItemSort = Ordre de tri des éléments dans un sous-dossier
@@ -182,6 +182,26 @@ ImageSelection_SelectedCount = {0} éléments sélectionnés
 SelectItems_ActionAs = Sélectionner un élément
 StartMultiSelection = Sélection multiple
 ImageListupPage_DragAndDrop_Unsupported = Le glisser-déposer n'est pas pris en charge.
+
+
+#### ViewerSettings
+ViewerSettings = Paramètres communs à la visionneuse
+IsDetectSimiralyFileNameNeighborsEnabled = Détecter les contenus précédents et suivants
+IsDetectSimiralyFileNameNeighborsEnabled_Desc = Permet de détecter les contenus précédents et suivants dont le nom de fichier est similaire à celui du contenu affiché, afin de pouvoir y accéder.
+ThresholdOfSimilarityFileNameNaighborsNormalized = Degré de similitude des noms de fichiers considérés comme précédents ou suivants
+ThresholdOfSimilarityFileNameNaighborsNormalized_Desc = Le degré de similitude est calculé à partir de la distance de Levenshtein entre les chaînes de caractères des noms de fichiers. Si certains cas ne sont pas détectés, réduisez ce pourcentage (par exemple à 40 %) ; à l'inverse, si des contenus non souhaités sont détectés, augmentez-le (par exemple à 80 %).
+IsAutoMoveToNextEnabled = Passer automatiquement au contenu suivant une fois l'affichage terminé
+AutoMoveToNext_Notice = Affichage du « {0} » suivant
+NextContent = Suivant
+PreviousContent = Précédent
+
+EditViewerTransform = Transformation du spectateur
+EditViewerTransform_Done = Achèvement
+EditViewerTransform_Reset = Réinitialiser
+
+
+
+
 
 #### ImageViewerPage
 CurrentFolder_InArchive = Dossier
@@ -287,8 +307,6 @@ AutoRepeatEnablingTime = Durée de lecture maximale (en secondes) pour l'activat
 AutoRepeatEnabling = Lecture en boucle : Activée (automatique)
 
 
-
-
 #### SearchResult
 SearchResultWith = Résultats de la recherche pour {0}
 SearchPlaceholder = Rechercher dans la page
@@ -315,49 +333,3 @@ Favorite_RemoveItem = Supprimer des favoris
 Favorite_Added = Ajouter {0} aux favoris
 Favorite_Removed = Supprimer {0} des favoris
 Favorite_ShowOnlyFavorite = Uniquement mes favoris
-
-
-#### FolderOrArchiveResturcture
-FolderOrArchiveRestructure = Éditer la structure interne
-Output = Sortie
-Find = Rechercher
-ReplaceAll = Tout remplacer
-ReplaceNext = Remplacer le prochain
-Replace = Remplacer
-RestructurePage_SelectAllSearchTarget = Sélectionner les éléments applicables
-RestructurePage_OutputToArchiveFile = Exporter vers .zip
-RestructurePage_OutputToFolder = Exporter vers dossier
-RestructurePage_OutputToArchiveSplitWithPart = Exporter vers zip (divisé en volumes)
-RestructurePage_IsOutput = Destination de sortie
-RestructurePage_ToggleIsOutput = Basculer sur la destination de sortie
-RestructurePage_EditPath = Chemin
-RestructurePage_Description = Vous pouvez éditer les chemins un par un, ou les éditer tous en même temps en cherchant et remplaçant ce que vous souhaitez.
-Décochez la cible de sortie pour les fichiers non nécessaires.
-RestructurePage_Caution = Les fichiers et dossiers compressés d'origine ne sont pas modifiés jusqu'à la sortie.
-Si vous n'êtes pas sûr, veuillez effectuer votre propre sauvegarde.
-Lors de l'exportation au format zip, les éléments autres que les fichiers disparaissent (certains logiciels d'archives ne sont pas compatibles)
-RestructurePage_InvalidPath = Contient une valeur qui ne peut pas être utilisée comme chemin : {0}
-RestructurePage_DupulicatePath = Il y a des entrées en double dans le chemin : {0}
-RestructurePage_InvalidFileType = La chaîne de chemin contient une extension que l'application ne prend pas en charge pour la sortie de dossier : {0}
-RestructurePage_DigitCompletion = Exécuter la complétion des chiffres pour le titre
-RestructurePage_SplitImage = Segmentation d'images
-RestructurePage_SplitImage_AspectRatio = Rapport hauteur/largeur
-RestructurePage_SplitImage_IsLeftBinding = Ouverture à gauche
-RestructurePage_IsSplitImage = Segmentation d'images
-RestructurePage_ToggleIsSplitImage = Changer la segmentation des images
-RestructurePage_OverwriteSave_Confirm = Puis-je écraser le fichier ? \ n {0}
-RestructurePage_OverwriteSave = Écraser la sauvegarde
-RestructurePage_ProcessAllActions = Traitement par lots
-RestructurePage_UnavairableOverwriteFile = Le fichier actuel est en lecture seule et ne peut pas être écrasé
-
-
-#### SplitImageInput
-SplitImage = Segmentation d'images
-BookBindingDirection.Left = Reliure gauche
-BookBindingDirection.Right = Reliure droite
-SplitImageInput_NoSelected = Pas de changement
-SplitImageInput_Title = Segmentation d'images
-SplitImageInput_BindingDirectionHeader = Direction pour ouvrir la page
-SplitImageInput_AspectRatioHeader = Rapport hauteur/largeur d'une page (Entrez 0 pour réduire de moitié)
-SplitImageInput_AspectRatioPlaceholderText = Nombre décimal ou largeur/hauteur
-SplitImageInput_EncoderTypeHeader = Encodage d'images

@@ -46,9 +46,9 @@
             <SymbolIcon Symbol="Favorite"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </ToggleButton>
-          <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
+          <ToggleButton IsChecked="{x:Bind NowEditTransformMode, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
-                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=EditViewerTransform}"
                         ToolTipService.Placement="Bottom"
                         AccessKey="A"
                         ctwu:FrameworkElementExtensions.Cursor="Hand">
@@ -155,6 +155,8 @@
           <VisualState.Setters>
             <Setter Target="ImageSelectorContainer.Visibility"
                     Value="Visible" />
+            <Setter Target="NeighborsContentButtonsContainer.Visibility"
+                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -163,6 +165,8 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="NeighborsContentButtonsContainer.Visibility"
                     Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
@@ -221,6 +225,46 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      
+      <!-- スワイプによる操作 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MySwipeDistanceBehavior.IsEnabled"
+                    Value="False" />
+            <Setter Target="ScaleBehavior.IsEnabled"
+                    Value="True" />
+            <Setter Target="TranslationBehavior.IsEnabled"
+                    Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MySwipeDistanceBehavior.IsEnabled"
+                    Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- 変形情報の表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PlayerTransformInfoContainer.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- 全画面表示 -->
       <VisualStateGroup>
         <VisualState>
@@ -486,7 +530,9 @@
                           RenderTransformOrigin="0.5, 0.5">
         <UIElement.RenderTransform>
           <TransformGroup>
-            <TranslateTransform x:Name="PlayerTransform" />
+            <TranslateTransform x:Name="PlayerTranslate" />
+            <ScaleTransform x:Name="PlayerScale"
+                            ScaleY="{Binding RelativeSource={RelativeSource Mode=Self}, Path=ScaleX}"/>
 
             <ScaleTransform x:Name="MirrorScaleTransform" />
           </TransformGroup>
@@ -502,16 +548,79 @@
           PointerWheelChanged="ControlUIInteractionWall_PointerWheelChanged"
           x:Name="ControlUIInteractionWall"
           HorizontalAlignment="Stretch"
-          VerticalAlignment="Stretch">
+          VerticalAlignment="Stretch"
+          ctwu:FrameworkElementExtensions.EnableActualSizeBinding="True">
       <i:Interaction.Behaviors>
-        <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
-                                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
+        <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"   
                                            Invoked="MySwipeDistanceBehavior_Invoked"                                           
                                            XPixelsToOneUnit="8"
                                            YPixelsToOneUnit="16"/>
+        <myBehaviour:ScaleManipulationBehavior x:Name="ScaleBehavior"
+                                               Max="8"
+                                               Min="0.5"
+                                               Scale="{x:Bind PlayerScale.ScaleX, Mode=TwoWay}"
+                                               IsEnabled="False"/>
+
+        <myBehaviour:TranslationManipulationBehavior x:Name="TranslationBehavior"
+                                                     TranslationX="{x:Bind PlayerTranslate.X, Mode=TwoWay}"
+                                                     TranslationY="{x:Bind PlayerTranslate.Y, Mode=TwoWay}"
+                                                     MaxX="{x:Bind  HalfDouble(ControlUIInteractionWall.(ctwu:FrameworkElementExtensions.ActualWidth)), Mode=OneWay}"
+                                                     MinX="{x:Bind  HalfDoubleNegation(ControlUIInteractionWall.(ctwu:FrameworkElementExtensions.ActualWidth)), Mode=OneWay}"
+                                                     MaxY="{x:Bind  HalfDouble(ControlUIInteractionWall.(ctwu:FrameworkElementExtensions.ActualHeight)), Mode=OneWay}"
+                                                     MinY="{x:Bind  HalfDoubleNegation(ControlUIInteractionWall.(ctwu:FrameworkElementExtensions.ActualHeight)), Mode=OneWay}"
+                                                     ParentScale="{x:Bind InverseDouble(PlayerScale.ScaleX), Mode=OneWay}"
+                                                     IsEnabled="False"/>
       </i:Interaction.Behaviors>
     </Grid>
 
+    <uwpControls:DockPanel x:Name="NeighborsContentButtonsContainer">
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <Border uwpControls:DockPanel.Dock="Bottom"
+              Height="180"/>
+      <Grid Height="180" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Visibility="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToVisibleConverter}}"
+                    ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
+          <Border Background="{ThemeResource SystemChromeMediumColor}"
+                  CornerRadius="0 6 6 0">
+            <Button HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Command="{x:Bind _vm.OpenMovieFileCommand}"
+                    CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+                    CornerRadius="0 6 6 0">
+              <fluentIcon:FluentSymbolIcon Symbol="ArrowLeft24" />
+            </Button>
+          </Border>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Stretch"
+                    Visibility="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToVisibleConverter}}"
+                    ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
+          <Border Background="{ThemeResource SystemChromeMediumColor}"
+                  CornerRadius="6 0 0 6">
+            <Button HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Command="{x:Bind _vm.OpenMovieFileCommand}"
+                    CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+                    CornerRadius="6 0 0 6">
+              <fluentIcon:FluentSymbolIcon Symbol="ArrowRight24" />
+            </Button>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </uwpControls:DockPanel>
+    
     <Grid x:Name="ImageSelectorContainer"
             Grid.ColumnSpan="3"
             VerticalAlignment="Bottom"
@@ -556,6 +665,7 @@
                   Value="{ThemeResource SystemChromeMediumHighColor}" />
         </Style>
       </Grid.Resources>
+
       <StackPanel Margin="8 0"
                   Spacing="6"
                   MaxWidth="720">
@@ -797,8 +907,6 @@
                                     Command="{x:Bind SetPlayerRotateCommand}"
                                     CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise270Degrees}" />
                   </MenuFlyoutSubItem>
-                  <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
-                                        IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
                                         x:Name="IsRepeat_MenuItem"
                                         Command="{x:Bind ToggleLoopingCommand}" />
@@ -899,6 +1007,49 @@
         </uwpControls:DockPanel>
       </StackPanel>
     </Grid>
+    
+    <Grid x:Name="PlayerTransformInfoContainer"           
+          Visibility="Collapsed"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Top"
+          Padding="8"
+          Margin="32 32 32 16"
+          Background="{ThemeResource SystemControlAcrylicElementBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource SystemBaseLowColor}"
+          CornerRadius="6">
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <Button Command="{x:Bind ResetPlayerTransformCommand}"
+                BorderBrush="{ThemeResource SystemBaseLowColor}"
+                VerticalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <SymbolIcon Symbol="Undo" Style="{StaticResource TitlebarSymbolIcon}" />
+            <TextBlock Text="{i18nExt:Localize Key=EditViewerTransform_Reset}" />
+          </StackPanel>
+        </Button>
+
+        <StackPanel MinWidth="80">
+          <TextBlock FontSize="18"
+                     HorizontalAlignment="Center">
+            <Run Text="{x:Bind PlayerScale.ScaleX, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" />
+          </TextBlock>
+          <TextBlock HorizontalAlignment="Center">
+            <Run Text="{x:Bind PlayerTranslate.X, Mode=OneWay}" />,<Run Text="{x:Bind PlayerTranslate.Y, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+        <Button Command="{x:Bind ToggleEditTransformModeCommand}"
+                BorderBrush="{ThemeResource SystemBaseLowColor}"
+                VerticalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <SymbolIcon Symbol="Accept"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+            <TextBlock Text="{i18nExt:Localize Key=EditViewerTransform_Done}"  />
+          </StackPanel>
+        </Button>
+
+      </StackPanel>
+    </Grid>
+    
 
     <Grid x:Name="ShortcutKeyGuideUIContainer"
           Visibility="Collapsed"
@@ -974,14 +1125,17 @@
     </Grid>
 
     <Grid HorizontalAlignment="Center"
-            VerticalAlignment="Top">
+            VerticalAlignment="Top"
+          IsHitTestVisible="False">
       <Grid x:Name="LiteNotificationContainer"
             Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"            
             CornerRadius="6"
             Margin="8 48 8 32"
             Padding="16 8 16 8"
             Opacity="0"
-            HorizontalAlignment="Center">
+            HorizontalAlignment="Center"
+            BorderBrush="{ThemeResource SystemBaseLowColor}"
+            BorderThickness="1">
         <TextBlock x:Name="LiteNotificationTextBlock" 
                    Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}"
                    FontSize="24" />
@@ -995,7 +1149,8 @@
           Height="116"
           Width="116"
           x:Name="Notification_PlayPause"
-          Opacity="0">
+          Opacity="0"
+          IsHitTestVisible="False">
       <fluentIcon:FluentSymbolIcon x:Name="Notification_PlayPause_Icon" Symbol="Play20Filled"
                   RenderTransformOrigin="0.5,0.5"
                                     HorizontalAlignment="Center"

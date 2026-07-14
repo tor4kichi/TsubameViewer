@@ -55,6 +55,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
     }
 
     bool _isAttached;
+    UIElement? _lastAttachedElement;
     void AttachHandler()
     {
         DetacheHandler();
@@ -63,10 +64,11 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         if (!IsEnabled) { return; }
         if (AssociatedObject == null) { return; }
 
-        if (_handlersMap.TryGetValue(AssociatedObject, out var list) is false)
+        _lastAttachedElement = AssociatedObject;
+        if (_handlersMap.TryGetValue(_lastAttachedElement, out var list) is false)
         {
             list = new List<ManipulationBehaviorBase>();
-            _handlersMap.TryAdd(AssociatedObject, list);
+            _handlersMap.TryAdd(_lastAttachedElement, list);
         }
 
         int oldCount = list.Count;
@@ -75,16 +77,17 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
 
         if (oldCount == 0 && list.Count >= 1)
         {
-            AssociatedObject.PointerPressed += AssociatedObject_PointerPressed;
-            AssociatedObject.PointerReleased += AssociatedObject_PointerReleased;
-            AssociatedObject.PointerCanceled += AssociatedObject_PointerCanceled;            
-            AssociatedObject.ManipulationMode = list.Aggregate(ManipulationModes.None, (seed, x) => seed | x.ManipulationModes);
-            AssociatedObject.ManipulationStarting += AssociatedObject_ManipulationStarting;
-            AssociatedObject.ManipulationStarted += AssociatedObject_ManipulationStarted;
-            AssociatedObject.ManipulationDelta += AssociatedObject_ManipulationDelta;
-            AssociatedObject.ManipulationCompleted += AssociatedObject_ManipulationCompleted;
-            AssociatedObject.ManipulationInertiaStarting += AssociatedObject_ManipulationInertiaStarting;            
+            _lastAttachedElement.PointerPressed += AssociatedObject_PointerPressed;
+            _lastAttachedElement.PointerReleased += AssociatedObject_PointerReleased;
+            _lastAttachedElement.PointerCanceled += AssociatedObject_PointerCanceled;            
+            _lastAttachedElement.ManipulationStarting += AssociatedObject_ManipulationStarting;
+            _lastAttachedElement.ManipulationStarted += AssociatedObject_ManipulationStarted;
+            _lastAttachedElement.ManipulationDelta += AssociatedObject_ManipulationDelta;
+            _lastAttachedElement.ManipulationCompleted += AssociatedObject_ManipulationCompleted;
+            _lastAttachedElement.ManipulationInertiaStarting += AssociatedObject_ManipulationInertiaStarting;            
         }
+
+        _lastAttachedElement.ManipulationMode = list.Aggregate(ManipulationModes.None, (seed, x) => seed | x.ManipulationModes);
     }
 
     static ConcurrentDictionary<UIElement, bool> _pointerPressedMap = new();
@@ -92,23 +95,36 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
     void DetacheHandler()
     {
         if (!_isAttached) { return; }
-        var removedHandler = _handlersMap.Remove(AssociatedObject, out var list);
-        list.Remove(this);
-        var removedPressedMap = _pointerPressedMap.Remove(AssociatedObject, out var pressed);
+        if (_lastAttachedElement == null) { return; }
+        var element = _lastAttachedElement;
+        _lastAttachedElement = null;
+        if (_handlersMap.TryGetValue(element, out var list))
+        {
+            list.Remove(this);
+            if (list.Count == 0)
+            {
+                bool removed = _handlersMap.TryRemove(element, out var _);
+                var removedPressedMap = _pointerPressedMap.Remove(element, out var pressed);
+            }
+        }
 
         _isAttached = false;
 
         if (list.Count == 0)
         {
-            AssociatedObject.PointerPressed -= AssociatedObject_PointerPressed;
-            AssociatedObject.PointerReleased -= AssociatedObject_PointerReleased;
-            AssociatedObject.PointerCanceled -= AssociatedObject_PointerCanceled;
-            AssociatedObject.ManipulationMode = Windows.UI.Xaml.Input.ManipulationModes.System;
-            AssociatedObject.ManipulationStarting -= AssociatedObject_ManipulationStarting;
-            AssociatedObject.ManipulationStarted -= AssociatedObject_ManipulationStarted;
-            AssociatedObject.ManipulationDelta -= AssociatedObject_ManipulationDelta;
-            AssociatedObject.ManipulationCompleted -= AssociatedObject_ManipulationCompleted;
-            AssociatedObject.ManipulationInertiaStarting -= AssociatedObject_ManipulationInertiaStarting;
+            element.PointerPressed -= AssociatedObject_PointerPressed;
+            element.PointerReleased -= AssociatedObject_PointerReleased;
+            element.PointerCanceled -= AssociatedObject_PointerCanceled;
+            element.ManipulationMode = Windows.UI.Xaml.Input.ManipulationModes.System;
+            element.ManipulationStarting -= AssociatedObject_ManipulationStarting;
+            element.ManipulationStarted -= AssociatedObject_ManipulationStarted;
+            element.ManipulationDelta -= AssociatedObject_ManipulationDelta;
+            element.ManipulationCompleted -= AssociatedObject_ManipulationCompleted;
+            element.ManipulationInertiaStarting -= AssociatedObject_ManipulationInertiaStarting;
+        }
+        else
+        {
+            element.ManipulationMode = list.Aggregate(ManipulationModes.None, (seed, x) => seed | x.ManipulationModes);
         }
     }
 
@@ -240,31 +256,64 @@ public sealed class TranslationManipulationBehavior : ManipulationBehaviorBase
         DependencyProperty.Register("TranslationY", typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(0d));
 
 
-    public double Min
+
+
+    public double MinX
     {
-        get { return (double)GetValue(MinProperty); }
-        set { SetValue(MinProperty, value); }
+        get { return (double)GetValue(MinXProperty); }
+        set { SetValue(MinXProperty, value); }
     }
 
-    public static readonly DependencyProperty MinProperty =
-        DependencyProperty.Register("Min", typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(0.1d));
+    public static readonly DependencyProperty MinXProperty =
+        DependencyProperty.Register(nameof(MinX), typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(480d));
 
-    public double Max
+    public double MaxX
     {
-        get { return (double)GetValue(MaxProperty); }
-        set { SetValue(MaxProperty, value); }
+        get { return (double)GetValue(MaxXProperty); }
+        set { SetValue(MaxXProperty, value); }
     }
 
-    public static readonly DependencyProperty MaxProperty =
-        DependencyProperty.Register("Max", typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(5d));
+    public static readonly DependencyProperty MaxXProperty =
+        DependencyProperty.Register(nameof(MaxX), typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(480d));
+
+    public double MinY
+    {
+        get { return (double)GetValue(MinYProperty); }
+        set { SetValue(MinYProperty, value); }
+    }
+
+    public static readonly DependencyProperty MinYProperty =
+        DependencyProperty.Register(nameof(MinY), typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(480d));
+
+    public double MaxY
+    {
+        get { return (double)GetValue(MaxYProperty); }
+        set { SetValue(MaxYProperty, value); }
+    }
+
+    public static readonly DependencyProperty MaxYProperty =
+        DependencyProperty.Register(nameof(MaxY), typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(480d));
+
+
+
+    public double ParentScale
+    {
+        get { return (double)GetValue(ParentScaleProperty); }
+        set { SetValue(ParentScaleProperty, value); }
+    }
+
+    public static readonly DependencyProperty ParentScaleProperty =
+        DependencyProperty.Register(nameof(ParentScale), typeof(double), typeof(TranslationManipulationBehavior), new PropertyMetadata(0));
+
+
 
 
     double _startTranslationX;
     double _startTranslationY;
     void SetTranslation(double x, double y)
     {
-        TranslationX = Math.Clamp(x, Min, Max);
-        TranslationY = Math.Clamp(y, Min, Max);        
+        TranslationX = Math.Round(Math.Clamp(x, MinX, MaxX));
+        TranslationY = Math.Round(Math.Clamp(y, MinY, MaxY));        
     }
 
     protected override bool ManipulationStating(object sender, ManipulationStartingRoutedEventArgs e)
@@ -282,13 +331,13 @@ public sealed class TranslationManipulationBehavior : ManipulationBehaviorBase
 
     protected override bool ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
     {
-        SetTranslation(_startTranslationX + e.Cumulative.Translation.X, _startTranslationY + e.Cumulative.Translation.Y);
+        SetTranslation(_startTranslationX + e.Cumulative.Translation.X * ParentScale, _startTranslationY + e.Cumulative.Translation.Y * ParentScale);
         return true;
     }
 
     protected override bool ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
     {
-        SetTranslation(_startTranslationX + e.Cumulative.Translation.X, _startTranslationY + e.Cumulative.Translation.Y);        
+        SetTranslation(_startTranslationX + e.Cumulative.Translation.X * ParentScale, _startTranslationY + e.Cumulative.Translation.Y * ParentScale);        
         return true;
     }
 }

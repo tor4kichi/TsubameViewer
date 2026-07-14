@@ -20,8 +20,6 @@
                      Text="{i18nExt:Localize Key=SendToOtherFolder}" />
   <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem"
                   Text="{i18nExt:Localize Key=SetThumbnailImage}" />
-  <MenuFlyoutItem x:Name="FolderOrArchiveRestructureItem"
-                  Text="{i18nExt:Localize Key=FolderOrArchiveRestructure}" />
 
   <MenuFlyoutItem x:Name="ToggleReadingFinishedStateItem" />
   

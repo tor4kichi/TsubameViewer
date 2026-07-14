@@ -43,8 +43,9 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly ImageViewerSettings _imageViewerPageSettings;
     readonly FolderListingSettings _folderListupSettings;
-    private readonly StorageItemSettings _storageItemSettings;
-    private readonly MovieViewerPageSettings _movieSettings;
+    readonly StorageItemSettings _storageItemSettings;
+    private readonly ViewerSettings _viewerSettings;
+    readonly MovieViewerPageSettings _movieSettings;
     readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SettingsGroupViewModel[] SettingGroups { get; }
@@ -73,6 +74,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         ImageViewerSettings imageViewerPageSettings,
         FolderListingSettings folderListupSettings,
         StorageItemSettings storageItemSettings,
+        ViewerSettings viewerSettings,
         MovieViewerPageSettings movieSettings,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
         )
@@ -84,6 +86,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         _imageViewerPageSettings = imageViewerPageSettings;
         _folderListupSettings = folderListupSettings;
         _storageItemSettings = storageItemSettings;
+        _viewerSettings = viewerSettings;
         _movieSettings = movieSettings;
         _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
         _isThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
@@ -143,6 +146,30 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         f => _movieSettings.AutoRepeatEnablingTimeInSeconds = TimeSpan.FromSeconds(f),
                         f => TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(f))
                         ),                    
+                }
+            },
+            new SettingsGroupViewModel
+            {
+                Label = "ViewerSettings".Translate(),
+                Items =
+                {
+                    new ToggleSwitchSettingItemViewModel<ViewerSettings>(
+                        "IsDetectSimiralyFileNameNeighborsEnabled".Translate(),
+                        "IsDetectSimiralyFileNameNeighborsEnabled_Desc".Translate(),
+                        viewerSettings,
+                        x => x.IsDetectSimiralyFileNameNeighborsEnabled),
+                    new SliderSettingItemViewModel(
+                        "ThresholdOfSimilarityFileNameNaighborsNormalized".Translate(),
+                        "ThresholdOfSimilarityFileNameNaighborsNormalized_Desc".Translate(),
+                        viewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized,
+                        0.01,
+                        0.99,
+                        0.01,
+                        f => viewerSettings.ThresholdOfSimilarityFileNameNaighborsNormalized = f),
+                    new ToggleSwitchSettingItemViewModel<ViewerSettings>(
+                        "IsAutoMoveToNextEnabled".Translate(),
+                        viewerSettings,
+                        x => x.IsAutoMoveToNextEnabled),
                 }
             },
             new SettingsGroupViewModel

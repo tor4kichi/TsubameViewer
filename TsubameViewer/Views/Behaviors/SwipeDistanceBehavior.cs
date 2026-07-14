@@ -59,7 +59,7 @@ public sealed class SwipeDistanceBehavior : ManipulationBehaviorBase
     public event TypedEventHandler<SwipeDistanceBehavior, SwipeDistanceInvokedEventArgs>? Invoked;
 
     protected override bool ManipulationStating(object sender, ManipulationStartingRoutedEventArgs e)
-    {
+    {        
         return true;
     }
     long _startedTime;
@@ -76,7 +76,7 @@ public sealed class SwipeDistanceBehavior : ManipulationBehaviorBase
     }
 
     protected override bool ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-    {        
+    {                
         ProgressX = Math.Round(e.Cumulative.Translation.X * _invToXUnit);
         ProgressY = Math.Round(e.Cumulative.Translation.Y * _invToYUnit);
         return true;
