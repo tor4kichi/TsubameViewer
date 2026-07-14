@@ -590,8 +590,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
             Debug.WriteLine($"PrepareNextPage: page at {nextPageIndex:000} loading.");            
             Debug.WriteLine($"PrepareNextPage: target SwapPages[{swapPageIndex}]");
-            FillPageInfo(nextPageIndex, nextPage);
-            await LoadPageAsync(nextPage, _navigationCt);
+            if (TryFillPageInfo(nextPageIndex, nextPage)) 
+            {
+                await LoadPageAsync(nextPage, _navigationCt);
+            }
             Debug.WriteLine($"PrepareNextPage: Complete.");
         }
     }
@@ -632,10 +634,12 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
                     Debug.WriteLine($"UpdateCurrentPage {requestPage:000}: Page load to SwapPage[{displayPageInfoIndex}]");
                     var info = SwapPages[displayPageInfoIndex];
-                    FillPageInfo(requestPage, info);
-                    await LoadPageAsync(info, ct);
-                    CurrentPageInfo = info;
-                    NowDisplayRendererIndex = displayPageInfoIndex;
+                    if (TryFillPageInfo(requestPage, info))
+                    {
+                        await LoadPageAsync(info, ct);
+                        CurrentPageInfo = info;
+                        NowDisplayRendererIndex = displayPageInfoIndex;
+                    }
                 }
             }
         }
@@ -694,11 +698,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         }
     }
 
-    void FillPageInfo(int requestPage, EBookPageInfo pageInfo)
+    bool TryFillPageInfo(int requestPage, EBookPageInfo pageInfo)
     {
         Guard.IsNotNull(CurrentBookReadingOrder);
         EpubLocalTextContentFileRef currentPage = CurrentBookReadingOrder.ElementAtOrDefault(requestPage);
-        if (currentPage == null) { throw new IndexOutOfRangeException(); }
+        if (currentPage == null) { return false; }
         Debug.WriteLine(currentPage.FilePath);
         pageInfo.IsLoaded = false;
         pageInfo.OuterPageIndex = requestPage;
@@ -714,6 +718,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
         pageInfo.InnerCurrentPageIndex = 0;
+        return true;
     }
 
     void ClearPageInfo(EBookPageInfo pageInfo)
