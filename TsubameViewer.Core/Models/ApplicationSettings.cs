@@ -16,6 +16,7 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
         _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
         _IsUINavigationFocusAssistanceEnabled = Read(false, nameof(IsUINavigationFocusAssistanceEnabled));
         _isAppMenuShowWithLeft = Read(false, nameof(IsAppMenuShowWithLeft));
+        _isReduceDecorateUIAnimations = Read(false, nameof(IsReduceDecorateUIAnimations));
     }
 
     private ApplicationTheme _Theme;
@@ -63,6 +64,15 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
         get => _isAppMenuShowWithLeft;
         set => SetProperty(ref _isAppMenuShowWithLeft, value);
     }
+
+    private bool _isReduceDecorateUIAnimations;
+    public bool IsReduceDecorateUIAnimations
+    {
+        get => _isReduceDecorateUIAnimations;
+        set => SetProperty(ref _isReduceDecorateUIAnimations, value);
+    }
+
+    
 }
 
 
