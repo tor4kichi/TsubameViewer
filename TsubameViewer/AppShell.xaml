@@ -285,7 +285,7 @@
       </UIElement.RenderTransform>
 
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="60" />
+        <ColumnDefinition Width="60" x:Name="GoBackButtonColumnDef" />
         <ColumnDefinition Width="1*" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
@@ -294,6 +294,7 @@
               x:Name="GoBackButton"
               Grid.Column="0"
               Margin="8 4"
+              HorizontalAlignment="Right"
               VerticalAlignment="Center"
               ctwu:FrameworkElementExtensions.Cursor="Hand">
         <SymbolIcon Symbol="Back"
@@ -725,8 +726,8 @@
             <AdaptiveTrigger MinWindowWidth="920" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="GoBackButton.Margin"
-                    Value="144 0 8 0" />
+            <Setter Target="GoBackButtonColumnDef.Width"
+                    Value="196" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
