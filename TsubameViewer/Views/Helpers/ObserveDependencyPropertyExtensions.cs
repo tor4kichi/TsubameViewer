@@ -1,8 +1,5 @@
 ﻿
 ﻿using System;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
 #if WINDOWS_UWP
 using Windows.UI.Core;
 using Windows.UI.Xaml;

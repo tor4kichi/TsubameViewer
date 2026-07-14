@@ -781,8 +781,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 })
                 .AddTo(ref db);
 
-            Window.Current.WindowActivationStateChanged()
-                .ToObservable()
+            Window.Current.WindowActivationStateChanged()                
                 .ObserveOnCurrentSynchronizationContext()
                 .SubscribeAwait(async (visible, ct) =>
                 {

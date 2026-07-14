@@ -8,8 +8,6 @@ using CommunityToolkit.WinUI.Animations;
 using I18NPortable;
 using Microsoft.UI.Xaml.Controls;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,39 +1,21 @@
-﻿using CommunityToolkit.WinUI;
-using Microsoft.Toolkit.Uwp.Helpers;
-using CommunityToolkit.WinUI;
-using R3;
-using R3.Collections;
-using Reactive.Bindings.Extensions;
+﻿using R3;
+using R3.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.Linq;
 using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models.EBook;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using ZLinq;
 
 #nullable enable
@@ -488,14 +470,8 @@ public sealed partial class EPubRenderer : UserControl
         _isFirstContent = true;
 
         R3.Observable.Merge(
-            System.Reactive.Linq.Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
-                h => Window.Current.SizeChanged += h,
-                h => Window.Current.SizeChanged -= h
-                ).ToObservable().AsUnitObservable()
-            , System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
-                h => SizeChanged += h,
-                h => SizeChanged -= h
-                ).ToObservable().AsUnitObservable()            
+            Window.Current.ObserveSizeChanged().AsUnitObservable(),
+            this.ObserveSizeChanged().AsUnitObservable()            
             )
             .DebounceFrame(1)
             .Where(x => !_isFirstContent)            
@@ -522,7 +498,6 @@ public sealed partial class EPubRenderer : UserControl
             this.ObserveDependencyProperty(ColumnCountProperty),
         }
         .Merge()
-        .ToObservable()
         .ThrottleFirstLast(TimeSpan.FromMilliseconds(50))
         .Subscribe(_ => ReloadPageHtml())
         .AddTo(ref db);

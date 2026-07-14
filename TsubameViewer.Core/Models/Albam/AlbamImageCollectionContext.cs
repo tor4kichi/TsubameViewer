@@ -128,11 +128,10 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public Observable<Unit> CreateFolderAndArchiveFileChangedObserver()
     {
-        return System.Reactive.Linq.Observable.Merge(
+        return Observable.Merge(
             _messenger.CreateObservable<AlbamItemAddedMessage, AlbamItemChangedMessageValue>(),
             _messenger.CreateObservable<AlbamItemRemovedMessage, AlbamItemChangedMessageValue>()
             )
-            .ToObservable()
             .Where(x => x.ItemType == AlbamItemType.FolderOrArchive)
             .AsUnitObservable()
             ;
@@ -140,11 +139,10 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public Observable<Unit> CreateImageFileChangedObserver()
     {
-        return System.Reactive.Linq.Observable.Merge(
+        return Observable.Merge(
             _messenger.CreateObservable<AlbamItemAddedMessage, AlbamItemChangedMessageValue>(),
             _messenger.CreateObservable<AlbamItemRemovedMessage, AlbamItemChangedMessageValue>()
             )
-            .ToObservable()
             .Where(x => x.ItemType == AlbamItemType.Image)
             .AsUnitObservable()
             ;

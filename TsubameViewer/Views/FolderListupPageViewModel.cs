@@ -498,8 +498,7 @@ public sealed partial class FolderListupPageViewModel
         // FolderItemsQueryは動作不安定を確認したため使っていない
         if (_imageCollectionContext != null)
         {
-            Window.Current.WindowActivationStateChanged()
-                    .ToObservable()
+            Window.Current.WindowActivationStateChanged()                    
                     .ObserveOnCurrentSynchronizationContext()
                     .Debounce(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>

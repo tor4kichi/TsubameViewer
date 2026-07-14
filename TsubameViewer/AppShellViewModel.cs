@@ -1,21 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Fluent.Icons;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.Helpers;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +38,6 @@ public sealed partial class AppShellViewModel
     , IRecipient<SourceStorageItemIgnoringRequestMessage>
     , IRecipient<SourceStorageItemReorderedMessage>
 {
-    readonly IScheduler _scheduler;
     readonly IMessenger _messenger;
     readonly FolderContainerTypeManager _folderContainerTypeManager;
 
@@ -55,7 +47,6 @@ public sealed partial class AppShellViewModel
     R3.CompositeDisposable _disposables = new R3.CompositeDisposable();
 
     public AppShellViewModel(
-        IScheduler scheduler,
         IMessenger messenger,
         ApplicationSettings applicationSettings,
         NavigationStackRepository restoreNavigationManager,
@@ -68,7 +59,6 @@ public sealed partial class AppShellViewModel
         BackNavigationCommand backNavigationCommand
         )
     {                        
-        _scheduler = scheduler;
         _messenger = messenger;
         ApplicationSettings = applicationSettings;
         RestoreNavigationManager = restoreNavigationManager;
@@ -95,10 +85,11 @@ public sealed partial class AppShellViewModel
 
     void IRecipient<SourceStorageItemRemovedMessage>.Receive(SourceStorageItemRemovedMessage message)
     {
-        _scheduler.Schedule(() => 
-        {
-            RefreshFolderSubItems();
-        });
+        Observable.NextFrame()
+            .Subscribe(this, (_, s) =>
+            {
+                s.RefreshFolderSubItems();
+            });
     }
 
     void IRecipient<SourceStorageItemAddedMessage>.Receive(SourceStorageItemAddedMessage message)

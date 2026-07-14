@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Devices.Input;
@@ -14,8 +13,15 @@ using Windows.UI.Xaml.Input;
 
 namespace R3.Extensions;
 
+public sealed class EventPattern<TSender, TEventArgs>(TSender Sender, TEventArgs EventArgs)
+{
+    public TSender Sender { get; } = Sender;
+    public TEventArgs EventArgs { get; } = EventArgs;
+}
+
 public static class ObservableEventExtensions
 {
+
     /// <summary>
     /// TypedEventHandler を R3 の Observable<EventPattern> に変換します。
     /// </summary>
@@ -82,6 +88,14 @@ public static class ObservableEventExtensions
             conversion => (sender, args) => conversion(args),
             h => window.Activated += h,
             h => window.Activated -= h);
+    }
+
+    public static Observable<WindowSizeChangedEventArgs> ObserveSizeChanged(this Window window)
+    {
+        return Observable.FromEvent<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => window.SizeChanged += h,
+            h => window.SizeChanged -= h);
     }
 
     public static Observable<PointerRoutedEventArgs> ObservePointerPressed(this FrameworkElement control, bool withCapture = true)

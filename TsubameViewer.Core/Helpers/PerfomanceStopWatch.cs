@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reactive.Concurrency;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace TsubameViewer.Core.Helpers;
-public class PerfomanceStopWatch : IStopwatch
+public class PerfomanceStopWatch
 {
     public static PerfomanceStopWatch StartNew(string groupName)
     {

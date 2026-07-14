@@ -37,7 +37,7 @@
           <winUIControls:SettingsCard Header="{x:Bind Label}"
                                       Description="{x:Bind Desc}"
                                       Visibility="{Binding IsVisible, Converter={StaticResource TrueToVisibleConverter}}">
-            <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}"
+            <ToggleSwitch IsOn="{x:Bind Value, Mode=TwoWay}"
                           uwpControls:DockPanel.Dock="Right"
                           Margin="0"
                           Padding="0"
@@ -127,7 +127,7 @@
         <DataTemplate x:DataType="vm:ThemeSelectSettingItemViewModel">
           <winUIControls:SettingsCard Header="{x:Bind Label}">
             <ComboBox ItemsSource="{x:Bind ThemeItems}"
-                      SelectedItem="{x:Bind SelectedTheme.Value, Mode=TwoWay}"
+                      SelectedItem="{x:Bind SelectedTheme, Mode=TwoWay}"
                       HorizontalAlignment="Right"
                       ctwu:FrameworkElementExtensions.Cursor="Hand">
               <ComboBox.ItemTemplate>

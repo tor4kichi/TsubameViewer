@@ -5,10 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
-using CommunityToolkit.WinUI;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -537,7 +534,6 @@ public sealed partial class ImageListupPageViewModel
             if (_imageCollectionContext is FolderImageCollectionContext)
             {
                 Window.Current.WindowActivationStateChanged()
-                    .ToObservable()
                     .ObserveOnCurrentSynchronizationContext()
                     .Debounce(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>

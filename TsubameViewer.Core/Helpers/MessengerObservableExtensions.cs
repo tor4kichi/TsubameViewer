@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,12 @@ namespace TsubameViewer.Core;
 
 public static class MessengerObservableExtensions
 {
-    public static IObservable<TMessageValue> CreateObservable<TMessage, TMessageValue>(this IMessenger messenger) where TMessage : ValueChangedMessage<TMessageValue>
+    public static Observable<TMessageValue> CreateObservable<TMessage, TMessageValue>(this IMessenger messenger) where TMessage : ValueChangedMessage<TMessageValue>
     {
         return new ValueChangedMessageObservable<TMessage, TMessageValue>(messenger);
     }
 
-    sealed class ValueChangedMessageObservable<TMessage, TMessageValue> : IObservable<TMessageValue> where TMessage : ValueChangedMessage<TMessageValue>
+    sealed class ValueChangedMessageObservable<TMessage, TMessageValue> : Observable<TMessageValue> where TMessage : ValueChangedMessage<TMessageValue>
     {
         private readonly IMessenger _messenger;
 
@@ -24,7 +25,7 @@ public static class MessengerObservableExtensions
             _messenger = messenger;
         }
 
-        public IDisposable Subscribe(IObserver<TMessageValue> observer)
+        protected override IDisposable SubscribeCore(Observer<TMessageValue> observer)
         {
             return new ValueChangedMessageObserver(_messenger, observer);
         }
@@ -33,9 +34,9 @@ public static class MessengerObservableExtensions
         public sealed class ValueChangedMessageObserver : IDisposable                
         {
             private readonly IMessenger _messenger;
-            private readonly IObserver<TMessageValue> _observer;
+            private readonly Observer<TMessageValue> _observer;
 
-            public ValueChangedMessageObserver(IMessenger messenger, IObserver<TMessageValue> observer)
+            public ValueChangedMessageObserver(IMessenger messenger, Observer<TMessageValue> observer)
             {
                 _messenger = messenger;
                 _observer = observer;
