@@ -183,6 +183,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
+                        if (_status is not LoadingStatus.NowLoading) { return; }
                         var image = Image ?? new BitmapImage() { AutoPlay = false };
                         await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = image;
@@ -457,11 +458,11 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
-                    if (_status is not LoadingStatus.NowLoading) { return; }
 
                     // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
+                        if (_status is not LoadingStatus.NowLoading) { return; }
                         var image = Image ?? new BitmapImage() { AutoPlay = false };
                         await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                         Image = image;
