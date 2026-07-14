@@ -607,15 +607,20 @@
 
         <Button x:Name="ImagesSortButton"
                 AccessKey="P"
+                Padding="4 0"
                 Width="NaN"
-                Padding="4 0">
+                MaxWidth="120">
           <Button.Content>
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <fluentIcon:FluentSymbolIcon Symbol="TextSortAscending20" />
+            <uwpControls:DockPanel >
+              <fluentIcon:FluentSymbolIcon Symbol="TextSortAscending20"
+                                           uwpControls:DockPanel.Dock="Left"
+                                           Margin="0 0 4 0"/>
               <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" 
                          TextWrapping="Wrap"
-                         Opacity="0.7"/>
-            </StackPanel>
+                         Opacity="0.7"
+                         MaxLines="2"
+                         />
+            </uwpControls:DockPanel>
           </Button.Content>
           <Button.Flyout>
             <MenuFlyout Placement="RightEdgeAlignedTop">

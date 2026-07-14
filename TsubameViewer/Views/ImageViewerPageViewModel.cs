@@ -1388,7 +1388,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         var (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, currentIndex, Images.Length);
         if (lastRequestImageCount == 2)
         {
-            if (direction == IndexMoveDirection.Forward && !isJumpHeadTail)
+            if (direction is IndexMoveDirection.Forward && !isJumpHeadTail)
             {
                 (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, requestIndex, Images.Length);
             }                
