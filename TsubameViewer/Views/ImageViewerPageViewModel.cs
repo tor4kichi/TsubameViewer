@@ -59,7 +59,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     private IImageSource _currentImageSource;
     private IImageCollectionContext _imageCollectionContext;
 
-    CancellationTokenSource _imageLoadingCts;
+    CancellationTokenSource? _imageLoadingCts;
     Core.AsyncLock _imageLoadingLock = new();
 
     public int ImageCount => Images?.Length ?? 0;
@@ -227,6 +227,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     [ObservableProperty]
     IImageSource? _nextImageSource;
+
+    [ObservableProperty]
+    bool _nowEditTransformMode;
+
+    [ObservableProperty]
+    double _transformScale = 1;
 
     [RelayCommand]
     async Task OpenMangaFileAsync(IImageSource? imageSource)
@@ -1627,7 +1633,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     public async Task DisableImageDecodeWhenImageSmallerCanvasSize()
     {
-        var ct = _imageLoadingCts.Token;
+        var ct = _imageLoadingCts?.Token ?? default;
         try
         {
             using (await _imageLoadingLock.LockAsync(ct))
@@ -1708,7 +1714,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             }
         }
 
-        SetDecodePixelSize(firstImage, (float)CanvasWidth, (float)CanvasHeight);
+        if (TransformScale <= 1)
+        {
+            SetDecodePixelSize(firstImage, (float)CanvasWidth, (float)CanvasHeight);
+        }
 
         SetDisplayImages_Internal(type, firstSource, firstImage);
     }
@@ -1749,7 +1758,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     void SetDecodePixelHeightWhenLargerThenCanvasHeight(BitmapImage image)
     {
-        if (image.PixelHeight > CanvasHeight)
+        if (TransformScale <= 1 && image.PixelHeight > CanvasHeight)
         {
             image.DecodePixelHeight = (int)CanvasHeight;
         }

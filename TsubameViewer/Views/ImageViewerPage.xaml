@@ -104,7 +104,7 @@
       </XamlUICommand.KeyboardAccelerators>
     </XamlUICommand>-->
     
-    <XamlUICommand x:Key="ZoomInUICommand" Command="{x:Bind ZoomUpWithControllerCommand}"
+    <!--<XamlUICommand x:Key="ZoomInUICommand" Command="{x:Bind ZoomUpWithControllerCommand}"
                    Label="{i18nExt:Localize Key=ZoomIn}"   
                    Description="{i18nExt:Localize Key=ZoomIn}"
                    >
@@ -130,7 +130,7 @@
         <KeyboardAccelerator Key="S" />
         <KeyboardAccelerator Key="Y" />
       </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
+    </XamlUICommand>-->
 
     <XamlUICommand x:Key="LeftBindingToggleUICommand" Command="{x:Bind _vm.ToggleLeftBindingCommand}"
                    Label="{i18nExt:Localize Key=IsLeftBindingView}"
@@ -222,14 +222,14 @@
         <i:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
 
-      <myBehaviour:MouseWheelTrigger x:Name="ZommingMouseWheelTrigger" IsEnabled="False">
+      <!--<myBehaviour:MouseWheelTrigger x:Name="ZommingMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
           <i:InvokeCommandAction Command="{x:Bind ZoomUpCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
           <i:InvokeCommandAction Command="{x:Bind ZoomDownCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
-      </myBehaviour:MouseWheelTrigger>
+      </myBehaviour:MouseWheelTrigger>-->
 
       <myBehaviour:PointerCursolAutoHideBehavior x:Name="PointerCursolAutoHideBehavior" IsAutoHideEnabled="False" />
 
@@ -241,7 +241,7 @@
         <i:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
-      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
+      <!--<uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
         <i:InvokeCommandAction Command="{x:Bind ZoomDownWithControllerCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLTTriggerBehavior" Kind="PageDown" IsRequireFocus="True" IsEnabled="True">
@@ -258,7 +258,7 @@
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickDownTriggerBehavior" Kind="ScrollDown" IsRequireFocus="True" IsEnabled="True">
         <i:InvokeCommandAction Command="{x:Bind ZoomCenterMoveDownCommand, Mode=OneTime}" />
-      </uiNavigation:UINavigationTriggerBehavior>
+      </uiNavigation:UINavigationTriggerBehavior>-->
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
         <i:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
@@ -268,16 +268,23 @@
     </i:Interaction.Behaviors>
 
     <Grid x:Name="ContentContainer">
-      <Grid.RenderTransform>
-        <TranslateTransform />
-      </Grid.RenderTransform>
-
-      <Grid uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
-            x:Name="ImagesContainer"
+      <Grid x:Name="ImagesContainer"
+            uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
             Background="Transparent"
             IsTapEnabled="True"
             Margin="0 0 0 4"
+            RenderTransformOrigin="0.5, 0.5"
             >
+        <UIElement.RenderTransform>
+          <TransformGroup>
+            <TranslateTransform x:Name="PlayerTranslate" />
+            <ScaleTransform x:Name="PlayerScale"
+                            ScaleX="{x:Bind _vm.TransformScale, Mode=OneWay}"
+                            ScaleY="{x:Bind _vm.TransformScale, Mode=OneWay}" />
+
+            <ScaleTransform x:Name="MirrorScaleTransform" />
+          </TransformGroup>
+        </UIElement.RenderTransform>
 
         <i:Interaction.Behaviors>
           <!-- Image sizing -->
@@ -289,9 +296,11 @@
           </i:EventTriggerBehavior>
           <i:EventTriggerBehavior EventName="SizeChanged">
             <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
-                                       PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+                                    PropertyName="CanvasWidth"
+                                    Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
             <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
-                                       PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+                                    PropertyName="CanvasHeight"
+                                    Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
             <i:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
           </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
@@ -417,7 +426,7 @@
               Height="0" Width="0"
               KeyboardAcceleratorPlacementMode="Hidden"
               />
-      <Button x:Name="Hidden_ZoomInButton" 
+      <!--<Button x:Name="Hidden_ZoomInButton" 
               Command="{StaticResource ZoomInUICommand}"
               Height="0" Width="0"
               KeyboardAcceleratorPlacementMode="Hidden"
@@ -431,7 +440,7 @@
               Command="{x:Bind ZoomResetCommand}"
               Height="0" Width="0"
               KeyboardAcceleratorPlacementMode="Hidden"
-              />
+              />-->
       <Button x:Name="Hidden_DoubleViewCorrectButton" 
               Command="{StaticResource DoubleViewCorrectUICommand}"
               Height="0" Width="0"
@@ -439,7 +448,28 @@
               />
     </Grid>
 
-    <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
+    <Grid x:Name="IntaractionWall"
+          IsTapEnabled="True"
+          Background="Transparent">
+
+      <i:Interaction.Behaviors>
+      <myBehaviour:ScaleManipulationBehavior x:Name="ScaleBehavior"
+                                             IsEnabled="False"
+                                               Scale="{x:Bind _vm.TransformScale, Mode=TwoWay}"
+                                             Max="8"
+                                             Min="0.5" />
+
+      <myBehaviour:TranslationManipulationBehavior x:Name="TranslationBehavior"
+                                                   IsEnabled="False"
+                                                   TranslationX="{x:Bind PlayerTranslate.X, Mode=TwoWay}"
+                                                   TranslationY="{x:Bind PlayerTranslate.Y, Mode=TwoWay}"
+                                                   MaxX="{x:Bind  HalfDouble(ImagesContainer.(ctwu:FrameworkElementExtensions.ActualWidth)), Mode=OneWay}"
+                                                   MinX="{x:Bind  HalfDoubleNegation(ImagesContainer.(ctwu:FrameworkElementExtensions.ActualWidth)), Mode=OneWay}"
+                                                   MaxY="{x:Bind  HalfDouble(ImagesContainer.(ctwu:FrameworkElementExtensions.ActualHeight)), Mode=OneWay}"
+                                                   MinY="{x:Bind  HalfDoubleNegation(ImagesContainer.(ctwu:FrameworkElementExtensions.ActualHeight)), Mode=OneWay}"
+                                                     ParentScale="{x:Bind InverseDouble(_vm.TransformScale), Mode=OneWay}" />
+      </i:Interaction.Behaviors>
+    </Grid>
     
     <!-- ボタン類 -->
     <Grid x:Name="ButtonsContainer"
@@ -452,7 +482,7 @@
                 CornerRadius="8"
                 Padding="4 4"
                 Margin="0 48 0 0"
-                Width="480"
+                Width="420"
                 Windows10version1903:Translation="0, 0, 16"
                 >
       <Windows10version1903:UIElement.Shadow>
@@ -523,24 +553,10 @@
       <StackPanel Orientation="Horizontal" Spacing="4"
                   HorizontalAlignment="Right">
 
-        <Button x:Name="ZoomResetButton"
-                Command="{x:Bind ZoomResetCommand}"
-                AccessKey="R"
-                ToolTipService.ToolTip="{i18nExt:Localize Key=ZoomReset}">
+        <ToggleButton x:Name="TransformEditModeButton"
+                      IsChecked="{x:Bind _vm.NowEditTransformMode, Mode=TwoWay}">
           <SymbolIcon Symbol="Zoom" />
-        </Button>
-
-        <Button x:Name="ZoomInButton"
-                Command="{StaticResource ZoomInUICommand}"
-                AccessKey="T">
-          <SymbolIcon Symbol="ZoomIn" />
-        </Button>
-
-        <Button x:Name="ZoomOutButton"
-                Command="{StaticResource ZoomOutUICommand}"
-                AccessKey="Y">
-          <SymbolIcon Symbol="ZoomOut" />
-        </Button>
+        </ToggleButton>
 
         <Button x:Name="DoubleViewCorrectButton"
                 Command="{StaticResource DoubleViewCorrectUICommand}"
@@ -1020,30 +1036,39 @@
         <animation:OpacityAnimation To="0" Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
-      <animation:Explicit.Animations>
-        <animation:AnimationSet x:Name="ShowWithinButtonsContainer">
-          <animation:TranslationAnimation To="0, 100" EasingType="Cubic" Duration="0:0:0.175" />
-        </animation:AnimationSet>
-        <animation:AnimationSet x:Name="ShowWithoutButtonsContainer">
-          <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
-        </animation:AnimationSet>
-      </animation:Explicit.Animations>
+      <StackPanel Orientation="Horizontal"
+                  Spacing="16">
+        <Button Command="{x:Bind ResetPlayerTransformCommand}"
+                BorderBrush="{ThemeResource SystemBaseLowColor}"
+                VerticalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="4">
+            <SymbolIcon Symbol="Undo"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+            <TextBlock Text="{i18nExt:Localize Key=EditViewerTransform_Reset}" />
+          </StackPanel>
+        </Button>
 
+        <StackPanel MinWidth="80">
+          <TextBlock FontSize="18"
+                     HorizontalAlignment="Center">
+      <Run Text="{x:Bind _vm.TransformScale, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" />
+          </TextBlock>
+          <TextBlock HorizontalAlignment="Center">
+      <Run Text="{x:Bind PlayerTranslate.X, Mode=OneWay}" />,<Run Text="{x:Bind PlayerTranslate.Y, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+        <Button Command="{x:Bind ToggleEditTransformModeCommand}"
+                BorderBrush="{ThemeResource SystemBaseLowColor}"
+                VerticalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="4">
+            <SymbolIcon Symbol="Accept"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+            <TextBlock Text="{i18nExt:Localize Key=EditViewerTransform_Done}" />
+          </StackPanel>
+        </Button>
 
-      <i:Interaction.Behaviors>
-        <i:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Visible" >
-          <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithinButtonsContainer}" />
-        </i:DataTriggerBehavior>
-        <i:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Collapsed" >
-          <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithoutButtonsContainer}" />
-        </i:DataTriggerBehavior>
-      </i:Interaction.Behaviors>
-
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}"
-                   Padding="8 8 8 8">
-          x<Run Text="{x:Bind ToDisplayString(ZoomFactor), Mode=OneWay}" />
-        </TextBlock>
       </StackPanel>
     </Grid>
 
@@ -1200,7 +1225,7 @@
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
             <myStateTriggers:VirualKeyPressingTrigger Key="Control"
                                                       myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
-            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -1218,19 +1243,6 @@
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled"
                     Value="True" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-      <!-- 拡大縮小 -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ZoomingControlUI.Visibility"
-                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -1346,21 +1358,34 @@
         </VisualState>
       </VisualStateGroup>
 
+      <!-- 変形編集モード時にポインター操作を受け付けるように -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ScaleBehavior.IsEnabled"
+                    Value="True" />
+            <Setter Target="TranslationBehavior.IsEnabled"
+                    Value="True" />
+            <Setter Target="ZoomingControlUI.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- マウススクロールのページ送り -->
       <VisualStateGroup x:Name="VSG_MouseScrool">
         <VisualState>
           <VisualState.StateTriggers>
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
-                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="DefaultMouseWheelTrigger.IsEnabled"
                     Value="False" />
             <Setter Target="ReverseMouseWheelTrigger.IsEnabled"
                     Value="False" />
-
-            <Setter Target="ZommingMouseWheelTrigger.IsEnabled"
-                    Value="True" />
           </VisualState.Setters>
         </VisualState>
         <VisualState x:Name="VS_MouseScroolNotReadyToDisplay">
@@ -1394,7 +1419,7 @@
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
             <myStateTriggers:VirualKeyPressingTrigger Key="Control"
                                                       myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
-            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>

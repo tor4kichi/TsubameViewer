@@ -2914,8 +2914,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SubscribeTransformEdit(ref DisposableBuilder db)
     {
         R3.Observable.Merge(
-            Window.Current.CoreWindow.ObserveKeyDown().Where(x => (x.EventArgs.VirtualKey & VirtualKey.Control) != 0).Select(_ => true),
-            Window.Current.CoreWindow.ObserveKeyUp().Where(x => (x.EventArgs.VirtualKey & VirtualKey.Control) != 0).Select(_ => false)
+            Window.Current.CoreWindow.ObserveKeyDown().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => true),
+            Window.Current.CoreWindow.ObserveKeyUp().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => false)
             )            
             .Subscribe(this, (isControlDown, s) => 
             {
