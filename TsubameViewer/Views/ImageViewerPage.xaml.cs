@@ -691,16 +691,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void SubscribeTransformEdit(ref DisposableBuilder db)
     {
-        _vm.ObservePropertyChanged(x => x.NowEditTransformMode)
+        _vm.ObservePropertyChanged(x => x.NowEditTransformMode, false)
             .Subscribe(this, (isEnabled, s) => 
             {
                 if (isEnabled)
                 {
                     s.CloseBottomUI();
-                }
-                else
-                {
-                    s.ShowBottomUI();
                 }
             })
             .AddTo(ref db);
