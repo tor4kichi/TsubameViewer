@@ -298,22 +298,19 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             InitializeMoveToFolders(ct).FireAndForgetSafe();            
             db.Build().RegisterTo(ct);
 
-            await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
-            var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
             if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
             {
+                await _vm.ObservePropertyChanged(x => x.NowProcessing)
+                    .Where(x => !x)
+                    .Take(1)
+                    .WaitAsync(ct);
                 _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
                     .IgnoreOnErrorResume()
                     .Timeout(TimeSpan.FromSeconds(1))
                     .Where(x => x != null)
-                    .Skip(1)
-                    .Take(1)
                     .SubscribeAwait((FoldersAdaptiveGridView, _vm.FileItemsView), async (x, s, ct) =>
                     {                        
                         var (listView, items) = s;
-                        await _vm.ObservePropertyChanged(x => x.NowProcessing)
-                            .Take(2)
-                            .WaitAsync(ct);
                         if (e.NavigationMode is NavigationMode.Back
                             && _vm.GetLastIntractIndexAndItem() is { } lastItem)
                         {
@@ -321,11 +318,14 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                             await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
                             if (listView.ContainerFromIndex(index) is Control itemContainer)
                             {
-                                itemContainer.Focus(FocusState.Keyboard);                                
+                                itemContainer.Focus(FocusState.Keyboard);
+                                lastItem.Item?.ThumbnailChanged();
                             }
                         }
 
                         await Task.Delay(5);
+                        await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
+                        var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
                         if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward)
                         {
                             if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
@@ -354,6 +354,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
             else 
             {
+                await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
+                var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
                 bool result = sv.ChangeView(null, 0, null, true);
             }
 

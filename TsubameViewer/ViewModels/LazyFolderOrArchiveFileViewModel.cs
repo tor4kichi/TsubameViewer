@@ -590,6 +590,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     public void ThumbnailChanged()
     {
         Status = LoadingStatus.None;
+        InitializeAsync(default).FireAndForgetSafe();
     }
 
     public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
