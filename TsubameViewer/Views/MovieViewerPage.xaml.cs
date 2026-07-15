@@ -984,6 +984,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }                
                 catch
                 {
+                    (s._frameGrabber as IDisposable)?.Dispose();
+                    s._frameGrabber = null;
                     s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                     s._thumbanilManager.ThumbnailGenerationFailed(s._frameGrabber.CodecName);
                     throw;
@@ -1741,7 +1743,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
 
             MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-            if (!_videoPositionsliderPointerPressed)
+            if (_frameGrabber == null)
+            {
+                MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+            }
+            else if (!_videoPositionsliderPointerPressed)
             {
                 MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
             }
