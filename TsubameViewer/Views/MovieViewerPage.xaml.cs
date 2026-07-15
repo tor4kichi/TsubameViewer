@@ -984,10 +984,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }                
                 catch
                 {
-                    (s._frameGrabber as IDisposable)?.Dispose();
-                    s._frameGrabber = null;
                     s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                     s._thumbanilManager.ThumbnailGenerationFailed(s._frameGrabber.CodecName);
+                    (s._frameGrabber as IDisposable)?.Dispose();
+                    s._frameGrabber = null;
                     throw;
                 }
            }, onCompleted: static async (x, state) => 
