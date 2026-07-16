@@ -55,15 +55,27 @@ public sealed class ThumbnailImageManager
     : ISecondaryTileThumbnailImageService
     , IThumbnailImageMaintenanceService
 {
-    private readonly ILiteDatabase _temporaryDb;
-    private readonly ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
-    private readonly ILiteStorage<string> _thumbnailDb;
+    private readonly Func<ILiteDatabase> _temporaryDbOpener;
+    private ILiteDatabase _temporaryDb;
+    private ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
+    private ILiteStorage<string> _thumbnailDb;
+    private ILiteCollection<ThumbnailGenerationIssueEntry> _thumnailGenerationIssueCollection;
+    private ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
+
+    public void ReOpenInsideDb()
+    {
+        _temporaryDb.Dispose();        
+        _temporaryDb = _temporaryDbOpener();
+        _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
+        _thumbnailDb = _temporaryDb.FileStorage;
+        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);
+        _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();
+    }
+
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly static AsyncLock _fileReadWriteLock = new(Math.Max(1, Environment.ProcessorCount));
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
-    private readonly ILiteCollection<ThumbnailGenerationIssueEntry> _thumnailGenerationIssueCollection;
 
     private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
     {
@@ -180,20 +192,21 @@ public sealed class ThumbnailImageManager
     }
 
     public ThumbnailImageManager(
-        ILiteDatabase temporaryDb,
+        Func<ILiteDatabase> temporaryDbOpener,
         FolderListingSettings folderListingSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository
         )
     {
-        _temporaryDb = temporaryDb;
+        _temporaryDbOpener = temporaryDbOpener;        
+        _temporaryDb = temporaryDbOpener();       
         _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
         _thumbnailDb = _temporaryDb.FileStorage;
+        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);
+        _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();
+
         _folderListingSettings = folderListingSettings;
-        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(temporaryDb);
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
-        _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();        
-
         _canvasDevice = new CanvasDevice();
     }
 

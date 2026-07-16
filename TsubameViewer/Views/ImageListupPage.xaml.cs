@@ -114,7 +114,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
-    {
+    {        
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
     }
 

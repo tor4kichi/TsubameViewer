@@ -337,7 +337,7 @@ public sealed partial class ImageListupPageViewModel
     }
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
-    {
+    {        
         NowLoadingItems = false;
         NowProcessing = false;
         _filterQueryCts?.Cancel();
@@ -350,6 +350,8 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<SendToOtherFolderMessage>(this);
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
+
+        _thumbnailManager.ReOpenInsideDb();
 
         base.OnNavigatedFrom(parameters);
     }

@@ -126,7 +126,7 @@ sealed partial class App : Application
     void RegisterRequiredTypes(Container container)
     {
         container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
-        container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
+        container.RegisterInstance<Func<ILiteDatabase>>(() => new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
 
         container.RegisterInstance<IStorageHelper>(new BytesApplicationDataStorageHelper(ApplicationData.Current, new BinaryJsonObjectSerializer()));
         container.Register<IViewLocator, ViewLocator>();
@@ -135,7 +135,10 @@ sealed partial class App : Application
         container.Register<NavigationStackRepository>(reuse: Reuse.Singleton);
         container.Register<LastIntractItemRepository>(reuse: Reuse.Singleton);
         container.Register<RecentlyAccessRepository>(reuse: Reuse.Singleton);
-        container.Register<ThumbnailImageManager>(reuse: Reuse.Singleton, made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+        container.Register<ThumbnailImageManager>(
+            reuse: Reuse.Singleton,
+            made: Parameters.Of.Type<Func<ILiteDatabase>>(serviceKey: "TemporaryDb")
+        );
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
