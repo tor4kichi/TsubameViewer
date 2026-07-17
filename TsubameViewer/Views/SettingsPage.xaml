@@ -14,7 +14,7 @@
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
       mc:Ignorable="d"
-      Background="{ThemeResource ApplicationContentBackgroundBrush}">
+      >
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:SettingsPageViewModel">

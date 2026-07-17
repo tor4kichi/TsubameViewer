@@ -262,11 +262,21 @@
         <TranslateTransform />
       </UIElement.RenderTransform>
     </Frame>
-
+    
+    <Frame x:Name="ThirdaryFrame"
+           DataContext="{x:Null}"
+           CacheSize="0"
+           Visibility="Collapsed"
+           Background="{ThemeResource SystemControlAcrylicElementBrush}">
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+    </Frame>
+    
     <Border x:Name="TitlebarBG"
-                           VerticalAlignment="Top"
-                           Height="48"
-                           Background="{ThemeResource SystemChromeMediumColor}">
+            VerticalAlignment="Top"
+            Height="48"
+            Background="{ThemeResource SystemChromeMediumColor}">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
@@ -719,6 +729,11 @@
                 <Visibility>Visible</Visibility>
               </wst:EqualsStateTrigger.EqualTo>
             </wst:EqualsStateTrigger>
+            <wst:EqualsStateTrigger Value="{Binding ElementName=ThirdaryFrame, Path=Visibility}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -778,6 +793,10 @@
                                To="48"
                                Storyboard.TargetName="ViewerFrame"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="48"
+                               Storyboard.TargetName="ThirdaryFrame"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -803,6 +822,10 @@
                                To="0"
                                Storyboard.TargetName="ViewerFrame"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="ThirdaryFrame"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -819,6 +842,8 @@
                     Value="0 48 0 0" />
             <Setter Target="ViewerFrame.Margin"
                     Value="0 48 0 0" />
+            <Setter Target="ThirdaryFrame.Margin"
+                    Value="0 48 0 0" />
             <Setter Target="TitlebarBG.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
             <Setter Target="TitlebarUIContainer.(UIElement.RenderTransform).(TranslateTransform.Y)"
@@ -826,6 +851,8 @@
             <Setter Target="MyNavigationView.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
             <Setter Target="ViewerFrame.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="ThirdaryFrame.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
           </VisualState.Setters>
         </VisualState>

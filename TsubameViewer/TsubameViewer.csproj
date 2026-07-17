@@ -183,6 +183,7 @@
     <Compile Include="ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
     <Compile Include="ViewModels\LatestContentViewUpdateMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\NavigationCompletedMessage.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />
     <Compile Include="ViewModels\ViewerSettings.cs" />
     <Compile Include="Views\AlbamListupPageViewModel.cs" />
