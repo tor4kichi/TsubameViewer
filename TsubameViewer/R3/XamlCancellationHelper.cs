@@ -107,7 +107,7 @@ public static class XamlCancellationHelper
         {
             try
             {
-                _ = Task.Run(cts.Cancel);
+                cts.Cancel();
             }
             catch { }
             Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] Cancel: {element.GetType().Name}");
