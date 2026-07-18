@@ -851,6 +851,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                                 _this.StartLiteNotification("AutoRepeatEnabling".Translate());
                             }
                         }
+
+                        // 1フレームの時間を求める
+                        if (_this.MediaPlayer.Source is MediaPlaybackItem playbackItem 
+                            && playbackItem.VideoTracks.ElementAtOrDefault(0) is { } track
+                            && track.GetEncodingProperties() is { } encProps)
+                        {
+                            var fps = encProps.FrameRate.Numerator / (float)encProps.FrameRate.Denominator;
+                            _this._oneFrameTime = TimeSpan.FromSeconds(1 / fps);
+                        }
+                        else
+                        {
+                            _this._oneFrameTime = TimeSpan.Zero;
+                        }
                     });
             })
             .AddTo(ref db);
@@ -1084,17 +1097,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         catch { }
 
         playbackItem.ApplyDisplayProperties(props);
-        if (playbackItem.VideoTracks.ElementAtOrDefault(0) is { } track
-            && track.GetEncodingProperties() is { } encProps)
-        {
-            var fps = encProps.FrameRate.Numerator / (float)encProps.FrameRate.Denominator;
-            _oneFrameTime = TimeSpan.FromSeconds(1 / fps);
         }
-        else 
-        {
-            _oneFrameTime = TimeSpan.Zero;
-        }
-    }
 
 
     [ObservableProperty]
@@ -1139,8 +1142,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             _audioPlayer.Source = null;
         }
-
-        _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);        
     }
 
     void ClearExternalAudioTracks()
