@@ -1594,6 +1594,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Notification_PlayPause_Icon_Transform.ScaleX = !mirror ? scale : -scale;
         _playPauseToggleAnimationCts = new CancellationTokenSource();
         Notification_PlayPause_Icon.Symbol = symbol;
+        Notification_PlayPause_Icon.IconVariant = FluentIcons.Common.IconVariant.Filled;
         _playIconAnimation.Start(Notification_PlayPause, _playPauseToggleAnimationCts.Token);
     }
 

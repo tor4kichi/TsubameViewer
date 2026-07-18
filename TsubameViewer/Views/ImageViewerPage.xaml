@@ -526,14 +526,6 @@
           <Setter Property="ctwu:FrameworkElementExtensions.Cursor"
                   Value="Hand" />
         </Style>
-        <Style TargetType="SymbolIcon">
-          <Setter Property="RenderTransformOrigin" Value="0.5, 0.5" />
-          <Setter Property="RenderTransform">
-            <Setter.Value>
-              <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
-            </Setter.Value>
-          </Setter>
-        </Style>
       </Grid.Resources>
 
       <Button x:Name="BottomUIBackNavigationButton" Click="ForceClosePage"
@@ -552,7 +544,7 @@
 
         <ToggleButton x:Name="TransformEditModeButton"
                       IsChecked="{x:Bind _vm.NowEditTransformMode, Mode=TwoWay}">
-          <SymbolIcon Symbol="Zoom" />
+          <fluentIcon:SymbolIcon Symbol="ZoomIn" />
         </ToggleButton>
 
         <Button x:Name="DoubleViewCorrectButton"
@@ -593,7 +585,7 @@
                       Command="{StaticResource LeftBindingToggleUICommand}"
                       AccessKey="O">
           <ToggleButton.Content>
-            <fluentIcon:SymbolIcon Symbol="ArrowImport">
+            <fluentIcon:SymbolIcon Symbol="ArrowImport" >
               <fluentIcon:SymbolIcon.RenderTransform>
                 <TranslateTransform X="-1"
                                     Y="-1" />
@@ -771,23 +763,23 @@
                   <uwpControls:Case.Value>
                     <x:Boolean>True</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:SymbolIcon Symbol="Star">
-                    <UIElement.RenderTransform>
+                  <SymbolIcon Symbol="SolidStar">
+                    <!--<UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
-                    </UIElement.RenderTransform>
-                  </fluentIcon:SymbolIcon>
+                    </UIElement.RenderTransform>-->
+                  </SymbolIcon>
                 </uwpControls:Case>
                 <uwpControls:Case IsDefault="True">
                   <uwpControls:Case.Value>
                     <x:Boolean>False</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:SymbolIcon Symbol="Star">
+                  <SymbolIcon Symbol="OutlineStar">
                     <UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
                     </UIElement.RenderTransform>
-                  </fluentIcon:SymbolIcon>
+                  </SymbolIcon>
                 </uwpControls:Case>
               </uwpControls:SwitchPresenter>
             </RepeatButton>
@@ -865,23 +857,23 @@
                   <uwpControls:Case.Value>
                     <x:Boolean>True</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:SymbolIcon Symbol="Star">
-                    <UIElement.RenderTransform>
+                  <SymbolIcon Symbol="SolidStar">
+                    <!--<UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
-                    </UIElement.RenderTransform>
-                  </fluentIcon:SymbolIcon>
+                    </UIElement.RenderTransform>-->
+                  </SymbolIcon>
                 </uwpControls:Case>
                 <uwpControls:Case IsDefault="True">
                   <uwpControls:Case.Value>
                     <x:Boolean>False</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:SymbolIcon Symbol="Star">
+                  <SymbolIcon Symbol="OutlineStar">
                     <UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
                     </UIElement.RenderTransform>
-                  </fluentIcon:SymbolIcon>
+                  </SymbolIcon>
                 </uwpControls:Case>
               </uwpControls:SwitchPresenter>
             </RepeatButton>
