@@ -262,17 +262,18 @@
         <TranslateTransform />
       </UIElement.RenderTransform>
     </Frame>
-    
+
     <Frame x:Name="ThirdaryFrame"
            DataContext="{x:Null}"
            CacheSize="0"
            Visibility="Collapsed"
-           Background="{ThemeResource SystemControlAcrylicElementBrush}">
+           Background="{ThemeResource SystemAltMediumLowColor}"
+           Tapped="ThirdaryFrame_Tapped">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
     </Frame>
-    
+
     <Border x:Name="TitlebarBG"
             VerticalAlignment="Top"
             Height="48"

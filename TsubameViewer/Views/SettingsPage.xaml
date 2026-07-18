@@ -232,12 +232,20 @@
     </DataTemplate>
     
   </Page.Resources>
-  <Grid>
+
+  <Grid Background="{ThemeResource SystemControlAcrylicElementBrush}"
+        HorizontalAlignment="Center"
+        Padding="0 16 0 0"
+        Margin="0 16 0 16"
+        IsHitTestVisible="True"
+        CornerRadius="6"
+        BorderBrush="{ThemeResource SystemBaseMediumLowColor}"
+        BorderThickness="1">
     <uwpControls:DockPanel>
 
       <Grid MaxWidth="600"
             uwpControls:DockPanel.Dock="Top"
-            Padding="0 32 0 0">
+                       >
         <Border Height="1"
                 VerticalAlignment="Bottom"
                 Background="{ThemeResource SystemBaseLowColor}" 
@@ -289,10 +297,11 @@
         <StackPanel x:Name="ScrollViewerRootPanel" Padding="0 0 0 64">
           <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
-                      Margin="32 16"
+                        Margin="48 16"
                         IsTabStop="False"
                         HorizontalAlignment="Stretch"
-                        MaxWidth="600"                        
+                        MaxWidth="600"
+                        x:Name="SettingsItemsControl"
                       >
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -304,6 +313,7 @@
           <StackPanel Spacing="0"
                       HorizontalAlignment="Center"
                       Margin="0 16 0 16"
+                      MaxWidth="500"
                       >
             <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy" 
@@ -386,6 +396,8 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <Setter Target="SettingsItemsControl.Margin"
+                    Value="16 16" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

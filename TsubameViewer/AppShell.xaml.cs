@@ -564,7 +564,7 @@ public sealed partial class AppShell : UserControl
             }
             else
             {
-                await Task.Delay(250);
+                await Task.Delay(150);
                 frame.Visibility = Visibility.Collapsed;
                 if (IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
                 {
@@ -836,14 +836,11 @@ public sealed partial class AppShell : UserControl
         if (IsOpenWithViewerPageType(viewType))
         {
             frame = ViewerFrame;
-            ViewerFrame.Visibility = Visibility.Visible;
             _viewerNavigationParameters = parameters;
-
         }
         else if (IsOpenWithThirdaryPageType(viewType))
         {
             frame = ThirdaryFrame;
-            ThirdaryFrame.Visibility = Visibility.Visible;
             _viewerNavigationParameters = parameters;
         }
         else
@@ -851,6 +848,10 @@ public sealed partial class AppShell : UserControl
             frame = ContentFrame;
             SetCurrentNavigationParameters(parameters);
         }
+
+        frame.Visibility = Visibility.Visible;
+        await Observable.NextFrame().WaitAsync();
+
         sw.ElapsedWrite("Before RotationNextCancellationTokenSource");
         var ct = RotationNextCancellationTokenSource(viewType);
         sw.ElapsedWrite("After RotationNextCancellationTokenSource");
@@ -1995,6 +1996,14 @@ public sealed partial class AppShell : UserControl
     }
 
     #endregion
+
+    private void ThirdaryFrame_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (e.Handled) { return; }
+        if (e.OriginalSource is not FrameworkElement fe) { return; }
+        if (fe.BaseUri.OriginalString.EndsWith("AppShell.xaml") is false) { return; }
+        _messenger.Send<BackNavigationRequestMessage>();
+    }
 }
 
 
