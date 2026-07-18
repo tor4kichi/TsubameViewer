@@ -491,13 +491,14 @@ public sealed class FolderStructureCacheContext : IDisposable
 
     readonly static Core.AsyncLock _asyncLock = new();
     public async Task HandleDiffImages<T>(RangeObservableCollection<T> items,        
+        FileSortType fileSortType,
         Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
         Func<T, string> itemToPathConv,
         CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
-        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
+        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(fileSortType));
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;
@@ -577,14 +578,15 @@ public sealed class FolderStructureCacheContext : IDisposable
         }
     }
 
-    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,        
-       Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
-       Func<T, string> itemToPathConv,
-       CancellationToken ct)
+    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,
+        FileSortType fileSortType,
+        Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
+        Func<T, string> itemToPathConv,
+        CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
-        var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
+        var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(fileSortType));
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;

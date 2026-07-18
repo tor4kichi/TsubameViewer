@@ -776,7 +776,8 @@ public sealed partial class FolderListupPageViewModel
                     {
                         var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffNotImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                            
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,          
+                            sortType,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -808,6 +809,7 @@ public sealed partial class FolderListupPageViewModel
                             await Task.Delay(50);
                             await col.Context.HandleDiffNotImages(
                                 (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                sortType,
                                 cacheImageViewModelFactory,
                                 (IStorageItemViewModel itemVM) => itemVM.Path,
                                 ct);

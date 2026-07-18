@@ -802,6 +802,7 @@ public sealed partial class ImageListupPageViewModel
                         var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffImages(
                             (RangeObservableCollection<IStorageItemViewModel>)items.Source,
+                            sortType,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -839,6 +840,7 @@ public sealed partial class ImageListupPageViewModel
                                 // Note: リネームを検知したいので同数チェックしない
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    sortType,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
@@ -863,6 +865,7 @@ public sealed partial class ImageListupPageViewModel
                                 IsFavoriteFilteredDisplayEnabled = false;
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    sortType,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
