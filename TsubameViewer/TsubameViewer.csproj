@@ -438,8 +438,8 @@
     <PackageReference Include="FFmpegInteropX">
       <Version>2.1.0.81200</Version>
     </PackageReference>
-    <PackageReference Include="Fluent.Icons">
-      <Version>1.1.110</Version>
+    <PackageReference Include="FluentIcons.Uwp">
+      <Version>2.1.333</Version>
     </PackageReference>
     <PackageReference Include="I18NPortable">
       <Version>1.0.1</Version>

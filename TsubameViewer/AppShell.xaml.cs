@@ -9,7 +9,6 @@ using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
 using DryIoc.ImTools;
-using Fluent.Icons;
 using I18NPortable;
 using R3;
 using Reactive.Bindings;
@@ -170,25 +169,25 @@ public sealed partial class AppShell : UserControl
             {
                 Tooltip = "StartMultiSelection".Translate(),
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Tooltip = "AddNewFolder".Translate(),
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Tooltip = "RefreshLatest".Translate(),
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Tooltip = "Settings".Translate(),
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
-                Icon = new FluentIconElement(FluentSymbol.Settings24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
 
@@ -198,25 +197,25 @@ public sealed partial class AppShell : UserControl
             {
                 Title = "StartMultiSelection".Translate(),
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Title = "AddNewFolder".Translate(),
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Title = "RefreshLatest".Translate(),
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Title = "Settings".Translate(),
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
-                Icon = new FluentIconElement(FluentSymbol.Settings24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
 

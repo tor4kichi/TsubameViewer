@@ -22,7 +22,7 @@
   xmlns:behaviours="using:CommunityToolkit.WinUI.Behaviors"
   xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml"
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)" 
-  xmlns:fluentIcon="using:Fluent.Icons"
+  xmlns:fluentIcon="using:FluentIcons.Uwp"
   mc:Ignorable="d"
       xmlns:ctwu="using:CommunityToolkit.WinUI">
 
@@ -69,9 +69,6 @@
       </Grid>
     </DataTemplate>
 
-    <Style TargetType="fluentIcon:FluentSymbolIcon">
-      <Setter Property="IsTabStop" Value="False" />
-    </Style>
     <myConv:SliderValueChangedEventArgsConverter x:Key="SliderValueChangedEventArgsConverter" />
 
     <MenuFlyout x:Key="OtherSettingsFlyout" Placement="BottomEdgeAlignedRight">
@@ -137,7 +134,7 @@
                    Description="{i18nExt:Localize Key=IsLeftBindingView}"
                    >
       <XamlUICommand.IconSource>
-        <fluentIcon:FluentIconSource Symbol="ArrowSort24" />
+        <fluentIcon:FluentIconSource Icon="ArrowSort" />
       </XamlUICommand.IconSource>
 
       <XamlUICommand.KeyboardAccelerators>
@@ -565,12 +562,12 @@
                 AccessKey="U">
           <Button.Content>
             <Grid>
-              <fluentIcon:FluentSymbolIcon Symbol="BookPulse24">
-                <fluentIcon:FluentSymbolIcon.RenderTransform>
+              <fluentIcon:SymbolIcon Symbol="BookPulse">
+                <fluentIcon:SymbolIcon.RenderTransform>
                   <TranslateTransform X="-2"
                                       Y="-1" />
-                </fluentIcon:FluentSymbolIcon.RenderTransform>
-              </fluentIcon:FluentSymbolIcon>
+                </fluentIcon:SymbolIcon.RenderTransform>
+              </fluentIcon:SymbolIcon>
             </Grid>
           </Button.Content>
 
@@ -581,13 +578,13 @@
                       Command="{StaticResource DoubleViewToggleUICommand}"
                       AccessKey="I">
           <ToggleButton.Content>
-            <fluentIcon:FluentSymbolIcon Symbol="BookOpen24"
+            <fluentIcon:SymbolIcon Symbol="BookOpen"
                                          Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
-              <fluentIcon:FluentSymbolIcon.RenderTransform>
+              <fluentIcon:SymbolIcon.RenderTransform>
                 <TranslateTransform X="-1"
                                     Y="-1" />
-              </fluentIcon:FluentSymbolIcon.RenderTransform>
-            </fluentIcon:FluentSymbolIcon>
+              </fluentIcon:SymbolIcon.RenderTransform>
+            </fluentIcon:SymbolIcon>
           </ToggleButton.Content>
         </ToggleButton>
 
@@ -596,12 +593,12 @@
                       Command="{StaticResource LeftBindingToggleUICommand}"
                       AccessKey="O">
           <ToggleButton.Content>
-            <fluentIcon:FluentSymbolIcon Symbol="ArrowImport20Filled">
-              <fluentIcon:FluentSymbolIcon.RenderTransform>
+            <fluentIcon:SymbolIcon Symbol="ArrowImport">
+              <fluentIcon:SymbolIcon.RenderTransform>
                 <TranslateTransform X="-1"
                                     Y="-1" />
-              </fluentIcon:FluentSymbolIcon.RenderTransform>
-            </fluentIcon:FluentSymbolIcon>
+              </fluentIcon:SymbolIcon.RenderTransform>
+            </fluentIcon:SymbolIcon>
           </ToggleButton.Content>
         </ToggleButton>
 
@@ -612,7 +609,7 @@
                 MaxWidth="120">
           <Button.Content>
             <uwpControls:DockPanel >
-              <fluentIcon:FluentSymbolIcon Symbol="TextSortAscending20"
+              <fluentIcon:SymbolIcon Symbol="TextSortAscending"
                                            uwpControls:DockPanel.Dock="Left"
                                            Margin="0 0 4 0"/>
               <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" 
@@ -694,7 +691,7 @@
                     Command="{x:Bind _vm.OpenMangaFileCommand}"
                     CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
                     CornerRadius="0 6 6 0">
-              <fluentIcon:FluentSymbolIcon Symbol="ArrowLeft24" />
+              <fluentIcon:SymbolIcon Symbol="ArrowLeft" />
             </Button>
           </Border>
         </StackPanel>
@@ -710,7 +707,7 @@
                     Command="{x:Bind _vm.OpenMangaFileCommand}"
                     CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
                     CornerRadius="6 0 0 6">
-              <fluentIcon:FluentSymbolIcon Symbol="ArrowRight24" />
+              <fluentIcon:SymbolIcon Symbol="ArrowRight" />
             </Button>
           </Border>
         </StackPanel>
@@ -774,23 +771,23 @@
                   <uwpControls:Case.Value>
                     <x:Boolean>True</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:FluentSymbolIcon Symbol="Star24Filled">
+                  <fluentIcon:SymbolIcon Symbol="Star">
                     <UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
                     </UIElement.RenderTransform>
-                  </fluentIcon:FluentSymbolIcon>
+                  </fluentIcon:SymbolIcon>
                 </uwpControls:Case>
                 <uwpControls:Case IsDefault="True">
                   <uwpControls:Case.Value>
                     <x:Boolean>False</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:FluentSymbolIcon Symbol="Star24">
+                  <fluentIcon:SymbolIcon Symbol="Star">
                     <UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
                     </UIElement.RenderTransform>
-                  </fluentIcon:FluentSymbolIcon>
+                  </fluentIcon:SymbolIcon>
                 </uwpControls:Case>
               </uwpControls:SwitchPresenter>
             </RepeatButton>
@@ -868,23 +865,23 @@
                   <uwpControls:Case.Value>
                     <x:Boolean>True</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:FluentSymbolIcon Symbol="Star24Filled">
+                  <fluentIcon:SymbolIcon Symbol="Star">
                     <UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
                     </UIElement.RenderTransform>
-                  </fluentIcon:FluentSymbolIcon>
+                  </fluentIcon:SymbolIcon>
                 </uwpControls:Case>
                 <uwpControls:Case IsDefault="True">
                   <uwpControls:Case.Value>
                     <x:Boolean>False</x:Boolean>
                   </uwpControls:Case.Value>
-                  <fluentIcon:FluentSymbolIcon Symbol="Star24">
+                  <fluentIcon:SymbolIcon Symbol="Star">
                     <UIElement.RenderTransform>
                       <TranslateTransform X="-1"
                                           Y="-1" />
                     </UIElement.RenderTransform>
-                  </fluentIcon:FluentSymbolIcon>
+                  </fluentIcon:SymbolIcon>
                 </uwpControls:Case>
               </uwpControls:SwitchPresenter>
             </RepeatButton>

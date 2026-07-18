@@ -16,7 +16,7 @@
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:models="using:TsubameViewer.Core.Models"
-      xmlns:fluentIcon="using:Fluent.Icons"
+      xmlns:fluentIcon="using:FluentIcons.Uwp"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:storage="using:Windows.Storage"
       xmlns:uwpControls1="using:CommunityToolkit.WinUI.Controls"
@@ -712,13 +712,13 @@
 
             <Setter Target="ContentViewType_FolderListup.Content">
               <Setter.Value>
-                <fluentIcon:FluentSymbolIcon Symbol="Folder24"
+                <fluentIcon:SymbolIcon Symbol="Folder"
                                              Margin="0 0 0 2" />
               </Setter.Value>
             </Setter>
             <Setter Target="ContentViewType_ImageListup.Content">
               <Setter.Value>
-                <fluentIcon:FluentSymbolIcon Symbol="Image24"
+                <fluentIcon:SymbolIcon Symbol="Image"
                                              Margin="0 0 2 2" />
               </Setter.Value>
             </Setter>

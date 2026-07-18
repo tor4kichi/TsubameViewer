@@ -1572,15 +1572,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         TogglePlayPauseWoAnimation();
         if (prevPlaybackState == MediaPlaybackState.Paused)
         {
-            StartIconNotification(Fluent.Icons.FluentSymbol.Play24Filled);
+            StartIconNotification(FluentIcons.Common.Symbol.Play);
         }
         else if (prevPlaybackState == MediaPlaybackState.Playing)
         {
-            StartIconNotification(Fluent.Icons.FluentSymbol.Pause24Filled);
+            StartIconNotification(FluentIcons.Common.Symbol.Pause);
         }
     }
 
-    void StartIconNotification(Fluent.Icons.FluentSymbol symbol, bool mirror = false)
+    void StartIconNotification(FluentIcons.Common.Symbol symbol, bool mirror = false)
     {
         if (_playPauseToggleAnimationCts != null)
         {
@@ -2070,7 +2070,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.PlaybackSession.PlaybackRate = nextRate;
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         StartLiteNotification($"x{nextRate:F2}");
-        StartIconNotification(Fluent.Icons.FluentSymbol.FastForward20Filled);
+        StartIconNotification(FluentIcons.Common.Symbol.FastForward);
     }
 
     void Button_Tapped(object sender, TappedRoutedEventArgs e)
@@ -2090,7 +2090,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.PlaybackSession.PlaybackRate = prevRate;
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         StartLiteNotification($"x{prevRate:F2}");
-        StartIconNotification(Fluent.Icons.FluentSymbol.FastForward20Filled, true);
+        StartIconNotification(FluentIcons.Common.Symbol.FastForward, true);
     }
 
     #endregion

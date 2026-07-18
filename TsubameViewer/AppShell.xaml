@@ -16,7 +16,7 @@
              xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
              xmlns:animations="using:CommunityToolkit.WinUI.Animations"
              xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
-             xmlns:fi="using:Fluent.Icons"
+             xmlns:fi="using:FluentIcons.Uwp"
              xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
              xmlns:ctwu="using:CommunityToolkit.WinUI"
              mc:Ignorable="d"
