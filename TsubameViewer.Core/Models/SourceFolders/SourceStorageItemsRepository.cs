@@ -395,8 +395,10 @@ public sealed class SourceStorageItemsRepository
     
     private async Task<IStorageItem?> GetItemAsync(string token)
     {
-        if (_cached.TryGetValue(token, out var item)) { return item; }
+        // キャッシュするとフォルダ内アイテムの取得が致命的に遅くなるケースが見られた
+        //if (_cached.TryGetValue(token, out var item)) { return item; }
 
+        IStorageItem item = null;
         if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))
         {
             item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(token);
@@ -419,7 +421,7 @@ public sealed class SourceStorageItemsRepository
 
         if (item is not null)
         {
-            _cached.TryAdd(token, item);
+            //_cached.TryAdd(token, item);
         }
 
 
