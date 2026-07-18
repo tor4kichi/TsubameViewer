@@ -438,7 +438,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
                 var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
                 try
-                {
+                {                    
                     var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(FolderListupPage), itemPath));
                     if (res is { } target)
                     {

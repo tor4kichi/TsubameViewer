@@ -574,7 +574,10 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
-        ImageFileItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        using (FileItemsView.DeferRefresh())
+        {
+            ImageFileItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        }
 
         IsFavoriteAlbam = false;
         (_imageCollectionContext as IDisposable)?.Dispose();

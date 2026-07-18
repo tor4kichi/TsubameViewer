@@ -116,6 +116,33 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 itemVM.RestoreThumbnailLoadingTask(_navigationCt);
             }
         });
+
+        _messenger.Register<NavigationCompletedMessage>(this, (r, m) =>
+        {
+            if (m.Value.SourcePageType == typeof(ImageViewerPage))
+            {
+                XamlCancellationHelper.Cancel(this);
+            }
+            else if (m.Value.SourcePageType == typeof(EmptyPage))
+            {
+                var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+                _realizedItems.ToObservable()
+                    .ForEachAsync(async (x) =>
+                    {
+                        var (elem, itemVM) = x;
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+                        if (elem.FindDescendant<Image>() is { } imageControl)
+                        {
+                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                        }
+                    }, ct).FireAndForgetSafe();
+
+                DisposableBuilder db = new ();
+                HandleCreateFolderDialogTextChanging(ref db);
+                db.Build().RegisterTo(ct);
+                InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
+            }
+        });
     }    
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
@@ -123,6 +150,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);
     }
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
