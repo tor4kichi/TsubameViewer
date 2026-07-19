@@ -245,7 +245,8 @@
                               AccessKey="S"
                               CornerRadius="4"
                               ctwu:FrameworkElementExtensions.Cursor="Hand">
-                <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
+                <!-- x:Bindを使うと初めて表示する時にローカライズ前の文字列が見えることがある -->
+                <TextBlock Text="{Binding SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
                 <DropDownButton.Flyout>
                   <MenuFlyout>
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
