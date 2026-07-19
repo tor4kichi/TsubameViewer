@@ -310,29 +310,24 @@
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
-          <StackPanel Spacing="0"
-                      HorizontalAlignment="Center"
-                      Margin="0 16 0 16"
-                      MaxWidth="500"
-                      >
+          <StackPanel Spacing="4"
+                      Margin="48 16 48 16"
+                      x:Name="SettingsBottomControl">
             <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy" 
-                             HorizontalContentAlignment="Right"
-                             FontWeight="SemiBold"
-                             Width="600"
+                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy"
+                             HorizontalAlignment="Right"
+                             FontWeight="SemiBold"                             
                              />
             <HyperlinkButton Content="{Binding Source=ThirdPartyLibraryNotice, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Third-Party-Library-Notice" 
-                             HorizontalContentAlignment="Right"
+                             HorizontalAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="600"
                              />
 
             <HyperlinkButton Content="{Binding Source=AskQuestionWithMashmarrow, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://marshmallow-qa.com/tor4kichi" 
-                             HorizontalContentAlignment="Right"
+                             HorizontalAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="600"
                              />
           </StackPanel>
           
@@ -397,6 +392,8 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SettingsItemsControl.Margin"
+                    Value="16 16" />
+            <Setter Target="SettingsBottomControl.Margin"
                     Value="16 16" />
           </VisualState.Setters>
         </VisualState>
