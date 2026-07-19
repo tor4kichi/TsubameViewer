@@ -249,6 +249,7 @@ public sealed class ThumbnailImageManager
             }
         }
 
+        using var releaser = await _renderLock.LockAsync(ct);
         if (imageSource.StorageItem is StorageFolder folder)
         {
             outputStream ??= new MemoryStream();
@@ -336,9 +337,9 @@ public sealed class ThumbnailImageManager
             {
                 try
                 {
-                    using (imageSource is EpubLocalImageSource 
-                        ? await _renderLock.LockAsync(ct)
-                        : Disposable.Empty)
+                    //using (imageSource is EpubLocalImageSource 
+                    //    ? await _renderLock.LockAsync(ct)
+                    //    : Disposable.Empty)
                     {
                         await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                     }

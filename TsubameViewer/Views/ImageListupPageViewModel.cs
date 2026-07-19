@@ -836,7 +836,6 @@ public sealed partial class ImageListupPageViewModel
                         {
                             try
                             {
-                                await Task.Delay(3000);
                                 // Note: リネームを検知したいので同数チェックしない
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
@@ -857,7 +856,6 @@ public sealed partial class ImageListupPageViewModel
                     {
                         try
                         {
-                            await Task.Delay(100);
                             using (FileItemsView.DeferRefresh())
                             {
                                 ImageFileItems.Clear();
