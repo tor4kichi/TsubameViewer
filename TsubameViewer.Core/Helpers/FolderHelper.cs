@@ -42,7 +42,7 @@ public static class FolderHelper
 
 #if WINDOWS_UWP
 
-    public static uint GetEnumeratorOneTimeGetCount = 2000;
+    public static uint GetEnumeratorOneTimeGetCount = 500;
     public static async IAsyncEnumerable<IStorageItem> ToAsyncEnumerable(this StorageItemQueryResult query, [EnumeratorCancellation] CancellationToken ct = default)
     {
         uint currentCount = 0;
