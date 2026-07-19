@@ -155,7 +155,7 @@
       </Grid.RowDefinitions>
 
       <Image Style="{StaticResource FolderItemImageStyle}"
-             Source="{x:Bind Image, Mode=OneWay}"
+             Source="{Binding Image, Mode=OneWay}"
              Stretch="UniformToFill"
              VerticalAlignment="Center"
              Grid.RowSpan="2"

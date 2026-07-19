@@ -42,7 +42,7 @@ public static class FolderHelper
 
 #if WINDOWS_UWP
 
-    public static uint GetEnumeratorOneTimeGetCount = 100;
+    public static uint GetEnumeratorOneTimeGetCount = 2000;
     public static async IAsyncEnumerable<IStorageItem> ToAsyncEnumerable(this StorageItemQueryResult query, [EnumeratorCancellation] CancellationToken ct = default)
     {
         uint currentCount = 0;
@@ -69,6 +69,40 @@ public static class FolderHelper
             {
                 ct.ThrowIfCancellationRequested();
                 yield return item;
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            currentCount += (uint)items.Count;
+        }
+    }
+
+    public static async Task ForeachAsync<TState>(this StorageFileQueryResult query, TState state, Action<TState, StorageFile> fileAction, CancellationToken ct)
+    {
+        uint currentCount = 0;
+        while (await query.GetFilesAsync(currentCount, GetEnumeratorOneTimeGetCount).AsTask(ct) is not null and var items && items.Any())
+        {
+            foreach (var item in items)
+            {
+                ct.ThrowIfCancellationRequested();
+                fileAction(state, item);
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            currentCount += (uint)items.Count;
+        }
+    }
+
+    public static async Task ForeachAsync<TState>(this StorageItemQueryResult query, TState state, Action<TState, IStorageItem> fileAction, CancellationToken ct)
+    {
+        uint currentCount = 0;
+        while (await query.GetItemsAsync(currentCount, GetEnumeratorOneTimeGetCount).AsTask(ct) is not null and var items && items.Any())
+        {
+            foreach (var item in items)
+            {
+                ct.ThrowIfCancellationRequested();
+                fileAction(state, item);
             }
 
             ct.ThrowIfCancellationRequested();

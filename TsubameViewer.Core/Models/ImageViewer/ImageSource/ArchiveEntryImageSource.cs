@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
-using Microsoft.IO;
 using Reactive.Bindings;
 using SharpCompress.Archives;
 using System;
@@ -69,19 +68,19 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
     public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct)
     {
         using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
-
-        var recyclable = Ioc.Default.GetRequiredService<RecyclableMemoryStreamManager>();
-        var memoryStream = recyclable.GetStream();
-        using (var entryStream = _entry.OpenEntryStream())
+        var memoryStream = new MemoryStream();
+        await Task.Run(() => 
         {
-            // Note: コメントアウトした書き方だと稀にコピーできないケースが発生する
-            // entryStream.CopyTo(memoryStream.AsStream());
-            await entryStream.CopyToAsync(memoryStream, 81920, ct);
-            memoryStream.Seek(0, SeekOrigin.Begin);
-
-            ct.ThrowIfCancellationRequested();
-        }
-
+            using (var entryStream = _entry.OpenEntryStream())
+            {
+                // Note: コメントアウトした書き方だと稀にコピーできないケースが発生する
+                // entryStream.CopyTo(memoryStream.AsStream());
+                ct.ThrowIfCancellationRequested();
+                entryStream.CopyTo(memoryStream);
+                ct.ThrowIfCancellationRequested();
+                memoryStream.Seek(0, SeekOrigin.Begin);
+            }
+        }, ct);
         return memoryStream;
     }
 

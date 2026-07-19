@@ -513,7 +513,7 @@ public sealed class FolderStructureCacheContext : IDisposable
 #if DEBUG
                 PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
 #endif
-                uint oneTimeLoadCount = 250;
+                uint oneTimeLoadCount = 1000;
                 uint currentCount = 0;
                 var loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
                 currentCount += oneTimeLoadCount;
@@ -548,19 +548,34 @@ public sealed class FolderStructureCacheContext : IDisposable
             cached = _repo.FindFolderImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Path));
             await Task.Run(async () => 
             {
-                await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+                //await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+                //{
+                //    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
+                //    {
+                //        ct.ThrowIfCancellationRequested();
+                //        dispatcherQueue.TryEnqueue(() => 
+                //        {
+                //            entry = _repo.AddOrUpdateItem(file);
+                //            var itemVM = cacheImageViewModelFactory(entry);
+                //            items.Add(itemVM);
+                //        });
+                //    }
+                //}
+
+                await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
                 {
+                    var (items, cached, dispatcherQueue, cacheImageViewModelFactory, _this) = state;
                     if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
                     {
-                        ct.ThrowIfCancellationRequested();
-                        dispatcherQueue.TryEnqueue(() => 
+                        dispatcherQueue.TryEnqueue(() =>
                         {
-                            entry = _repo.AddOrUpdateItem(file);
+                            entry = _this._repo.AddOrUpdateItem(file);
                             var itemVM = cacheImageViewModelFactory(entry);
                             items.Add(itemVM);
                         });
                     }
-                }
+
+                }, ct);
             }, ct);
         }
 
@@ -636,20 +651,35 @@ public sealed class FolderStructureCacheContext : IDisposable
             cached = _repo.FindFolderNotImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Path));
             await Task.Run(async () =>
             {
-                await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+                //await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+                //{
+                //    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry) || isInitial)
+                //    {
+                //        ct.ThrowIfCancellationRequested();
+                //        dispatcherQueue.TryEnqueue(() =>
+                //        {
+                //            entry = _repo.AddOrUpdateItem(file);
+                //            var itemVM = cacheImageViewModelFactory(entry);
+                //            items.Add(itemVM);
+                //        });
+                //    }
+                //    await Task.Delay(1);
+                //}
+
+                await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
                 {
-                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry) || isInitial)
+                    var (items, cached, dispatcherQueue, cacheImageViewModelFactory, _this) = state;
+                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
                     {
-                        ct.ThrowIfCancellationRequested();
                         dispatcherQueue.TryEnqueue(() =>
                         {
-                            entry = _repo.AddOrUpdateItem(file);
+                            entry = _this._repo.AddOrUpdateItem(file);
                             var itemVM = cacheImageViewModelFactory(entry);
                             items.Add(itemVM);
                         });
                     }
-                    await Task.Delay(1);
-                }
+
+                }, ct);
             }, ct);
         }
 

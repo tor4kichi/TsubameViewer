@@ -301,13 +301,16 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
         _thumbnailManager.ReOpenInsideDb();
-
+        
         base.OnNavigatedFrom(parameters);
     }
 
     void ClearContent()
     {
-        FolderItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        using (FileItemsView.DeferRefresh())
+        {
+            FolderItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        }
         (_currentImageSource as IDisposable)?.Dispose();
         _currentImageSource = null;
         (_imageCollectionContext as IDisposable)?.Dispose();

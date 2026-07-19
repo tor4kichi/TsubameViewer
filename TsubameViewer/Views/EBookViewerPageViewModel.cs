@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
-using Microsoft.IO;
 using R3;
 using System;
 using System.Collections.Generic;
@@ -155,7 +154,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     readonly ThumbnailImageManager _thumbnailManager;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     readonly ApplicationSettings _applicationSettings;
-    readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
     public EBookReaderSettings EBookReaderSettings { get; }
     public ViewerSettings ViewerSettings { get; }
@@ -188,8 +186,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         EBookReaderSettings themeSettings,
         ViewerSettings viewerSettings,
         ToggleFullScreenCommand toggleFullScreenCommand,
-        BackNavigationCommand backNavigationCommand,
-        RecyclableMemoryStreamManager recyclableMemoryStreamManager
+        BackNavigationCommand backNavigationCommand
         )
     {
         _messenger = messenger;
@@ -202,7 +199,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _applicationSettings = applicationSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
         BackNavigationCommand = backNavigationCommand;
-        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         EBookReaderSettings = themeSettings;
         ViewerSettings = viewerSettings;
     }
@@ -874,7 +870,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 if (image.Key.Equals(key, StringComparison.Ordinal))
                 {
-                    var stream = _recyclableMemoryStreamManager.GetStream();
+                    var stream = new MemoryStream();
                     using (var imageStream = image.GetContentStream())
                     {
                         imageStream.CopyTo(stream);
@@ -888,7 +884,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 if (css.Key.Equals(key, StringComparison.Ordinal))
                 {
-                    var stream = _recyclableMemoryStreamManager.GetStream();
+                    var stream = new MemoryStream();
                     using (var imageStream = css.GetContentStream())
                     {
                         imageStream.CopyTo(stream);

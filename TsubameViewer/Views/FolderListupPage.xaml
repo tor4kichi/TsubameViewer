@@ -23,7 +23,9 @@
       xmlns:ctwu="using:CommunityToolkit.WinUI"
       mc:Ignorable="d"
       Background="{ThemeResource ApplicationContentBackgroundBrush}"
-      NavigationCacheMode="Enabled">
+      NavigationCacheMode="Enabled"
+      Loaded="FolderListupPage_Loaded"
+      Unloaded="FolderListupPage_Unloaded">
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:FolderListupPageViewModel">
@@ -425,6 +427,7 @@
         </StackPanel>
 
         <uwpControls1:AdaptiveGridView ItemsSource="{x:Bind _vm.FileItemsView}"
+                                       ContainerContentChanging="FoldersAdaptiveGridView_ContainerContentChanging1"
                                       x:Name="FoldersAdaptiveGridView"
                                       StretchContentForSingleRow="False"
                                       OneRowModeEnabled="False"

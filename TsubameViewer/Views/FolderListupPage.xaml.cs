@@ -74,10 +74,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<FolderListupPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
-
-        Loaded += FolderListupPage_Loaded;
-        Unloaded += FolderListupPage_Unloaded;
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -143,14 +139,36 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             }
         });
-    }    
+    }
+
+    private void ClearRealizedItems()
+    {
+        try
+        {
+            // ToArray() してから列挙して安全に操作
+            foreach (var kv in _realizedItems.ToArray())
+            {
+                try
+                {
+                    var itemVM = kv.Value;
+                    // サムネイルや読み込みを停止
+                    itemVM.StopImageLoading();
+                }
+                catch { /* ログがあれば記録 */ }
+            }
+        }
+        finally
+        {
+            _realizedItems.Clear();
+        }
+    }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
-        _messenger.Unregister<NavigationCompletedMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);        
     }
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)

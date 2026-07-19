@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
-using Microsoft.IO;
 using R3;
 using System;
 using System.Collections.Generic;
@@ -254,7 +253,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     readonly FolderListingSettings _folderListingSettings;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-    readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
     
     public ImageViewerPageViewModel(
         IMessenger messenger,
@@ -278,8 +276,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         RefreshNavigationCommand refreshNavigationCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
-        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-        RecyclableMemoryStreamManager recyclableMemoryStreamManager
+        OpenWithExternalApplicationCommand openWithExternalApplicationCommand
         )
     {
         _messenger = messenger;
@@ -298,7 +295,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ChangeStorageItemThumbnailImageCommand.IsArchiveThumbnailSetToFile = true;
         OpenWithExplorerCommand = openWithExplorerCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
-        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         _bookmarkManager = bookmarkManager;
         _storageItemSettings = storageItemSettings;
         _recentlyAccessRepository = recentlyAccessRepository;
@@ -1526,7 +1522,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            image = new PrefetchImageInfo(source, (int)CanvasWidth, _recyclableMemoryStreamManager);
+            image = new PrefetchImageInfo(source, (int)CanvasWidth);
             _CachedImages.Insert(0, image);
 
             if (_CachedImages.Count > 8)
@@ -1656,13 +1652,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                     if (image1.DecodePixelHeight != 0)
                     {
-                        using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth, _recyclableMemoryStreamManager);
+                        using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth);
                         image1 = await loader1.GetBitmapImageAsync(ct);
                         Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
                     }
                     if (image2.DecodePixelHeight != 0)
                     {
-                        using var loader2 = new PrefetchImageInfo(imageSource2, (int)CanvasWidth, _recyclableMemoryStreamManager);
+                        using var loader2 = new PrefetchImageInfo(imageSource2, (int)CanvasWidth);
                         image2 = await loader2.GetBitmapImageAsync(ct);
                         Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
                     }
@@ -1675,7 +1671,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 else
                 {
                     var imageSource1 = _sourceImagesSingle[indexType][0];
-                    using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth, _recyclableMemoryStreamManager);
+                    using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth);
                     SetDisplayImages_Internal(PrefetchIndexType.Current,
                         imageSource1, await loader1.GetBitmapImageAsync(ct)
                         );
@@ -2167,11 +2163,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
 public class PrefetchImageInfo : IDisposable
 {
-    public PrefetchImageInfo(IImageSource imageSource, int canvasWidth, RecyclableMemoryStreamManager recyclable)
+    public PrefetchImageInfo(IImageSource imageSource, int canvasWidth)
     {
         ImageSource = imageSource;
         _canvasWidth = canvasWidth;
-        _recyclable = recyclable;
     }
 
     CancellationTokenSource _PrefetchCts = new CancellationTokenSource();
@@ -2186,7 +2181,6 @@ public class PrefetchImageInfo : IDisposable
 
     static Core.AsyncLock _prefetchProcessLock = new ();
     readonly int _canvasWidth;
-    readonly RecyclableMemoryStreamManager _recyclable;
 
     public void Cancel()
     {
@@ -2210,7 +2204,7 @@ public class PrefetchImageInfo : IDisposable
                 var image = new BitmapImage();                    
                 if (ImageSource is PdfPageImageSource)
                 {
-                    using var stream = _recyclable.GetStream();
+                    using var stream = new MemoryStream();
                     var size = await ImageSource.TryGetSizedImageStreamAsync(_canvasWidth, stream, linkedCt);
                     if (size != null)
                     {
@@ -2236,7 +2230,7 @@ public class PrefetchImageInfo : IDisposable
                             }
                             else
                             {
-                                using var memoryStream = _recyclable.GetStream();
+                                using var memoryStream = new MemoryStream();
                                 stream.CopyTo(memoryStream);
                                 memoryStream.Seek(0, SeekOrigin.Begin);
                                 await image.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(linkedCt);

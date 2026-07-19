@@ -2,7 +2,6 @@
 using FFmpegInteropX;
 using LiteDB;
 using Microsoft.Graphics.Canvas;
-using Microsoft.IO;
 using R3;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
@@ -63,19 +62,18 @@ public sealed class ThumbnailImageManager
     private ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
 
     public void ReOpenInsideDb()
-    {
+    {        
         _temporaryDb.Dispose();        
         _temporaryDb = _temporaryDbOpener();
         _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
-        _thumbnailDb = _temporaryDb.FileStorage;
+        _thumbnailDb = _temporaryDb.FileStorage;        
         _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);
-        _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();
+        _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();        
     }
 
     private readonly FolderListingSettings _folderListingSettings;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly static AsyncLock _fileReadWriteLock = new(Math.Max(1, Environment.ProcessorCount));
-    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
     private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
     {
@@ -197,7 +195,7 @@ public sealed class ThumbnailImageManager
         SourceStorageItemsRepository sourceStorageItemsRepository
         )
     {
-        _temporaryDbOpener = temporaryDbOpener;        
+        _temporaryDbOpener = temporaryDbOpener;
         _temporaryDb = temporaryDbOpener();       
         _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
         _thumbnailDb = _temporaryDb.FileStorage;
@@ -206,7 +204,6 @@ public sealed class ThumbnailImageManager
 
         _folderListingSettings = folderListingSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
         _canvasDevice = new CanvasDevice();
     }
 
@@ -239,12 +236,22 @@ public sealed class ThumbnailImageManager
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
         {
-            return cachedImageStream;
+            if (outputStream != null)
+            {
+                cachedImageStream.CopyTo(outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+                cachedImageStream.Dispose();
+                return outputStream;
+            }
+            else
+            {
+                return cachedImageStream;
+            }
         }
 
         if (imageSource.StorageItem is StorageFolder folder)
         {
-            outputStream ??= _recyclableMemoryStreamManager.GetStream();
+            outputStream ??= new MemoryStream();
             try
             {
                 var file = await GetCoverThumbnailImageAsync(folder, ct);
@@ -269,7 +276,7 @@ public sealed class ThumbnailImageManager
         else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file 
             && (file.IsSupportedMangaFile() || file.IsSupportedEBookFile() || file.IsSupportedMovieFile()))
         {
-            outputStream ??= _recyclableMemoryStreamManager.GetStream();
+            outputStream ??= new MemoryStream();
             try
             {
                 if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
@@ -300,7 +307,7 @@ public sealed class ThumbnailImageManager
         }
         else
         {
-            outputStream ??= _recyclableMemoryStreamManager.GetStream();
+            outputStream ??= new MemoryStream();
             var stream = outputStream;
             if (await imageSource.TryGetSizedImageStreamAsync(200, stream, ct) is { } size)
             {
@@ -352,7 +359,7 @@ public sealed class ThumbnailImageManager
     {
         // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
         // InMemoryRandomAccessStreamを使用している
-        using var stream = _recyclableMemoryStreamManager.GetStream();
+        using var stream = new MemoryStream();
         var imageMemoryStream = await GetThumbnailImageStreamAsync(childImageSource, stream, ct);
         if (imageMemoryStream == null) { return; }
 
@@ -472,7 +479,7 @@ public sealed class ThumbnailImageManager
             
             if (requireTrancode)
             {
-                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+                using (var memoryStream = new MemoryStream())
                 {
                     await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                     using (await _fileReadWriteLock.LockAsync(ct))
@@ -502,7 +509,7 @@ public sealed class ThumbnailImageManager
             {
                 if (requireTrancode)
                 {
-                    using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+                    using (var memoryStream = new MemoryStream())
                     {
                         await TranscodeThumbnailImageToStreamAsync(path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 
@@ -567,7 +574,7 @@ public sealed class ThumbnailImageManager
             if (TryGetThumbnailInsideId(oldPathId, out var insideId) is false) { return; }
             foreach (var oldPathItem in _thumbnailDb.Find(x => x.Id.Equals(insideId, StringComparison.Ordinal)).ToArray())
             {
-                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+                using (var memoryStream = new MemoryStream())
                 {
                     oldPathItem.CopyTo(memoryStream);
                     _thumbnailDb.Delete(oldPathItem.Id);
@@ -660,7 +667,7 @@ public sealed class ThumbnailImageManager
 
     public async Task<Stream?> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
     {
-        var outputStream = _recyclableMemoryStreamManager.GetStream();
+        var outputStream = new MemoryStream();
         try
         {
             if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
@@ -682,7 +689,7 @@ public sealed class ThumbnailImageManager
     private async ValueTask<Stream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         bool result = false;
-        var memoryStream = _recyclableMemoryStreamManager.GetStream();        
+        var memoryStream = new MemoryStream();        
         try
         {
             result = await GenerateThumbnailImageToStreamAsync(file, memoryStream, setupEncoder, ct);
@@ -1590,7 +1597,7 @@ public sealed class ThumbnailImageManager
 
         try
         {
-            using var stream = _recyclableMemoryStreamManager.GetStream();
+            using var stream = new MemoryStream();
             var result = await (file.FileType.ToLowerInvariant() switch
             {
                 SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
@@ -1635,7 +1642,7 @@ public sealed class ThumbnailImageManager
                 };
 
                 var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
-                using (var memStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream())
+                using (var memStream = new MemoryStream().AsRandomAccessStream())
                 {
                     foreach (var item in items)
                     {
