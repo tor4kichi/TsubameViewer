@@ -310,7 +310,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
             return Task.CompletedTask;
         }
 
-        //RefreshThumbnailFilesSizeAsync(ct).FireAndForgetSafe();
+        RefreshThumbnailFilesSizeAsync(ct).FireAndForgetSafe();
 
         return Task.CompletedTask;
     }
@@ -319,7 +319,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
     {
         try
         {
-            await Task.Delay(1000);
+            await Task.Delay(5000, ct);
             var size = (ulong) await Task.Run(() => _thumbnailImageMaintenanceService.ComputeUsingSize(), ct);
             _cacheSizeButton.Description = ToUserFiendlyFileSizeText(size) + "B";
         }
