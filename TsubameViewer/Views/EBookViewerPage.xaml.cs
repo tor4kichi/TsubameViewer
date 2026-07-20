@@ -156,23 +156,16 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         base.OnNavigatingFrom(e);
     }
     Core.AsyncLock _resourceReadLock = new Core.AsyncLock();
-    async void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
+    void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
     {
         var reqesutUri = e.Request.RequestUri;
         using (var defferral = e.GetDeferral())
         {
-            try
-            {                
-                var stream = _vm.ResolveWebResourceRequest(reqesutUri);
-                if (stream != null)
-                {
-                    e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
-                    e.Response.Content = new HttpStreamContent(stream.AsInputStream());
-                }                
-            }
-            finally
+            var stream = _vm.ResolveWebResourceRequest(reqesutUri);
+            if (stream != null)
             {
-                defferral.Complete();
+                e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
+                e.Response.Content = new HttpStreamContent(stream.AsInputStream());
             }
         }
     }
