@@ -1887,10 +1887,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void BackwardOneFrameWoAnimation()
     {
         if (MediaPlayer == null) { return; }
-        if (_oneFrameTime == TimeSpan.Zero) { return; }
-        //MediaPlayer.StepBackwardOneFrame();
         MediaPlayer.Pause();
-        MediaPlayer.PlaybackSession.Position -= _oneFrameTime;
+        MediaPlayer.StepBackwardOneFrame();
         _audioPlayer.Pause();
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
@@ -1900,10 +1898,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void ForwardOneFrameWoAnimation()
     {
         if (MediaPlayer == null) { return; }
-        if (_oneFrameTime == TimeSpan.Zero) { return; }
-        //MediaPlayer.StepForwardOneFrame();
         MediaPlayer.Pause();
-        MediaPlayer.PlaybackSession.Position += _oneFrameTime;
+        MediaPlayer.StepForwardOneFrame();
         _audioPlayer.Pause();
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
