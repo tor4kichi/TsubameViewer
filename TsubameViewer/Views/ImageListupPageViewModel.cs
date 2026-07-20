@@ -5,10 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
-using CommunityToolkit.WinUI;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -340,7 +337,7 @@ public sealed partial class ImageListupPageViewModel
     }
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
-    {
+    {        
         NowLoadingItems = false;
         NowProcessing = false;
         _filterQueryCts?.Cancel();
@@ -353,6 +350,8 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<SendToOtherFolderMessage>(this);
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
+
+        _thumbnailManager.ReOpenInsideDb();
 
         base.OnNavigatedFrom(parameters);
     }
@@ -537,7 +536,6 @@ public sealed partial class ImageListupPageViewModel
             if (_imageCollectionContext is FolderImageCollectionContext)
             {
                 Window.Current.WindowActivationStateChanged()
-                    .ToObservable()
                     .ObserveOnCurrentSynchronizationContext()
                     .Debounce(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>
@@ -576,7 +574,10 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
-        ImageFileItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        using (FileItemsView.DeferRefresh())
+        {
+            ImageFileItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        }
 
         IsFavoriteAlbam = false;
         (_imageCollectionContext as IDisposable)?.Dispose();
@@ -801,6 +802,7 @@ public sealed partial class ImageListupPageViewModel
                         var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffImages(
                             (RangeObservableCollection<IStorageItemViewModel>)items.Source,
+                            sortType,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -834,10 +836,10 @@ public sealed partial class ImageListupPageViewModel
                         {
                             try
                             {
-                                await Task.Delay(3000);
                                 // Note: リネームを検知したいので同数チェックしない
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    sortType,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
@@ -854,7 +856,6 @@ public sealed partial class ImageListupPageViewModel
                     {
                         try
                         {
-                            await Task.Delay(100);
                             using (FileItemsView.DeferRefresh())
                             {
                                 ImageFileItems.Clear();
@@ -862,6 +863,7 @@ public sealed partial class ImageListupPageViewModel
                                 IsFavoriteFilteredDisplayEnabled = false;
                                 await col.Context.HandleDiffImages(
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    sortType,
                                     cacheImageViewModelFactory,
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);

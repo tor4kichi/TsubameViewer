@@ -8,8 +8,6 @@ using CommunityToolkit.WinUI.Animations;
 using I18NPortable;
 using Microsoft.UI.Xaml.Controls;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -113,11 +111,38 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 m.Reply(Task.FromResult<UIElement?>(null));
             }
         });
+        _messenger.Register<NavigationCompletedMessage>(this, (r, m) => 
+        {
+            if (m.Value.SourcePageType == typeof(ImageViewerPage))
+            {
+                XamlCancellationHelper.Cancel(this);
+            }
+            else if (m.Value.SourcePageType == typeof(EmptyPage))
+            {
+                var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+                _realizedItems.ToObservable()
+                    .ForEachAsync(async (x) =>
+                    {
+                        var (elem, itemVM) = x;
+                        _ = itemVM.EnsureImageSizeRatioAsync(ct);
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+                        if (elem.FindDescendant<Image>() is { } imageControl)
+                        {
+                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                        }
+                    }, ct).FireAndForgetSafe();
+
+                HandleCreateFolderDialogTextChanging(ct);
+                InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
+            }
+        });
     }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
-    {
+    {        
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);
+
     }
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -134,7 +159,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     #region 初期フォーカス設定
 
-    CancellationTokenSource? _navigationCts;
     CancellationToken _navigationCt;    
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {

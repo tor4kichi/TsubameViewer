@@ -183,6 +183,7 @@
     <Compile Include="ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
     <Compile Include="ViewModels\LatestContentViewUpdateMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\NavigationCompletedMessage.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />
     <Compile Include="ViewModels\ViewerSettings.cs" />
     <Compile Include="Views\AlbamListupPageViewModel.cs" />
@@ -437,17 +438,14 @@
     <PackageReference Include="FFmpegInteropX">
       <Version>2.1.0.81200</Version>
     </PackageReference>
-    <PackageReference Include="Fluent.Icons">
-      <Version>1.1.110</Version>
+    <PackageReference Include="FluentIcons.Uwp">
+      <Version>2.1.333</Version>
     </PackageReference>
     <PackageReference Include="I18NPortable">
       <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="LiteDB">
       <Version>5.0.21</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream">
-      <Version>3.0.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <!-- 
@@ -466,17 +464,14 @@
     <PackageReference Include="Quickenshtein">
       <Version>1.5.1</Version>
     </PackageReference>
-    <PackageReference Include="R3">
-      <Version>1.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="ReactiveProperty.UWP">
-      <Version>7.2.0</Version>
+    <PackageReference Include="ReactiveProperty.R3">
+      <Version>9.9.0</Version>
     </PackageReference>
     <PackageReference Include="sharpcompress">
-      <Version>0.49.1</Version>
+      <Version>0.50.0</Version>
     </PackageReference>
     <PackageReference Include="System.Linq.Async">
-      <Version>6.0.1</Version>
+      <Version>7.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
       <Version>5.0.2</Version>

@@ -491,13 +491,14 @@ public sealed class FolderStructureCacheContext : IDisposable
 
     readonly static Core.AsyncLock _asyncLock = new();
     public async Task HandleDiffImages<T>(RangeObservableCollection<T> items,        
+        FileSortType fileSortType,
         Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
         Func<T, string> itemToPathConv,
         CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
-        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
+        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(fileSortType));
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;
@@ -512,26 +513,36 @@ public sealed class FolderStructureCacheContext : IDisposable
 #if DEBUG
                 PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
 #endif
-                uint oneTimeLoadCount = 250;
+                uint oneTimeLoadCount = 1000;
                 uint currentCount = 0;
-                var loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                currentCount += oneTimeLoadCount;
+                Task<IReadOnlyList<StorageFile>>? loadTask = null;//= query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
                 while (true)
                 {
                     var lastLoadTask = loadTask;
                     loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                    var loaded = (await lastLoadTask);
-                    if (loaded.Any() is false) { break; }
-                    dispatcherQueue.TryEnqueue(() =>
+                    var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<StorageFile>>([]));
+                    if (lastLoadTask != null && loaded.Any() is false) { break; }
+
+                    if (loaded.Any())
                     {
-                        items.AddRange(loaded.Select(x =>
+                        dispatcherQueue.TryEnqueue(() =>
                         {
-                            var entry = _repo.AddOrUpdateItem(x);
-                            return cacheImageViewModelFactory(entry);
-                        }));
-                    });
-                    if (loaded.Count < oneTimeLoadCount) { break; }
+                            items.AddRange(loaded.Select(x =>
+                            {
+                                var entry = _repo.AddOrUpdateItem(x);
+                                return cacheImageViewModelFactory(entry);
+                            }));
+                        });
+                        if (loaded.Count < oneTimeLoadCount) { break; }
+                        await Task.Delay((int)oneTimeLoadCount / 4, ct);
+                    }
+                    else
+                    {
+                        await Task.Delay((int)oneTimeLoadCount / 2, ct);
+                    }
+
                     currentCount += (uint)loaded.Count;
+
 #if DEBUG
                     sw.ElapsedWrite(currentCount.ToString());
 #endif
@@ -552,14 +563,30 @@ public sealed class FolderStructureCacheContext : IDisposable
                     if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
                     {
                         ct.ThrowIfCancellationRequested();
-                        dispatcherQueue.TryEnqueue(() => 
+                        dispatcherQueue.TryEnqueue(() =>
                         {
                             entry = _repo.AddOrUpdateItem(file);
                             var itemVM = cacheImageViewModelFactory(entry);
                             items.Add(itemVM);
                         });
                     }
+                    await Task.Delay(1, ct);
                 }
+
+                //await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
+                //{
+                //    var (items, cached, dispatcherQueue, cacheImageViewModelFactory, _this) = state;
+                //    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
+                //    {
+                //        dispatcherQueue.TryEnqueue(() =>
+                //        {
+                //            entry = _this._repo.AddOrUpdateItem(file);
+                //            var itemVM = cacheImageViewModelFactory(entry);
+                //            items.Add(itemVM);
+                //        });
+                //    }
+
+                //}, ct);
             }, ct);
         }
 
@@ -577,14 +604,15 @@ public sealed class FolderStructureCacheContext : IDisposable
         }
     }
 
-    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,        
-       Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
-       Func<T, string> itemToPathConv,
-       CancellationToken ct)
+    public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,
+        FileSortType fileSortType,
+        Func<FolderStructureFileEntry, T> cacheImageViewModelFactory,
+        Func<T, string> itemToPathConv,
+        CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
-        var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
+        var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(fileSortType));
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;
@@ -601,24 +629,31 @@ public sealed class FolderStructureCacheContext : IDisposable
 #endif
                 uint oneTimeLoadCount = 1000;
                 uint currentCount = 0;
-                var loadTask = query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                currentCount += oneTimeLoadCount;
+                Task<IReadOnlyList<IStorageItem>>? loadTask = null;//= query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
                 while (true)
-                {
+                {                    
                     var lastLoadTask = loadTask;
                     loadTask = query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                    var loaded = (await lastLoadTask);
-                    if (loaded.Any() is false) { break; }
+                    var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<IStorageItem>>([]));
+                    if (lastLoadTask != null && loaded.Any() is false) { break; }
 
-                    dispatcherQueue.TryEnqueue(() =>
+                    if (loaded.Any())
                     {
-                        items.AddRange(loaded.Select(x =>
+                        dispatcherQueue.TryEnqueue(() =>
                         {
-                            var entry = _repo.AddOrUpdateItem(x);
-                            return cacheImageViewModelFactory(entry);
-                        }));
-                    });
-                    if (loaded.Count < oneTimeLoadCount) { break; }
+                            items.AddRange(loaded.Select(x =>
+                            {
+                                var entry = _repo.AddOrUpdateItem(x);
+                                return cacheImageViewModelFactory(entry);
+                            }));
+                        });
+                        if (loaded.Count < oneTimeLoadCount) { break; }
+                        await Task.Delay((int)oneTimeLoadCount / 4, ct);
+                    }
+                    else
+                    {
+                        await Task.Delay((int)oneTimeLoadCount / 2, ct);
+                    }
                     currentCount += (uint)loaded.Count;
 #if DEBUG
                     sw.ElapsedWrite(currentCount.ToString());
@@ -648,6 +683,21 @@ public sealed class FolderStructureCacheContext : IDisposable
                     }
                     await Task.Delay(1);
                 }
+
+                //await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
+                //{
+                //    var (items, cached, dispatcherQueue, cacheImageViewModelFactory, _this) = state;
+                //    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
+                //    {
+                //        dispatcherQueue.TryEnqueue(() =>
+                //        {
+                //            entry = _this._repo.AddOrUpdateItem(file);
+                //            var itemVM = cacheImageViewModelFactory(entry);
+                //            items.Add(itemVM);
+                //        });
+                //    }
+
+                //}, ct);
             }, ct);
         }
 

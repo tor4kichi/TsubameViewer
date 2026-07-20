@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
-using Microsoft.IO;
 using R3;
 using System;
 using System.Collections.Generic;
@@ -199,7 +198,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         ThumbnailImageManager thumbnailManager,
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
-        RecyclableMemoryStreamManager recyclableMemoryStreamManager,
         ViewerSettings viewerSettings,
         MovieViewerPageSettings pageSettings)
     {
@@ -215,7 +213,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         ThumbnailManager = thumbnailManager;
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
-        RecyclableMemoryStreamManager = recyclableMemoryStreamManager;
         ViewerSettings = viewerSettings;
         PageSettings = pageSettings;
     }
@@ -235,7 +232,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     public ThumbnailImageManager ThumbnailManager { get; }
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-    public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; }
     public ViewerSettings ViewerSettings { get; }
 
     [ObservableProperty]

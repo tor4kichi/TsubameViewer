@@ -9,7 +9,6 @@ using I18NPortable;
 using Microsoft.Toolkit.Uwp;
 using R3;
 using R3.Extensions;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,8 +16,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reactive;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -77,10 +74,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<FolderListupPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
-
-        Loaded += FolderListupPage_Loaded;
-        Unloaded += FolderListupPage_Unloaded;
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -119,13 +112,63 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 itemVM.RestoreThumbnailLoadingTask(_navigationCt);
             }
         });
-    }    
+
+        _messenger.Register<NavigationCompletedMessage>(this, (r, m) =>
+        {
+            if (m.Value.SourcePageType == typeof(ImageViewerPage))
+            {
+                XamlCancellationHelper.Cancel(this);
+            }
+            else if (m.Value.SourcePageType == typeof(EmptyPage))
+            {
+                var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+                _realizedItems.ToObservable()
+                    .ForEachAsync(async (x) =>
+                    {
+                        var (elem, itemVM) = x;
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+                        if (elem.FindDescendant<Image>() is { } imageControl)
+                        {
+                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                        }
+                    }, ct).FireAndForgetSafe();
+
+                DisposableBuilder db = new ();
+                HandleCreateFolderDialogTextChanging(ref db);
+                db.Build().RegisterTo(ct);
+                InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
+            }
+        });
+    }
+
+    private void ClearRealizedItems()
+    {
+        try
+        {
+            // ToArray() してから列挙して安全に操作
+            foreach (var kv in _realizedItems.ToArray())
+            {
+                try
+                {
+                    var itemVM = kv.Value;
+                    // サムネイルや読み込みを停止
+                    itemVM.StopImageLoading();
+                }
+                catch { /* ログがあれば記録 */ }
+            }
+        }
+        finally
+        {
+            _realizedItems.Clear();
+        }
+    }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);        
     }
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -301,62 +344,68 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             InitializeMoveToFolders(ct).FireAndForgetSafe();            
             db.Build().RegisterTo(ct);
 
-            await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
-            var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
             if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
             {
-                _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
-                    .IgnoreOnErrorResume()
-                    .Timeout(TimeSpan.FromSeconds(1))
-                    .Where(x => x != null)
-                    .Skip(1)
+                await _vm.ObservePropertyChanged(x => x.NowProcessing)
+                    .Where(x => x)
                     .Take(1)
-                    .SubscribeAwait((FoldersAdaptiveGridView, _vm.FileItemsView), async (x, s, ct) =>
-                    {                        
-                        var (listView, items) = s;
-                        await _vm.ObservePropertyChanged(x => x.NowProcessing)
-                            .Take(2)
-                            .WaitAsync(ct);
-                        if (e.NavigationMode is NavigationMode.Back
-                            && _vm.GetLastIntractIndexAndItem() is { } lastItem)
-                        {
-                            int index = lastItem.Index;
-                            await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
-                            if (listView.ContainerFromIndex(index) is Control itemContainer)
-                            {
-                                itemContainer.Focus(FocusState.Keyboard);                                
-                            }
-                        }
+                    .WaitAsync(ct);
 
-                        await Task.Delay(5);
-                        if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward)
-                        {
-                            if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(x!), out double ratio))
-                            {
-                                await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
-                                bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
-                                Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {x}");
-                            }
-                            else if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
-                            {
-                                int index = indexAndLastItem.Index;
-                                await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
-                                var offset = sv.ScrollableHeight * (index / (float)_vm.FileItemsView.Count);
-                                sv.ChangeView(null, offset, null, true);
-                            }
-                            else
-                            {
-                                sv.ChangeView(null, 0, null, true);
-                            }
-                        }
-                        else
-                        {
-                            sv.ChangeView(null, 0, null, true);
-                        }
-                    });
+                await _vm.ObservePropertyChanged(x => x.NowProcessing)
+                    .Where(x => !x)
+                    .Take(1)
+                    .WaitAsync(ct);
+
+                await _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
+                    .Where(x => x != null)
+                    .Take(1)
+                    .WaitAsync(ct);
+
+                var (listView, items) = (FoldersAdaptiveGridView, _vm.FolderItems);
+                if (e.NavigationMode is NavigationMode.Back
+                    && _vm.GetLastIntractIndexAndItem() is { } lastItem)
+                {
+                    int index = lastItem.Index;
+                    await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
+                    if (listView.ContainerFromIndex(index) is Control itemContainer)
+                    {
+                        itemContainer.Focus(FocusState.Keyboard);
+                        lastItem.Item?.ThumbnailChanged();
+                    }
+                }
+
+                await Task.Delay(5);
+                await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
+                var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
+                if (e.NavigationMode is NavigationMode.Back or NavigationMode.Forward)
+                {
+                    if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(_vm.DisplayCurrentPath!), out double ratio))
+                    {
+                        await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
+                        bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
+                        Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {_vm.DisplayCurrentPath}");
+                    }
+                    else if (_vm.GetLastIntractIndexAndItem() is { } indexAndLastItem)
+                    {
+                        int index = indexAndLastItem.Index;
+                        await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
+                        var offset = sv.ScrollableHeight * (index / (float)_vm.FileItemsView.Count);
+                        sv.ChangeView(null, offset, null, true);
+                    }
+                    else
+                    {
+                        sv.ChangeView(null, 0, null, true);
+                    }
+                }
+                else
+                {
+                    sv.ChangeView(null, 0, null, true);
+                }
             }
             else 
             {
+                await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
+                var sv = FoldersAdaptiveGridView.FindDescendantOrSelf<ScrollViewer>()!;
                 bool result = sv.ChangeView(null, 0, null, true);
             }
 

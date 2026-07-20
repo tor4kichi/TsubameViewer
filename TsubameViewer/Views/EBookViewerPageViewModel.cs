@@ -3,18 +3,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
-using Microsoft.IO;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -160,7 +154,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     readonly ThumbnailImageManager _thumbnailManager;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     readonly ApplicationSettings _applicationSettings;
-    readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
     public EBookReaderSettings EBookReaderSettings { get; }
     public ViewerSettings ViewerSettings { get; }
@@ -193,8 +186,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         EBookReaderSettings themeSettings,
         ViewerSettings viewerSettings,
         ToggleFullScreenCommand toggleFullScreenCommand,
-        BackNavigationCommand backNavigationCommand,
-        RecyclableMemoryStreamManager recyclableMemoryStreamManager
+        BackNavigationCommand backNavigationCommand
         )
     {
         _messenger = messenger;
@@ -207,7 +199,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _applicationSettings = applicationSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
         BackNavigationCommand = backNavigationCommand;
-        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         EBookReaderSettings = themeSettings;
         ViewerSettings = viewerSettings;
     }
@@ -595,8 +586,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
             Debug.WriteLine($"PrepareNextPage: page at {nextPageIndex:000} loading.");            
             Debug.WriteLine($"PrepareNextPage: target SwapPages[{swapPageIndex}]");
-            FillPageInfo(nextPageIndex, nextPage);
-            await LoadPageAsync(nextPage, _navigationCt);
+            if (TryFillPageInfo(nextPageIndex, nextPage)) 
+            {
+                await LoadPageAsync(nextPage, _navigationCt);
+            }
             Debug.WriteLine($"PrepareNextPage: Complete.");
         }
     }
@@ -637,10 +630,12 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
                     Debug.WriteLine($"UpdateCurrentPage {requestPage:000}: Page load to SwapPage[{displayPageInfoIndex}]");
                     var info = SwapPages[displayPageInfoIndex];
-                    FillPageInfo(requestPage, info);
-                    await LoadPageAsync(info, ct);
-                    CurrentPageInfo = info;
-                    NowDisplayRendererIndex = displayPageInfoIndex;
+                    if (TryFillPageInfo(requestPage, info))
+                    {
+                        await LoadPageAsync(info, ct);
+                        CurrentPageInfo = info;
+                        NowDisplayRendererIndex = displayPageInfoIndex;
+                    }
                 }
             }
         }
@@ -699,11 +694,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         }
     }
 
-    void FillPageInfo(int requestPage, EBookPageInfo pageInfo)
+    bool TryFillPageInfo(int requestPage, EBookPageInfo pageInfo)
     {
         Guard.IsNotNull(CurrentBookReadingOrder);
         EpubLocalTextContentFileRef currentPage = CurrentBookReadingOrder.ElementAtOrDefault(requestPage);
-        if (currentPage == null) { throw new IndexOutOfRangeException(); }
+        if (currentPage == null) { return false; }
         Debug.WriteLine(currentPage.FilePath);
         pageInfo.IsLoaded = false;
         pageInfo.OuterPageIndex = requestPage;
@@ -719,6 +714,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
         pageInfo.InnerCurrentPageIndex = 0;
+        return true;
     }
 
     void ClearPageInfo(EBookPageInfo pageInfo)
@@ -874,7 +870,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 if (image.Key.Equals(key, StringComparison.Ordinal))
                 {
-                    var stream = _recyclableMemoryStreamManager.GetStream();
+                    var stream = new MemoryStream();
                     using (var imageStream = image.GetContentStream())
                     {
                         imageStream.CopyTo(stream);
@@ -888,7 +884,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 if (css.Key.Equals(key, StringComparison.Ordinal))
                 {
-                    var stream = _recyclableMemoryStreamManager.GetStream();
+                    var stream = new MemoryStream();
                     using (var imageStream = css.GetContentStream())
                     {
                         imageStream.CopyTo(stream);

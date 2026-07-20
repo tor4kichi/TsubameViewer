@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Infrastructure;

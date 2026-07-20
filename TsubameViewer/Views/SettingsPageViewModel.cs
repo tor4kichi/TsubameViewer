@@ -5,8 +5,9 @@ using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.UI.Xaml.Controls;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
+using R3;
+using R3.Extensions;
+using Reactive.Bindings.R3.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,7 +15,6 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -89,8 +89,6 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         _viewerSettings = viewerSettings;
         _movieSettings = movieSettings;
         _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
-        _isThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
-        _thumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
         
         AppInfoCopyToClipboard = new RelayCommand(() =>
         {
@@ -110,13 +108,13 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 {
                     new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                     new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
-                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsAppMenuShowWithLeft".Translate(), _applicationSettings, x => x.IsAppMenuShowWithLeft),
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsAppMenuShowWithLeft".Translate(), _applicationSettings, _applicationSettings.IsAppMenuShowWithLeft, (x, v) => x.IsAppMenuShowWithLeft = v),
 
-                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, _applicationSettings.IsUINavigationFocusAssistanceEnabled, (x, v) => x.IsUINavigationFocusAssistanceEnabled = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #if DEBUG
-                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, _applicationSettings.ForceXboxAppearanceModeEnabled, (x, v) => x.ForceXboxAppearanceModeEnabled = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #endif
-                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsFullScreenOnAppLaunch".Translate(), _applicationSettings, x => x.IsFullScreenOnAppLaunch) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsFullScreenOnAppLaunch".Translate(), _applicationSettings, _applicationSettings.IsFullScreenOnAppLaunch, (x, v) => x.IsFullScreenOnAppLaunch = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
                 }
             },
             new SettingsGroupViewModel
@@ -124,11 +122,11 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 Label = "ImageViewerSettings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnablePrefetch".Translate(), _imageViewerPageSettings, x => x.IsEnablePrefetch),
-                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_MouseWheel),
-                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnableDoubleView".Translate(), _imageViewerPageSettings, x => x.IsEnableDoubleView),
-                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsKeepSingleViewOnFirstPage".Translate(), _imageViewerPageSettings, x => x.IsKeepSingleViewOnFirstPage),
-                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsLeftBindingView".Translate(), _imageViewerPageSettings, x => x.IsLeftBindingView),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnablePrefetch".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsEnablePrefetch, (x, v) => x.IsEnablePrefetch = v),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsReverseImageFliping_MouseWheel, (x, v) => x.IsReverseImageFliping_MouseWheel = v),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnableDoubleView".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsEnableDoubleView, (x, v) => x.IsEnableDoubleView = v),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsKeepSingleViewOnFirstPage".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsKeepSingleViewOnFirstPage, (x, v) => x.IsKeepSingleViewOnFirstPage = v),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsLeftBindingView".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsLeftBindingView, (x, v) => x.IsLeftBindingView = v),
                 }
             },
             new SettingsGroupViewModel
@@ -136,7 +134,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 Label = "MovieViewer_Settings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<MovieViewerPageSettings>("IsAutoRepeatEnablingEnabled".Translate(), _movieSettings, x => x.IsAutoRepeatEnablingEnabled),
+                    new ToggleSwitchSettingItemViewModel<MovieViewerPageSettings>("IsAutoRepeatEnablingEnabled".Translate(), _movieSettings, _movieSettings.IsAutoRepeatEnablingEnabled, (x, v) => x.IsAutoRepeatEnablingEnabled = v),
                     new NumberBoxSettingItemViewModel(
                         "AutoRepeatEnablingTime".Translate(),
                         _movieSettings.AutoRepeatEnablingTimeInSeconds.TotalSeconds,
@@ -157,7 +155,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         "IsDetectSimiralyFileNameNeighborsEnabled".Translate(),
                         "IsDetectSimiralyFileNameNeighborsEnabled_Desc".Translate(),
                         viewerSettings,
-                        x => x.IsDetectSimiralyFileNameNeighborsEnabled),
+                        viewerSettings.IsDetectSimiralyFileNameNeighborsEnabled,
+                        (x, v) => x.IsDetectSimiralyFileNameNeighborsEnabled = v),
                     new SliderSettingItemViewModel(
                         "ThresholdOfSimilarityFileNameNaighborsNormalized".Translate(),
                         "ThresholdOfSimilarityFileNameNaighborsNormalized_Desc".Translate(),
@@ -169,7 +168,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<ViewerSettings>(
                         "IsAutoMoveToNextEnabled".Translate(),
                         viewerSettings,
-                        x => x.IsAutoMoveToNextEnabled),
+                        viewerSettings.IsAutoMoveToNextEnabled,
+                        (x, v) => x.IsAutoMoveToNextEnabled = v),
                 }
             },
             new SettingsGroupViewModel
@@ -177,10 +177,10 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 Label = "FolderItemListingSettings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, x => x.IsImageFileGenerateThumbnailEnabled),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateFolderThumbnail".Translate(), _folderListingSettings, x => x.IsFolderGenerateThumbnailEnabled),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsImageFileGenerateThumbnailEnabled, (x, v) => x.IsImageFileGenerateThumbnailEnabled = v),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateFolderThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsFolderGenerateThumbnailEnabled, (x, v) => x.IsFolderGenerateThumbnailEnabled = v),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsArchiveFileGenerateThumbnailEnabled, (x, v) => x.IsArchiveFileGenerateThumbnailEnabled = v),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled, (x, v) => x.IsArchiveEntryGenerateThumbnailEnabled = v),
                     _cacheSizeButton,
                     new SelectorSettingsItemViewModel<ThumbnailDecodeMethod>("ThumbnailDecodeMethod".Translate(), "ThumbnailDecodeMethod_Desc".Translate(), [ThumbnailDecodeMethod.Skia, ThumbnailDecodeMethod.WindowsImageCodec, ThumbnailDecodeMethod.Win2D], _folderListingSettings.ThumbnailDecodeType, type => _folderListingSettings.ThumbnailDecodeType = type),
                     new SliderSettingItemViewModel(
@@ -193,7 +193,9 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<StorageItemSettings>(
                         "StorageItemSettings_IsDisplayFolderItemsCount".Translate(),
                         "StorageItemSettings_IsDisplayFolderItemsCount_Desc".Translate(),
-                        _storageItemSettings, x => x.IsDisplayFolderItemsCount),
+                        _storageItemSettings,
+                        _storageItemSettings.IsDisplayFolderItemsCount,
+                        (x, v) => x.IsDisplayFolderItemsCount = v),
                     new SliderSettingItemViewModel(
                         "StorageItemSettings_ReadingFinishedThresholdForImageViewer".Translate(),
                         _storageItemSettings.ReadingFinishedThresholdForImageViewer,
@@ -215,7 +217,12 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         0.99,
                         0.01,
                         f => _storageItemSettings.ReadingFinishedThresholdForMovieViewer = (float)f),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsInPageSearchWithMigemo".Translate(), "IsInPageSearchWithMigemo_Desc".Translate(), _folderListingSettings, x => x.IsInPageSearchWithMigemo),                    
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>(
+                        "IsInPageSearchWithMigemo".Translate(),
+                        "IsInPageSearchWithMigemo_Desc".Translate(),
+                        _folderListingSettings,
+                        _folderListingSettings.IsInPageSearchWithMigemo,
+                        (x, v) => x.IsInPageSearchWithMigemo = v),                    
                 }
             },
             new SettingsGroupViewModel
@@ -288,17 +295,10 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
 
     async Task DeleteAllThumbnailsAsync()
     {
-        _thumbnailImagesCacheSizeText.Value = string.Empty;
-
-        _isThumbnailDeleteButtonActive.Value = false;
         await _thumbnailImageMaintenanceService.DeleteAllThumbnailsAsync();
 
         RefreshThumbnailFilesSizeAsync(_navigationCt).FireAndForgetSafe();
     }
-
-    ReactiveProperty<bool> _isThumbnailDeleteButtonActive;
-    ReactivePropertySlim<string> _thumbnailImagesCacheSizeText;
-
 
     CancellationToken _navigationCt;
     public override Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
@@ -310,9 +310,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
             return Task.CompletedTask;
         }
 
-        _isThumbnailDeleteButtonActive.Value = true;
         RefreshThumbnailFilesSizeAsync(ct).FireAndForgetSafe();
-        // base.OnNavigatedToAsync(parameters, ct);
 
         return Task.CompletedTask;
     }
@@ -321,9 +319,9 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
     {
         try
         {
+            await Task.Delay(5000, ct);
             var size = (ulong) await Task.Run(() => _thumbnailImageMaintenanceService.ComputeUsingSize(), ct);
             _cacheSizeButton.Description = ToUserFiendlyFileSizeText(size) + "B";
-            //_ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
         }
         catch (OperationCanceledException)
         {
@@ -455,34 +453,40 @@ public interface IToggleSwitchSettingItemViewModel
 {
     string Label { get; }
     string Desc { get; }
-    ReactiveProperty<bool> ValueContainer { get; }
+    bool Value { get; set; }
 }
 
-public class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, IToggleSwitchSettingItemViewModel , IDisposable
+public partial class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, IToggleSwitchSettingItemViewModel
     where T : INotifyPropertyChanged
 {
-    public ToggleSwitchSettingItemViewModel(string label, T value, Expression<Func<T, bool>> expression)
+    public ToggleSwitchSettingItemViewModel(string label, T model, bool firstValue, Action<T, bool> setValue)
     {
-        ValueContainer = value.ToReactivePropertyAsSynchronized(expression);
         Label = label;
-        Desc = "";
+        _model = model;
+        _value = firstValue;
+        _setValue = setValue;
+        Desc = "";        
     }
 
-    public ToggleSwitchSettingItemViewModel(string label, string desc, T value, Expression<Func<T, bool>> expression)
+    public ToggleSwitchSettingItemViewModel(string label, string desc, T model, bool firstValue, Action<T, bool> setValue)
     {
-        ValueContainer = value.ToReactivePropertyAsSynchronized(expression);
         Label = label;
         Desc = desc;
+        _model = model;
+        _value = firstValue;
+        _setValue = setValue;
     }
 
-    public ReactiveProperty<bool> ValueContainer { get; }
+    private readonly T _model;
+    [ObservableProperty]
+    bool _value;
+
+    private readonly Action<T, bool> _setValue;
+
+    partial void OnValueChanged(bool value) => _setValue(_model, value);
+
     public string Label { get; }
     public string Desc { get; }
-
-    public void Dispose()
-    {
-        ((IDisposable)ValueContainer).Dispose();
-    }
 }
 
 public interface ISelectorSettingsItemViewModel : INotifyPropertyChanged
@@ -630,11 +634,11 @@ public class SliderSettingItemViewModel : SettingItemViewModelBase
 public class UpdatableTextSettingItemViewModel : SettingItemViewModelBase, IDisposable 
 {
     public string Label { get; }
-    public IReadOnlyReactiveProperty<string?> Text { get; }
-    public UpdatableTextSettingItemViewModel(string label, IObservable<string> textObservable)
+    public IReadOnlyBindableReactiveProperty<string?> Text { get; }
+    public UpdatableTextSettingItemViewModel(string label, Observable<string?> textObservable)
     {
         Label = label;
-        Text = textObservable.ToReadOnlyReactivePropertySlim();
+        Text = textObservable.ToReadOnlyBindableReactiveProperty();
     }
 
     public void Dispose()
@@ -650,29 +654,28 @@ public partial class ButtonSettingItemViewModel : SettingItemViewModelBase, IDis
         ButtonLabel = buttonLabel;
         Label = label;
         Description = description;
-        ActionCommand = new AsyncReactiveCommand();
-        ActionCommand.Subscribe(buttonAction);
+        ActionCommand = new ReactiveCommand();
+        ActionCommand.SubscribeAwait(async (b, ct) => await buttonAction());
     }
 
-    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Func<Task> buttonAction, IObservable<bool> canExecuteObservable)
+    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Func<Task> buttonAction, Observable<bool> canExecuteObservable)
     {
         ButtonLabel = buttonLabel;
         Label = label;
         Description = description;
-        ActionCommand = canExecuteObservable.ToAsyncReactiveCommand();
-        ActionCommand.Subscribe(buttonAction);
+        ActionCommand = canExecuteObservable.ToReactiveCommand();
+        ActionCommand.SubscribeAwait(async (b, ct) => await buttonAction());
     }
 
-    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Action buttonAction, IObservable<bool> canExecuteObservable)
+    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Action buttonAction, Observable<bool> canExecuteObservable)
     {
         ButtonLabel = buttonLabel;
         Label = label;
         Description = description;
-        ActionCommand = canExecuteObservable.ToAsyncReactiveCommand();
+        ActionCommand = canExecuteObservable.ToReactiveCommand();
         ActionCommand.Subscribe(_ => 
         {
             buttonAction();
-            return Task.CompletedTask;
         });
     }
 
@@ -683,7 +686,7 @@ public partial class ButtonSettingItemViewModel : SettingItemViewModelBase, IDis
     [ObservableProperty]
     string? _description;
 
-    public AsyncReactiveCommand ActionCommand { get; }
+    public R3.ReactiveCommand ActionCommand { get; }
 
     public void Dispose()
     {
@@ -691,38 +694,34 @@ public partial class ButtonSettingItemViewModel : SettingItemViewModelBase, IDis
     }
 }
 
-public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
+public sealed partial class ThemeSelectSettingItemViewModel : SettingItemViewModelBase
 {
+    private readonly ApplicationSettings _applicationSettings;
     readonly IMessenger _messenger;
 
     public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IMessenger messenger)
     {
         Label = label;
+        _applicationSettings = applicationSettings;
         _messenger = messenger;
-        SelectedTheme = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Theme);
-
-        _themeChangedSubscriber = SelectedTheme.Subscribe(theme => 
-        {
-            _messenger.Send<ThemeChangeRequestMessage>(new (theme));
-        });
+        _selectedTheme = applicationSettings.Theme;
     }
 
-    public ReactiveProperty<ApplicationTheme> SelectedTheme { get; }
+    [ObservableProperty]
+    ApplicationTheme _selectedTheme;
+
+    partial void OnSelectedThemeChanged(ApplicationTheme value)
+    {
+        _applicationSettings.Theme = value;
+        _messenger.Send<ThemeChangeRequestMessage>(new(value));
+    }
 
     public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
 
-    IDisposable _themeChangedSubscriber;
-
     public string Label { get; }
-
-    public void Dispose()
-    {
-        ((IDisposable)SelectedTheme).Dispose();
-        _themeChangedSubscriber.Dispose();
-    }
 }
 
-public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
+public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewModelBase
 {
     string _currentLocale = I18NPortable.I18N.Current.Locale;
     public LocaleSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings)
@@ -764,10 +763,6 @@ public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewMo
     public IReadOnlyList<PortableLanguage> Locales { get; } = I18NPortable.I18N.Current.Languages;
 
     public string Label { get; }
-
-    public void Dispose()
-    {
-    }
 
     readonly ApplicationSettings _applicationSettings;
 

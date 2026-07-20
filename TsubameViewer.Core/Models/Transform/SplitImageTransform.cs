@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using SharpCompress.Archives;
+﻿using SharpCompress.Archives;
 using SharpCompress.Writers.Zip;
 using System;
 using System.Collections.Generic;
@@ -16,11 +15,8 @@ namespace TsubameViewer.Core.Models.Transform;
 
 public class SplitImageTransform
 {
-    private readonly RecyclableMemoryStreamManager _memoryStreamManager;
-
-    public SplitImageTransform(RecyclableMemoryStreamManager memoryStreamManager)
+    public SplitImageTransform()
     {
-        _memoryStreamManager = memoryStreamManager;
     }
 
     /// <summary>
@@ -42,7 +38,7 @@ public class SplitImageTransform
             // アーカイブを開いて画像を列挙
             foreach (var entry in archive.Entries.Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key)))
             {
-                var memoryStream = _memoryStreamManager.GetStream();
+                var memoryStream = new MemoryStream();
                 
                 try
                 {
@@ -115,7 +111,7 @@ public class SplitImageTransform
 
         async Task<(Stream outputStream, string ext)> ClipAndEncode(BitmapBounds bounds)
         {
-            var encoderStream = _memoryStreamManager.GetStream();
+            var encoderStream = new MemoryStream();
             try
             {
                 var ext = await GetClipedImageStreamAsync(encoderStream.AsRandomAccessStream(), decoder, bounds, encoderId, ct);
@@ -162,7 +158,7 @@ public class SplitImageTransform
 
         async Task<(Stream outputStream, string ext)> ClipAndEncode(BitmapBounds bounds)
         {
-            var encoderStream = _memoryStreamManager.GetStream();
+            var encoderStream = new MemoryStream();
             try
             {
                 var ext = await GetClipedImageStreamAsync(encoderStream.AsRandomAccessStream(), decoder, bounds, encoderId, ct);

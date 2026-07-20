@@ -40,7 +40,10 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                 {
                     if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != null)
                     {
-                        _keyIndexMap.Remove(old.Key);
+                        lock (_indexUpdateLock)
+                        {
+                            _keyIndexMap.Remove(old.Key);
+                        }
                     }
                 }
                 break;
@@ -48,32 +51,42 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                 {
                     if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != null)
                     {
-                        _keyIndexMap.Remove(old.Key);
+                        lock (_indexUpdateLock)
+                        {
+                            _keyIndexMap.Remove(old.Key);
+                        }
                     }
                     var key = _toKey((T)this[index]);
-                    _keyIndexMap.Add(key, index);
+                    lock (_indexUpdateLock)
+                    {
+                        _keyIndexMap.Add(key, index);
+                    }
                 }
                 break;
         }
     }
 
+    object _indexUpdateLock = new();
     private void InsertKeyIndexCache(IVectorChangedEventArgs @event)
     {
-        int insertedIndex = (int)@event.Index;
-
-        // Dictionary を直接走査してインデックスを更新
-        foreach (var entry in _keyIndexMap)
+        lock (_indexUpdateLock)
         {
-            if (entry.Value >= insertedIndex)
-            {
-                _keyIndexMap[entry.Key] = entry.Value + 1;
-            }
-        }
+            int insertedIndex = (int)@event.Index;
 
-        // 挿入されたアイテムのキーを取得してマップに追加
-        var insertedItem = this[insertedIndex];
-        var key = _toKey((T)insertedItem);
-        _keyIndexMap.Add(key, insertedIndex);
+            // Dictionary を直接走査してインデックスを更新
+            foreach (var entry in _keyIndexMap.ToArray())
+            {
+                if (entry.Value >= insertedIndex)
+                {
+                    _keyIndexMap[entry.Key] = entry.Value + 1;
+                }
+            }
+
+            // 挿入されたアイテムのキーを取得してマップに追加
+            var insertedItem = this[insertedIndex];
+            var key = _toKey((T)insertedItem);
+            _keyIndexMap.Add(key, insertedIndex);
+        }
     }
 
     readonly Func<T, string> _toKey;
@@ -97,16 +110,22 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
     {
         if (_keyIndexMap.Count != 0) { return; }
 
-        for (int i = 0; i < Count; i++)
+        lock (_indexUpdateLock)
         {
-            var key = _toKey((T)this[i]);
-            _keyIndexMap.Add(key, i);
+            for (int i = 0; i < Count; i++)
+            {
+                var key = _toKey((T)this[i]);
+                _keyIndexMap.Add(key, i);
+            }
         }
     }
 
     void ClearKeyIndexCache()
     {
-        _keyIndexMap.Clear();
+        lock (_indexUpdateLock)
+        {
+            _keyIndexMap.Clear();
+        }
     }
 
 }

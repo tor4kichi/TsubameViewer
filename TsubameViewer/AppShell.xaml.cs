@@ -9,7 +9,6 @@ using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
 using DryIoc.ImTools;
-using Fluent.Icons;
 using I18NPortable;
 using R3;
 using Reactive.Bindings;
@@ -170,25 +169,25 @@ public sealed partial class AppShell : UserControl
             {
                 Tooltip = "StartMultiSelection".Translate(),
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Tooltip = "AddNewFolder".Translate(),
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Tooltip = "RefreshLatest".Translate(),
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Tooltip = "Settings".Translate(),
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
-                Icon = new FluentIconElement(FluentSymbol.Settings24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
 
@@ -198,25 +197,25 @@ public sealed partial class AppShell : UserControl
             {
                 Title = "StartMultiSelection".Translate(),
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Title = "AddNewFolder".Translate(),
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Title = "RefreshLatest".Translate(),
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
-                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
                 Title = "Settings".Translate(),
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
-                Icon = new FluentIconElement(FluentSymbol.Settings24),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
 
@@ -350,15 +349,6 @@ public sealed partial class AppShell : UserControl
 
     public static string HomePageName => HomePageType.Name;
 
-
-    readonly static ImmutableHashSet<Type> _menuPaneHiddenPageTypes = new Type[]
-    {
-        typeof(ImageViewerPage),
-        typeof(EBookViewerPage),
-        typeof(MovieViewerPage),
-        typeof(SettingsPage),
-    }.ToImmutableHashSet();
-
     readonly static ImmutableHashSet<Type> _canGoBackPageTypes = new Type[]
     {
         typeof(FolderListupPage),
@@ -392,8 +382,14 @@ public sealed partial class AppShell : UserControl
         typeof(ImageViewerPage),
         typeof(EBookViewerPage),
         typeof(MovieViewerPage),
+    }.ToImmutableHashSet();
+
+    readonly static ImmutableHashSet<Type> _openWithThirdaryFramePageTypes = new Type[]
+    {
         typeof(SettingsPage),
     }.ToImmutableHashSet();
+
+
 
     bool IsOpenWithViewerPageType(Type? pageType)
     {
@@ -401,6 +397,13 @@ public sealed partial class AppShell : UserControl
         return _openWithViewerFramePageTypes.Contains(pageType);
     }
 
+    bool IsOpenWithThirdaryPageType(Type? pageType)
+    {
+        if (pageType == null) { return false; }
+        return _openWithThirdaryFramePageTypes.Contains(pageType);
+    }
+
+    
     readonly Core.AsyncLock _navigationLock = new ();
     bool _isForgetNavigationRequested = false;
     List<INavigationParameters> _backParametersStack = new List<INavigationParameters>();
@@ -538,6 +541,46 @@ public sealed partial class AppShell : UserControl
                 _vm.RestoreNavigationManager.ClearViewerNavigationEntry();
                 Debug.WriteLine($"Clear viewer page state");
             }
+            _messenger.Send(new NavigationCompletedMessage(e));
+        };
+
+        ThirdaryFrame.Navigate(typeof(EmptyPage));
+        ThirdaryFrame.Navigated += async (s, e) =>
+        {
+            Debug.WriteLine($"ThirdaryFrame Navigate to : {e.SourcePageType.Name}");
+            var frame = (Frame)s;
+            // 常にEmptyPageに戻るように
+            if (e.NavigationMode == NavigationMode.New
+                && frame.BackStack.Count >= 2)
+            {
+                frame.BackStack.RemoveAt(1);
+            }
+            frame.ForwardStack.Clear();
+            if (IsOpenWithThirdaryPageType(e.SourcePageType))
+            {
+                frame.Visibility = Visibility.Visible;
+                SetTitleContentForPrimary(frame);
+            }
+            else
+            {
+                await Task.Delay(150);
+                frame.Visibility = Visibility.Collapsed;
+                if (IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+                {
+                    SetTitleContentForPrimary(ViewerFrame);
+                }
+                else if (ContentFrame.Content == null)
+                {
+                    await _messenger.NavigateAsync(HomePageName);
+                }
+                else
+                {
+                    SetTitleContentForPrimary(ContentFrame);
+                }
+            }
+
+            GoBackButton.IsEnabled = CanHandleBackRequest();
+            _messenger.Send(new NavigationCompletedMessage(e));
         };
     }
 
@@ -583,7 +626,7 @@ public sealed partial class AppShell : UserControl
     }
 
     void Frame_Navigated(object sender, NavigationEventArgs e)
-    {
+    {        
         if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
 
         var frame = (Frame)sender;
@@ -781,6 +824,7 @@ public sealed partial class AppShell : UserControl
         }
 
         _isFirstNavigation = false;
+        _messenger.Send(new NavigationCompletedMessage(e));
     }
 
     async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, NavigationTransitionInfo? transitionInfo = null,  bool isNavigationStackEnabled = true)
@@ -791,15 +835,22 @@ public sealed partial class AppShell : UserControl
         if (IsOpenWithViewerPageType(viewType))
         {
             frame = ViewerFrame;
-            ViewerFrame.Visibility = Visibility.Visible;
             _viewerNavigationParameters = parameters;
-
+        }
+        else if (IsOpenWithThirdaryPageType(viewType))
+        {
+            frame = ThirdaryFrame;
+            _viewerNavigationParameters = parameters;
         }
         else
         {
             frame = ContentFrame;
             SetCurrentNavigationParameters(parameters);
         }
+
+        frame.Visibility = Visibility.Visible;
+        await Observable.NextFrame().WaitAsync();
+
         sw.ElapsedWrite("Before RotationNextCancellationTokenSource");
         var ct = RotationNextCancellationTokenSource(viewType);
         sw.ElapsedWrite("After RotationNextCancellationTokenSource");
@@ -809,6 +860,7 @@ public sealed partial class AppShell : UserControl
             IsNavigationStackEnabled = isNavigationStackEnabled, 
             TransitionInfoOverride = isNavigationStackEnabled ? (transitionInfo ?? PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName)) : new SuppressNavigationTransitionInfo() 
         };
+        
         var result = frame.Navigate(viewType, parameters, options.TransitionInfoOverride);
 
         if (result is false)
@@ -833,6 +885,13 @@ public sealed partial class AppShell : UserControl
             _viewerNavigateCts = new CancellationTokenSource();
             return _viewerNavigateCts.Token;
         }
+        else if (IsOpenWithThirdaryPageType(pageType))
+        {
+            _thirdaryNavigateCts?.Cancel();
+            _thirdaryNavigateCts?.Dispose();
+            _thirdaryNavigateCts = new CancellationTokenSource();
+            return _thirdaryNavigateCts.Token;
+        }
         else
         {
             _navigateCts?.Cancel();
@@ -843,6 +902,7 @@ public sealed partial class AppShell : UserControl
     }
 
     CancellationTokenSource? _viewerNavigateCts;
+    CancellationTokenSource? _thirdaryNavigateCts;
     CancellationTokenSource? _navigateCts;
     async Task<NavigationResult> HandleViewModelNavigation(INavigationAware? fromPageVM, INavigationAware? toPageVM, INavigationParameters parameters, CancellationToken ct)
     {
@@ -1101,6 +1161,11 @@ public sealed partial class AppShell : UserControl
         {
             return true;
         }
+        else if (ThirdaryFrame.Content?.GetType() is { } thirdaryPageType
+            && IsOpenWithThirdaryPageType(thirdaryPageType))
+        {
+            return true;
+        }
         else
         {
             var currentPageType = ContentFrame.Content.GetType();
@@ -1125,7 +1190,25 @@ public sealed partial class AppShell : UserControl
             var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
             try
             {
-                if (ViewerFrame.Content?.GetType() is { } viewerPageType
+                if (ThirdaryFrame.Content?.GetType() is { } thirdaryPageType
+                    && IsOpenWithThirdaryPageType(thirdaryPageType))
+                {
+                    var prevPage = ThirdaryFrame.Content as Page;
+                    try
+                    {
+                        ThirdaryFrame.GoBack();
+                        var currentPage = ThirdaryFrame.Content as Page;
+                        var np = new NavigationParameters();
+                        np.SetNavigationMode(NavigationMode.Back);
+                        var ct = RotationNextCancellationTokenSource(thirdaryPageType);
+                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, np, ct);
+                    }
+                    catch
+                    {
+                        isRequestReset = true;
+                    }
+                }
+                else if (ViewerFrame.Content?.GetType() is { } viewerPageType
                     && IsOpenWithViewerPageType(viewerPageType))
                 {
                     var prevPage = ViewerFrame.Content as Page;
@@ -1765,7 +1848,8 @@ public sealed partial class AppShell : UserControl
 
     void RefreshPageKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (!IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+        if (!IsOpenWithViewerPageType(ViewerFrame.Content?.GetType())
+            && !IsOpenWithThirdaryPageType(ThirdaryFrame.Content?.GetType()))
         {
             _vm.RefreshNavigationCommand.Execute(null);
         }
@@ -1792,7 +1876,8 @@ public sealed partial class AppShell : UserControl
     {
         try
         {
-            if (IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+            if (IsOpenWithViewerPageType(ViewerFrame.Content?.GetType())
+                || IsOpenWithThirdaryPageType(ThirdaryFrame.Content?.GetType()))
             {
                 _messenger.Send<BackNavigationRequestMessage>();
             }
@@ -1910,6 +1995,14 @@ public sealed partial class AppShell : UserControl
     }
 
     #endregion
+
+    private void ThirdaryFrame_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (e.Handled) { return; }
+        if (e.OriginalSource is not FrameworkElement fe) { return; }
+        if (fe.BaseUri.OriginalString.EndsWith("AppShell.xaml") is false) { return; }
+        _messenger.Send<BackNavigationRequestMessage>();
+    }
 }
 
 

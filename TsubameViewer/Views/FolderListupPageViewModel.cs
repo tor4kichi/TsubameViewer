@@ -300,12 +300,17 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Unregister<SendToOtherFolderMessage>(this);
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
+        _thumbnailManager.ReOpenInsideDb();
+        
         base.OnNavigatedFrom(parameters);
     }
 
     void ClearContent()
     {
-        FolderItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        using (FileItemsView.DeferRefresh())
+        {
+            FolderItems.Clear(); // Note: ここでDeferRefreshを利用するとクラッシュする問題があった
+        }
         (_currentImageSource as IDisposable)?.Dispose();
         _currentImageSource = null;
         (_imageCollectionContext as IDisposable)?.Dispose();
@@ -498,8 +503,7 @@ public sealed partial class FolderListupPageViewModel
         // FolderItemsQueryは動作不安定を確認したため使っていない
         if (_imageCollectionContext != null)
         {
-            Window.Current.WindowActivationStateChanged()
-                    .ToObservable()
+            Window.Current.WindowActivationStateChanged()                    
                     .ObserveOnCurrentSynchronizationContext()
                     .Debounce(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>
@@ -775,7 +779,8 @@ public sealed partial class FolderListupPageViewModel
                     {
                         var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffNotImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,                            
+                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,          
+                            sortType,
                             itemFacotry,
                             (IStorageItemViewModel itemVM) => itemVM.Path,
                             ct);
@@ -807,6 +812,7 @@ public sealed partial class FolderListupPageViewModel
                             await Task.Delay(50);
                             await col.Context.HandleDiffNotImages(
                                 (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                sortType,
                                 cacheImageViewModelFactory,
                                 (IStorageItemViewModel itemVM) => itemVM.Path,
                                 ct);

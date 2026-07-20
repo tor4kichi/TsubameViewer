@@ -851,6 +851,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                                 _this.StartLiteNotification("AutoRepeatEnabling".Translate());
                             }
                         }
+
+                        // 1フレームの時間を求める
+                        if (_this.MediaPlayer.Source is MediaPlaybackItem playbackItem 
+                            && playbackItem.VideoTracks.ElementAtOrDefault(0) is { } track
+                            && track.GetEncodingProperties() is { } encProps)
+                        {
+                            var fps = encProps.FrameRate.Numerator / (float)encProps.FrameRate.Denominator;
+                            _this._oneFrameTime = TimeSpan.FromSeconds(1 / fps);
+                        }
+                        else
+                        {
+                            _this._oneFrameTime = TimeSpan.Zero;
+                        }
                     });
             })
             .AddTo(ref db);
@@ -986,6 +999,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                     s._thumbanilManager.ThumbnailGenerationFailed(s._frameGrabber.CodecName);
+                    (s._frameGrabber as IDisposable)?.Dispose();
+                    s._frameGrabber = null;
                     throw;
                 }
            }, onCompleted: static async (x, state) => 
@@ -1082,17 +1097,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         catch { }
 
         playbackItem.ApplyDisplayProperties(props);
-        if (playbackItem.VideoTracks.ElementAtOrDefault(0) is { } track
-            && track.GetEncodingProperties() is { } encProps)
-        {
-            var fps = encProps.FrameRate.Numerator / (float)encProps.FrameRate.Denominator;
-            _oneFrameTime = TimeSpan.FromSeconds(1 / fps);
         }
-        else 
-        {
-            _oneFrameTime = TimeSpan.Zero;
-        }
-    }
 
 
     [ObservableProperty]
@@ -1137,8 +1142,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             _audioPlayer.Source = null;
         }
-
-        _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);        
     }
 
     void ClearExternalAudioTracks()
@@ -1570,15 +1573,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         TogglePlayPauseWoAnimation();
         if (prevPlaybackState == MediaPlaybackState.Paused)
         {
-            StartIconNotification(Fluent.Icons.FluentSymbol.Play24Filled);
+            StartIconNotification(FluentIcons.Common.Symbol.Play);
         }
         else if (prevPlaybackState == MediaPlaybackState.Playing)
         {
-            StartIconNotification(Fluent.Icons.FluentSymbol.Pause24Filled);
+            StartIconNotification(FluentIcons.Common.Symbol.Pause);
         }
     }
 
-    void StartIconNotification(Fluent.Icons.FluentSymbol symbol, bool mirror = false)
+    void StartIconNotification(FluentIcons.Common.Symbol symbol, bool mirror = false)
     {
         if (_playPauseToggleAnimationCts != null)
         {
@@ -1591,6 +1594,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Notification_PlayPause_Icon_Transform.ScaleX = !mirror ? scale : -scale;
         _playPauseToggleAnimationCts = new CancellationTokenSource();
         Notification_PlayPause_Icon.Symbol = symbol;
+        Notification_PlayPause_Icon.IconVariant = FluentIcons.Common.IconVariant.Filled;
         _playIconAnimation.Start(Notification_PlayPause, _playPauseToggleAnimationCts.Token);
     }
 
@@ -1741,7 +1745,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
 
             MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-            if (!_videoPositionsliderPointerPressed)
+            if (_frameGrabber == null)
+            {
+                MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+            }
+            else if (!_videoPositionsliderPointerPressed)
             {
                 MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
             }
@@ -2064,7 +2072,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.PlaybackSession.PlaybackRate = nextRate;
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         StartLiteNotification($"x{nextRate:F2}");
-        StartIconNotification(Fluent.Icons.FluentSymbol.FastForward20Filled);
+        StartIconNotification(FluentIcons.Common.Symbol.FastForward);
     }
 
     void Button_Tapped(object sender, TappedRoutedEventArgs e)
@@ -2084,7 +2092,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.PlaybackSession.PlaybackRate = prevRate;
         _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         StartLiteNotification($"x{prevRate:F2}");
-        StartIconNotification(Fluent.Icons.FluentSymbol.FastForward20Filled, true);
+        StartIconNotification(FluentIcons.Common.Symbol.FastForward, true);
     }
 
     #endregion
@@ -2367,7 +2375,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         var ct = this.GetCancellationTokenOnUnloaded();
         var videoPosition = MediaPlayer.PlaybackSession.Position;
-        using (var stream = _vm.RecyclableMemoryStreamManager.GetStream())
+        using (var stream = new MemoryStream().AsRandomAccessStream())
         {
             if (!IsDurationAvairable)
             {
@@ -2383,7 +2391,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     : new Rect(0, 0, renderSize.Width, scaledHeight);
                 using CanvasRenderTarget crt = new(CanvasDevice.GetSharedDevice(), (float)sourceRect.Width, (float)sourceRect.Height, DisplayInformation.GetForCurrentView().LogicalDpi);
                 MediaPlayer.CopyFrameToVideoSurface(crt, sourceRect);
-                await crt.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg); // JpegXR is can not decode skiasharp
+                await crt.SaveAsync(stream, CanvasBitmapFileFormat.Jpeg); // JpegXR is can not decode skiasharp
             }
             else
             {
@@ -2395,7 +2403,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         using var fg = await FrameGrabber.CreateFromStreamAsync(movieStream).AsTask(ct);
                         fg.DecodePixelHeight = 200;
                         using var frame = await fg.ExtractVideoFrameAsync(videoPosition, true, 0).AsTask(ct);
-                        await frame.EncodeAsJpegAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        await frame.EncodeAsJpegAsync(stream).AsTask(ct);
                     }, ct);
                 }
                 else
@@ -2407,11 +2415,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     };
                     using var frame = await mc.GetThumbnailAsync(videoPosition, 0, 200, VideoFramePrecision.NearestFrame);
                     using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), frame);
-                    await bitmap.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg);  // JpegXR is can not decode skiasharp
+                    await bitmap.SaveAsync(stream, CanvasBitmapFileFormat.Jpeg);  // JpegXR is can not decode skiasharp
                 }
             }
-            stream.Seek(0, SeekOrigin.Begin);
-            await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream, true, ct);
+            stream.Seek(0);
+            await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream.AsStreamForRead(), true, ct);
         }
             
             

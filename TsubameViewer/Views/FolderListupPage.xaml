@@ -16,14 +16,16 @@
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:models="using:TsubameViewer.Core.Models"
-      xmlns:fluentIcon="using:Fluent.Icons"
+      xmlns:fluentIcon="using:FluentIcons.Uwp"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:storage="using:Windows.Storage"
       xmlns:uwpControls1="using:CommunityToolkit.WinUI.Controls"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
       mc:Ignorable="d"
       Background="{ThemeResource ApplicationContentBackgroundBrush}"
-      NavigationCacheMode="Enabled">
+      NavigationCacheMode="Enabled"
+      Loaded="FolderListupPage_Loaded"
+      Unloaded="FolderListupPage_Unloaded">
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:FolderListupPageViewModel">
@@ -243,7 +245,8 @@
                               AccessKey="S"
                               CornerRadius="4"
                               ctwu:FrameworkElementExtensions.Cursor="Hand">
-                <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
+                <!-- x:Bindを使うと初めて表示する時にローカライズ前の文字列が見えることがある -->
+                <TextBlock Text="{Binding SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
                 <DropDownButton.Flyout>
                   <MenuFlyout>
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
@@ -425,6 +428,7 @@
         </StackPanel>
 
         <uwpControls1:AdaptiveGridView ItemsSource="{x:Bind _vm.FileItemsView}"
+                                       ContainerContentChanging="FoldersAdaptiveGridView_ContainerContentChanging1"
                                       x:Name="FoldersAdaptiveGridView"
                                       StretchContentForSingleRow="False"
                                       OneRowModeEnabled="False"
@@ -712,13 +716,13 @@
 
             <Setter Target="ContentViewType_FolderListup.Content">
               <Setter.Value>
-                <fluentIcon:FluentSymbolIcon Symbol="Folder24"
+                <fluentIcon:SymbolIcon Symbol="Folder"
                                              Margin="0 0 0 2" />
               </Setter.Value>
             </Setter>
             <Setter Target="ContentViewType_ImageListup.Content">
               <Setter.Value>
-                <fluentIcon:FluentSymbolIcon Symbol="Image24"
+                <fluentIcon:SymbolIcon Symbol="Image"
                                              Margin="0 0 2 2" />
               </Setter.Value>
             </Setter>

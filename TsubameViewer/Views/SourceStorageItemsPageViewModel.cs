@@ -5,15 +5,13 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using R3;
-using Reactive.Bindings;
+using Reactive.Bindings.R3;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -96,7 +94,6 @@ public sealed partial class SourceStorageItemsPageViewModel
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly AlbamRepository _albamRepository;
     readonly ThumbnailImageManager _thumbnailManager;
-    readonly IScheduler _scheduler;
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
@@ -108,7 +105,6 @@ public sealed partial class SourceStorageItemsPageViewModel
     bool _foldersInitialized = false;
 
     public SourceStorageItemsPageViewModel(
-        IScheduler scheduler,
         IMessenger messenger,
         FolderListingSettings folderListingSettings,
         LocalBookmarkRepository bookmarkManager,
@@ -133,7 +129,6 @@ public sealed partial class SourceStorageItemsPageViewModel
         _bookmarkManager = bookmarkManager;
         _albamRepository = albamRepository;
         _thumbnailManager = thumbnailManager;
-        _scheduler = scheduler;
         _messenger = messenger;
 
         _comparison = (x, y) =>
@@ -162,25 +157,28 @@ public sealed partial class SourceStorageItemsPageViewModel
 
         _messenger.Register<StroageItemAccessRemovedMessage>(this, (r, m) =>
         {
-            _scheduler.Schedule(() =>
-            {
-                RemoveItem(m.Value);
-            });
+            Observable.NextFrame()
+                .Subscribe((this, m), static (_, s) => 
+                {
+                   s.Item1.RemoveItem(s.m.Value);
+                });
         });
         _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this, (r, m) =>
         {
-            _scheduler.Schedule(() =>
-            {
-                RemoveItem(m.Path);
-            });
+            Observable.NextFrame()
+                .Subscribe((this, m), static (_, s) =>
+                {
+                    s.Item1.RemoveItem(s.m.Path);
+                });
         });
 
         _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, (r, m) =>
         {
-            _scheduler.Schedule(() =>
-            {
-                RemoveItem(m.Value.Path);
-            });
+            Observable.NextFrame()
+                .Subscribe((this, m), static (_, s) =>
+                {
+                    s.Item1.RemoveItem(s.m.Value.Path);
+                });
         });
     }
 
@@ -260,7 +258,6 @@ public sealed partial class SourceStorageItemsPageViewModel
 
         // 並べ替えを保存する
         Folders.ToCollectionChanged()
-            .ToObservable()
             .Debounce(TimeSpan.FromMilliseconds(50))
             .Subscribe(Folders, (_, s) => 
             {

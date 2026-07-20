@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
-using Microsoft.IO;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -70,22 +69,17 @@ public sealed class PdfPageImageSource : IImageSource
 
     public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct)
     {
-        var recyclable = Ioc.Default.GetRequiredService<RecyclableMemoryStreamManager>();
-        using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
+        var memoryStream = new MemoryStream();
+        await Task.Run(async () => 
         {
-            var memoryStream = recyclable.GetStream();
-
-            // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
-            PDFtoImage.Conversion.SavePng(memoryStream, pdfStream, page: PageIndex);
-
-            ct.ThrowIfCancellationRequested();
-
-            await memoryStream.FlushAsync();
-            memoryStream.Seek(0, SeekOrigin.Begin);
-
-            ct.ThrowIfCancellationRequested();
-            return memoryStream;
-        }
+            using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
+            {
+                // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
+                PDFtoImage.Conversion.SavePng(memoryStream, pdfStream, page: PageIndex);
+            }
+        }, ct);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        return memoryStream;
     }
 
     public bool Equals(IImageSource other)

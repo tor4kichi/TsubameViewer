@@ -20,7 +20,7 @@
       xmlns:epub="using:VersOne.Epub"
       xmlns:models="using:TsubameViewer.Core.Models.EBook"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
-      xmlns:fluentIcon="using:Fluent.Icons"
+      xmlns:fluentIcon="using:FluentIcons.Uwp"
       mc:Ignorable="d"
       NavigationCacheMode="Enabled"
       xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)">
@@ -588,7 +588,7 @@
                         IsEnabled="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"
                         Grid.Column="0"
                         ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
-                  <fluentIcon:FluentSymbolIcon Symbol="ArrowLeft24" />
+                  <fluentIcon:SymbolIcon Symbol="ArrowLeft" />
                 </Button>
                 <Button HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -597,7 +597,7 @@
                         IsEnabled="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"                        
                         Grid.Column="1"
                         ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
-                  <fluentIcon:FluentSymbolIcon Symbol="ArrowRight24" />
+                  <fluentIcon:SymbolIcon Symbol="ArrowRight" />
                 </Button>
 
               </Grid>

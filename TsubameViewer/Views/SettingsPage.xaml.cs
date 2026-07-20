@@ -89,4 +89,9 @@ public sealed partial class SettingsPage : Page, ITitlebarContentAware
 
         control.SelectedItem = selectorSettingsItemVM.SelectedItem;
     }
+
+    private void InteractionWall_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        this._messenger.Send<BackNavigationRequestMessage>();
+    }
 }

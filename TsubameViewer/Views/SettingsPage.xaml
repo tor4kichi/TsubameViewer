@@ -14,7 +14,7 @@
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
       mc:Ignorable="d"
-      Background="{ThemeResource ApplicationContentBackgroundBrush}">
+      >
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:SettingsPageViewModel">
@@ -37,7 +37,7 @@
           <winUIControls:SettingsCard Header="{x:Bind Label}"
                                       Description="{x:Bind Desc}"
                                       Visibility="{Binding IsVisible, Converter={StaticResource TrueToVisibleConverter}}">
-            <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}"
+            <ToggleSwitch IsOn="{x:Bind Value, Mode=TwoWay}"
                           uwpControls:DockPanel.Dock="Right"
                           Margin="0"
                           Padding="0"
@@ -127,7 +127,7 @@
         <DataTemplate x:DataType="vm:ThemeSelectSettingItemViewModel">
           <winUIControls:SettingsCard Header="{x:Bind Label}">
             <ComboBox ItemsSource="{x:Bind ThemeItems}"
-                      SelectedItem="{x:Bind SelectedTheme.Value, Mode=TwoWay}"
+                      SelectedItem="{x:Bind SelectedTheme, Mode=TwoWay}"
                       HorizontalAlignment="Right"
                       ctwu:FrameworkElementExtensions.Cursor="Hand">
               <ComboBox.ItemTemplate>
@@ -232,12 +232,20 @@
     </DataTemplate>
     
   </Page.Resources>
-  <Grid>
+
+  <Grid Background="{ThemeResource SystemControlAcrylicElementBrush}"
+        HorizontalAlignment="Center"
+        Padding="0 16 0 0"
+        Margin="0 16 0 16"
+        IsHitTestVisible="True"
+        CornerRadius="6"
+        BorderBrush="{ThemeResource SystemBaseMediumLowColor}"
+        BorderThickness="1">
     <uwpControls:DockPanel>
 
       <Grid MaxWidth="600"
             uwpControls:DockPanel.Dock="Top"
-            Padding="0 32 0 0">
+                       >
         <Border Height="1"
                 VerticalAlignment="Bottom"
                 Background="{ThemeResource SystemBaseLowColor}" 
@@ -289,10 +297,11 @@
         <StackPanel x:Name="ScrollViewerRootPanel" Padding="0 0 0 64">
           <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
-                      Margin="32 16"
+                        Margin="48 16"
                         IsTabStop="False"
                         HorizontalAlignment="Stretch"
-                        MaxWidth="600"                        
+                        MaxWidth="600"
+                        x:Name="SettingsItemsControl"
                       >
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -301,28 +310,24 @@
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
-          <StackPanel Spacing="0"
-                      HorizontalAlignment="Center"
-                      Margin="0 16 0 16"
-                      >
+          <StackPanel Spacing="4"
+                      Margin="48 16 48 16"
+                      x:Name="SettingsBottomControl">
             <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy" 
-                             HorizontalContentAlignment="Right"
-                             FontWeight="SemiBold"
-                             Width="600"
+                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy"
+                             HorizontalAlignment="Right"
+                             FontWeight="SemiBold"                             
                              />
             <HyperlinkButton Content="{Binding Source=ThirdPartyLibraryNotice, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Third-Party-Library-Notice" 
-                             HorizontalContentAlignment="Right"
+                             HorizontalAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="600"
                              />
 
             <HyperlinkButton Content="{Binding Source=AskQuestionWithMashmarrow, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://marshmallow-qa.com/tor4kichi" 
-                             HorizontalContentAlignment="Right"
+                             HorizontalAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="600"
                              />
           </StackPanel>
           
@@ -386,6 +391,10 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <Setter Target="SettingsItemsControl.Margin"
+                    Value="16 16" />
+            <Setter Target="SettingsBottomControl.Margin"
+                    Value="16 16" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

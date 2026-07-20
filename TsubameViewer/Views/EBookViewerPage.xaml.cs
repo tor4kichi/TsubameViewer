@@ -5,13 +5,11 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI.Animations;
 using I18NPortable;
 using R3;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
+using R3.Extensions;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
@@ -125,14 +123,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         EPubRenderer_2.Visibility = Visibility.Visible;
 
         R3.Observable.Merge(
-            System.Reactive.Linq.Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
-                h => Window.Current.SizeChanged += h,
-                h => Window.Current.SizeChanged -= h
-                ).ToObservable().AsUnitObservable()
-            , System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
-                h => SizeChanged += h,
-                h => SizeChanged -= h
-                ).ToObservable().AsUnitObservable().Skip(1)
+            Window.Current.ObserveSizeChanged().AsUnitObservable(),
+            this.ObserveSizeChanged().AsUnitObservable().Skip(1)
             )         
             .ThrottleFirstFrame(1)
             .Subscribe(_ => 
@@ -205,7 +197,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         var elem = (EPubRenderer)sender;
         var db = new DisposableBuilder();
         elem.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
-            .ToObservable()
             .Subscribe((this, elem), static (_, s) =>
             {
                 var (_this, elem) = s;
@@ -230,7 +221,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         elem.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
-            .ToObservable()
             .Subscribe((this, elem), static (_, s) =>
             {
                 var (_this, elem) = s;

@@ -16,7 +16,7 @@
              xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
              xmlns:animations="using:CommunityToolkit.WinUI.Animations"
              xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
-             xmlns:fi="using:Fluent.Icons"
+             xmlns:fi="using:FluentIcons.Uwp"
              xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
              xmlns:ctwu="using:CommunityToolkit.WinUI"
              mc:Ignorable="d"
@@ -263,10 +263,21 @@
       </UIElement.RenderTransform>
     </Frame>
 
+    <Frame x:Name="ThirdaryFrame"
+           DataContext="{x:Null}"
+           CacheSize="0"
+           Visibility="Collapsed"
+           Background="{ThemeResource SystemAltMediumLowColor}"
+           Tapped="ThirdaryFrame_Tapped">
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+    </Frame>
+
     <Border x:Name="TitlebarBG"
-                           VerticalAlignment="Top"
-                           Height="48"
-                           Background="{ThemeResource SystemChromeMediumColor}">
+            VerticalAlignment="Top"
+            Height="48"
+            Background="{ThemeResource SystemChromeMediumColor}">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
@@ -285,7 +296,7 @@
       </UIElement.RenderTransform>
 
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="60" />
+        <ColumnDefinition Width="60" x:Name="GoBackButtonColumnDef" />
         <ColumnDefinition Width="1*" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
@@ -294,6 +305,7 @@
               x:Name="GoBackButton"
               Grid.Column="0"
               Margin="8 4"
+              HorizontalAlignment="Right"
               VerticalAlignment="Center"
               ctwu:FrameworkElementExtensions.Cursor="Hand">
         <SymbolIcon Symbol="Back"
@@ -718,6 +730,11 @@
                 <Visibility>Visible</Visibility>
               </wst:EqualsStateTrigger.EqualTo>
             </wst:EqualsStateTrigger>
+            <wst:EqualsStateTrigger Value="{Binding ElementName=ThirdaryFrame, Path=Visibility}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -725,8 +742,8 @@
             <AdaptiveTrigger MinWindowWidth="920" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="GoBackButton.Margin"
-                    Value="144 0 8 0" />
+            <Setter Target="GoBackButtonColumnDef.Width"
+                    Value="196" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -777,6 +794,10 @@
                                To="48"
                                Storyboard.TargetName="ViewerFrame"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="48"
+                               Storyboard.TargetName="ThirdaryFrame"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -802,6 +823,10 @@
                                To="0"
                                Storyboard.TargetName="ViewerFrame"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="ThirdaryFrame"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -818,6 +843,8 @@
                     Value="0 48 0 0" />
             <Setter Target="ViewerFrame.Margin"
                     Value="0 48 0 0" />
+            <Setter Target="ThirdaryFrame.Margin"
+                    Value="0 48 0 0" />
             <Setter Target="TitlebarBG.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
             <Setter Target="TitlebarUIContainer.(UIElement.RenderTransform).(TranslateTransform.Y)"
@@ -825,6 +852,8 @@
             <Setter Target="MyNavigationView.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
             <Setter Target="ViewerFrame.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="ThirdaryFrame.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
           </VisualState.Setters>
         </VisualState>
