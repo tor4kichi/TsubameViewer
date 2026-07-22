@@ -119,6 +119,18 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
             }
         }
     }
+
+    private void Grid_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe
+            && fe.DataContext is IStorageItemViewModel itemVM
+            && (!itemVM.IsInitialized && !itemVM.IsRequestImageLoading || itemVM.Image == null || itemVM.Image.PixelWidth == 0)
+            )
+        {
+            itemVM.StopImageLoading();
+            _ = itemVM.InitializeAsync(default);
+        }
+    }
 }
 
 public sealed class StorageItemIconTemplateSelector : DataTemplateSelector

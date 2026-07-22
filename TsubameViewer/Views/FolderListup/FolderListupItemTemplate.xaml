@@ -148,6 +148,7 @@
           Drop="Grid_Drop"
           uwpUI:UIElementExtensions.ClipToBounds="True"
           CornerRadius="6"
+          PointerEntered="Grid_PointerEntered"
           >
       <Grid.RowDefinitions>
         <RowDefinition Height="1*" />
