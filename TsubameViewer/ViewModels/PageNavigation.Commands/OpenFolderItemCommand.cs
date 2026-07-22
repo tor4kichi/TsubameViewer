@@ -137,16 +137,15 @@ public sealed class OpenFolderItemCommand : CommandBase
                             var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                         }
                     }
-                    else if (openMode == DefaultFolderOrArchiveOpenMode.Listup
-                        || await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableImagesAsync(folder, ct), CancellationToken.None))
+                    else if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     }
                     else
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
                 }
             }
