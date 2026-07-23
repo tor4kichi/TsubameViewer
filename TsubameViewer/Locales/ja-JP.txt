@@ -305,6 +305,11 @@ MovieViewer_Settings = 動画ビューア設定
 IsAutoRepeatEnablingEnabled = ループ再生の自動有効化を有効にする
 AutoRepeatEnablingTime = ループ再生を自動有効化する最大再生時間（秒単位）
 AutoRepeatEnabling = ループ再生：有効（自動）
+MovieViewer_VideoEffect = 映像効果
+MovieViewer_VideoEffect_Edit = 映像効果を編集
+MovieViewer_VideoEffect_Brightness = 明るさ
+MovieViewer_VideoEffect_Contrast = コントラスト
+MovieViewer_VideoEffect_Saturation = 彩度
 
 
 #### SearchResult

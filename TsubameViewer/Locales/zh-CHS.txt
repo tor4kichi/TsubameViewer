@@ -305,6 +305,11 @@ MovieViewer_Settings = 视频查看器设置
 IsAutoRepeatEnablingEnabled = 启用自动循环播放。
 AutoRepeatEnablingTime = 自动启用循环播放的最大播放时间（以秒为单位）。
 AutoRepeatEnabling = 循环播放：已启用（自动）
+MovieViewer_VideoEffect =  视觉特效
+MovieViewer_VideoEffect_Edit =  编辑视频特效
+MovieViewer_VideoEffect_Brightness = 亮度
+MovieViewer_VideoEffect_Contrast = 对比
+MovieViewer_VideoEffect_Saturation = 饱和
 
 
 #### SearchResult

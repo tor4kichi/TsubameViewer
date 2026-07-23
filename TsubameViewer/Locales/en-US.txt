@@ -305,6 +305,11 @@ MovieViewer_Settings = Movie viewer settings
 IsAutoRepeatEnablingEnabled = Enable automatic loop playback.
 AutoRepeatEnablingTime = Maximum playback time (in seconds) for automatically enabling loop playback.
 AutoRepeatEnabling = Loop playback: Enabled (automatic)
+MovieViewer_VideoEffect = Video effects
+MovieViewer_VideoEffect_Edit = Edit Video effects
+MovieViewer_VideoEffect_Brightness = Brightness
+MovieViewer_VideoEffect_Contrast = Contrast
+MovieViewer_VideoEffect_Saturation = Saturation
 
 
 #### SearchResult

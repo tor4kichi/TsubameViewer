@@ -24,7 +24,9 @@
       xmlns:media="using:Windows.UI.Xaml.Media"
       mc:Ignorable="d"
       xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
-      xmlns:ctwu="using:CommunityToolkit.WinUI">
+      xmlns:ctwu="using:CommunityToolkit.WinUI"
+      xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+      AllowFocusOnInteraction="False">
 
   <Page.Resources>
 
@@ -327,11 +329,11 @@
         </Button.KeyboardAccelerators>
       </Button>
 
-      <Button Command="{x:Bind TogglePlayerStretchCommand}"
-              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerStretch}"
+      <Button Command="{x:Bind ToggleVideoEffectEditUICommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_VideoEffect_Edit}"
               KeyboardAcceleratorPlacementMode="Hidden">
         <Button.KeyboardAccelerators>
-          <KeyboardAccelerator Key="A" />
+          <KeyboardAccelerator Key="E" />
         </Button.KeyboardAccelerators>
       </Button>
       <Button Command="{x:Bind TogglePlayerRotateCommand}"
@@ -519,11 +521,9 @@
       </Button>
     </Grid>
 
-    <Grid x:Name="PlayerContainer" HorizontalAlignment="Center" VerticalAlignment="Center">
-      <MediaPlayerElement AutoPlay="False"
-                          Stretch="Uniform"
-                          x:Name="MyMediaPlayerElement"
-                          RenderTransformOrigin="0.5, 0.5">
+    <Grid x:Name="PlayerContainer"
+          SizeChanged="MySwapChainPanel_SizeChanged">
+      <win2d:CanvasSwapChainPanel x:Name="MySwapChainPanel" RenderTransformOrigin="0.5, 0.5">
         <UIElement.RenderTransform>
           <TransformGroup>
             <TranslateTransform x:Name="PlayerTranslate" />
@@ -533,7 +533,7 @@
             <ScaleTransform x:Name="MirrorScaleTransform" />
           </TransformGroup>
         </UIElement.RenderTransform>
-      </MediaPlayerElement>
+      </win2d:CanvasSwapChainPanel>
     </Grid>
 
     <Grid IsHitTestVisible="True"
@@ -847,7 +847,8 @@
                 <MenuFlyout Opened="MenuFlyout_Opened"
                             Closed="MenuFlyout_Closed"
                             Opening="TracksAndSubtitleSelectFlyout_Opening"
-                            Placement="TopEdgeAlignedRight">
+                            Placement="TopEdgeAlignedRight"
+                            AreOpenCloseAnimationsEnabled="False">
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_NotSupportedCodec_OnceClear}"
                                   Command="{x:Bind ClearThumnailGenerationIssueCommand}"
                                   x:Name="NotSupportedCodec_OnceClear_MenuItem"
@@ -875,20 +876,6 @@
                   <MenuFlyoutSeparator />
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=IsFFmpegUseFirstToMediaSourceFactory}"
                                         IsChecked="{x:Bind _vm.PageSettings.IsFFmpegUseFirstToMediaSourceFactory, Mode=TwoWay}" />
-                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.None}"
-                                    Command="{x:Bind SetPlayerStretchCommand}"
-                                    CommandParameter="{x:Bind media:Stretch.None}"/>
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.Fill}"
-                                    Command="{x:Bind SetPlayerStretchCommand}"
-                                    CommandParameter="{x:Bind media:Stretch.Fill}" />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.Uniform}"
-                                    Command="{x:Bind SetPlayerStretchCommand}"
-                                    CommandParameter="{x:Bind media:Stretch.Uniform}" />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.UniformToFill}"
-                                    Command="{x:Bind SetPlayerStretchCommand}"
-                                    CommandParameter="{x:Bind media:Stretch.UniformToFill}" />
-                  </MenuFlyoutSubItem>
                   <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.None}"
                                     Command="{x:Bind SetPlayerRotateCommand}"
@@ -906,6 +893,10 @@
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsRepeat}"
                                         x:Name="IsRepeat_MenuItem"
                                         Command="{x:Bind ToggleLoopingCommand}" />
+                  <MenuFlyoutItem x:Name="ShowVideoEffectEditButton"
+                                  Text="{i18nExt:Localize Key=MovieViewer_VideoEffect_Edit}"
+                                  Click="ShowVideoEffectEditButton_Click">
+                  </MenuFlyoutItem>
                   <MenuFlyoutSeparator />
                   <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
                                      Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />
@@ -1055,7 +1046,8 @@
           BorderThickness="1"
           BorderBrush="{ThemeResource SystemBaseLowColor}"
           CornerRadius="6"
-          MaxWidth="500">
+          Width="320"
+          HorizontalAlignment="Right">
       <uwpControls:DockPanel>
         <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SC}"
                    Style="{StaticResource SubtitleTextBlockStyle}"
@@ -1118,6 +1110,117 @@
               ctwu:FrameworkElementExtensions.Cursor="Hand">
         <SymbolIcon Symbol="Clear" />
       </Button>
+    </Grid>
+
+    <Grid x:Name="VideoEffectUIContainer"
+          Visibility="Collapsed"
+          Margin="16"
+          IsHitTestVisible="True"
+          Background="{ThemeResource SystemControlAcrylicElementBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource SystemBaseLowColor}"
+          CornerRadius="6"
+          Width="320"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom">
+      <uwpControls:DockPanel>
+        <uwpControls:DockPanel uwpControls:DockPanel.Dock="Top">
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Right"
+                      Spacing="16"
+                      Margin=" 0 0 16 16">
+            <Button Content="{i18nExt:Localize Key=Reset}"
+                    Height="48"
+                    VerticalAlignment="Bottom">
+              <i:Interaction.Behaviors>
+                <i:EventTriggerBehavior EventName="Tapped">
+                  <i:ChangePropertyAction TargetObject="{x:Bind BrightnessSlider}"
+                                          PropertyName="Value"
+                                          Value="0" />
+                  <i:ChangePropertyAction TargetObject="{x:Bind ContrastSlider}"
+                                          PropertyName="Value"
+                                          Value="1" />
+                  <i:ChangePropertyAction TargetObject="{x:Bind SaturationSlider}"
+                                          PropertyName="Value"
+                                          Value="1" />
+
+                </i:EventTriggerBehavior>
+              </i:Interaction.Behaviors>
+            </Button>
+            <Button x:Name="CloseButton_VideoEffectUIContainerUIContainer"
+                    Tapped="CloseButton_VideoEffectUIContainerUIContainer_Tapped"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Height="48"
+                    Width="48"                    
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
+              <SymbolIcon Symbol="Clear" />
+            </Button>
+          </StackPanel>
+          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_VideoEffect}"
+                     Style="{StaticResource SubtitleTextBlockStyle}"
+                     Margin="16 32 32 16"
+                     VerticalAlignment="Bottom"
+                     uwpControls:DockPanel.Dock="Top" />
+
+        </uwpControls:DockPanel>
+
+        <Border Height="1"
+                Background="{ThemeResource SystemBaseLowColor}"
+                uwpControls:DockPanel.Dock="Top" />
+        <ScrollViewer>
+          <StackPanel Margin="16" Spacing="8">
+            <Slider x:Name="BrightnessSlider"
+                    Minimum="-1"
+                    Maximum="1"
+                    StepFrequency="0.01"
+                    Value="0"
+                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
+                    ValueChanged="BrightnessSlider_ValueChanged">
+              <Slider.Header>
+                <uwpControls:DockPanel>
+                  <TextBlock Text="{x:Bind BrightnessSlider.Value, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}"
+                             uwpControls:DockPanel.Dock="Right" />
+                  <TextBlock Text="{i18nExt:Localize Key=MovieViewer_VideoEffect_Brightness}" />
+                </uwpControls:DockPanel>
+              </Slider.Header>
+            </Slider>
+
+            <Slider x:Name="ContrastSlider"
+                    Minimum="0.0"
+                    Maximum="2"
+                    StepFrequency="0.01"
+                    Value="1"
+                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
+                    ValueChanged="BrightnessSlider_ValueChanged">
+              <Slider.Header>
+                <uwpControls:DockPanel>
+                  <TextBlock Text="{x:Bind ContrastSlider.Value, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" 
+                             uwpControls:DockPanel.Dock="Right"
+                             />
+                  <TextBlock Text="{i18nExt:Localize Key=MovieViewer_VideoEffect_Contrast}" />
+                </uwpControls:DockPanel>
+              </Slider.Header>
+            </Slider>
+
+            <Slider x:Name="SaturationSlider"
+                    Minimum="0.0"
+                    Maximum="2"
+                    StepFrequency="0.01"
+                    Value="1"
+                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
+                    ValueChanged="BrightnessSlider_ValueChanged">
+              <Slider.Header>
+                <uwpControls:DockPanel>
+                  <TextBlock Text="{x:Bind SaturationSlider.Value, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}"
+                             uwpControls:DockPanel.Dock="Right" />
+                  <TextBlock Text="{i18nExt:Localize Key=MovieViewer_VideoEffect_Saturation}" />
+                </uwpControls:DockPanel>
+              </Slider.Header>
+            </Slider>
+          </StackPanel>
+        </ScrollViewer>
+      </uwpControls:DockPanel>
     </Grid>
 
     <Grid HorizontalAlignment="Center"

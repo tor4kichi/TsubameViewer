@@ -305,6 +305,11 @@ MovieViewer_Settings = Paramètres du visualiseur vidéo
 IsAutoRepeatEnablingEnabled = Activer la lecture en boucle automatique.
 AutoRepeatEnablingTime = Durée de lecture maximale (en secondes) pour l'activation automatique de la lecture en boucle.
 AutoRepeatEnabling = Lecture en boucle : Activée (automatique)
+MovieViewer_VideoEffect = Effets visuels
+MovieViewer_VideoEffect_Edit = Effets de montage vidéo
+MovieViewer_VideoEffect_Brightness = Luminosité
+MovieViewer_VideoEffect_Contrast = Contraste
+MovieViewer_VideoEffect_Saturation = Saturation
 
 
 #### SearchResult
