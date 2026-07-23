@@ -1474,10 +1474,10 @@ public sealed partial class AppShell : UserControl
         SetTheme(_vm.ApplicationSettings.Theme);
     }
 
-    public void SetTheme(Core.Models.ApplicationTheme applicationTheme)
+    public void SetTheme(ViewModels.ApplicationTheme applicationTheme)
     {
 #if WINDOWS_UWP
-        if (applicationTheme == Core.Models.ApplicationTheme.Default)
+        if (applicationTheme == ViewModels.ApplicationTheme.Default)
         {
             applicationTheme = SystemThemeHelper.GetSystemTheme();
         }
@@ -1485,9 +1485,9 @@ public sealed partial class AppShell : UserControl
 
         this.RequestedTheme = applicationTheme switch
         {
-            Core.Models.ApplicationTheme.Light => ElementTheme.Light,
-            Core.Models.ApplicationTheme.Dark => ElementTheme.Dark,
-            Core.Models.ApplicationTheme.Default => ElementTheme.Default,
+            ViewModels.ApplicationTheme.Light => ElementTheme.Light,
+            ViewModels.ApplicationTheme.Dark => ElementTheme.Dark,
+            ViewModels.ApplicationTheme.Default => ElementTheme.Default,
             _ => throw new NotSupportedException(),
         };
 

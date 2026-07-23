@@ -622,17 +622,17 @@
             VerticalAlignment="Bottom"
             Margin="0 0 0 0"
             Padding="0 8 0 24"
-            Visibility="Collapsed"
-          Opacity="0"
+            Visibility="Collapsed"     
+          Opacity="1"
             Background="{ThemeResource SystemAltMediumHighColor}"            
             >
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
-                                    Duration="0:0:0.125" />
+                                    Duration="0:0:0.125"  />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
         <animation:OpacityAnimation To="0"
-                                    Duration="0:0:0.175" />
+                                    Duration="0:0:0.175"  />
       </animation:Implicit.HideAnimations>
 
       <Grid.Resources>
@@ -741,7 +741,8 @@
                     ctwu:FrameworkElementExtensions.Cursor="Hand">
               <Button.Flyout>
                 <Flyout Opened="MenuFlyout_Opened"
-                        Closed="MenuFlyout_Closed">
+                        Closed="MenuFlyout_Closed"
+                        AreOpenCloseAnimationsEnabled="False">
                   <StackPanel Spacing="8">
                     <StackPanel.Resources>
                       <Style TargetType="Button">

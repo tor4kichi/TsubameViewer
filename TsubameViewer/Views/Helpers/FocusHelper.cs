@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
+using TsubameViewer.ViewModels;
 using TsubameViewer.Views.UINavigation;
 
 namespace TsubameViewer.Views.Helpers

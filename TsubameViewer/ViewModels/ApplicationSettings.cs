@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 using TsubameViewer.Core.Infrastructure;
 
-namespace TsubameViewer.Core.Models;
+namespace TsubameViewer.ViewModels;
 
 public sealed class ApplicationSettings : FlagsRepositoryBase
 {

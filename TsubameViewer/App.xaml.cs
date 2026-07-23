@@ -251,7 +251,7 @@ sealed partial class App : Application
             Debug.WriteLine(ex.ToString());
         }
 
-        var applicationSettings = Ioc.Default.GetRequiredService<Core.Models.ApplicationSettings>();
+        var applicationSettings = Ioc.Default.GetRequiredService<ApplicationSettings>();
         try
         {
             I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;

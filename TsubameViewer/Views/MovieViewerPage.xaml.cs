@@ -562,6 +562,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     IDisposable? _playbackResources;
     void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
+        var uiSettings = new UISettings();
+        if (!uiSettings.AnimationsEnabled)
+        {
+            NeighborsContentButtonsContainer.Opacity = 1;
+            ImageSelectorContainer.Opacity = 1;
+        }
+
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
         PlayerContainer.Opacity = 0.0001;　// FFmpeg利用時にゼロ位置の映像フレームが表示されないように

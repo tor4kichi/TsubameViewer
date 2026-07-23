@@ -75,9 +75,13 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        AnimationBuilder.Create()
+        var uiSettings = new UISettings();
+        if (uiSettings.AnimationsEnabled)
+        {
+            AnimationBuilder.Create()
             .Translation(Axis.X, -320, duration: TimeSpan.FromMilliseconds(1))
             .Start(TocContentPanel);
+        }
 
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
@@ -532,7 +536,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     Color _foregroundDefaultColor;
     private void ForegroundColorColorPickerFlyoutOpened(object sender, object e)
     {
-        _foregroundDefaultColor = (_vm.GetCurrentTheme() == Core.Models.ApplicationTheme.Dark
+        _foregroundDefaultColor = (_vm.GetCurrentTheme() == ViewModels.ApplicationTheme.Dark
                 ? Color.FromArgb(0xFF, 0xff, 0xe4, 0xd1)
                 : Color.FromArgb(0xFF, 0x1f, 0x1f, 0x1f));
         ForegroundColorPicker.Color = _vm.EBookReaderSettings.ForegroundColor.A == 0x00

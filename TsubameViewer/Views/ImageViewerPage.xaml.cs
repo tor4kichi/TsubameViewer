@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.Graphics.Canvas;
@@ -331,14 +332,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         db.Build().RegisterTo(_navigationCt);
 
-        AnimationBuilder.Create()
-            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
-            .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
-            .Start(ButtonsContainer);
-        AnimationBuilder.Create()
-            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
-            .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
-            .Start(ImageSelectorContainer);
+        var uiSettings = new UISettings();
+        if (uiSettings.AnimationsEnabled)
+        {
+            AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+                .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
+                .Start(ButtonsContainer);
+            AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+                .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
+                .Start(ImageSelectorContainer);
+        }
 
         AnimationBuilder.Create()
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))

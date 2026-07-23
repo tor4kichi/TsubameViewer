@@ -656,7 +656,7 @@
     </Grid>
 
     <uwpControls:DockPanel x:Name="NeighborsContentButtonsContainer"
-                           Visibility="{x:Bind ImageSelectorContainer.Visibility, Mode=OneWay}"
+                           Visibility="Collapsed"
                            FlowDirection="RightToLeft">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
@@ -708,7 +708,7 @@
 
     <Border x:Name="ImageSelectorContainer" 
             Background="{ThemeResource SystemChromeMediumHighColor}"
-            Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+            Visibility="Collapsed"
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
@@ -726,13 +726,17 @@
         <animation:OpacityAnimation To="1"
                                     EasingType="Cubic"
                                     Duration="0:0:0.175" />
-        <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 0"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
         <animation:OpacityAnimation To="0"
                                     EasingType="Cubic"
                                     Duration="0:0:0.175" />
-        <animation:TranslationAnimation To="0, 24" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 24"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
       <StackPanel Margin="8" Spacing="6">
@@ -1520,6 +1524,20 @@
           <VisualState.Setters>
             <Setter Target="Page2FavoriteToggleItemButton.Text"
                     Value="{i18nExt:Localize Key=Favorite_RemoveItem}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Visible" />
+            <Setter Target="NeighborsContentButtonsContainer.Visibility"
+                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
