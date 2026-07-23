@@ -498,7 +498,7 @@ public sealed class FolderStructureCacheContext : IDisposable
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
-        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(fileSortType));
+        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;
@@ -555,14 +555,13 @@ public sealed class FolderStructureCacheContext : IDisposable
         else
         {
 
-            cached = _repo.FindFolderImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Path));
+            cached = _repo.FindFolderImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Name));
             await Task.Run(async () => 
             {
                 await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
                 {
-                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
+                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry))
                     {
-                        ct.ThrowIfCancellationRequested();
                         dispatcherQueue.TryEnqueue(() =>
                         {
                             entry = _repo.AddOrUpdateItem(file);
@@ -570,7 +569,9 @@ public sealed class FolderStructureCacheContext : IDisposable
                             items.Add(itemVM);
                         });
                     }
-                    await Task.Delay(1, ct);
+                    
+                    // ImageListupからImageViewerを開く際はキャンセルが効かないため
+                    // Task.Delay(1)をここに書くべからず
                 }
 
                 //await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
@@ -612,7 +613,7 @@ public sealed class FolderStructureCacheContext : IDisposable
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
         _updateMap[Folder.Path].IsRequireUpdate = false;
-        var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(fileSortType));
+        var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;
@@ -666,12 +667,12 @@ public sealed class FolderStructureCacheContext : IDisposable
         }
         else
         {
-            cached = _repo.FindFolderNotImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Path));
+            cached = _repo.FindFolderNotImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Name));
             await Task.Run(async () =>
             {
                 await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
                 {
-                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry) || isInitial)
+                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry) || isInitial)
                     {
                         ct.ThrowIfCancellationRequested();
                         dispatcherQueue.TryEnqueue(() =>
@@ -681,7 +682,6 @@ public sealed class FolderStructureCacheContext : IDisposable
                             items.Add(itemVM);
                         });
                     }
-                    await Task.Delay(1);
                 }
 
                 //await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
@@ -764,8 +764,8 @@ public sealed class FolderStructureCacheContext : IDisposable
 
     public async Task<bool> UpdateImagesCacheIfCountNotSameAsync(CancellationToken ct)
     {
-        using var reelaser = await _asyncLock.LockAsync(ct);
-
+        // ここでロックするとImageListupの列挙処理よってImageViewerの表示が遅延される
+        // using var reelaser = await _asyncLock.LockAsync(ct);
         StorageFileQueryResult query;
         var cacheInfo = _updateMap[Folder.Path];
         if (cacheInfo.IsRequireUpdate)
@@ -785,6 +785,7 @@ public sealed class FolderStructureCacheContext : IDisposable
             return false; 
         }
 
+        using var reelaser = await _asyncLock.LockAsync(ct);
         Debug.WriteLine($"{Folder.Name} START structure cache update.");
         _repo.FolderRemoved(Folder.Path);
         uint currentCount = 0;
