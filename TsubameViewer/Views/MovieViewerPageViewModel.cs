@@ -260,6 +260,9 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     bool _nowEditTransformMode;
 
+    [ObservableProperty]
+    bool _nowVideoEffectEdit;
+
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;

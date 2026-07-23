@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.32112.339
+# Visual Studio Version 18
+VisualStudioVersion = 18.7.11925.98 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer", "TsubameViewer\TsubameViewer.csproj", "{DC398F89-BA75-4E03-B549-BDDFC0B00833}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer.Core", "TsubameViewer.Core\TsubameViewer.Core.csproj", "{4296664A-ED8C-4334-BEA3-8C685345441F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer.Core.Test", "TsubameViewer.Core.Test\TsubameViewer.Core.Test.csproj", "{74C18F6A-108D-4C7D-AE44-1E8738FA0FAB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoEffects", "VideoEffects\VideoEffects.csproj", "{EE877DC3-BD92-4E41-B193-BA87414F60B9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,18 @@ Global
 		{74C18F6A-108D-4C7D-AE44-1E8738FA0FAB}.Release|x86.ActiveCfg = Release|x86
 		{74C18F6A-108D-4C7D-AE44-1E8738FA0FAB}.Release|x86.Build.0 = Release|x86
 		{74C18F6A-108D-4C7D-AE44-1E8738FA0FAB}.Release|x86.Deploy.0 = Release|x86
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Debug|ARM64.Build.0 = Debug|ARM64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Debug|x64.ActiveCfg = Debug|x64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Debug|x64.Build.0 = Debug|x64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Debug|x86.ActiveCfg = Debug|x86
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Debug|x86.Build.0 = Debug|x86
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Release|ARM64.ActiveCfg = Release|ARM64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Release|ARM64.Build.0 = Release|ARM64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Release|x64.ActiveCfg = Release|x64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Release|x64.Build.0 = Release|x64
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Release|x86.ActiveCfg = Release|x86
+		{EE877DC3-BD92-4E41-B193-BA87414F60B9}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

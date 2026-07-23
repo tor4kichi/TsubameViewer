@@ -586,6 +586,10 @@
       <Project>{4296664a-ed8c-4334-bea3-8c685345441f}</Project>
       <Name>TsubameViewer.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\VideoEffects\VideoEffects.csproj">
+      <Project>{ee877dc3-bd92-4e41-b193-ba87414f60b9}</Project>
+      <Name>VideoEffects</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Microsoft.Toolkit.Uwp.UI.Controls\NewFolder1\" />

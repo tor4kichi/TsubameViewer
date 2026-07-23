@@ -44,6 +44,15 @@
             <SymbolIcon Symbol="Favorite"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </ToggleButton>
+          <ToggleButton IsChecked="{x:Bind NowVideoEffectEdit, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_VideoEffect}"
+                        ToolTipService.Placement="Bottom"
+                        AccessKey="E"
+                        ctwu:FrameworkElementExtensions.Cursor="Hand">
+            <fluentIcon:SymbolIcon Symbol="BrightnessHigh" />
+          </ToggleButton>
+
           <ToggleButton IsChecked="{x:Bind NowEditTransformMode, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=EditViewerTransform}"
@@ -521,19 +530,20 @@
       </Button>
     </Grid>
 
-    <Grid x:Name="PlayerContainer"
-          SizeChanged="MySwapChainPanel_SizeChanged">
-      <win2d:CanvasSwapChainPanel x:Name="MySwapChainPanel" RenderTransformOrigin="0.5, 0.5">
+    <Grid x:Name="PlayerContainer">
+      <MediaPlayerElement x:Name="MyMediaPlayerElement"
+                          RenderTransformOrigin="0.5, 0.5"
+                          AutoPlay="False">
         <UIElement.RenderTransform>
           <TransformGroup>
             <TranslateTransform x:Name="PlayerTranslate" />
             <ScaleTransform x:Name="PlayerScale"
-                            ScaleY="{Binding RelativeSource={RelativeSource Mode=Self}, Path=ScaleX}"/>
+                            ScaleY="{Binding RelativeSource={RelativeSource Mode=Self}, Path=ScaleX}" />
 
             <ScaleTransform x:Name="MirrorScaleTransform" />
           </TransformGroup>
         </UIElement.RenderTransform>
-      </win2d:CanvasSwapChainPanel>
+      </MediaPlayerElement>
     </Grid>
 
     <Grid IsHitTestVisible="True"
@@ -1114,7 +1124,7 @@
     </Grid>
 
     <Grid x:Name="VideoEffectUIContainer"
-          Visibility="Collapsed"
+          Visibility="{x:Bind _vm.NowVideoEffectEdit, Mode=OneWay,Converter={StaticResource TrueToVisibleConverter}}"
           Margin="16"
           IsHitTestVisible="True"
           Background="{ThemeResource SystemControlAcrylicElementBrush}"
@@ -1123,7 +1133,7 @@
           CornerRadius="6"
           Width="320"
           HorizontalAlignment="Right"
-          VerticalAlignment="Bottom">
+          VerticalAlignment="Center">
       <uwpControls:DockPanel>
         <uwpControls:DockPanel uwpControls:DockPanel.Dock="Top">
           <StackPanel Orientation="Horizontal"
@@ -1193,7 +1203,7 @@
                     StepFrequency="0.01"
                     Value="1"
                     ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
-                    ValueChanged="BrightnessSlider_ValueChanged">
+                    ValueChanged="ContrastSlider_ValueChanged">
               <Slider.Header>
                 <uwpControls:DockPanel>
                   <TextBlock Text="{x:Bind ContrastSlider.Value, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" 
@@ -1210,7 +1220,7 @@
                     StepFrequency="0.01"
                     Value="1"
                     ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
-                    ValueChanged="BrightnessSlider_ValueChanged">
+                    ValueChanged="SaturationSlider_ValueChanged">
               <Slider.Header>
                 <uwpControls:DockPanel>
                   <TextBlock Text="{x:Bind SaturationSlider.Value, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}"

@@ -39,6 +39,7 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Behaviors;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
+using VideoEffects;
 using Windows.ApplicationModel.Core;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Input;
@@ -49,6 +50,7 @@ using Windows.Graphics.Display;
 using Windows.Media.Audio;
 using Windows.Media.Core;
 using Windows.Media.Editing;
+using Windows.Media.Effects;
 using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -325,7 +327,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     DispatcherQueueTimer? _mouseCursorAutoHideTimer;
 
     MediaPlayer _audioPlayer = new();
-   
+
+    IPropertySet _myVideoEffectConfig = new PropertySet();
+
     void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pt = e.GetCurrentPoint(null);
@@ -343,7 +347,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             if (VideoEffectUIContainer.Visibility == Visibility.Visible)
             {
-                VideoEffectUIContainer.Visibility = Visibility.Collapsed;
+                _vm.NowVideoEffectEdit = false;
                 return;
             }
             if (PlayerState == MediaPlaybackState.Paused)
@@ -416,12 +420,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
         _coreAppView = CoreApplication.GetCurrentView();
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-
-        // Win2D のデフォルトデバイスを取得
-        _canvasDevice = CanvasDevice.GetSharedDevice();
-        _colorMatrixEffect = new ColorMatrixEffect();
-        _saturationEffect = new SaturationEffect();
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();        
     }
 
     DirectConnectedAnimationConfiguration _animConfig = new();
@@ -493,7 +492,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _mediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
         _mediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;
-        _mediaPlayer.VideoFrameAvailable -= MediaPlayer_VideoFrameAvailable;
 
         _playbackResources?.Dispose();
         _playbackResources = null;        
@@ -502,14 +500,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
-
-        _colorMatrixEffect?.Dispose();
-        _saturationEffect?.Dispose();
-        _frameTarget?.Dispose();
-        MySwapChainPanel.SwapChain?.Dispose();
-        MySwapChainPanel.SwapChain = null;
-        MySwapChainPanel.RemoveFromVisualTree();
-        MySwapChainPanel = null;
     }
 
     internal class DisplayRequestFacade : IDisposable
@@ -581,15 +571,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _initialiLiteNotificationAnimation.Start(LiteNotificationContainer);
         DisposableBuilder db = new();
 
-        _mediaPlayer = new MediaPlayer()
-            .AddTo(ref db);
+        _mediaPlayer = MyMediaPlayerElement.MediaPlayer;
         _mediaPlayer.CommandManager.IsEnabled = true;
         _mediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
-        _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
-        _mediaPlayer.IsVideoFrameServerEnabled = true;
-        _mediaPlayer.VideoFrameAvailable += MediaPlayer_VideoFrameAvailable;
+        _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;        
 
         var insideWindowRp = Observable.Merge(
                 this.ObservePointerEntered().Select(x => x.Pointer.PointerDeviceType == PointerDeviceType.Mouse), 
@@ -647,7 +634,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 var (s, bookmarkRp, mouseHideTimer) = state;
                 s._playbackResources?.Dispose();
-
+                s.PlayerContainer.Opacity = 0.0001;
                 var isLastPlaying = s.PlayerState == MediaPlaybackState.Playing;
                 var lastPlayPosition = s.VideoPosition;
                 s._mediaPlayer.Source = null;
@@ -854,16 +841,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         _this._mediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
                         _this._audioPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
 
-                        // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
-                        if (_this.NowPlayingWithFFmpegMediaSource)
-                        {
-                            await Task.Delay(200);
-                        }
                         if (_this._nowRequestPlayStart)
                         {
                             _this._nowRequestPlayStart = false;
                             _this._mediaPlayer.Play();
                             _this._audioPlayer.Play();
+                        }
+
+                        // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
+                        if (_this.NowPlayingWithFFmpegMediaSource)
+                        {
+                            await Task.Delay(200);
                         }
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
@@ -1056,128 +1044,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
-    long _lastRenderTime = 0;
-    private void MediaPlayer_VideoFrameAvailable(MediaPlayer sender, object args)
-    {
-        _dispatcherQueue.TryEnqueue(() => 
-        {            
-            RenderFrame();
-        });
-    }
-
-    private CanvasDevice _canvasDevice;
-    private CanvasRenderTarget _frameTarget;
-        
-    private ColorMatrixEffect _colorMatrixEffect;
-    private SaturationEffect _saturationEffect;
-    private void RenderFrame()
-    {
-        if (_mediaPlayer == null             
-            || _canvasDevice == null
-            || MySwapChainPanel.SwapChain == null) return;
-
-        uint width = _mediaPlayer.PlaybackSession.NaturalVideoWidth;
-        uint height = _mediaPlayer.PlaybackSession.NaturalVideoHeight;
-
-        if (width == 0 || height == 0) return;
-
-        // 1. 動画サイズのオフスクリーンターゲット（CanvasRenderTarget）を確保
-        if (_frameTarget == null ||
-            _frameTarget.SizeInPixels.Width != width ||
-            _frameTarget.SizeInPixels.Height != height)
-        {
-            _frameTarget?.Dispose();
-            _frameTarget = new CanvasRenderTarget(_canvasDevice, (float)width, (float)height, 96);
-        }
-
-        // 2. MediaPlayer のフレームを Direct3D サーフェスへコピー
-        _mediaPlayer.CopyFrameToVideoSurface(_frameTarget);
-
-        // 3. UIのスライダー値を取得してエフェクトパラメータを計算
-        bool isEnabledBrightness = true;
-        bool isEnabledContrast = true;
-        bool isEnabledSaturation = true;
-
-        ICanvasImage drawSource = _frameTarget;
-
-        float brightness = (float)Math.Clamp(isEnabledBrightness ? (float)BrightnessSlider.Value : 0f, -1f, 1f);//(float)brightnessSlider.Value; // -1.0 ～ 1.0
-        float contrast = (float)Math.Clamp(isEnabledContrast ? (float)ContrastSlider.Value : 1f, 0f, 2.0f);//(float)contrastSlider.Value;     //  0.0 ～ 2.0
-        if (brightness != 0 || contrast != 1)
-        {
-            float offset = (1.0f - contrast) * 0.5f + brightness;
-            _colorMatrixEffect.ColorMatrix = new Matrix5x4
-            {
-                M11 = contrast,
-                M12 = 0,
-                M13 = 0,
-                M14 = 0,
-                M21 = 0,
-                M22 = contrast,
-                M23 = 0,
-                M24 = 0,
-                M31 = 0,
-                M32 = 0,
-                M33 = contrast,
-                M34 = 0,
-                M41 = 0,
-                M42 = 0,
-                M43 = 0,
-                M44 = 1,
-                M51 = offset,
-                M52 = offset,
-                M53 = offset,
-                M54 = 0
-            };
-
-            _colorMatrixEffect.Source = drawSource;
-            drawSource = _colorMatrixEffect;
-        }
-
-        float saturation = Math.Clamp(isEnabledSaturation ? (float)SaturationSlider.Value : 1.0f, 0f, 2f);//(float)saturationSlider.Value; //  0.0 ～ 2.0
-        if (saturation != 1)
-        {
-            _saturationEffect.Source = drawSource;
-            _saturationEffect.Saturation = saturation;
-            drawSource = _saturationEffect;
-        }
-
-        // 4. SwapChain に描画する        
-        using (var ds = MySwapChainPanel.SwapChain.CreateDrawingSession(Colors.Transparent))
-        {
-            // アスペクト比を維持して中央配置する計算
-            var panelSize = MySwapChainPanel.ActualSize;
-            float scale = Math.Min(panelSize.X / (float)width, panelSize.Y / (float)height);
-            float destWidth = width * scale;
-            float destHeight = height * scale;
-            float destX = (panelSize.X - destWidth) * 0.5f;
-            float destY = (panelSize.Y - destHeight) * 0.5f;
-
-            var destRect = new Windows.Foundation.Rect(destX, destY, destWidth, destHeight);
-
-            // エフェクト適用済み画像を SwapChain に描画
-            ds.Antialiasing = CanvasAntialiasing.Antialiased;
-            ds.Blend = CanvasBlend.Copy;
-            ds.DrawImage(drawSource, destRect, _frameTarget.Bounds);
-        }
-
-        // 5. 描画結果を画面に反映（フリップ）
-        MySwapChainPanel.SwapChain.Present();
-    }
-
-
-    private void MySwapChainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        var panel = MySwapChainPanel;
-        if (panel.SwapChain != null)
-        {
-            panel.SwapChain.ResizeBuffers(e.NewSize);
-            RenderFrame();
-        }
-        else
-        {
-            panel.SwapChain = new CanvasSwapChain(_canvasDevice, (float)e.NewSize.Width, (float)e.NewSize.Height, DisplayInformation.GetForCurrentView().LogicalDpi);
-        }
-    }
 
     private void CloseButton_VideoEffectUIContainerUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
     {
@@ -1193,20 +1059,67 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void ToggleVideoEffectEditUI()
     {
-        VideoEffectUIContainer.Visibility = (VideoEffectUIContainer.Visibility == Visibility.Visible).FalseToVisible();
+        _vm.NowVideoEffectEdit = !_vm.NowVideoEffectEdit;
     }
 
+
+    void EnsureVideoEffect()
+    {
+        bool lastEffectAdded = _isColorAdjustmentEffectAdded;
+        var brightness = (float)BrightnessSlider.Value;
+        var contrast = (float)ContrastSlider.Value;
+        var saturation = (float)SaturationSlider.Value;
+        if (!PropertySetExtensionsForColorAdjustmentEffect.IsDefaultBrightness(brightness)
+            || !PropertySetExtensionsForColorAdjustmentEffect.IsDefaultContrast(contrast)
+            || !PropertySetExtensionsForColorAdjustmentEffect.IsDefaultSaturation(saturation))
+        {
+            if (!_isColorAdjustmentEffectAdded)
+            {
+                _mediaPlayer.AddVideoEffect(typeof(ColorAdjustmentEffect).FullName, false, _myVideoEffectConfig);
+                _isColorAdjustmentEffectAdded = true;
+            }
+        }
+        else
+        {
+            if (_isColorAdjustmentEffectAdded)
+            {
+                _mediaPlayer.RemoveAllEffects();
+                _isColorAdjustmentEffectAdded = false;
+            }
+        }
+
+        if (lastEffectAdded != _isColorAdjustmentEffectAdded)
+        {
+            var file = _vm.MovieFile;
+            _vm.MovieFile = null;
+            _vm.MovieFile = file;
+        }
+    }
+
+    bool _isColorAdjustmentEffectAdded;
     private void BrightnessSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (((FrameworkElement)sender).IsLoaded is false) { return; }
 
-        if (_mediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
-        {
-            _dispatcherQueue.TryEnqueue(() =>
-            {
-                RenderFrame();
-            });
-        }
+        _myVideoEffectConfig.SetBrightness((float)e.NewValue);
+        EnsureVideoEffect();
+    }
+
+
+    private void ContrastSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (((FrameworkElement)sender).IsLoaded is false) { return; }
+
+        _myVideoEffectConfig.SetContrast((float)e.NewValue);
+        EnsureVideoEffect();
+    }
+
+    private void SaturationSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (((FrameworkElement)sender).IsLoaded is false) { return; }
+
+        _myVideoEffectConfig.SetSaturation((float)e.NewValue);
+        EnsureVideoEffect();
     }
 
     private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
@@ -1247,7 +1160,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             catch { }
         }
-
+        
         _mediaPlayer.Source = playbackItem;
         ct.ThrowIfCancellationRequested();
 
@@ -1531,9 +1444,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
         }
-        else if (VideoEffectUIContainer.Visibility == Visibility.Visible)
+        else if (_vm.NowVideoEffectEdit)
         {
-            VideoEffectUIContainer.Visibility = Visibility.Collapsed;
+            _vm.NowVideoEffectEdit = false;
         }
         else
         {
@@ -2567,7 +2480,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             if (!IsDurationAvairable)
             {
                 var videoSize = new Size(_mediaPlayer.PlaybackSession.NaturalVideoWidth, _mediaPlayer.PlaybackSession.NaturalVideoHeight);
-                var renderSize = MySwapChainPanel.RenderSize;
+                var renderSize = MyMediaPlayerElement.RenderSize;
                 double videoAspect = videoSize.Width / videoSize.Height;
                 double renderAspect = renderSize.Width / renderSize.Height;
                 Rect sourceRect;
@@ -2676,7 +2589,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     if (!IsDurationAvairable)
                     {
                         var videoSize = new Size(_mediaPlayer.PlaybackSession.NaturalVideoWidth, _mediaPlayer.PlaybackSession.NaturalVideoHeight);
-                        var renderSize = MySwapChainPanel.RenderSize;
+                        var renderSize = MyMediaPlayerElement.RenderSize;
                         double videoAspect = videoSize.Width / videoSize.Height;
                         double renderAspect = renderSize.Width / renderSize.Height;
                         Rect sourceRect;
@@ -3220,6 +3133,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     double HalfDouble(double d) => d * 0.5d;
     double HalfDoubleNegation(double d) => d * -0.5d;
     double InverseDouble(double d) => 1 / d;
+
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter
