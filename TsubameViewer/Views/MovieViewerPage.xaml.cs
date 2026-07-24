@@ -1129,12 +1129,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             && !sender.IsLoopingEnabled)
         {
             Observable.NextFrame()
-                .Subscribe(_ =>
+                .SubscribeAwait(async (_, ct) =>
                 {
                     var imageSource = _vm.NextImageSource;
+                    var bkmk = _vm.BookmarkManager.GetBookmarkFacade(_vm.MovieFile.Path);                    
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                    await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
                     _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(imageSource.Name));
+                    bkmk.ReadPosition = default;
                 });
         }
     }
