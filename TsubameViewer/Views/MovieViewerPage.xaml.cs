@@ -1055,17 +1055,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         ToggleVideoEffectEditUI();
     }
 
-    bool _isLastPlayingOnVideoEffectEdit;
     [RelayCommand]
     void ToggleVideoEffectEditUI()
     {
         _vm.NowVideoEffectEdit = !_vm.NowVideoEffectEdit;
     }
 
+    void ReOpenMediaPlayerSource()
+    {
+        var file = _vm.MovieFile;
+        _vm.MovieFile = null;
+        _vm.MovieFile = file;
+    }
 
     void EnsureVideoEffect()
     {
-        bool lastEffectAdded = _isColorAdjustmentEffectAdded;
         var brightness = (float)BrightnessSlider.Value;
         var contrast = (float)ContrastSlider.Value;
         var saturation = (float)SaturationSlider.Value;
@@ -1077,22 +1081,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 _mediaPlayer.AddVideoEffect(typeof(ColorAdjustmentEffect).FullName, false, _myVideoEffectConfig);
                 _isColorAdjustmentEffectAdded = true;
+                ReOpenMediaPlayerSource();
             }
-        }
-        else
-        {
-            if (_isColorAdjustmentEffectAdded)
-            {
-                _mediaPlayer.RemoveAllEffects();
-                _isColorAdjustmentEffectAdded = false;
-            }
-        }
-
-        if (lastEffectAdded != _isColorAdjustmentEffectAdded)
-        {
-            var file = _vm.MovieFile;
-            _vm.MovieFile = null;
-            _vm.MovieFile = file;
         }
     }
 
@@ -1120,6 +1110,30 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _myVideoEffectConfig.SetSaturation((float)e.NewValue);
         EnsureVideoEffect();
+    }
+
+    [RelayCommand]
+    void ResetVideoEffect()
+    {
+        if (_isColorAdjustmentEffectAdded)
+        {
+            _mediaPlayer.RemoveAllEffects();
+            _isColorAdjustmentEffectAdded = false;
+
+            BrightnessSlider.ValueChanged -= BrightnessSlider_ValueChanged;
+            ContrastSlider.ValueChanged -= ContrastSlider_ValueChanged;
+            SaturationSlider.ValueChanged -= SaturationSlider_ValueChanged;
+
+            BrightnessSlider.Value = 0;
+            ContrastSlider.Value = 1;
+            SaturationSlider.Value = 1;
+
+            BrightnessSlider.ValueChanged += BrightnessSlider_ValueChanged;
+            ContrastSlider.ValueChanged += ContrastSlider_ValueChanged;
+            SaturationSlider.ValueChanged += SaturationSlider_ValueChanged;
+
+            ReOpenMediaPlayerSource();
+        }
     }
 
     private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)

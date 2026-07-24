@@ -1141,22 +1141,9 @@
                       Spacing="16"
                       Margin=" 0 0 16 16">
             <Button Content="{i18nExt:Localize Key=Reset}"
+                    Command="{x:Bind ResetVideoEffectCommand}"
                     Height="48"
                     VerticalAlignment="Bottom">
-              <i:Interaction.Behaviors>
-                <i:EventTriggerBehavior EventName="Tapped">
-                  <i:ChangePropertyAction TargetObject="{x:Bind BrightnessSlider}"
-                                          PropertyName="Value"
-                                          Value="0" />
-                  <i:ChangePropertyAction TargetObject="{x:Bind ContrastSlider}"
-                                          PropertyName="Value"
-                                          Value="1" />
-                  <i:ChangePropertyAction TargetObject="{x:Bind SaturationSlider}"
-                                          PropertyName="Value"
-                                          Value="1" />
-
-                </i:EventTriggerBehavior>
-              </i:Interaction.Behaviors>
             </Button>
             <Button x:Name="CloseButton_VideoEffectUIContainerUIContainer"
                     Tapped="CloseButton_VideoEffectUIContainerUIContainer_Tapped"
