@@ -1857,6 +1857,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             else if (!_videoPositionsliderPointerPressed)
             {
+                // Note: Source再適用後の表示画像のリサイズがレイアウト再計算がないと発生しないので
+                if (MovieSeekbarTooltipImage.ActualHeight == 1)
+                {
+                    MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                }
                 MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
             }
             else if (_lastPointerDeviceType == PointerDeviceType.Touch)
