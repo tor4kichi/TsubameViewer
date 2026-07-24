@@ -2540,6 +2540,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (_vm.MovieFile == null) { return; }
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
         _mediaPlayer.Pause();
+        _audioPlayer.Pause();
         await Launcher.LaunchFileAsync(_vm.MovieFile);
     }
 
@@ -2548,6 +2549,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (_vm.MovieFile == null) { return; }
         _mediaPlayer.Pause();
+        _audioPlayer.Pause();
         await Launcher.LaunchFolderPathAsync(
             Path.GetDirectoryName(_vm.MovieFile.Path),
             new() { ItemsToSelect = { _vm.MovieFile } });
@@ -2566,6 +2568,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             if (_mediaPlayer.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Playing)
             {
                 _mediaPlayer.Pause();
+                _audioPlayer.Pause();
                 prevPlaying = true;
             }
             
@@ -2658,6 +2661,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             if (prevPlaying)
             {
                 _mediaPlayer.Play();
+                _audioPlayer.Play();
             }
         }
     }
