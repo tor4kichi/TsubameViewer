@@ -210,12 +210,17 @@ public sealed class ThumbnailImageManager
     private readonly CanvasDevice _canvasDevice;
 
     private void UploadWithRetry(string itemId, string filename, Stream stream)
-    {
+    {        
+        if (!_folderListingSettings.IsGenerateThumbnailEnabled)
+        {
+            return;
+        }
         if (TryGetThumbnailInsideId(itemId, out var insideId))
         {
             _thumbnailDb.Delete(insideId);
             _thumbnailIdDb.Delete(itemId);
         }
+
 
         stream.Seek(0, SeekOrigin.Begin);
         _thumbnailDb.Upload(CreateThumbnailInsideId(itemId), filename, stream);
@@ -247,7 +252,7 @@ public sealed class ThumbnailImageManager
             {
                 return cachedImageStream;
             }
-        }
+        }        
 
         using var releaser = await _renderLock.LockAsync(ct);
         if (imageSource.StorageItem is StorageFolder folder)
@@ -692,7 +697,7 @@ public sealed class ThumbnailImageManager
         bool result = false;
         var memoryStream = new MemoryStream();        
         try
-        {
+        {            
             result = await GenerateThumbnailImageToStreamAsync(file, memoryStream, setupEncoder, ct);
 
             if (result is false) { return Stream.Null; }

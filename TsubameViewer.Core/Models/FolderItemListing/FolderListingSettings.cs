@@ -15,10 +15,7 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     public FolderListingSettings()
     {
         _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
-        _IsImageFileGenerateThumbnailEnabled = Read(true, nameof(IsImageFileGenerateThumbnailEnabled));
-        _IsFolderGenerateThumbnailEnabled = Read(true, nameof(IsFolderGenerateThumbnailEnabled));
-        _IsArchiveFileGenerateThumbnailEnabled = Read(true, nameof(IsArchiveFileGenerateThumbnailEnabled));
-        _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
+        _IsGenerateThumbnailEnabled = Read(true, nameof(IsGenerateThumbnailEnabled));
         _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
         _isInPageSearchWithMigemo = Read(true, nameof(IsInPageSearchWithMigemo));
@@ -33,32 +30,11 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         set { SetProperty(ref _FileDisplayMode, value); }
     }
 
-    private bool _IsImageFileGenerateThumbnailEnabled;
-    public bool IsImageFileGenerateThumbnailEnabled
+    private bool _IsGenerateThumbnailEnabled;
+    public bool IsGenerateThumbnailEnabled
     {
-        get { return _IsImageFileGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsImageFileGenerateThumbnailEnabled, value); }
-    }
-
-    private bool _IsFolderGenerateThumbnailEnabled;
-    public bool IsFolderGenerateThumbnailEnabled
-    {
-        get { return _IsFolderGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsFolderGenerateThumbnailEnabled, value); }
-    }
-
-    private bool _IsArchiveFileGenerateThumbnailEnabled;
-    public bool IsArchiveFileGenerateThumbnailEnabled
-    {
-        get { return _IsArchiveFileGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsArchiveFileGenerateThumbnailEnabled, value); }
-    }
-
-    private bool _IsArchiveEntryGenerateThumbnailEnabled;
-    public bool IsArchiveEntryGenerateThumbnailEnabled
-    {
-        get { return _IsArchiveEntryGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsArchiveEntryGenerateThumbnailEnabled, value); }
+        get { return _IsGenerateThumbnailEnabled; }
+        set { SetProperty(ref _IsGenerateThumbnailEnabled, value); }
     }
 
     private float _FolderItemThumbnailQuality;
