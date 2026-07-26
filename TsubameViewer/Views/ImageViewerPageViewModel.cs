@@ -1245,11 +1245,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         var flattenImageSource1 = imageSource1.FlattenAlbamItemInnerImageSource();
                         var flattenImageSource2 = imageSource2.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut =
-                            (flattenImageSource1 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource1 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
-                            && (flattenImageSource2 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource2 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
-                            ;
-
+                        bool isEnabledThumbnailOut = _folderListingSettings.IsGenerateThumbnailEnabled;
                         if (isEnabledThumbnailOut)
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
@@ -1309,11 +1305,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     if (direction == IndexMoveDirection.Refresh)
                     {
                         var flattenImageSource = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut =
-                            (flattenImageSource is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
-                            || (flattenImageSource is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
-                            ;
-
+                        bool isEnabledThumbnailOut = _folderListingSettings.IsGenerateThumbnailEnabled;
                         if (isEnabledThumbnailOut)
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)

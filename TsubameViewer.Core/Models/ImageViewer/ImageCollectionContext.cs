@@ -556,53 +556,36 @@ public sealed class FolderStructureCacheContext : IDisposable
         {
 
             cached = _repo.FindFolderImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Name));
-            await Task.Run(async () => 
+            await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
             {
-                await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+                if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry))
                 {
-                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry))
+                    dispatcherQueue.TryEnqueue(() =>
                     {
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            entry = _repo.AddOrUpdateItem(file);
-                            var itemVM = cacheImageViewModelFactory(entry);
-                            items.Add(itemVM);
-                        });
-                    }
-                    
-                    // ImageListupからImageViewerを開く際はキャンセルが効かないため
-                    // Task.Delay(1)をここに書くべからず
+                        entry = _repo.AddOrUpdateItem(file);
+                        var itemVM = cacheImageViewModelFactory(entry);
+                        items.Add(itemVM);
+                    });
                 }
 
-                //await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
-                //{
-                //    var (items, cached, dispatcherQueue, cacheImageViewModelFactory, _this) = state;
-                //    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
-                //    {
-                //        dispatcherQueue.TryEnqueue(() =>
-                //        {
-                //            entry = _this._repo.AddOrUpdateItem(file);
-                //            var itemVM = cacheImageViewModelFactory(entry);
-                //            items.Add(itemVM);
-                //        });
-                //    }
+                // ImageListupからImageViewerを開く際はキャンセルが効かないため
+                // Task.Delay(1)をここに書くべからず
+            }
 
-                //}, ct);
-            }, ct);
+            if (cached.Count == 0) { return; }
+
+            // cachedにあってfilesに無い → 減分
+            foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
+            {
+                if (cached.TryGetValue(HashHelper.CalculateFNV1a64(itemToPathConv(item)), out var entry))
+                {
+                    items.RemoveAt(i);
+                    _repo.FileRemoved(entry);
+                }
+            }
         }
 
         _updateMap[Folder.Path].CachedImagesCount = imagesCount;
-        if (cached.Count == 0) { return; }
-
-        // cachedにあってfilesに無い → 減分
-        foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
-        {
-            if (cached.TryGetValue(HashHelper.CalculateFNV1a64(itemToPathConv(item)), out var entry))
-            {
-                items.RemoveAt(i);
-                _repo.FileRemoved(entry);
-            }
-        }
     }
 
     public async Task HandleDiffNotImages<T>(RangeObservableCollection<T> items,
@@ -668,50 +651,26 @@ public sealed class FolderStructureCacheContext : IDisposable
         else
         {
             cached = _repo.FindFolderNotImages(Folder.Path).ToDictionary(x => HashHelper.CalculateFNV1a64(x.Name));
-            await Task.Run(async () =>
+            await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
             {
-                await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
+                var hash = HashHelper.CalculateFNV1a64(file.Name);
+                if (!cached.Remove(hash, out var entry))
                 {
-                    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry) || isInitial)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            entry = _repo.AddOrUpdateItem(file);
-                            var itemVM = cacheImageViewModelFactory(entry);
-                            items.Add(itemVM);
-                        });
-                    }
+                    ct.ThrowIfCancellationRequested();
+                    entry = _repo.AddOrUpdateItem(file);
+                    var itemVM = cacheImageViewModelFactory(entry);
+                    items.Add(itemVM);
                 }
+            }
 
-                //await query.ForeachAsync((items, cached, dispatcherQueue, cacheImageViewModelFactory, this), static (state, file) =>
-                //{
-                //    var (items, cached, dispatcherQueue, cacheImageViewModelFactory, _this) = state;
-                //    if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Path), out var entry))
-                //    {
-                //        dispatcherQueue.TryEnqueue(() =>
-                //        {
-                //            entry = _this._repo.AddOrUpdateItem(file);
-                //            var itemVM = cacheImageViewModelFactory(entry);
-                //            items.Add(itemVM);
-                //        });
-                //    }
-
-                //}, ct);
-            }, ct);
-        }
-
-        _updateMap[Folder.Path].CachedNotImagesCount = imagesCount;
-
-        // cachedにあってfilesに無い → 減分
-        foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
-        {
-            if (cached.TryGetValue(HashHelper.CalculateFNV1a64(itemToPathConv(item)), out var entry))
+            // cachedにあってfilesに無い → 減分
+            foreach (var (hash, entry) in cached)
             {
-                items.RemoveAt(i);
                 _repo.FolderRemoved(entry.Path);
             }
         }
+
+        _updateMap[Folder.Path].CachedNotImagesCount = imagesCount;
     }
 
 
@@ -866,17 +825,24 @@ public sealed class FolderStructureFileEntry
     [BsonId]
     public string Path { get; set; } = "";
 
-    string? _parentFolderPath;
-    public string ParentFolderPath => _parentFolderPath ??= System.IO.Path.GetDirectoryName(Path);
-
+    [BsonField]
     public ulong ParentFolderPathHash { get; set; } = 0;
 
-    string? _fileName;
-    public string Name => _fileName ??= System.IO.Path.GetFileName(Path);
-
+    [BsonField]
     public DateTimeOffset DateCreated { get; set; }
 
+    [BsonField]
     public bool IsImage { get; set; } = true;
+
+    [BsonIgnore]
+    string? _parentFolderPath;
+    [BsonIgnore]
+    public string ParentFolderPath => _parentFolderPath ??= System.IO.Path.GetDirectoryName(Path);
+
+    [BsonIgnore]
+    string? _fileName;
+    [BsonIgnore]
+    public string Name => _fileName ??= System.IO.Path.GetFileName(Path);
 }
 
 public sealed class FolderStructureFilesRepository : IDisposable
@@ -899,7 +865,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
     public FolderStructureFilesRepository(ILiteDatabase tempLiteDatabase)
     {
         _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();        
-        _collection.EnsureIndex(x => x.Name);
+//        _collection.EnsureIndex(x => x.Name);
         _collection.EnsureIndex(x => x.DateCreated);
         _collection.EnsureIndex(x => x.IsImage);        
         if (_collection.EnsureIndex(x => x.ParentFolderPathHash))
@@ -1005,7 +971,8 @@ public sealed class FolderStructureFilesRepository : IDisposable
 
     public void FolderRemoved(string folderPath)
     {
-        _collection.DeleteMany(x => folderPath.StartsWith(x.ParentFolderPath, StringComparison.Ordinal));
+        var folderPathHash = HashHelper.CalculateFNV1a64(folderPath);
+        _collection.DeleteMany(x => x.ParentFolderPathHash == folderPathHash);
         ClearCache();
     }
     public void FileRemoved(FolderStructureFileEntry entry)

@@ -841,7 +841,7 @@ public sealed partial class ImageListupPageViewModel
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     sortType,
                                     cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    (IStorageItemViewModel itemVM) => itemVM.Name,
                                     ct);
                            
                                 HasFileItem = ImageFileItems.Any();                                
@@ -865,7 +865,7 @@ public sealed partial class ImageListupPageViewModel
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     sortType,
                                     cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    (IStorageItemViewModel itemVM) => itemVM.Name,
                                     ct);
                             }
 
