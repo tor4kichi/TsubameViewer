@@ -311,7 +311,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 long ts = TimeProvider.System.GetTimestamp();
 
                 var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
-                using (var imageStream = await thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct))
+                using (var imageStream = await thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct))
                 {
                     if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
                     {

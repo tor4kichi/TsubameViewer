@@ -1250,7 +1250,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
+                                using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
                                 await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;
@@ -1310,7 +1310,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
+                                using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
                                 await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;

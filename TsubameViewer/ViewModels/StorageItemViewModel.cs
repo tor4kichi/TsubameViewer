@@ -188,7 +188,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IStorageIte
             //    Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
             //}
 
-            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
+            using (var stream = await Task.Run(async () => await _thumbnailImageService.EnsureGetImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Length == 0) { return; }
                 

@@ -59,6 +59,7 @@ public sealed class ThumbnailImageManager
     private ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
     private ILiteStorage<string> _thumbnailDb;
     private ILiteCollection<ThumbnailGenerationIssueEntry> _thumnailGenerationIssueCollection;
+    private ILiteCollection<ThumbnilFolderEntry> _folderCollection;
     private ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
 
     public void ReOpenInsideDb()
@@ -145,7 +146,7 @@ public sealed class ThumbnailImageManager
             // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
             var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Width / decoder.PixelWidth;
             encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio * _folderListingSettings.FolderItemThumbnailQuality);
-            encoder.BitmapTransform.ScaledWidth = (uint)(_folderListingSettings.FolderItemThumbnailImageSize.Width * _folderListingSettings.FolderItemThumbnailQuality);
+            encoder.BitmapTransform.ScaledWidth = (uint)(_folderListingSettings.FolderItemThumbnailImageSize.Width * _folderListingSettings.FolderItemThumbnailQuality);            
         }
         else
         {
@@ -189,7 +190,18 @@ public sealed class ThumbnailImageManager
         public string InsideId { get; set; } = "";
     }
 
+    class ThumbnilFolderEntry
+    {
+        [BsonId]
+        public ulong PathHash { get; set; } = 0;
+
+        public string CoverImageName { get; set; }
+    }
+
+    
+
     public ThumbnailImageManager(
+        ILiteDatabase localDb,
         Func<ILiteDatabase> temporaryDbOpener,
         FolderListingSettings folderListingSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository
@@ -201,7 +213,7 @@ public sealed class ThumbnailImageManager
         _thumbnailDb = _temporaryDb.FileStorage;
         _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);
         _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();
-
+        _folderCollection = localDb.GetCollection<ThumbnilFolderEntry>();
         _folderListingSettings = folderListingSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _canvasDevice = new CanvasDevice();
@@ -211,10 +223,6 @@ public sealed class ThumbnailImageManager
 
     private void UploadWithRetry(string itemId, string filename, Stream stream)
     {        
-        if (!_folderListingSettings.IsGenerateThumbnailEnabled)
-        {
-            return;
-        }
         if (TryGetThumbnailInsideId(itemId, out var insideId))
         {
             _thumbnailDb.Delete(insideId);
@@ -227,6 +235,21 @@ public sealed class ThumbnailImageManager
         stream.Seek(0, SeekOrigin.Begin);
     }
 
+    ThumbnailImageInfo SetThumbanilSize(string itemId, uint width, uint height)
+    {
+        var info = new ThumbnailImageInfo()
+        {
+            Path = itemId,
+            PathHash = HashHelper.CalculateFNV1a64(itemId),
+            ImageWidth = width,
+            ImageHeight = height,
+            RatioWH = (float)width / height
+        };
+        _thumbnailImageInfoRepository.UpdateItem(info);
+        //Debug.WriteLine($"{Path.GetFileName(itemId)}: thumb size: w= {width} h= {height}");
+        return info;
+    }
+
     #region ImageSource Base
     
     private string GetId(IImageSource imageSource)
@@ -234,10 +257,29 @@ public sealed class ThumbnailImageManager
         return imageSource.StorageItem is StorageFolder folder ? ToId(folder) : ToId(imageSource.Path);
     }
 
-    // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
-    public async ValueTask<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<Stream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
-        if (imageSource == null) { return null; }
+        if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
+        if (_folderListingSettings.IsGenerateThumbnailEnabled)
+        {
+            var stream = await GetImageStreamAsync(imageSource, outputStream, ct);
+            if (stream != null && stream.Length != 0)
+            {
+                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+            }
+            return stream;
+        }
+        else 
+        {
+            return await GetImageStreamFromFileSystemAsync(imageSource, ct) 
+                ?? await GetImageStreamAsync(imageSource, outputStream, ct);
+        }
+    }
+
+
+    public async ValueTask<Stream?> GetCachedImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    {
+        if (imageSource == null) { return null; }        
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
         {
@@ -252,113 +294,154 @@ public sealed class ThumbnailImageManager
             {
                 return cachedImageStream;
             }
-        }        
+        }
 
-        using var releaser = await _renderLock.LockAsync(ct);
-        if (imageSource.StorageItem is StorageFolder folder)
+        return null;
+    }
+
+    public async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, CancellationToken ct = default)
+    {
+        StorageFile? targetFile = null;
+        if (imageSource.StorageItem is StorageFile file
+            && (file.IsSupportedImageFile() || file.IsSupportedMovieFile()))
         {
-            outputStream ??= new MemoryStream();
-            try
-            {
-                var file = await GetCoverThumbnailImageAsync(folder, ct);
-                if (file != null
-                    && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
-                {
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputStream;
-                }
-                else
-                {
-                    outputStream.Dispose();
-                    return null;
-                }
-            }
-            catch
-            {
-                outputStream.Dispose();
-                throw;
-            }
+            targetFile = file;            
         }
-        else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file 
-            && (file.IsSupportedMangaFile() || file.IsSupportedEBookFile() || file.IsSupportedMovieFile()))
+        else if (imageSource.StorageItem is StorageFolder folder)
         {
-            outputStream ??= new MemoryStream();
-            try
+            var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);            
+            if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry)
             {
-                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
-                {
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputStream;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch
-            {
-                outputStream.Dispose();
-                throw;
-            }
-        }
-        else if (imageSource is AlbamItemImageSource albamItemImageSource)
-        {
-            return await GetThumbnailImageStreamAsync(albamItemImageSource.InnerImageSource, outputStream, ct);
-        }
-        else if (imageSource is AlbamImageSource albamImageSource)
-        {
-            var sampleImageSource = await albamImageSource.GetSampleImageSourceAsync(ct);
-            if (sampleImageSource == null) { return null; }
-            return await GetThumbnailImageStreamAsync(sampleImageSource, outputStream, ct);
-        }
-        else
-        {
-            outputStream ??= new MemoryStream();
-            var stream = outputStream;
-            if (await imageSource.TryGetSizedImageStreamAsync(200, stream, ct) is { } size)
-            {
-                // サムネイルサイズ情報を記録                
-                var replacedId = ToId(imageSource.Path);
-                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-                {
-                    Path = replacedId,
-                    PathHash = HashHelper.CalculateFNV1a64(replacedId),
-                    ImageWidth = (uint)size.Width,
-                    ImageHeight = (uint)size.Height,
-                    RatioWH = size.Width / size.Height
-                });
                 try
                 {
-                    UploadWithRetry(itemId, imageSource.Name, stream);
-                    return outputStream;
+                    targetFile = await folder.GetFileAsync(entry.CoverImageName);
                 }
-                catch
+                catch (FileNotFoundException) { }
+            }
+
+            if (targetFile == null)
+            {
+                targetFile = await GetCoverThumbnailImageAsync(folder, ct);
+                if (targetFile != null)
                 {
-                    outputStream.Dispose();
-                    throw;
+                    entry = new ThumbnilFolderEntry
+                    {
+                        PathHash = folderPathHash,
+                        CoverImageName = targetFile.Name
+                    };
+                    _folderCollection.Upsert(entry);
                 }
+            }
+        }
+        
+
+        if (targetFile != null)
+        {
+            using var releaser = await _renderLock.LockAsync(ct);
+            var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem);
+            if (image.Type == ThumbnailType.Icon)
+            {
+                image.Dispose();
+                return null;
             }
             else
             {
-                try
-                {
-                    //using (imageSource is EpubLocalImageSource 
-                    //    ? await _renderLock.LockAsync(ct)
-                    //    : Disposable.Empty)
-                    {
-                        await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    }
-
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputStream;
-                }
-                catch
-                {
-                    outputStream.Dispose();
-                    throw;
-                }
+                var itemId = ToId(targetFile);
+                var stream = image.AsStreamForRead();
+                SetThumbanilSize(itemId, image.OriginalWidth, image.OriginalHeight);
+                return stream;
             }
         }
+        else { return null; }
+    }    
+
+    // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
+    public async ValueTask<Stream?> GetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    {
+        if (imageSource == null) { return null; }
+
+        var itemId = GetId(imageSource);        
+        using var releaser = await _renderLock.LockAsync(ct);
+        try
+        {
+            if (imageSource.StorageItem is StorageFolder folder)
+            {
+                StorageFile? targetFile = null;
+                var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
+                if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry)
+                {
+                    try
+                    {
+                        targetFile = await folder.GetFileAsync(entry.CoverImageName);
+                    }
+                    catch (FileNotFoundException) { }
+                }
+
+                if (targetFile == null)
+                {
+                    targetFile = await GetCoverThumbnailImageAsync(folder, ct);
+                    if (targetFile != null)
+                    {
+                        entry = new ThumbnilFolderEntry
+                        {
+                            PathHash = folderPathHash,
+                            CoverImageName = targetFile.Name
+                        };
+                        _folderCollection.Upsert(entry);
+                    }
+                }
+
+                outputStream ??= new MemoryStream();                
+                if (targetFile != null
+                    && await GenerateThumbnailImageToStreamAsync(targetFile, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                {
+                    return outputStream;
+                }
+            }   
+            else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file
+                && (file.IsSupportedMangaFile() || file.IsSupportedEBookFile() || file.IsSupportedMovieFile()))
+            {
+                outputStream ??= new MemoryStream();
+                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                {
+                    return outputStream;
+                }
+            }
+            else if (imageSource is AlbamItemImageSource albamItemImageSource)
+            {
+                return await GetImageStreamAsync(albamItemImageSource.InnerImageSource, outputStream, ct);
+            }
+            else if (imageSource is AlbamImageSource albamImageSource)
+            {
+                var sampleImageSource = await albamImageSource.GetSampleImageSourceAsync(ct);
+                if (sampleImageSource == null) { return null; }
+                return await GetImageStreamAsync(sampleImageSource, outputStream, ct);
+            }
+            else
+            {
+                outputStream ??= new MemoryStream();
+                var stream = outputStream;
+                if (await imageSource.TryGetSizedImageStreamAsync(200, stream, ct) is { } size)
+                {
+                    // サムネイルサイズ情報を記録                                
+                    SetThumbanilSize(itemId, (uint)size.Width, (uint)size.Height);
+                    return outputStream;
+                }
+                else
+                {
+                    await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    return outputStream;
+                }
+            }
+
+            outputStream?.Dispose();
+            return null;
+        }
+        catch
+        {
+            outputStream?.Dispose();
+            throw;
+        }        
     }
 
     public async Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default)
@@ -366,7 +449,7 @@ public sealed class ThumbnailImageManager
         // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
         // InMemoryRandomAccessStreamを使用している
         using var stream = new MemoryStream();
-        var imageMemoryStream = await GetThumbnailImageStreamAsync(childImageSource, stream, ct);
+        var imageMemoryStream = await GetImageStreamAsync(childImageSource, stream, ct);
         if (imageMemoryStream == null) { return; }
 
         using (imageMemoryStream)
@@ -393,6 +476,11 @@ public sealed class ThumbnailImageManager
             {
                 var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
                 if (folder == null) { throw new InvalidOperationException(); }
+                _folderCollection.Upsert(new ThumbnilFolderEntry 
+                {
+                    PathHash = HashHelper.CalculateFNV1a64(folder.Path),
+                    CoverImageName = folderItem.StorageItem.Name,
+                });
                 await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
             }
             else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
@@ -458,15 +546,7 @@ public sealed class ThumbnailImageManager
     public ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight)
     {
         var replacedId = ToId(imageSource.Path);
-        var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-        {
-            Path = replacedId,
-            PathHash = HashHelper.CalculateFNV1a64(replacedId),
-            ImageWidth = pixelWidth,
-            ImageHeight = pixelHeight,            
-            RatioWH = pixelWidth / (float)pixelHeight
-        });
-
+        var item = SetThumbanilSize(replacedId, pixelWidth, pixelHeight);
         return new ThumbnailSize()
         {
             Height = item.ImageHeight,
@@ -565,7 +645,7 @@ public sealed class ThumbnailImageManager
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
         {
             foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(id, StringComparison.Ordinal)).ToArray())
-            {
+            {                
                 _thumbnailDb.Delete(item.Id);
             }
         }
@@ -629,13 +709,13 @@ public sealed class ThumbnailImageManager
     }
 
 
-    readonly static QueryOptions _coverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions)
+    readonly static QueryOptions _coverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByDate, SupportedFileTypesHelper.SupportedImageFileExtensions)
     {
         FolderDepth = FolderDepth.Deep,
         ApplicationSearchFilter = "System.FileName:*cover*"
     };
 
-    readonly static QueryOptions _allSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
+    readonly static QueryOptions _allSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByDate, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
 
     private async Task<StorageFile?> GetCoverThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
     {
@@ -760,7 +840,7 @@ public sealed class ThumbnailImageManager
     // see@ https://docs.microsoft.com/ja-jp/windows/win32/wic/jpeg-xr-codec        
     static readonly BitmapPropertySet _jpegPropertySet = new BitmapPropertySet()
     {
-        { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
+        { "ImageQuality", new BitmapTypedValue(0.5d, Windows.Foundation.PropertyType.Single) },
     };
 
     static AsyncLock _renderLock = new AsyncLock();
@@ -981,20 +1061,12 @@ public sealed class ThumbnailImageManager
 
         // サムネイルサイズ情報を記録
         var replacedId = ToId(path);
-        _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-        {
-            Path = replacedId,
-            PathHash = HashHelper.CalculateFNV1a64(replacedId),
-            ImageWidth = (uint)resizedBitmap.Width,
-            ImageHeight = (uint)resizedBitmap.Height,
-            RatioWH = resizedBitmap.Width / (float)resizedBitmap.Height
-        });
-        
+        SetThumbanilSize(replacedId, (uint)resizedBitmap.Width, (uint)resizedBitmap.Height);        
         Debug.WriteLine($"thumb out <{path}> size: w= {scaledSize.Width} h= {scaledSize.Height}");
 
         // SKBitmap → SKImage → SKData (エンコード)
         using var image = SKImage.FromBitmap(resizedBitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80); // 80%品質        
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 50);
         
         // SKData → outputStream
         outputStream.SetLength(0);
@@ -1011,31 +1083,16 @@ public sealed class ThumbnailImageManager
         try
         {
             var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(ct).ConfigureAwait(false);
-
             // サムネイルサイズ情報を記録                
             var replacedId = ToId(path);
-            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-            {
-                Path = replacedId,
-                PathHash = HashHelper.CalculateFNV1a64(replacedId),
-                ImageWidth = decoder.PixelWidth,
-                ImageHeight = decoder.PixelHeight,
-                RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
-            });
-
+            SetThumbanilSize(replacedId, decoder.PixelWidth, decoder.PixelHeight);
             var pixelData = await decoder.GetPixelDataAsync().AsTask(ct).ConfigureAwait(false);
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
-
             outputStream.Size = 0;
-
             var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet).AsTask().ConfigureAwait(false);
-
             setupEncoder(decoder, encoder);
-
-            Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
             encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
-
             await encoder.FlushAsync().AsTask(ct).ConfigureAwait(false);
             await outputStream.FlushAsync().AsTask(ct).ConfigureAwait(false);
         }
@@ -1069,17 +1126,9 @@ public sealed class ThumbnailImageManager
 
             // サムネイルサイズ情報を記録                
             var replacedId = ToId(path);
-            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-            {
-                Path = replacedId,
-                PathHash = HashHelper.CalculateFNV1a64(replacedId),
-                ImageWidth = (uint)scaledSize.Width,
-                ImageHeight = (uint)scaledSize.Height,
-                RatioWH = scaledSize.Width / scaledSize.Height
-            });
-
+            SetThumbanilSize(replacedId, (uint)scaledSize.Width, (uint)scaledSize.Height);
             outputStream.SetLength(0);
-            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.8f).AsTask(ct);
+            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.5f).AsTask(ct);
             outputStream.Seek(0, SeekOrigin.Begin);
         }
         catch (Exception ex) when (ex.HResult == -1072868846)
@@ -1091,6 +1140,18 @@ public sealed class ThumbnailImageManager
 
     private async ValueTask<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
     {
+        var thumbImage = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.SingleItem);
+        if (thumbImage.Type == ThumbnailType.Image)
+        {
+            thumbImage.AsStreamForRead().CopyTo(outputStream);
+            outputStream.Seek(0, SeekOrigin.Begin);
+            return true;
+        }
+        else
+        {
+            thumbImage.Dispose();
+        }
+
         await TranscodeThumbnailImageToStreamAsync(file.Path, () => new (new FileStream(file.CreateSafeFileHandle(FileAccess.Read), FileAccess.Read)), outputStream, EncodingForImageFileThumbnailBitmap, ct);
         return true;
     }
@@ -1173,21 +1234,9 @@ public sealed class ThumbnailImageManager
             WithAspectRatio = true,
         });
 
-        // サムネイルサイズ情報を記録
-
-
         var replacedId = ToId(file.Path);
-        _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-        {
-            Path = replacedId,
-            PathHash = HashHelper.CalculateFNV1a64(replacedId),
-            ImageWidth = (uint)image.Width,
-            ImageHeight = (uint)image.Height,
-            RatioWH = (uint)image.Width / (float)image.Height
-        });
-
+        SetThumbanilSize(replacedId, (uint)image.Width, (uint)image.Height);
         image.Encode(outputStream, SKEncodedImageFormat.Png, 100);
-
         return true;
     }
 
@@ -1263,9 +1312,20 @@ public sealed class ThumbnailImageManager
             var linkedCt = linkedCts.Token;
             try
             {
+                using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, (uint)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality));
+                if (thumb.Type == ThumbnailType.Image)
+                {
+                    await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
+                    return true;
+                }
+            }
+            catch { }
+
+            try
+            {
                 using var fileStream = await file.OpenReadAsync().AsTask(ct);
-                using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
-                var video = fg.CurrentVideoStream; 
+                using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);                
+                var video = fg.CurrentVideoStream;
                 if (video.DisplayAspectRatio > 1)
                 {
                     fg.DecodePixelHeight = (int)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality);
@@ -1285,15 +1345,7 @@ public sealed class ThumbnailImageManager
             }
             catch
             {
-                try
-                {
-                    await Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
-                }
-                catch
-                {
-                    using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, (uint)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality));
-                    await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
-                }
+                await Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
             }
 
             return true;
@@ -1323,15 +1375,7 @@ public sealed class ThumbnailImageManager
     public ThumbnailSize SetThumbnailSize(string path, BitmapImage image)
     {
         var replacedId = ToId(path);
-        var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-        {
-            Path = replacedId,
-            PathHash = HashHelper.CalculateFNV1a64(replacedId),
-            ImageHeight = (uint)image.PixelHeight,
-            ImageWidth = (uint)image.PixelWidth,
-            RatioWH = image.PixelWidth / (float)image.PixelHeight
-        });
-
+        var item = SetThumbanilSize(replacedId, (uint)image.PixelWidth, (uint)image.PixelHeight);
         return new ThumbnailSize()
         {
             Height = item.ImageHeight,
@@ -1343,15 +1387,7 @@ public sealed class ThumbnailImageManager
     private ThumbnailSize SetThumbnailSize(string path, SKImageInfo imageInfo)
     {
         var replacedId = ToId(path);
-        var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-        {
-            Path = replacedId,
-            PathHash = HashHelper.CalculateFNV1a64(replacedId),
-            ImageHeight = (uint)imageInfo.Height,
-            ImageWidth = (uint)imageInfo.Width,
-            RatioWH = imageInfo.Width / (float)imageInfo.Height
-        });
-
+        var item = SetThumbanilSize(replacedId, (uint)imageInfo.Width, (uint)imageInfo.Height);
         return new ThumbnailSize()
         {
             Height = item.ImageHeight,
