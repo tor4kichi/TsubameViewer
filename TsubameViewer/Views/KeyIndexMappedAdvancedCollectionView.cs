@@ -59,7 +59,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                     var key = _toKey((T)this[index]);
                     lock (_indexUpdateLock)
                     {
-                        _keyIndexMap.Add(key, index);
+                        _keyIndexMap[key] = index;
                     }
                 }
                 break;
@@ -85,7 +85,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
             // 挿入されたアイテムのキーを取得してマップに追加
             var insertedItem = this[insertedIndex];
             var key = _toKey((T)insertedItem);
-            _keyIndexMap.Add(key, insertedIndex);
+            _keyIndexMap[key] = insertedIndex;
         }
     }
 
@@ -115,7 +115,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
             for (int i = 0; i < Count; i++)
             {
                 var key = _toKey((T)this[i]);
-                _keyIndexMap.Add(key, i);
+                _keyIndexMap[key] = i;
             }
         }
     }
