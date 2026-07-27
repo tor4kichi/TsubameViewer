@@ -39,6 +39,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         OpenListupItem.Command = Ioc.Default.GetService<OpenSecondaryListupCommand>();
         OpenViewerItem.Command = Ioc.Default.GetService<OpenImageViewerCommand>();
         SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
+        ResetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ResetThumbnailImageCommand>();
         RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();
         SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteToggleCommand>();
         StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
@@ -102,6 +103,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
             SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.EBook or Core.Models.StorageItemTypes.Movie).TrueToVisible();
+
+            ResetThumbnailImageMenuItem.CommandParameter = itemVM;
+            ResetThumbnailImageMenuItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Folder).TrueToVisible();
+
             RemoveFromAccessListMenuItem.CommandParameter = itemVM;
             RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
 
@@ -137,7 +142,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.Visibility = Visibility.Visible;
 
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
-            SetThumbnailImageMenuItem.Visibility = Visibility.Visible;            
+            SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
+            ResetThumbnailImageMenuItem.CommandParameter = itemVM;
+            ResetThumbnailImageMenuItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Folder).TrueToVisible();
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
@@ -162,6 +169,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.Visibility = Visibility.Visible;
 
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+            ResetThumbnailImageMenuItem.CommandParameter = null;
+            ResetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+
             RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
@@ -187,6 +197,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.ArchiveFolder or Core.Models.StorageItemTypes.Folder).TrueToVisible();
 
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+            ResetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;

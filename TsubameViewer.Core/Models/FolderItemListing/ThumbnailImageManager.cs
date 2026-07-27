@@ -310,7 +310,8 @@ public sealed class ThumbnailImageManager
         else if (imageSource.StorageItem is StorageFolder folder)
         {
             var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);            
-            if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry)
+            if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry
+                && !string.IsNullOrEmpty(entry.CoverImageName))
             {
                 try
                 {
@@ -368,7 +369,8 @@ public sealed class ThumbnailImageManager
             {
                 StorageFile? targetFile = null;
                 var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
-                if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry)
+                if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry
+                    && !string.IsNullOrEmpty(entry.CoverImageName))
                 {
                     try
                     {
@@ -443,6 +445,29 @@ public sealed class ThumbnailImageManager
             throw;
         }        
     }
+
+    public async Task ResetFolderThumbnailImageAsync(IImageSource folderImageSource, CancellationToken ct = default)
+    {
+        if (folderImageSource.StorageItem is StorageFolder folder)
+        {
+            var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
+            var entry = _folderCollection.FindOne(x => x.PathHash == folderPathHash);
+            if (entry != null) 
+            {
+                entry.CoverImageName = "";
+                _folderCollection.Update(entry);
+            }
+            _thumbnailImageInfoRepository.DeleteItem(folder.Path);
+            var id = ToId(folder);
+            if (TryGetThumbnailInsideId(id, out var insideId) is false) { return; }
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+                if (_thumbnailDb.Exists(insideId))
+                {
+                    _thumbnailDb.Delete(insideId);
+                }
+        }
+    }
+
 
     public async Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default)
     {
