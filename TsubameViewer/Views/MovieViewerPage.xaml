@@ -1293,7 +1293,8 @@
       <Grid CornerRadius="12"
             Height="54"
             Width="54"
-            Background="{ThemeResource SystemChromeLowColor}">
+            Background="{ThemeResource SystemChromeLowColor}"
+            Visibility="{x:Bind _windowContext.IsPrimary, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
         <Button Command="{x:Bind BackNavigationRequestCommand}"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"

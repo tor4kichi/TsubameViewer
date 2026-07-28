@@ -159,6 +159,7 @@
     <Compile Include="Services\BinaryObjectSerializer.cs" />
     <Compile Include="Contracts\Services\IMessageDialogService.cs" />
     <Compile Include="Services\MigemoService.cs" />
+    <Compile Include="Services\SecondaryWindowService.cs" />
     <Compile Include="Services\SyncStorageCacheService.cs" />
     <Compile Include="Services\MessageDialogService.cs" />
     <Compile Include="Services\Navigation\IViewLocator.cs" />
@@ -184,6 +185,7 @@
     <Compile Include="ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
     <Compile Include="ViewModels\ApplicationSettings.cs" />
     <Compile Include="ViewModels\LatestContentViewUpdateMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenViewerWithSecondaryWindowCommand.cs" />
     <Compile Include="ViewModels\PageNavigation\NavigationCompletedMessage.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ResetThumbnailImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />
@@ -238,6 +240,9 @@
     <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
     <Compile Include="AppShellViewModel.cs" />
     <Compile Include="Views\SearchResultPageViewModel.cs" />
+    <Compile Include="SecondaryAppShell.xaml.cs">
+      <DependentUpon>SecondaryAppShell.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\SettingsPageViewModel.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
@@ -572,6 +577,10 @@
     <Page Include="Views\SearchResultPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="SecondaryAppShell.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>

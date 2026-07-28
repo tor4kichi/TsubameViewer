@@ -132,6 +132,7 @@ Sort_DefaultChildItemSort = 子文件夹中项目的排序顺序
 ChildImagesFolderOpenMode = 如何打开子文件夹（图片）
 OpenImageViewer = 在查看器中打开
 OpenFolderListup = 列出文件
+OpenViewerWithSecondaryWindow = 在新窗口中打开
 DefaultFolderOrArchiveOpenMode.Viewer = 在查看器中打开
 DefaultFolderOrArchiveOpenMode.Listup = 列出文件
 OpenWithExplorer = 在资源管理器中打开
@@ -174,7 +175,7 @@ ThumbnailImageCacheMode_Desc = “始终生成”会使用应用的图像解码�
 ThumbnailImageCacheMode.AlwaysGenerateCache = 始终生成
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = 优先生成文件系统中的缩略图
 ThumbnailImageCacheMode.NeverGenerateCache = 不缓存
-SetToParentFolderThumbnailImage = 可以覆盖文件夹中的 cover.jpg 文件吗？
+SetToParentFolderThumbnailImage = 可以覆盖文件夹中的 cover.jpg 文件吗？旧的 cover.jpg 文件将被删除。
 
 
 

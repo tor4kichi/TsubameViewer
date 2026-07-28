@@ -32,6 +32,7 @@ using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -316,6 +317,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     internal readonly MovieViewerPageViewModel _vm;
     private readonly ThumbnailImageManager _thumbanilManager;
     readonly IMessenger _messenger;
+    private readonly SecondaryWindowService _secondaryWindowService;
+    private readonly IWindowManagementAware _windowContext;
     readonly DispatcherQueue _dispatcherQueue;
 
     private MediaPlayer? _mediaPlayer;
@@ -415,6 +418,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<MovieViewerPageViewModel>();
         _thumbanilManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
+        _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        

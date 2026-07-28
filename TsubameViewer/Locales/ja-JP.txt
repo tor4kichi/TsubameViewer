@@ -132,6 +132,7 @@ Sort_DefaultChildItemSort = 子フォルダ内アイテムの並び順
 ChildImagesFolderOpenMode = 子フォルダ（画像）の開き方
 OpenImageViewer = ビューアで開く
 OpenFolderListup = ファイルを一覧表示
+OpenViewerWithSecondaryWindow = 新しいウィンドウで開く
 DefaultFolderOrArchiveOpenMode.Viewer = ビューアで開く
 DefaultFolderOrArchiveOpenMode.Listup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
@@ -174,7 +175,7 @@ ThumbnailImageCacheMode_Desc = 「常に生成」はアプリの画像デコー�
 ThumbnailImageCacheMode.AlwaysGenerateCache = 常に生成
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = ファイルシステムのサムネイル生成を優先
 ThumbnailImageCacheMode.NeverGenerateCache = キャッシュしない
-SetToParentFolderThumbnailImage = フォルダ内の cover.jpg を上書きしてもいいですか？
+SetToParentFolderThumbnailImage = フォルダ内の cover.jpg を上書きしてもいいですか？ 古いcover.jpg はゴミ箱へ送られます
 
 
 

@@ -132,6 +132,7 @@ Sort_DefaultChildItemSort = Ordre de tri des éléments dans un sous-dossier
 ChildImagesFolderOpenMode = Comment ouvrir un sous-dossier (images)
 OpenImageViewer = Ouvrir dans le visualiseur
 OpenFolderListup = Liste des fichiers
+OpenViewerWithSecondaryWindow = Ouvrir dans une nouvelle fenêtre
 DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le visualiseur
 DefaultFolderOrArchiveOpenMode.Listup = Liste des fichiers
 OpenWithExplorer = Ouvrir dans l'explorateur de fichiers
@@ -174,7 +175,7 @@ ThumbnailImageCacheMode_Desc = L'option « Toujours générer » utilise le déc
 ThumbnailImageCacheMode.AlwaysGenerateCache = Générer en permanence
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Privilégier les vignettes du système de fichiers
 ThumbnailImageCacheMode.NeverGenerateCache = Ne pas mettre en cache
-SetToParentFolderThumbnailImage = Est-il possible d'écraser le fichier cover.jpg dans le dossier ?
+SetToParentFolderThumbnailImage = Est-il possible d'écraser le fichier cover.jpg dans le dossier ? l'ancien fichier cover.jpg sera supprimé.
 
 
 

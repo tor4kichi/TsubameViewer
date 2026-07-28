@@ -24,6 +24,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -80,6 +81,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
+    readonly CoreApplicationView _coreAppView;
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
 
     public ImageViewerPage()
     {
@@ -89,6 +93,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
         _coreAppView = CoreApplication.GetCurrentView();
+        _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -169,7 +175,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }    
 
-    readonly CoreApplicationView _coreAppView;
     Vector2 _lastPointerPosition;
     int _lastPageChangeRequestImageIndex;    
     void RefreshPageSelectorTooltipContainerTranslation()

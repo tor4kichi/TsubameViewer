@@ -132,6 +132,7 @@ Sort_DefaultChildItemSort = Sorting order of items within a subfolder
 ChildImagesFolderOpenMode = How to open a subfolder (images)
 OpenImageViewer = Open in viewer
 OpenFolderListup = List files
+OpenViewerWithSecondaryWindow = Open in a new window
 DefaultFolderOrArchiveOpenMode.Viewer = Open in viewer
 DefaultFolderOrArchiveOpenMode.Listup = List files
 OpenWithExplorer = Open in explorer
@@ -174,7 +175,7 @@ ThumbnailImageCacheMode_Desc = “Always Generate” uses the app's image decode
 ThumbnailImageCacheMode.AlwaysGenerateCache = Always Generate
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Prioritize File System Thumbnails
 ThumbnailImageCacheMode.NeverGenerateCache = Do Not Cache
-SetToParentFolderThumbnailImage = Is it okay to overwrite the cover.jpg file in the folder?
+SetToParentFolderThumbnailImage = Is it okay to overwrite the cover.jpg file in the folder? the old cover.jpg will be sent to the trash.
 
 
 

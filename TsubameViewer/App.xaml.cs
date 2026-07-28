@@ -39,7 +39,9 @@ using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.WindowManagement;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Media.Animation;
 #nullable enable
 namespace TsubameViewer;
@@ -95,6 +97,12 @@ sealed partial class App : Application
         HandleException(e.Exception);
     }
 
+    public SecondaryWindowItem InitializeAppWindow(AppWindow appWindow)
+    {
+        var appShell = Container.Resolve<SecondaryAppShell>();
+        ElementCompositionPreview.SetAppWindowContent(appWindow, appShell);
+        return new SecondaryWindowItem(appWindow, appShell);
+    }
 
     public void HandleException(Exception exception)
     {
@@ -139,6 +147,7 @@ sealed partial class App : Application
             reuse: Reuse.Singleton,
             made: Parameters.Of.Type<Func<ILiteDatabase>>(serviceKey: "TemporaryDb")
         );
+        container.Register<SecondaryWindowService>(reuse: Reuse.Singleton);
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         

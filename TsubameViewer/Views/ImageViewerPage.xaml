@@ -528,9 +528,11 @@
         </Style>
       </Grid.Resources>
 
-      <Button x:Name="BottomUIBackNavigationButton" Click="ForceClosePage"
+      <Button x:Name="BottomUIBackNavigationButton" 
+              Click="ForceClosePage"
               AccessKey="Q"
               HorizontalAlignment="Left"
+              Visibility="{x:Bind _windowContext.IsPrimary, Converter={StaticResource TrueToVisibleConverter}}"
               >
         <SymbolIcon Symbol="Clear" />
 
