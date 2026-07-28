@@ -258,8 +258,10 @@ public sealed class ThumbnailImageManager
         return imageSource.StorageItem is StorageFolder folder ? ToId(folder) : ToId(imageSource.Path);
     }
 
+    static AsyncLock _renderLock = new AsyncLock();
     public async ValueTask<Stream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
+        using var releaser = await _renderLock.LockAsync(ct);
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
         if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon)
         {
@@ -315,7 +317,7 @@ public sealed class ThumbnailImageManager
         return null;
     }
 
-    public async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
+    async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
     {
         StorageFile? targetFile = null;
         if (imageSource.StorageItem is StorageFile file
@@ -354,7 +356,6 @@ public sealed class ThumbnailImageManager
 
         if (targetFile != null)
         {
-            using var releaser = await _renderLock.LockAsync(ct);
             var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem);
             if (skipIfIcon && image.Type == ThumbnailType.Icon)
             {
@@ -378,7 +379,6 @@ public sealed class ThumbnailImageManager
         if (imageSource == null) { return null; }
 
         var itemId = GetId(imageSource);        
-        using var releaser = await _renderLock.LockAsync(ct);
         try
         {
             if (imageSource.StorageItem is StorageFolder folder)
@@ -822,7 +822,6 @@ public sealed class ThumbnailImageManager
         { "ImageQuality", new BitmapTypedValue(0.5d, Windows.Foundation.PropertyType.Single) },
     };
 
-    static AsyncLock _renderLock = new AsyncLock();
     private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Func<ValueTask<Stream>> streamOpener, Stream outputStream, float imageQuality, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
