@@ -72,19 +72,25 @@ public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
                 var folderStorageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(imageSource.Path));
                 if (folderStorageItem is not StorageFolder folder) { throw new InvalidOperationException(); }
 
-                bool isExistFile = false;
+                StorageFile? existFile = null;
                 try
                 {
-                    isExistFile = await folder.GetFileAsync(ThumbnailImageManager.DefaultCoverImageFileName) != null;
+                    existFile = await folder.GetFileAsync(ThumbnailImageManager.DefaultCoverImageFileName);
                 }
                 catch (FileNotFoundException) { }
-                if (isExistFile)
+                if (existFile != null)
                 {
                     if (await _dialogService.ShowMessageDialogAsync(
                         "SetToParentFolderThumbnailImage".Translate(),
                         "Overwrite".Translate(),
                         "Cancel".Translate(),
                         title:"SetThumbnailImage".Translate()) is false) { return; }
+
+                    try
+                    {
+                        await existFile.DeleteAsync(StorageDeleteOption.Default);
+                    }
+                    catch { }
                 }
 
                 await _thumbnailManager.PrepareToParentFolderThumbnailImageAsync(imageSource);
