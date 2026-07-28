@@ -105,7 +105,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.EBook or Core.Models.StorageItemTypes.Movie).TrueToVisible();
 
             ResetThumbnailImageMenuItem.CommandParameter = itemVM;
-            ResetThumbnailImageMenuItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            ResetThumbnailImageMenuItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.EBook or Core.Models.StorageItemTypes.Movie).TrueToVisible();
 
             RemoveFromAccessListMenuItem.CommandParameter = itemVM;
             RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
@@ -141,10 +141,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.CommandParameter = itemVM;
             OpenViewerItem.Visibility = Visibility.Visible;
 
-            SetThumbnailImageMenuItem.CommandParameter = itemVM;
-            SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
-            ResetThumbnailImageMenuItem.CommandParameter = itemVM;
-            ResetThumbnailImageMenuItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            SetThumbnailImageMenuItem.CommandParameter = null;
+            SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+            ResetThumbnailImageMenuItem.CommandParameter = null;
+            ResetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
@@ -168,6 +168,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.CommandParameter = itemVM;
             OpenViewerItem.Visibility = Visibility.Visible;
 
+            SetThumbnailImageMenuItem.CommandParameter = null;
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             ResetThumbnailImageMenuItem.CommandParameter = null;
             ResetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;

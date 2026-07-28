@@ -1,11 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using I18NPortable;
+using System;
 using System.IO;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views.Dialogs;
+using Windows.Storage;
+using Windows.UI.Xaml.Controls;
 
 
 #nullable enable
@@ -21,18 +28,23 @@ public sealed class ThumbnailImageUpdateRequestMessage : ValueChangedMessage<str
 public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
 {
     readonly IMessenger _messenger;
+    private readonly IMessageDialogService _dialogService;
     readonly ThumbnailImageManager _thumbnailManager;
-
-
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    
     public bool IsArchiveThumbnailSetToFile { get; set; }
 
     public ChangeStorageItemThumbnailImageCommand(
         IMessenger messenger,
-        ThumbnailImageManager thumbnailManager
+        IMessageDialogService dialogService,
+        ThumbnailImageManager thumbnailManager,
+        SourceStorageItemsRepository sourceStorageItemsRepository
         ) 
     {
         _messenger = messenger;
+        _dialogService = dialogService;
         _thumbnailManager = thumbnailManager;
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
     }
 
     public override bool CanExecute(object parameter)
@@ -41,8 +53,9 @@ public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
         {
             parameter = itemVM.Item;
         }
-
-        return parameter is IImageSource;
+        
+        return parameter is IImageSource imageSource
+            && imageSource is StorageItemImageSource;
     }
 
     public override async void Execute(object parameter)
@@ -56,7 +69,25 @@ public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
         {
             try
             {
-                await _thumbnailManager.SetParentThumbnailImageAsync(imageSource, IsArchiveThumbnailSetToFile);
+                var folderStorageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(imageSource.Path));
+                if (folderStorageItem is not StorageFolder folder) { throw new InvalidOperationException(); }
+
+                bool isExistFile = false;
+                try
+                {
+                    isExistFile = await folder.GetFileAsync(ThumbnailImageManager.DefaultCoverImageFileName) != null;
+                }
+                catch (FileNotFoundException) { }
+                if (isExistFile)
+                {
+                    if (await _dialogService.ShowMessageDialogAsync(
+                        "SetToParentFolderThumbnailImage".Translate(),
+                        "Overwrite".Translate(),
+                        "Cancel".Translate(),
+                        title:"SetThumbnailImage".Translate()) is false) { return; }
+                }
+
+                await _thumbnailManager.PrepareToParentFolderThumbnailImageAsync(imageSource);
                 _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
                 _messenger.Send(new ThumbnailImageUpdateRequestMessage(Path.GetDirectoryName(imageSource.Path)));
             }

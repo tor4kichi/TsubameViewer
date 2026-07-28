@@ -876,7 +876,8 @@
                   
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=SetThumbnailImage}"
                                   Command="{x:Bind SetThumbnailImageCommand}"
-                                  AccessKey="T">
+                                  AccessKey="T"
+                                  Visibility="Collapsed">
                     <MenuFlyoutItem.KeyboardAccelerators>
                       <KeyboardAccelerator Key="T" />
                     </MenuFlyoutItem.KeyboardAccelerators>

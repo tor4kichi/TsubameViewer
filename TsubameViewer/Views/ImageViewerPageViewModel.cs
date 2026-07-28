@@ -1245,12 +1245,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         var flattenImageSource1 = imageSource1.FlattenAlbamItemInnerImageSource();
                         var flattenImageSource2 = imageSource2.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut = _folderListingSettings.IsGenerateThumbnailEnabled;
+                        bool isEnabledThumbnailOut = _folderListingSettings.ThumbnailImageCacheMode != ThumbnailImageCacheMode.NeverGenerateCache;
                         if (isEnabledThumbnailOut)
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
+                                using var imageStream = await Task.Run(async () => await _thumbnailManager.GetCachedImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
                                 await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;
@@ -1305,12 +1305,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     if (direction == IndexMoveDirection.Refresh)
                     {
                         var flattenImageSource = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut = _folderListingSettings.IsGenerateThumbnailEnabled;
+                        bool isEnabledThumbnailOut = _folderListingSettings.ThumbnailImageCacheMode != ThumbnailImageCacheMode.NeverGenerateCache;
                         if (isEnabledThumbnailOut)
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
+                                using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, imageQuality: 0.5f, ct: ct));
                                 var thumbImage = new BitmapImage();
                                 await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;

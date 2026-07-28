@@ -2540,7 +2540,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }
             }
             stream.Seek(0);
-            await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream.AsStreamForRead(), true, ct);
+            //await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream.AsStreamForRead(), true, ct);
         }
             
             

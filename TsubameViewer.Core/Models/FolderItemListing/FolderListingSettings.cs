@@ -15,12 +15,12 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     public FolderListingSettings()
     {
         _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
-        _IsGenerateThumbnailEnabled = Read(true, nameof(IsGenerateThumbnailEnabled));
         _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
         _isInPageSearchWithMigemo = Read(true, nameof(IsInPageSearchWithMigemo));
         _thumbnailDecodeType = Read(ThumbnailDecodeMethod.Skia, nameof(ThumbnailDecodeType));
         _FolderItemThumbnailQuality = Read(1f, nameof(FolderItemThumbnailQuality));
+        _thumbnailImageCacheMode = Read(ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon, nameof(ThumbnailImageCacheMode));
     }
 
     private FileDisplayMode _FileDisplayMode;
@@ -28,13 +28,6 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     {
         get { return _FileDisplayMode; }
         set { SetProperty(ref _FileDisplayMode, value); }
-    }
-
-    private bool _IsGenerateThumbnailEnabled;
-    public bool IsGenerateThumbnailEnabled
-    {
-        get { return _IsGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsGenerateThumbnailEnabled, value); }
     }
 
     private float _FolderItemThumbnailQuality;
@@ -71,6 +64,13 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         get => _thumbnailDecodeType;
         set => SetProperty(ref _thumbnailDecodeType, value);
     }
+
+    ThumbnailImageCacheMode _thumbnailImageCacheMode;
+    public ThumbnailImageCacheMode ThumbnailImageCacheMode
+    {
+        get => _thumbnailImageCacheMode;
+        set => SetProperty(ref _thumbnailImageCacheMode, value);
+    }
 }
 
 public enum ThumbnailDecodeMethod
@@ -78,4 +78,11 @@ public enum ThumbnailDecodeMethod
     Skia,
     WindowsImageCodec,
     Win2D,
+}
+
+public enum ThumbnailImageCacheMode
+{
+    AlwaysGenerateCache,
+    OnlyGenerateCacheIfFsThumbnailImageAsIcon,
+    NeverGenerateCache,
 }

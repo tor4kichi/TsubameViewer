@@ -169,6 +169,17 @@ ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
 FolderItemThumbnailQuality = 缩略图质量
+ThumbnailImageCacheMode = 缩略图缓存生成模式
+ThumbnailImageCacheMode_Desc = “始终生成”会使用应用的图像解码器生成所有缩略图。“优先使用文件系统的缩略图”原则上使用操作系统的缩略图，但仅对zip、epub等不支持的格式由应用自行生成缩略图。“不缓存”不会生成新的缓存，仅使用现有的图像缓存。
+ThumbnailImageCacheMode.AlwaysGenerateCache = 始终生成
+ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = 优先生成文件系统中的缩略图
+ThumbnailImageCacheMode.NeverGenerateCache = 不缓存
+SetToParentFolderThumbnailImage = 可以覆盖文件夹中的 cover.jpg 文件吗？
+
+
+
+
+
 
 #### History Page
 HistoryPage_Title = 历史

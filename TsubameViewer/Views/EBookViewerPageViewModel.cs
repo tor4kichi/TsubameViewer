@@ -955,7 +955,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 .Select(x => new TocItemViewModel(x)).ToList();
         }
 
-        var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(CurrentFolderItem, ct));
+        var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(CurrentFolderItem, 1.0f, ct));
         if (thumbnailImageStream != null)
         {
             using (var ras = thumbnailImageStream.AsRandomAccessStream())

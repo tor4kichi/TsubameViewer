@@ -169,6 +169,17 @@ ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
 FolderItemThumbnailQuality = Thumbnail image quality
+ThumbnailImageCacheMode = Thumbnail Image Caching Mode
+ThumbnailImageCacheMode_Desc = “Always Generate” uses the app's image decoder to generate all thumbnail images. “Prioritize File System Thumbnails” generally uses the OS's thumbnail images, but the app generates thumbnails only for unsupported formats such as ZIP and EPUB. “Do Not Cache” does not generate a new cache and uses only the existing image cache.
+ThumbnailImageCacheMode.AlwaysGenerateCache = Always Generate
+ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Prioritize File System Thumbnails
+ThumbnailImageCacheMode.NeverGenerateCache = Do Not Cache
+SetToParentFolderThumbnailImage = Is it okay to overwrite the cover.jpg file in the folder?
+
+
+
+
+
 
 #### History Page
 HistoryPage_Title = History

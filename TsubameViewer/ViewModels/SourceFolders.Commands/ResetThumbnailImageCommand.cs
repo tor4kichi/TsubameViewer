@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using Windows.Storage;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
@@ -27,14 +28,14 @@ internal class ResetThumbnailImageCommand : ImageSourceCommandBase
 
     protected override bool CanExecute(IImageSource imageSource)
     {
-        return imageSource?.StorageItem is StorageFolder;
+        return imageSource is StorageItemImageSource;
     }
     protected override async void Execute(IImageSource imageSource)
     {
         try
         {
             await _thumbnailManager.ResetFolderThumbnailImageAsync(imageSource);
-            _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
+            //_messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
             _messenger.Send(new ThumbnailImageUpdateRequestMessage(imageSource.Path));
         }
         catch

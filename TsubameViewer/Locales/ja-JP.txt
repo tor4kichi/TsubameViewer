@@ -164,11 +164,22 @@ StorageItemSettings_ReadingFinishedThresholdForEBookViewer = 小説ビューア�
 StorageItemSettings_ReadingFinishedThresholdForMovieViewer = 動画ビューアの読了判定のしきい値
 ListupPage_DetectContentsChanged = コンテンツが変更されました。ページを更新できます
 ThumbnailDecodeMethod = サムネイル画像のデコード方法
-ThumbnailDecodeMethod_Desc = 画像のデコード方法を指定できます。Skiaが処理速度・画質の面で最適ですが、Skiaのままでは動作に問題があると感じられる場合に他の選択肢をご利用ください。
+ThumbnailDecodeMethod_Desc = 画像のデコード方法を指定できます。Skiaが処理速度・画質の面で最適ですが、Skiaのままでは動作に問題があると感じられる場合に他の選択肢をご利用ください。ファイルシステムによるサムネイル画像生成には影響しません。
 ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
 FolderItemThumbnailQuality = サムネイル画像の画質
+ThumbnailImageCacheMode = サムネイル画像のキャッシュ生成モード
+ThumbnailImageCacheMode_Desc = 「常に生成」はアプリの画像デコーダーを使って全てのサムネイル画像を生成します。「ファイルシステムのサムネイル画像を優先」では基本的にOSのサムネイル画像を使うが、zipやepubなど非対応のものだけアプリ側でサムネイル画像を生成します。「キャッシュしない」は新しいキャッシュを生成せず、既にある画像キャッシュのみ利用します。
+ThumbnailImageCacheMode.AlwaysGenerateCache = 常に生成
+ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = ファイルシステムのサムネイル生成を優先
+ThumbnailImageCacheMode.NeverGenerateCache = キャッシュしない
+SetToParentFolderThumbnailImage = フォルダ内の cover.jpg を上書きしてもいいですか？
+
+
+
+
+
 
 #### History Page
 HistoryPage_Title = 履歴

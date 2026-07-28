@@ -17,6 +17,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -257,22 +258,37 @@ public sealed class ThumbnailImageManager
         return imageSource.StorageItem is StorageFolder folder ? ToId(folder) : ToId(imageSource.Path);
     }
 
-    public async ValueTask<Stream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<Stream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
-        if (_folderListingSettings.IsGenerateThumbnailEnabled)
+        if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon)
         {
-            var stream = await GetImageStreamAsync(imageSource, outputStream, ct);
+            var fsImageStream = await GetImageStreamFromFileSystemAsync(imageSource, true, ct);
+            if (fsImageStream != null)
+            {
+                return fsImageStream;
+            }
+
+            var stream = await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
             if (stream != null && stream.Length != 0)
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
             }
             return stream;
         }
-        else 
+        else if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.AlwaysGenerateCache)
         {
-            return await GetImageStreamFromFileSystemAsync(imageSource, ct) 
-                ?? await GetImageStreamAsync(imageSource, outputStream, ct);
+            var stream = await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+            if (stream != null && stream.Length != 0)
+            {
+                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+            }
+            return stream;
+        }
+        else
+        {
+            return await GetImageStreamFromFileSystemAsync(imageSource, false, ct)
+                ?? await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
         }
     }
 
@@ -299,7 +315,7 @@ public sealed class ThumbnailImageManager
         return null;
     }
 
-    public async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, CancellationToken ct = default)
+    public async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
     {
         StorageFile? targetFile = null;
         if (imageSource.StorageItem is StorageFile file
@@ -340,7 +356,7 @@ public sealed class ThumbnailImageManager
         {
             using var releaser = await _renderLock.LockAsync(ct);
             var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem);
-            if (image.Type == ThumbnailType.Icon)
+            if (skipIfIcon && image.Type == ThumbnailType.Icon)
             {
                 image.Dispose();
                 return null;
@@ -357,7 +373,7 @@ public sealed class ThumbnailImageManager
     }    
 
     // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
-    public async ValueTask<Stream?> GetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<Stream?> GetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
         if (imageSource == null) { return null; }
 
@@ -395,7 +411,7 @@ public sealed class ThumbnailImageManager
 
                 outputStream ??= new MemoryStream();                
                 if (targetFile != null
-                    && await GenerateThumbnailImageToStreamAsync(targetFile, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                    && await GenerateThumbnailImageToStreamAsync(targetFile, outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
                     return outputStream;
                 }
@@ -404,20 +420,20 @@ public sealed class ThumbnailImageManager
                 && (file.IsSupportedMangaFile() || file.IsSupportedEBookFile() || file.IsSupportedMovieFile()))
             {
                 outputStream ??= new MemoryStream();
-                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
                     return outputStream;
                 }
             }
             else if (imageSource is AlbamItemImageSource albamItemImageSource)
             {
-                return await GetImageStreamAsync(albamItemImageSource.InnerImageSource, outputStream, ct);
+                return await GetImageStreamAsync(albamItemImageSource.InnerImageSource, outputStream, imageQuality, ct);
             }
             else if (imageSource is AlbamImageSource albamImageSource)
             {
                 var sampleImageSource = await albamImageSource.GetSampleImageSourceAsync(ct);
                 if (sampleImageSource == null) { return null; }
-                return await GetImageStreamAsync(sampleImageSource, outputStream, ct);
+                return await GetImageStreamAsync(sampleImageSource, outputStream, imageQuality, ct);
             }
             else
             {
@@ -431,7 +447,13 @@ public sealed class ThumbnailImageManager
                 }
                 else
                 {
-                    await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    await TranscodeThumbnailImageToStreamAsync(
+                        imageSource.Path, 
+                        async () => await imageSource.GetImageStreamAsync(ct),
+                        outputStream,
+                        imageQuality,
+                        EncodingForFolderOrArchiveFileThumbnailBitmap, 
+                        ct);
                     return outputStream;
                 }
             }
@@ -466,64 +488,52 @@ public sealed class ThumbnailImageManager
                     _thumbnailDb.Delete(insideId);
                 }
         }
+        else if (folderImageSource.StorageItem is StorageFile file)
+        {
+            _thumbnailImageInfoRepository.DeleteItem(file.Path);
+            var id = ToId(file);
+            if (TryGetThumbnailInsideId(id, out var insideId) is false) { return; }
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+                if (_thumbnailDb.Exists(insideId))
+                {
+                    _thumbnailDb.Delete(insideId);
+                }
+        }
     }
 
+    public const string DefaultCoverImageFileName = "cover.jpg";
 
-    public async Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default)
+    public async Task PrepareToParentFolderThumbnailImageAsync(IImageSource childImageSource, float imageQuality = 1f,  CancellationToken ct = default)
     {
-        // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
-        // InMemoryRandomAccessStreamを使用している
-        using var stream = new MemoryStream();
-        var imageMemoryStream = await GetImageStreamAsync(childImageSource, stream, ct);
-        if (imageMemoryStream == null) { return; }
-
-        using (imageMemoryStream)
+        if (childImageSource is StorageItemImageSource folderItem)
         {
-            bool requireTranscode = false;
+            var folderStorageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
+            if (folderStorageItem is not StorageFolder folder) { throw new InvalidOperationException(); }
 
-            if (childImageSource is ArchiveEntryImageSource archiveEntry)
+            var imageStream = await GetImageStreamAsync(childImageSource, null, imageQuality, ct);
+            if (imageStream == null) { throw new InvalidOperationException(); }
+            imageStream.Seek(0, SeekOrigin.Begin);
+            var coverFile = await folder.CreateFileAsync("cover.jpg", CreationCollisionOption.ReplaceExisting);
+            using (imageStream)
+            using (var fs = await coverFile.OpenStreamForWriteAsync())
             {
-                var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
-                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+                imageStream.CopyTo(fs);
+            }
+
+            _folderCollection.Upsert(new ThumbnilFolderEntry
+            {
+                PathHash = HashHelper.CalculateFNV1a64(folder.Path),
+                CoverImageName = coverFile.Name,
+            });
+
+            _thumbnailImageInfoRepository.DeleteItem(folder.Path);
+            var id = ToId(folder);
+            if (TryGetThumbnailInsideId(id, out var insideId) is false) { return; }
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+                if (_thumbnailDb.Exists(insideId))
                 {
-                    await SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+                    _thumbnailDb.Delete(insideId);
                 }
-                else
-                {
-                    await SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
-            }
-            else if (childImageSource is PdfPageImageSource pdf)
-            {
-                await SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-            }
-            else if (childImageSource is StorageItemImageSource folderItem)
-            {
-                var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
-                if (folder == null) { throw new InvalidOperationException(); }
-                _folderCollection.Upsert(new ThumbnilFolderEntry 
-                {
-                    PathHash = HashHelper.CalculateFNV1a64(folder.Path),
-                    CoverImageName = folderItem.StorageItem.Name,
-                });
-                await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
-            }
-            else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
-            {
-                var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
-                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
-                {
-                    await SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
-                else
-                {
-                    await SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
         }
     }
 
@@ -581,62 +591,6 @@ public sealed class ThumbnailImageManager
     }
 
     #endregion
-
-    public async Task SetThumbnailAsync(IStorageItem targetItem, Stream bitmapImage, bool requireTrancode, CancellationToken ct)
-    {
-        await Task.Run(async () =>
-        {
-            var itemId = ToId(targetItem);
-            
-            if (requireTrancode)
-            {
-                using (var memoryStream = new MemoryStream())
-                {
-                    await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    using (await _fileReadWriteLock.LockAsync(ct))
-                    {
-                        UploadWithRetry(itemId, targetItem.Name, memoryStream);
-                    }
-                }
-            }
-            else
-            {
-                using (await _fileReadWriteLock.LockAsync(ct))
-                {
-                    UploadWithRetry(itemId, targetItem.Name, bitmapImage);
-                }
-            }
-        });
-    }
-
-
-    public async Task SetArchiveEntryThumbnailAsync(StorageFile targetItem, IArchiveEntry entry, Stream bitmapImage, bool requireTrancode, CancellationToken ct)
-    {
-        await Task.Run(async () =>
-        {
-            var path = GetArchiveEntryPath(targetItem, entry);
-            var itemId = ToId(path);
-            using (await _fileReadWriteLock.LockAsync(ct))
-            {
-                if (requireTrancode)
-                {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        await TranscodeThumbnailImageToStreamAsync(path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-                        UploadWithRetry(itemId, targetItem.Name, memoryStream);
-
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-                    }
-                }
-                else
-                {
-                    UploadWithRetry(itemId, targetItem.Name, bitmapImage);
-                }
-            }
-        });
-    }
 
     public async Task DeleteAllThumbnailsAsync()
     {
@@ -712,7 +666,7 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    public async ValueTask<Stream> GetFolderThumbnailImageFileAsync(StorageFolder folder, CancellationToken ct)
+    public async ValueTask<Stream> GetFolderThumbnailImageFileAsync(StorageFolder folder, float imageQuality, CancellationToken ct)
     {
         var itemId = ToId(folder);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
@@ -727,7 +681,7 @@ public sealed class ThumbnailImageManager
 
         var file = await GetCoverThumbnailImageAsync(folder, ct);
         if (file == null) { return Stream.Null; }
-        return await GenerateThumbnailImageAsync(file, itemId, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+        return await GenerateThumbnailImageAsync(file, itemId, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 #else
         return null;
 #endif
@@ -776,18 +730,18 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    public async Task<Stream?> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
+    public async Task<Stream?> GetFileThumbnailImageStreamAsync(StorageFile file, float imageQuality, CancellationToken ct)
     {
         var outputStream = new MemoryStream();
         try
         {
             if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
             {
-                return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : null;
+                return await GenerateThumbnailImageToStreamAsync(file, outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : null;
             }
             else
             {
-                return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForImageFileThumbnailBitmap, ct) ? outputStream : null;
+                return await GenerateThumbnailImageToStreamAsync(file, outputStream, imageQuality, EncodingForImageFileThumbnailBitmap, ct) ? outputStream : null;
             }
         }
         catch
@@ -797,13 +751,13 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async ValueTask<Stream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask<Stream> GenerateThumbnailImageAsync(StorageFile file, string itemId, float imageQuality, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         bool result = false;
         var memoryStream = new MemoryStream();        
         try
         {            
-            result = await GenerateThumbnailImageToStreamAsync(file, memoryStream, setupEncoder, ct);
+            result = await GenerateThumbnailImageToStreamAsync(file, memoryStream, imageQuality, setupEncoder, ct);
 
             if (result is false) { return Stream.Null; }
 
@@ -821,43 +775,43 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async ValueTask<bool> GenerateThumbnailImageToStreamAsync(StorageFile file, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask<bool> GenerateThumbnailImageToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         return await (file.FileType.ToLowerInvariant() switch
         {
-            SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.CbzFileType => ZipFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.CbrFileType => RarFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.SevenZipFileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Cb7FileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.TarFileType => TarFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.JfifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_Mp4FileType=> FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_HevcFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_M4vFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_MovFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_MTsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_M2TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_AviFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_WmvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_FlvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.CbzFileType => ZipFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.CbrFileType => RarFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.SevenZipFileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Cb7FileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.TarFileType => TarFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.JfifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_Mp4FileType=> FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_HevcFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_M4vFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_MovFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_MTsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_M2TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_AviFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_WmvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
+            SupportedFileTypesHelper.Movie_FlvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct),
             _ => throw new NotSupportedException(file.FileType)
         });
     }
@@ -869,7 +823,7 @@ public sealed class ThumbnailImageManager
     };
 
     static AsyncLock _renderLock = new AsyncLock();
-    private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Func<ValueTask<Stream>> streamOpener, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Func<ValueTask<Stream>> streamOpener, Stream outputStream, float imageQuality, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
         {
@@ -894,39 +848,39 @@ public sealed class ThumbnailImageManager
                     {
                         if (inputStream.CanSeek)
                         {
-                            await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                            await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                         }
                         else
                         {
                             inputStream.CopyTo(outputStream);
                             outputStream.Seek(0, SeekOrigin.Begin);
-                            await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                            await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                         }
                     }
                     else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
                     {
                         if (inputStream.CanSeek)
                         {
-                            await TranscodeWindowsImageCodecAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                            await TranscodeWindowsImageCodecAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                         }
                         else
                         {
                             inputStream.CopyTo(outputStream);
                             outputStream.Seek(0, SeekOrigin.Begin);
-                            await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                            await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                         }
                     }
                     else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
                     {
                         if (inputStream.CanSeek)
                         {
-                            await TranscodeWithWin2DAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                            await TranscodeWithWin2DAsync(path, inputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                         }
                         else
                         {
                             inputStream.CopyTo(outputStream);
                             outputStream.Seek(0, SeekOrigin.Begin);
-                            await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                            await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                         }
                     }
                 }
@@ -938,18 +892,20 @@ public sealed class ThumbnailImageManager
             {
                 using (var inputStream = await streamOpener())
                 {
+                    outputStream.Seek(0, SeekOrigin.Begin);
                     inputStream.CopyTo(outputStream);
                     outputStream.Seek(0, SeekOrigin.Begin);
-                    await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                 }
             }
             else
             {
                 using (var inputStream = await streamOpener())
                 {
+                    outputStream.Seek(0, SeekOrigin.Begin);
                     inputStream.CopyTo(outputStream);
                     outputStream.Seek(0, SeekOrigin.Begin);
-                    await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                 }
             }
         }
@@ -960,21 +916,21 @@ public sealed class ThumbnailImageManager
                 await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), outputStream.AsOutputStream()).AsTask(ct);
                 if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
                 {
-                    await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                 }
                 else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
                 {
-                    await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                    await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                 }
                 else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
                 {
-                    await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                    await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                 }
             }
         }
     }
 
-    private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Stream stream, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Stream stream, Stream outputStream, float imageQuality, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
         {
@@ -994,39 +950,39 @@ public sealed class ThumbnailImageManager
                 {
                     if (stream.CanSeek)
                     {
-                        await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                     }
                     else
                     {
                         stream.CopyTo(outputStream);
                         outputStream.Seek(0, SeekOrigin.Begin);
-                        await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                     }
                 }                
                 else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
                 {
                     if (stream.CanSeek)
                     {
-                        await TranscodeWindowsImageCodecAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                        await TranscodeWindowsImageCodecAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                     }
                     else
                     {
                         stream.CopyTo(outputStream);
                         outputStream.Seek(0, SeekOrigin.Begin);
-                        await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                        await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
                     }
                 }
                 else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
                 {
                     if (stream.CanSeek)
                     {
-                        await TranscodeWithWin2DAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        await TranscodeWithWin2DAsync(path, stream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                     }
                     else
                     {
                         stream.CopyTo(outputStream);
                         outputStream.Seek(0, SeekOrigin.Begin);
-                        await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                        await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
                     }
                 }
             }
@@ -1038,13 +994,13 @@ public sealed class ThumbnailImageManager
             {
                 stream.CopyTo(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
-                await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
             }
             else
             {
                 stream.CopyTo(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
-                await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
             }
         }
         catch (NotSupportedException) // Seek不可な場合
@@ -1054,20 +1010,20 @@ public sealed class ThumbnailImageManager
             outputStream.Seek(0, SeekOrigin.Begin);
             if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Skia)
             {
-                await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                await TranscodeSkiaAsync(path, outputStream, BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
             }
             else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.WindowsImageCodec)
             {
-                await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
+                await TranscodeWindowsImageCodecAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream.AsRandomAccessStream(), setupEncoder, ct);
             }
             else if (_folderListingSettings.ThumbnailDecodeType == ThumbnailDecodeMethod.Win2D)
             {
-                await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                await TranscodeWithWin2DAsync(path, outputStream.AsRandomAccessStream(), BitmapEncoder.JpegEncoderId, imageQuality, _jpegPropertySet, outputStream, setupEncoder, ct);
             }
         }
     }
 
-    async ValueTask TranscodeSkiaAsync(string path, Stream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    async ValueTask TranscodeSkiaAsync(string path, Stream stream, Guid encoderId, float imageQuality, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         //using var skiaStream = new SKManagedStream(stream);            
         using var bitmap = SKBitmap.Decode(new SKManagedStream(stream, false));
@@ -1091,7 +1047,7 @@ public sealed class ThumbnailImageManager
 
         // SKBitmap → SKImage → SKData (エンコード)
         using var image = SKImage.FromBitmap(resizedBitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 50);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, (int)(imageQuality * 100));
         
         // SKData → outputStream
         outputStream.SetLength(0);
@@ -1101,7 +1057,7 @@ public sealed class ThumbnailImageManager
     }
 
 
-    async Task TranscodeWindowsImageCodecAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    async Task TranscodeWindowsImageCodecAsync(string path, IRandomAccessStream stream, Guid encoderId, float imageQuality, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850            
 
@@ -1115,8 +1071,8 @@ public sealed class ThumbnailImageManager
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
             outputStream.Size = 0;
+            propertySet["ImageQuality"] = new BitmapTypedValue(imageQuality, PropertyType.Single);
             var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet).AsTask().ConfigureAwait(false);
-            setupEncoder(decoder, encoder);
             encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
             await encoder.FlushAsync().AsTask(ct).ConfigureAwait(false);
             await outputStream.FlushAsync().AsTask(ct).ConfigureAwait(false);
@@ -1131,7 +1087,7 @@ public sealed class ThumbnailImageManager
         }        
     }
 
-    async Task TranscodeWithWin2DAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    async Task TranscodeWithWin2DAsync(string path, IRandomAccessStream stream, Guid encoderId, float imageQuality, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
         {
@@ -1153,7 +1109,7 @@ public sealed class ThumbnailImageManager
             var replacedId = ToId(path);
             SetThumbanilSize(replacedId, (uint)scaledSize.Width, (uint)scaledSize.Height);
             outputStream.SetLength(0);
-            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR, 0.5f).AsTask(ct);
+            await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg, imageQuality).AsTask(ct);
             outputStream.Seek(0, SeekOrigin.Begin);
         }
         catch (Exception ex) when (ex.HResult == -1072868846)
@@ -1163,9 +1119,9 @@ public sealed class ThumbnailImageManager
     }
 
 
-    private async ValueTask<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
-        var thumbImage = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.SingleItem);
+        var thumbImage = await file.GetThumbnailAsync(ThumbnailMode.SingleItem);
         if (thumbImage.Type == ThumbnailType.Image)
         {
             thumbImage.AsStreamForRead().CopyTo(outputStream);
@@ -1177,13 +1133,13 @@ public sealed class ThumbnailImageManager
             thumbImage.Dispose();
         }
 
-        await TranscodeThumbnailImageToStreamAsync(file.Path, () => new (new FileStream(file.CreateSafeFileHandle(FileAccess.Read), FileAccess.Read)), outputStream, EncodingForImageFileThumbnailBitmap, ct);
+        await TranscodeThumbnailImageToStreamAsync(file.Path, () => new (new FileStream(file.CreateSafeFileHandle(FileAccess.Read), FileAccess.Read)), outputStream, imageQuality, EncodingForImageFileThumbnailBitmap, ct);
         return true;
     }
 
 
     readonly Regex _coverFileNameRegex = new Regex("cover", RegexOptions.IgnoreCase);
-    private async ValueTask<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
@@ -1194,14 +1150,14 @@ public sealed class ThumbnailImageManager
             if ((zipArchive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Name) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
                 ?? zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))) is { } entry)
             {
-                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.Open()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.Open()), outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                 return true;
             }
             else { return false; }
         }
     }
 
-    private async ValueTask<bool> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
@@ -1210,14 +1166,14 @@ public sealed class ThumbnailImageManager
             if ((rarArchive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Key) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 ?? rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))) is RarArchiveEntry entry)
             {
-                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                 return true;
             }
             else { return false; }
         }
     }
 
-    private async ValueTask<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
@@ -1226,14 +1182,14 @@ public sealed class ThumbnailImageManager
             if ((archive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Key) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 ?? archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))) is SevenZipArchiveEntry entry)
             {
-                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                 return true;
             }
             else { return false; }
         }
     }
 
-    private async ValueTask<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
@@ -1242,14 +1198,14 @@ public sealed class ThumbnailImageManager
             if ((archive.Entries.FirstOrDefault(x => _coverFileNameRegex.IsMatch(x.Key) && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 ?? archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))) is TarArchiveEntry entry)
             {
-                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(entry.OpenEntryStream()), outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                 return true;
             }
             else { return false; }
         }
     }
 
-    private async ValueTask<bool> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         using var pdfStream = await file.OpenStreamForReadAsync();
         using var image = PDFtoImage.Conversion.ToImage(pdfStream, options: new PDFtoImage.RenderOptions()
@@ -1265,7 +1221,7 @@ public sealed class ThumbnailImageManager
         return true;
     }
 
-    private async ValueTask<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         using var fileHandle = file.CreateSafeFileHandle(FileAccess.Read);
         using var fileStream = new FileStream(fileHandle, FileAccess.Read);
@@ -1273,14 +1229,14 @@ public sealed class ThumbnailImageManager
         
         if (await epubBook.ReadCoverAsync() is not null and var coverBytes)
         {
-            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(new MemoryStream(coverBytes)), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(new MemoryStream(coverBytes)), outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
         }
         else if (epubBook.Content.Images.Local.Any())
         {
             var firstImage = epubBook.Content.Images.Local.First();
             var bytes = await firstImage.ReadContentAsync();
-            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(new MemoryStream(bytes)), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            await TranscodeThumbnailImageToStreamAsync(file.Path, () => new(new MemoryStream(bytes)), outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
         }
         else
@@ -1289,7 +1245,7 @@ public sealed class ThumbnailImageManager
         }
     }
     
-    private async ValueTask<bool> Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         // 1. サムネイルの取得設定
         // ThumbnailMode.Videos を指定することで、動画に最適なサムネイルを取得します
@@ -1304,7 +1260,7 @@ public sealed class ThumbnailImageManager
             await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
             {
                 return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(3), (int)requestedSize, 0, VideoFramePrecision.NearestKeyFrame)).AsStreamForRead();
-            }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            }, outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
         }
         catch
@@ -1313,12 +1269,12 @@ public sealed class ThumbnailImageManager
             await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
             {
                 return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
-            }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            }, outputStream, imageQuality, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
             
         }
     }
-    private async ValueTask<bool> FFMpeg_MovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    private async ValueTask<bool> FFMpeg_MovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, float imageQuality, CancellationToken ct)
     {
         // 1. サムネイルの取得設定
         // ThumbnailMode.Videos を指定することで、動画に最適なサムネイルを取得します
@@ -1337,7 +1293,7 @@ public sealed class ThumbnailImageManager
             var linkedCt = linkedCts.Token;
             try
             {
-                using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, (uint)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality));
+                using var thumb = await file.GetThumbnailAsync(ThumbnailMode.SingleItem, (uint)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality));
                 if (thumb.Type == ThumbnailType.Image)
                 {
                     await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
@@ -1370,7 +1326,7 @@ public sealed class ThumbnailImageManager
             }
             catch
             {
-                await Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
+                await Fallback_MediaCompositionMovieFileThubnailImageWriteToStreamAsync(file, outputStream, imageQuality, ct);
             }
 
             return true;
@@ -1653,7 +1609,7 @@ public sealed class ThumbnailImageManager
 #endif
     }
 
-    private async Task<GenerateSecondaryTileThumbnailResult?> GenerateSecondaryThumbnailImageAsync(StorageFile file, string tileId, CancellationToken ct)
+    private async Task<GenerateSecondaryTileThumbnailResult?> GenerateSecondaryThumbnailImageAsync(StorageFile file, string tileId, float imageQuality, CancellationToken ct)
     {
         var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
         var itemFolder = await thumbnailFolder.CreateFolderAsync(tileId, CreationCollisionOption.ReplaceExisting);
@@ -1667,34 +1623,34 @@ public sealed class ThumbnailImageManager
             using var stream = new MemoryStream();
             var result = await (file.FileType.ToLowerInvariant() switch
             {
-                SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.JfifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_Mp4FileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_HevcFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_M4vFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_MovFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_MTsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_M2TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_AviFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_WmvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                SupportedFileTypesHelper.Movie_FlvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.JfifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_Mp4FileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_HevcFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_M4vFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_MovFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_MTsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_M2TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_AviFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_WmvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
+                SupportedFileTypesHelper.Movie_FlvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, imageQuality, ct),
                 _ => throw new NotSupportedException(file.FileType)
             });
 
