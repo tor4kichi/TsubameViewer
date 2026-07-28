@@ -1250,9 +1250,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.GetCachedImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                try
+                                {
+                                    using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
+                                    await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                }
+                                catch { }
                                 return thumbImage;
                             }
 
@@ -1310,9 +1314,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, imageQuality: 0.5f, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                try
+                                {
+                                    using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
+                                    await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                }
+                                catch { }
                                 return thumbImage;
                             }
 
