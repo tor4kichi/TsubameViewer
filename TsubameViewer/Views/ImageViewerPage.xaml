@@ -999,26 +999,37 @@
           </ComboBox.KeyboardAccelerators>
         </ComboBox>
 
-        <Slider x:Name="PageSelector"
-                uwpControls:DockPanel.Dock="Bottom"                
-                Minimum="0"
-                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
-                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
-                TickFrequency="1"
-                StepFrequency="1"
-                Padding="0"
-                Margin="0 0"
-                XYFocusDown="{x:Bind PageFolderNamesSelector}"
-                FlowDirection="RightToLeft"
-                AccessKey="4"
-                IsThumbToolTipEnabled="False"
-                KeyboardAcceleratorPlacementMode="Hidden"
-                KeyTipPlacementMode="Hidden"
-                ctwu:FrameworkElementExtensions.Cursor="Hand">
-          <Slider.KeyboardAccelerators>
-            <KeyboardAccelerator Key="4" />
-          </Slider.KeyboardAccelerators>
-        </Slider>
+        <Grid>
+          <Slider x:Name="PageSelector"
+                  uwpControls:DockPanel.Dock="Bottom"
+                  Minimum="0"
+                  Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                  ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                  TickFrequency="1"
+                  StepFrequency="1"
+                  Padding="0"
+                  Margin="0 0"
+                  XYFocusDown="{x:Bind PageFolderNamesSelector}"
+                  FlowDirection="RightToLeft"
+                  AccessKey="4"
+                  IsThumbToolTipEnabled="False"
+                  KeyboardAcceleratorPlacementMode="Hidden"
+                  KeyTipPlacementMode="Hidden">
+            <Slider.KeyboardAccelerators>
+              <KeyboardAccelerator Key="4" />
+            </Slider.KeyboardAccelerators>
+          </Slider>
+          <Border x:Name="VideoPositionSliderWall"
+                  IsHitTestVisible="True"
+                  Background="Transparent"
+                  PointerMoved="PageSelectorSliderWall_PointerMoved"
+                  PointerPressed="PageSelectorSliderWall_PointerPressed"
+                  PointerReleased="PageSelectorSliderWall_PointerReleased"
+                  PointerExited="PageSelectorSliderWall_PointerExited"
+                  ctwu:FrameworkElementExtensions.Cursor="Hand">
+
+          </Border>
+        </Grid>
 
         <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
 

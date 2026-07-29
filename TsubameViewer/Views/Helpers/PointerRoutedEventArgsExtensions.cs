@@ -54,6 +54,21 @@ public static class PointerRoutedEventArgsExtensions
         else { return false; }
     }
 
+
+    public static bool IsContactUIElement(this PointerRoutedEventArgs e, UIElement target, out Vector2 outRelativePointerPos)
+    {
+        var p = e.GetCurrentPoint(target);
+        Vector2 pointerRelativePos = p.Position.ToVector2();
+        outRelativePointerPos = pointerRelativePos;
+        if (pointerRelativePos is { X: > 0, Y: > 0 }
+            && target.ActualSize.X > pointerRelativePos.X
+            && target.ActualSize.Y > pointerRelativePos.Y)
+        {
+            return true;
+        }
+        else { return false; }
+    }
+
     public static bool IsContactUIElement(this TappedRoutedEventArgs e, UIElement target)
     {
         var p = e.GetPosition(target);

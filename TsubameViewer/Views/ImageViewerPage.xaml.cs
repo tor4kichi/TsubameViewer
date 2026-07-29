@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Controls;
+using DryIoc;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
@@ -80,8 +81,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     internal readonly ImageViewerPageViewModel _vm;
 
     readonly IMessenger _messenger;
-    readonly FocusHelper _focusHelper;
-    readonly CoreApplicationView _coreAppView;
+    readonly FocusHelper _focusHelper;    
     readonly SecondaryWindowService _secondaryWindowService;
     readonly IWindowManagementAware _windowContext;
 
@@ -92,7 +92,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<ImageViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-        _coreAppView = CoreApplication.GetCurrentView();
         _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
     }
@@ -116,11 +115,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    private void PageSelector_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        //_vm.CurrentImageIndex = (int)e.NewValue;
-    }
-
 
     [ObservableProperty]
     int _pageSelectorCandidateImageIndex;
@@ -128,53 +122,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [ObservableProperty]
     CanvasImageSource? _seekbarFrameImageSource;
 
-    CanvasBitmap? _videoFrameBitmap;
-
     PointerDeviceType _lastPointerDeviceType;
-
     bool _nowPressedOnPageSlider;
-    private void CoreWindow_PageSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
-    {
-        _nowPressedOnPageSlider = args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos) 
-            && ImageSelectorContainer.Visibility == Visibility.Visible;
-        if (_nowPressedOnPageSlider)
-        {
-            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
-            _lastPointerPosition = pos;
-            RefreshPageSelectorTooltipContainerTranslation();
-            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
-            {
-                if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
-                {
-                    _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
-                    _lastPageChangeRequestImageIndex = PageSelectorCandidateImageIndex;
-                }
-                PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                PageSelectorTooltipContainer.Visibility = Visibility.Visible;
-            }
-        }
-    }
-    private void CoreWindow_PageSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
-    {
-        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
-        _nowPressedOnPageSlider = false;
-
-        if (_lastPointerDeviceType == PointerDeviceType.Touch)
-        {
-            if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos))
-            {
-                _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
-            }
-            else
-            {
-                PageSelector.Value = _vm.CurrentImageIndex;
-            }
-        }
-    }    
-
     Vector2 _lastPointerPosition;
     int _lastPageChangeRequestImageIndex;    
     void RefreshPageSelectorTooltipContainerTranslation()
@@ -192,18 +141,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             (float)UIContainer.ActualWidth - (halfContainerWidth)  - 8);        
         PageSelectorTooltipContainer.Translation = new Vector3(
             clampedPosX - halfContainerWidth,
-            -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
+            -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
         PageSelectorCandidateImageIndex = pagePos;
     }
 
-    private void CoreWindow_PageSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
+    private void PageSelectorSliderWall_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos)
+        if (e.IsContactUIElement(PageSelector, out Vector2 pos)
             && ImageSelectorContainer.Visibility == Visibility.Visible)
         {
-            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+            _lastPointerDeviceType = e.Pointer.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
             if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
@@ -224,6 +173,54 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private void PageSelectorSliderWall_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _nowPressedOnPageSlider = e.IsContactUIElement(PageSelector, out Vector2 pos)
+            && ImageSelectorContainer.Visibility == Visibility.Visible;
+        if (_nowPressedOnPageSlider)
+        {
+            _lastPointerDeviceType = e.Pointer.PointerDeviceType;
+            _lastPointerPosition = pos;
+            RefreshPageSelectorTooltipContainerTranslation();
+            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
+            {
+                if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
+                {
+                    _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+                    _lastPageChangeRequestImageIndex = PageSelectorCandidateImageIndex;
+                }
+                PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                PageSelectorTooltipContainer.Visibility = Visibility.Visible;
+            }
+        }
+    }
+
+    private void PageSelectorSliderWall_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+        _nowPressedOnPageSlider = false;
+
+        if (_lastPointerDeviceType == PointerDeviceType.Touch)
+        {
+            if (e.IsContactUIElement(PageSelector, out Vector2 pos))
+            {
+                _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+            }
+            else
+            {
+                PageSelector.Value = _vm.CurrentImageIndex;
+            }
+        }
+    }
+
+    private void PageSelectorSliderWall_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
     }
 
     public bool IsReadyToImageDisplay
@@ -273,10 +270,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
 
         KeyDown += ImageViewerPage_KeyDown;
-
-        Window.Current.CoreWindow.PointerPressed += CoreWindow_PageSlider_PointerPressed;
-        Window.Current.CoreWindow.PointerReleased += CoreWindow_PageSlider_PointerReleased;
-        Window.Current.CoreWindow.PointerMoved += CoreWindow_PageSlider_PointerMoved;
 
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
         {
@@ -369,7 +362,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
         KeyDown -= ImageViewerPage_KeyDown;
-        Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
         _messenger.Unregister<BackNavigationRequestingMessage>(this);        
 
         if (_windowContext.IsPrimary)

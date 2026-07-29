@@ -5,35 +5,26 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
+using DryIoc;
 using FFmpegInteropX;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
-using Microsoft.Graphics.Canvas.Effects;
 using Microsoft.Graphics.Canvas.UI.Xaml;
-using PDFtoImage;
 using R3;
 using R3.Extensions;
-using SharpCompress.Common;
-using SharpCompress.Compressors.Xz;
-using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Services;
-using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
@@ -42,16 +33,13 @@ using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using VideoEffects;
 using Windows.ApplicationModel.Core;
-using Windows.Devices.Enumeration;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.Display;
-using Windows.Media.Audio;
 using Windows.Media.Core;
 using Windows.Media.Editing;
-using Windows.Media.Effects;
 using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -60,15 +48,12 @@ using Windows.Storage.Streams;
 using Windows.System;
 using Windows.System.Display;
 using Windows.UI;
-using Windows.UI.Composition;
 using Windows.UI.Core;
-using Windows.UI.Notifications;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
@@ -423,7 +408,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;                
-        _coreAppView = CoreApplication.GetCurrentView();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();        
     }
 
@@ -490,10 +474,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
-        Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
-        Window.Current.CoreWindow.PointerMoved -= CoreWindow_VideoPositionSlider_PointerMoved;
-
         _mediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
@@ -567,11 +547,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
-        PlayerContainer.Opacity = 0.0001;　// FFmpeg利用時にゼロ位置の映像フレームが表示されないように
-        
-        Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
-        Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
-        Window.Current.CoreWindow.PointerMoved += CoreWindow_VideoPositionSlider_PointerMoved;
+        PlayerContainer.Opacity = 0.0001;　// FFmpeg利用時にゼロ位置の映像フレームが表示されないように        
         MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
         _initializePlayIconAnimation.Start(Notification_PlayPause);
         _initialiLiteNotificationAnimation.Start(LiteNotificationContainer);
@@ -765,6 +741,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 else
                 {
                     s.MovieSeekbarTooltipImage.Source = s._frameGrabber.Source;
+                    // プレビュー表示の位置が初回ズレる問題があるので一旦生成しておきたい
+                    s.SeekbarFrameTime = TimeSpan.Zero;
                 }
 
                 ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
@@ -783,11 +761,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         }
 
                         if (e.Sender == null) { return; }
+                        
                         var ts = e.Sender.Position;
                         s.SetVideoPositionFromCode(ts);
 
-                        if (e.Sender.CanSeek
-                            && e.Sender.NaturalDuration != TimeSpan.Zero
+                        if (e.Sender.NaturalDuration != TimeSpan.Zero
+                            && e.Sender.CanSeek
                             && bookmarkRp.CurrentValue is { } bkmk)
                         {
                             var pos = e.Sender.Position;
@@ -1041,7 +1020,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             },  AwaitOperation.Drop) // Switchだと応答性が悪く見える。Dropなら先行する描画処理を優先できてGood           
             .AddTo(ref db);
 
-        HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
         HandlePlaybackRateChanged(ref db);
@@ -1572,14 +1550,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    void HandleWindowDisplayState(ref DisposableBuilder db)
-    {
-        var observeWindowActivate = Observable.FromEvent<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
-           conversion => (sender, args) => conversion(args),
-           h => Window.Current.SizeChanged += h,
-           h => Window.Current.SizeChanged -= h);
-    }
-
     [ObservableProperty]
     bool _isFlyoutOpen;
 
@@ -1808,57 +1778,71 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         //MediaPlayer.PlaybackSession.Position = ts;
         //_audioPlayer.PlaybackSession.Position = ts;
     }
-    private readonly CoreApplicationView _coreAppView;
-
-
+    
     IFrameExtracter? _frameGrabber;
-    private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
+    Vector2 _lastPointerPosition;
+    [ObservableProperty]
+    TimeSpan? _seekbarFrameTime;
+
+    bool _prevPlaying;
+    bool _videoPositionsliderPointerPressed;
+    PointerDeviceType _lastPointerDeviceType;
+
+    private void RefreshMovieSeekbarTooltipContainerPosition(Vector2 pos)
+    {
+        if (VideoPositionSlider.ActualWidth == 0) { return; }        
+
+        var ts = PageRoot.TransformToVisual(VideoPositionSlider);
+        var offset = ts.TransformPoint(new Point()).ToVector2();
+        var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+        var videoPos = VideoDuration * posRatio;
+        var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+        if (SeekbarFrameTime != videoPosAligned)
+        {
+            var halfContainerWidth = MovieSeekbarTooltipImage.ActualWidth * 0.5;
+            var clampedPosX = Math.Clamp(pos.X - offset.X,
+                halfContainerWidth + 8,
+                ImageSelectorContainer.ActualWidth - halfContainerWidth - 8);
+            MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
+            MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 0 : 0) - (float)MovieSeekbarTooltipImage.ActualHeight;
+
+            if (_videoPositionsliderPointerPressed
+                && _lastPointerDeviceType != PointerDeviceType.Touch)
+            {
+                _videoPositionChangingFromCode = true;
+                _mediaPlayer.PlaybackSession.Position = videoPos;
+                _audioPlayer.PlaybackSession.Position = videoPos;
+                VideoPosition = videoPos;
+            }
+
+            SeekbarFrameTime = videoPosAligned;
+            _lastPointerPosition = pos;
+        }
+    }
+
+    private void VideoPositionSliderWall_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (_mediaPlayer.Source == null) { return; }
-        if ((args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
+        if ((e.IsContactUIElement(VideoPositionSlider, out Vector2 pos)
             || _videoPositionsliderPointerPressed)
                 && IsDisplayControlUI
                 && !IsFlyoutOpen
                 && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed
-                && (VideoEffectUIContainer.Visibility == Visibility.Collapsed || !args.IsContactUIElement(VideoEffectUIContainer, Window.Current.Content)))
-        {            
+                && (VideoEffectUIContainer.Visibility == Visibility.Collapsed || !e.IsContactUIElement(VideoEffectUIContainer)))
+        {
             _mouseCursorAutoHideTimer?.Stop();
-            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+            _lastPointerDeviceType = e.Pointer.PointerDeviceType;
 
-            var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
-            var offset = ts.TransformPoint(new Point()).ToVector2();
-            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
-            var videoPos = VideoDuration * posRatio;
-            var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
-
-            if (SeekbarFrameTime != videoPosAligned 
-                && MovieSeekbarTooltipContainer.ActualWidth != 0)
-            {
-                var halfContainerWidth = MovieSeekbarTooltipContainer.ActualWidth * 0.5;
-                var clampedPosX = Math.Clamp(pos.X - offset.X,
-                    halfContainerWidth + 8,
-                    ImageSelectorContainer.ActualWidth - halfContainerWidth - 8);
-                MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
-                MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
-
-                if (_videoPositionsliderPointerPressed
-                    && _lastPointerDeviceType != PointerDeviceType.Touch)
-                {
-                    _videoPositionChangingFromCode = true;
-                    _mediaPlayer.PlaybackSession.Position = videoPos;
-                    _audioPlayer.PlaybackSession.Position = videoPos;
-                    VideoPosition = videoPos;
-                }
-
-                SeekbarFrameTime = videoPosAligned;
-                _lastPointerPosition = pos;
-            }
+            RefreshMovieSeekbarTooltipContainerPosition(pos);
 
             MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-            if (_frameGrabber == null)
+
+            if (_frameGrabber == null
+                || MovieSeekbarTooltipContainer.ActualWidth == 0)
             {
                 MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
-            }
+            }           
             else if (!_videoPositionsliderPointerPressed)
             {
                 // Note: Source再適用後の表示画像のリサイズがレイアウト再計算がないと発生しないので
@@ -1866,11 +1850,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                 }
-                MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+                else
+                {
+                    MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+                }
             }
             else if (_lastPointerDeviceType == PointerDeviceType.Touch)
             {
-                if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
+                if (e.IsContactUIElement(VideoPositionSlider))
                 {
                     MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
                 }
@@ -1886,54 +1873,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    Vector2 _lastPointerPosition;
-    [ObservableProperty]
-    TimeSpan? _seekbarFrameTime;
-
-    bool _prevPlaying;
-    bool _videoPositionsliderPointerPressed;
-    PointerDeviceType _lastPointerDeviceType;
-    void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
+    private void VideoPositionSliderWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (_mediaPlayer.Source == null) { return; }
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos)
+        if (e.IsContactUIElement(VideoPositionSlider, out var pos)
             && !IsFlyoutOpen
             && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed
-            && (VideoEffectUIContainer.Visibility == Visibility.Collapsed || !args.IsContactUIElement(VideoEffectUIContainer, Window.Current.Content)))
+            && (VideoEffectUIContainer.Visibility == Visibility.Collapsed || !e.IsContactUIElement(VideoEffectUIContainer)))
         {
-            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+            VideoPositionSliderWall.CapturePointer(e.Pointer);
+            _lastPointerDeviceType = e.Pointer.PointerDeviceType;
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
             _mediaPlayer.Pause();
             _audioPlayer.Pause();
             _videoPositionsliderPointerPressed = true;
 
-            var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
-            var offset = ts.TransformPoint(new Point()).ToVector2();
-            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
-            var videoPos = VideoDuration * posRatio;
-            var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
-
-            var halfContainerWidth = MovieSeekbarTooltipContainer.ActualWidth * 0.5;
-            var clampedPosX = Math.Clamp(pos.X - offset.X,
-                halfContainerWidth,
-                ImageSelectorContainer.ActualWidth - halfContainerWidth);
-            MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
-            MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0) - (float)MovieSeekbarTooltipContainer.ActualHeight;
-
-            if (_videoPositionsliderPointerPressed
-                && _lastPointerDeviceType != PointerDeviceType.Touch)
-            {
-                _videoPositionChangingFromCode = true;
-                _mediaPlayer.PlaybackSession.Position = videoPos;
-                _audioPlayer.PlaybackSession.Position = videoPos;
-                VideoPosition = videoPos;
-            }
-
-            SeekbarFrameTime = videoPosAligned;
-            _lastPointerPosition = pos;
+            RefreshMovieSeekbarTooltipContainerPosition(pos);
             MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-            
             if (_lastPointerDeviceType != PointerDeviceType.Touch)
             {
                 MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
@@ -1949,15 +1906,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
+    private void VideoPositionSliderWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         if (_mediaPlayer.Source == null) { return; }
-
         if (_videoPositionsliderPointerPressed)
         {
-            if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
+            VideoPositionSliderWall.ReleasePointerCapture(e.Pointer);
+            if (e.IsContactUIElement(VideoPositionSlider, out Vector2 pos))
             {
-                var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+                var ts = PageRoot.TransformToVisual(VideoPositionSlider);
                 var offset = ts.TransformPoint(new Point()).ToVector2();
                 var posRatio = pos.X / VideoPositionSlider.ActualWidth;
                 var videoPos = VideoDuration * posRatio;
@@ -1991,13 +1948,28 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             else
             {
                 // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
-                _mediaPlayer.StepForwardOneFrame();                
+                _mediaPlayer.StepForwardOneFrame();
                 //RenderFrame();
             }
         }
 
         _videoPositionsliderPointerPressed = false;
     }
+
+    private void VideoPositionSliderWall_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_videoPositionsliderPointerPressed)
+        {
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void MovieSeekbarTooltipContainer_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        RefreshMovieSeekbarTooltipContainerPosition(_lastPointerPosition);
+        MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+    }
+
     [RelayCommand]
     void BackwardOneFrameWoAnimation()
     {
@@ -3126,7 +3098,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     double HalfDouble(double d) => d * 0.5d;
     double HalfDoubleNegation(double d) => d * -0.5d;
     double InverseDouble(double d) => 1 / d;
-
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter
