@@ -184,7 +184,6 @@
         <SymbolIconSource Symbol="Back" />
       </XamlUICommand.IconSource>
     </XamlUICommand>
-
   </Page.Resources>
 
   
@@ -264,6 +263,25 @@
 
     </i:Interaction.Behaviors>
 
+    <!-- KeyboardAccelarator用のダミー -->
+    <Grid Opacity="0"
+          x:Name="ShortcutKeyButtonsContainer"
+          Height="1"
+          Width="1"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom">
+      <Grid.RenderTransform>
+        <TranslateTransform X="1"
+                            Y="1" />
+      </Grid.RenderTransform>
+      <Button Command="{x:Bind ToggleEditTransformModeCommand}"
+              Tag="{i18nExt:Localize Key=EditViewerTransform}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Z" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
     <Grid x:Name="ContentContainer">
       <Grid x:Name="ImagesContainer"
             uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
@@ -1221,8 +1239,6 @@
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}"
                                                      CollisionRect="0 0 5000 64" />
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
-                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
@@ -1415,8 +1431,6 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
-                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>

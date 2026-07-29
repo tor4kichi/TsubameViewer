@@ -3028,20 +3028,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void SubscribeTransformEdit(ref DisposableBuilder db)
     {
-        R3.Observable.Merge(
-            Window.Current.CoreWindow.ObserveKeyDown().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => true),
-            Window.Current.CoreWindow.ObserveKeyUp().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => false)
-            )            
-            .Subscribe(this, (isControlDown, s) => 
-            {
-                if (s._vm.NowEditTransformMode != isControlDown)
-                {
-                    s._vm.NowEditTransformMode = isControlDown;
-                    Debug.WriteLine($"NowEditTransformMode: {s._vm.NowEditTransformMode}");
-                }
-            })
-            .AddTo(ref db);
-
         this.ObservePointerWheelChanged()
             .Where(this, (x, s) => s._vm.NowEditTransformMode)
             .Subscribe(this, (e, s) => 

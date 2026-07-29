@@ -104,48 +104,6 @@
       </uwpControls:DockPanel>
     </DataTemplate>
 
-    <!--
-    <XamlUICommand x:Key="ZoomResetUICommand"
-                   Command="{x:Bind ZoomResetCommand}"
-                   Label="{i18nExt:Localize Key=ZoomReset}"
-                   Description="{i18nExt:Localize Key=ZoomReset}">
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="ZoomIn" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="X" />
-        <KeyboardAccelerator Key="R" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-
-    <XamlUICommand x:Key="ZoomInUICommand"
-                   Command="{x:Bind ZoomUpWithControllerCommand}"
-                   Label="{i18nExt:Localize Key=ZoomIn}"
-                   Description="{i18nExt:Localize Key=ZoomIn}">
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="ZoomIn" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="Add" />
-        <KeyboardAccelerator Key="W" />
-        <KeyboardAccelerator Key="T" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-
-    <XamlUICommand x:Key="ZoomOutUICommand"
-                   Command="{x:Bind ZoomDownWithControllerCommand}"
-                   Label="{i18nExt:Localize Key=ZoomOut}"
-                   Description="{i18nExt:Localize Key=ZoomOut}">
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="ZoomOut" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="Subtract" />
-        <KeyboardAccelerator Key="S" />
-        <KeyboardAccelerator Key="Y" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>-->
-
     <local:SecondsToVideoTimeConverter x:Key="SecondsToVideoTimeConverter" />
     <local:ToPlaybackRateConverter x:Key="ToPlaybackRateConverter" />
   </Page.Resources>
@@ -346,6 +304,13 @@
           <KeyboardAccelerator Key="E" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button Command="{x:Bind ToggleEditTransformModeCommand}"
+              Tag="{i18nExt:Localize Key=EditViewerTransform}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Z" />
+        </Button.KeyboardAccelerators>
+      </Button>
       <Button Command="{x:Bind TogglePlayerRotateCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerRotate}"
               KeyboardAcceleratorPlacementMode="Hidden">
@@ -421,14 +386,14 @@
               Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToPrev}"
               KeyboardAcceleratorPlacementMode="Hidden">
         <Button.KeyboardAccelerators>
-          <KeyboardAccelerator Key="Z" />
+          <KeyboardAccelerator Key="S" />
         </Button.KeyboardAccelerators>
       </Button>
       <Button Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToNext}"
               Command="{x:Bind SetPlaybackRateToNextCommand}"
               KeyboardAcceleratorPlacementMode="Hidden">
         <Button.KeyboardAccelerators>
-          <KeyboardAccelerator Key="X" />
+          <KeyboardAccelerator Key="W" />
         </Button.KeyboardAccelerators>
       </Button>
       <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
