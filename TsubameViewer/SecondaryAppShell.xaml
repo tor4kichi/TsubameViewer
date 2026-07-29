@@ -11,6 +11,17 @@
     d:DesignWidth="400"  >
 
   <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid Opacity="0"
+          IsHitTestVisible="False">
+      <Button>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F11"
+                               Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
+          <KeyboardAccelerator Key="Escape"
+                               Invoked="ExitViewerKeyboardAccelerator_Invoked" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
     <Frame x:Name="MyFrame"            
            HorizontalAlignment="Stretch"
            VerticalAlignment="Stretch"

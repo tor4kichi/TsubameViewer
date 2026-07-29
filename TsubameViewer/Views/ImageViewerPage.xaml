@@ -531,9 +531,7 @@
       <Button x:Name="BottomUIBackNavigationButton" 
               Click="ForceClosePage"
               AccessKey="Q"
-              HorizontalAlignment="Left"
-              Visibility="{x:Bind _windowContext.IsPrimary, Converter={StaticResource TrueToVisibleConverter}}"
-              >
+              HorizontalAlignment="Left">
         <SymbolIcon Symbol="Clear" />
 
         <Button.KeyboardAccelerators>

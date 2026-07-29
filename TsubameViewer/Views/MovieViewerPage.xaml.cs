@@ -338,7 +338,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var pt = e.GetCurrentPoint(null);
         if (pt.Properties.IsMiddleButtonPressed)
         {
-            ToggleFullScreen();
+            _vm.ToggleFullScreenCommand.Execute(null);
         }
 
         if (pt.Properties.IsLeftButtonPressed)
@@ -422,8 +422,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
-        _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        
-        _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
+        _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;                
         _coreAppView = CoreApplication.GetCurrentView();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();        
     }
@@ -2397,21 +2396,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         _mediaPlayer.Pause();
         _audioPlayer.Pause();
-        _messenger.Send(new BackNavigationRequestMessage());
-    }
-
-    [RelayCommand]
-    void ToggleFullScreen()
-    {
-        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        var appView = ApplicationView.GetForCurrentView();
-        if (appView.IsFullScreenMode)
+        if (_windowContext.IsPrimary)
         {
-            appView.ExitFullScreenMode();
+            _messenger.Send(new BackNavigationRequestMessage());
         }
         else
         {
-            appView.TryEnterFullScreenMode();
+            _ = _secondaryWindowService.CloseAsync(_windowContext);            
         }
     }
 

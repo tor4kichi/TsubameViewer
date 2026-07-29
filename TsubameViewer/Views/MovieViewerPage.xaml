@@ -367,7 +367,7 @@
           <KeyboardAccelerator Key="L" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind ToggleFullScreenCommand}"
+      <Button Command="{x:Bind _vm.ToggleFullScreenCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
               KeyboardAcceleratorPlacementMode="Hidden">
         <Button.KeyboardAccelerators>
@@ -1293,8 +1293,7 @@
       <Grid CornerRadius="12"
             Height="54"
             Width="54"
-            Background="{ThemeResource SystemChromeLowColor}"
-            Visibility="{x:Bind _windowContext.IsPrimary, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+            Background="{ThemeResource SystemChromeLowColor}">
         <Button Command="{x:Bind BackNavigationRequestCommand}"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"

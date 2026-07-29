@@ -26,6 +26,7 @@ using TsubameViewer.Helpers;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels.ViewManagement.Commands;
 using TsubameViewer.Views;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -182,9 +183,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
-{
-    public ICommand? ToggleFullScreenCommand { get; set; }
-
+{    
     public MovieViewerPageViewModel(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -199,7 +198,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ViewerSettings viewerSettings,
-        MovieViewerPageSettings pageSettings)
+        MovieViewerPageSettings pageSettings,
+        ToggleFullScreenCommand toggleFullScreenCommand)
     {
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -215,6 +215,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         ViewerSettings = viewerSettings;
         PageSettings = pageSettings;
+        ToggleFullScreenCommand = toggleFullScreenCommand;
     }
 
     CancellationToken _navigationCt;
@@ -227,6 +228,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     public LocalBookmarkRepository BookmarkManager { get; }
     public StorageItemSettings StorageItemSettings { get; }
     public MovieViewerPageSettings PageSettings { get; }
+    public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
 
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     public ThumbnailImageManager ThumbnailManager { get; }

@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models.EBook;
+using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.EBookControls;
@@ -49,7 +50,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     internal readonly EBookViewerPageViewModel _vm;
     readonly IMessenger _messenger;
-
+    private readonly SecondaryWindowService _secondaryWindowService;
+    private readonly IWindowManagementAware _windowContext;
     readonly Core.AsyncLock _movePageLock = new();
 
     public EBookViewerPage()
@@ -58,6 +60,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         
         DataContext = _vm = Ioc.Default.GetRequiredService<EBookViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
+        _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
 
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
@@ -525,7 +529,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         else if (args.Y < -7.5)
         {
             // 上スワイプ
-            _vm.BackNavigationCommand.Execute(null);
+            if (_windowContext.IsPrimary)
+            {
+                _vm.BackNavigationCommand.Execute(null);
+            }
+            else
+            {
+                _ = _secondaryWindowService.CloseAsync(_windowContext);
+            }
         }
 
 

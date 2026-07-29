@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.WinUI.Animations;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI.Animations;
 using DryIoc;
 using R3;
 using System;
@@ -10,10 +11,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Navigation;
 using TsubameViewer.Core.Helpers;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -32,7 +35,7 @@ public sealed partial class SecondaryAppShell : UserControl
     {
         this.InitializeComponent();
         this._viewLocator = _viewLocator;
-        MyFrame.Navigate(typeof(EmptyPage));
+        MyFrame.Navigate(typeof(EmptyPage));        
     }
 
 
@@ -104,6 +107,8 @@ public sealed partial class SecondaryAppShell : UserControl
 
     CancellationTokenSource? _navigateCts;
     private readonly IViewLocator _viewLocator;
+    internal SecondaryWindowService _secondaryWindowService;
+    internal IWindowManagementAware _windowContext;
 
     async Task<NavigationResult> HandleViewModelNavigation(INavigationAware? fromPageVM, INavigationAware? toPageVM, INavigationParameters parameters, CancellationToken ct)
     {
@@ -122,13 +127,33 @@ public sealed partial class SecondaryAppShell : UserControl
     }
 
     public async Task ClearNavigationAsync()
+    {        
+        var parameters = new NavigationParameters();
+        parameters.SetNavigationMode(NavigationMode.Back);
+        await NavigateAsync(nameof(EmptyPage), parameters);
+        MyFrame.BackStack.Clear();
+    }
+
+
+
+    void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (MyFrame.CanGoBack)
+        try
         {
-            MyFrame.GoBack();
+            if (_windowContext.IsFullScreenMode)
+            {
+                _windowContext.ExitFullScreenMode();
+            }
+            else
+            {
+                _windowContext.TryEnterFullScreenMode();
+            }
         }
-        //var parameters = new NavigationParameters();
-        //parameters.SetNavigationMode(NavigationMode.Back);
-        //await NavigateAsync(nameof(EmptyPage), parameters);
+        catch { }
+    }
+
+    void ExitViewerKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        _ = _secondaryWindowService.CloseAsync(_windowContext);
     }
 }

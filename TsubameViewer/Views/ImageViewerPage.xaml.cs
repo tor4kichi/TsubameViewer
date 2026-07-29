@@ -248,8 +248,15 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void ClosePage()
     {
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);
-        (_vm.BackNavigationCommand as ICommand).Execute(null);
+        if (_windowContext.IsPrimary)
+        {
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            (_vm.BackNavigationCommand as ICommand).Execute(null);
+        }
+        else
+        {
+            _ = _secondaryWindowService.CloseAsync(_windowContext);
+        }
     }
 
     CancellationToken _navigationCt;

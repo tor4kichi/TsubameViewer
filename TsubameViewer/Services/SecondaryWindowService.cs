@@ -51,6 +51,8 @@ public sealed class SecondaryWindowService
         appWindow.RequestSize(new Windows.Foundation.Size(defaultWidth, defaultHeight));
 
         var context = (App.Current as App).InitializeAppWindow(appWindow);
+        context.AppShell._secondaryWindowService = this;
+        context.AppShell._windowContext = context;
         _nowCreatingAppWindow = context;
         try
         {
@@ -98,7 +100,15 @@ public sealed class SecondaryWindowService
             var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
             await CreateNewWindowAsync(nameof(MovieViewerPage), parameters);
         }
+    }
 
+    public async Task CloseAsync(IWindowManagementAware context)
+    {
+        if (context is SecondaryWindowItem secondaryWindow)
+        {
+            await secondaryWindow.AppWindow.CloseAsync();
+            await _primaryWindow.ShowAsync();
+        }
     }
 }
 
@@ -108,8 +118,9 @@ public interface IWindowManagementAware
     bool IsSecondary { get; }
     bool TryEnterFullScreenMode();
     void ExitFullScreenMode();
-    bool IsFullScreenAsync { get; }
+    bool IsFullScreenMode { get; }
 
+    Task ShowAsync();
 }
 
 public sealed class PrimaryWindowFacade : IWindowManagementAware
@@ -124,7 +135,7 @@ public sealed class PrimaryWindowFacade : IWindowManagementAware
     public bool IsPrimary => true;
     public bool IsSecondary => false;
 
-    public bool IsFullScreenAsync => _appView.IsFullScreenMode;
+    public bool IsFullScreenMode => _appView.IsFullScreenMode;
 
     public bool TryEnterFullScreenMode()
     {
@@ -135,6 +146,11 @@ public sealed class PrimaryWindowFacade : IWindowManagementAware
     {
         _appView.ExitFullScreenMode();
     }
+
+    public async Task ShowAsync()
+    {
+        await ApplicationViewSwitcher.SwitchAsync(_appView.Id);
+    }
 }
 
 public sealed class SecondaryWindowItem : IWindowManagementAware
@@ -144,7 +160,7 @@ public sealed class SecondaryWindowItem : IWindowManagementAware
     public bool IsPrimary => false;
     public bool IsSecondary => true;
 
-    public bool IsFullScreenAsync => throw new NotImplementedException();
+    public bool IsFullScreenMode => AppWindow.Presenter.GetConfiguration().Kind == AppWindowPresentationKind.FullScreen;
 
     public bool TryEnterFullScreenMode()
     {
@@ -183,13 +199,18 @@ public sealed class SecondaryWindowItem : IWindowManagementAware
     public AppWindow AppWindow { get; }
     public SecondaryAppShell AppShell { get; }
 
-    public async Task NavigateAsync(string pageName, INavigationParameters navigationParameters)
+    internal async Task NavigateAsync(string pageName, INavigationParameters navigationParameters)
     {
         await AppShell.NavigateAsync(pageName, navigationParameters);
     }
 
-    public async Task ClearNavigationAsync()
+    internal async Task ClearNavigationAsync()
     {
         await AppShell.ClearNavigationAsync();
+    }
+
+    public async Task ShowAsync()
+    {
+        await AppWindow.TryShowAsync();
     }
 }
