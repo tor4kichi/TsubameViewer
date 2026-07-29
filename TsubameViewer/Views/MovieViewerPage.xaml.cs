@@ -1572,28 +1572,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-
-
-    [ObservableProperty]
-    bool _nowFullScreenMode;
-
-
     void HandleWindowDisplayState(ref DisposableBuilder db)
     {
         var observeWindowActivate = Observable.FromEvent<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
            conversion => (sender, args) => conversion(args),
            h => Window.Current.SizeChanged += h,
            h => Window.Current.SizeChanged -= h);
-
-        var appView = ApplicationView.GetForCurrentView();
-        observeWindowActivate.Debounce(TimeSpan.FromMilliseconds(50))
-            .Subscribe((this, appView ), (args, s) => 
-            {                
-                s.Item1.NowFullScreenMode = s.appView.IsFullScreenMode;
-            })
-            .AddTo(ref db);
-
-        NowFullScreenMode = appView.IsFullScreenMode;
     }
 
     [ObservableProperty]

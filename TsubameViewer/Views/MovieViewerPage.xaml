@@ -277,11 +277,12 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+            <StateTrigger IsActive="{x:Bind _windowContext.IsSecondary, Mode=OneWay}" />
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind NowFullScreenMode, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _windowContext.IsFullScreenMode, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="CloseButtonForFullScreen.Visibility"

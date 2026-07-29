@@ -27,22 +27,22 @@
            VerticalAlignment="Stretch"
            CacheSize="0"/>
 
-    <uwpControls:DockPanel Margin="0 32 0 0"
-                           HorizontalAlignment="Left"
-                           VerticalAlignment="Top">
+    <uwpControls:DockPanel HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Visibility="{x:Bind _windowContext.NowDisplayTitleBar, Mode=OneWay}">
+      <TextBlock Text="TsubameViewer"
+                 x:Name="TitleText"
+                 uwpControls:DockPanel.Dock="Top"
+                 Margin="12"
+                 VerticalAlignment="Center"/>
+
       <DropDownButton>
-        <Image Source="/Assets/Square44x44Logo.png"
-               uwpControls:DockPanel.Dock="Left"               
+        <Image Source="/Assets/Square44x44Logo.png"               
                Width="24" />
 
         <DropDownButton.Flyout>
           <Flyout>
             <StackPanel>
-              <TextBlock Text="TsubameViewer"
-                         x:Name="TitleText"
-                         uwpControls:DockPanel.Dock="Left"
-                         VerticalAlignment="Center" />
-
               <ContentControl x:Name="TitleBarContent"
                               HorizontalContentAlignment="Stretch"
                               VerticalContentAlignment="Stretch"

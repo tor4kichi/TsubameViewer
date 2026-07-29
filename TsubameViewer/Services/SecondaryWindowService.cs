@@ -14,6 +14,9 @@ using TsubameViewer.Views;
 using Windows.ApplicationModel.Activation;
 using Windows.UI.ViewManagement;
 using Windows.UI.WindowManagement;
+using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Windows.ApplicationModel.Core;
 
 namespace TsubameViewer.Services;
 
@@ -111,39 +114,55 @@ public sealed class SecondaryWindowService
     }
 }
 
-public interface IWindowManagementAware
+public interface IWindowManagementAware : INotifyPropertyChanged
 {
     bool IsPrimary { get; }
     bool IsSecondary { get; }
     bool TryEnterFullScreenMode();
     void ExitFullScreenMode();
     bool IsFullScreenMode { get; }
+    bool NowDisplayTitleBar { get; }
 
     Task ShowAsync();
 }
 
-public sealed class PrimaryWindowFacade : IWindowManagementAware
+
+public sealed partial class PrimaryWindowFacade : ObservableObject, IWindowManagementAware
 {
     readonly ApplicationView _appView;
+    readonly CoreApplicationViewTitleBar _titleBar;
 
     public PrimaryWindowFacade()
     {
         _appView = ApplicationView.GetForCurrentView();
+        _titleBar = CoreApplication.GetCurrentView().TitleBar;
+        _titleBar.IsVisibleChanged += _titleBar_IsVisibleChanged;
     }
+
+    private void _titleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
+    {
+        NowDisplayTitleBar = sender.IsVisible;
+        OnPropertyChanged(nameof(NowDisplayTitleBar));
+    }
+
+    public bool NowDisplayTitleBar { get; private set; }
 
     public bool IsPrimary => true;
     public bool IsSecondary => false;
 
     public bool IsFullScreenMode => _appView.IsFullScreenMode;
-
+    
     public bool TryEnterFullScreenMode()
     {
-        return _appView.TryEnterFullScreenMode();
+        var result = _appView.TryEnterFullScreenMode();
+        OnPropertyChanged(nameof(IsFullScreenMode));
+        return result;
     }
 
     public void ExitFullScreenMode()
     {
         _appView.ExitFullScreenMode();
+        OnPropertyChanged(nameof(IsFullScreenMode));
     }
 
     public async Task ShowAsync()
@@ -152,23 +171,29 @@ public sealed class PrimaryWindowFacade : IWindowManagementAware
     }
 }
 
-public sealed class SecondaryWindowItem : IWindowManagementAware
+public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManagementAware
 {
     #region Impl IWindowManagementAware
 
     public bool IsPrimary => false;
     public bool IsSecondary => true;
 
-    public bool IsFullScreenMode => AppWindow.Presenter.GetConfiguration().Kind == AppWindowPresentationKind.FullScreen;
+    public bool IsFullScreenMode => _nowFullScreen;
 
+    bool _nowFullScreen = false;
     public bool TryEnterFullScreenMode()
     {
-        return AppWindow.Presenter.RequestPresentation(AppWindowPresentationKind.FullScreen);        
+        var result = AppWindow.Presenter.RequestPresentation(AppWindowPresentationKind.FullScreen);
+        _nowFullScreen = true;
+        OnPropertyChanged(nameof(IsFullScreenMode));
+        return result;
     }
 
     public void ExitFullScreenMode()
     {
         AppWindow.Presenter.RequestPresentation(AppWindowPresentationKind.Default);
+        _nowFullScreen = false;
+        OnPropertyChanged(nameof(IsFullScreenMode));
     }
 
     #endregion
@@ -179,7 +204,9 @@ public sealed class SecondaryWindowItem : IWindowManagementAware
     {
         AppWindow = appWindow;
         AppShell = appShell;
-
+        AppWindow.Changed += AppWindow_Changed;
+        _nowFullScreen = AppWindow.Presenter.GetConfiguration().Kind == AppWindowPresentationKind.FullScreen;
+        NowDisplayTitleBar = AppWindow.TitleBar.IsVisible;
         if (appShell != null)
         {
             appShell.GotFocus += (s, e) =>
@@ -191,6 +218,16 @@ public sealed class SecondaryWindowItem : IWindowManagementAware
             {
                 _isFocused = false;
             };
+        }
+    }
+
+    public bool NowDisplayTitleBar { get; private set; }
+    private void AppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (args.DidTitleBarChange)
+        {
+            NowDisplayTitleBar = sender.TitleBar.IsVisible;
+            OnPropertyChanged(nameof(NowDisplayTitleBar));
         }
     }
 
