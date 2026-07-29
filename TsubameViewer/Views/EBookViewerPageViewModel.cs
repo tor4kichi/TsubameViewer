@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
@@ -23,6 +24,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -130,9 +132,16 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     async Task OpenEpubFileAsync(IImageSource? imageSource)
     {
         if (imageSource == null) { return; }
-        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-        _ = _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
 
+        if (_windowContext.IsPrimary)
+        {
+            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+            _ = _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+        }
+        else
+        {
+            _ = _secondaryWindowService.OpenViewerAsync(imageSource, false);
+        }
     }
 
     [RelayCommand]
@@ -159,6 +168,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
     public EBookReaderSettings EBookReaderSettings { get; }
     public ViewerSettings ViewerSettings { get; }
+
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
+
     public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
     public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
     public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
@@ -188,7 +201,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         EBookReaderSettings themeSettings,
         ViewerSettings viewerSettings,
         ToggleFullScreenCommand toggleFullScreenCommand,
-        BackNavigationCommand backNavigationCommand
+        BackNavigationCommand backNavigationCommand,
+        SecondaryWindowService secondaryWindowService
         )
     {
         _messenger = messenger;
@@ -203,6 +217,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         BackNavigationCommand = backNavigationCommand;
         EBookReaderSettings = themeSettings;
         ViewerSettings = viewerSettings;
+        _secondaryWindowService = secondaryWindowService;
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
     }
 
     public string ToImageIndexStartWithOne(int bindFor_InnerCurrentImageIndex)

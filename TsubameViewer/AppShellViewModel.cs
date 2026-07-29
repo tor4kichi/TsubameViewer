@@ -16,6 +16,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
@@ -178,12 +179,15 @@ public sealed partial class InPageSearchContext : IDisposable
     public InPageSearchContext(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
-        FolderContainerTypeManager folderContainerTypeManager)
+        FolderContainerTypeManager folderContainerTypeManager,
+        SecondaryWindowService secondaryWindowService,
+        ViewerSettings viewerSettings)
     {
         _messenger = messenger;
         SourceStorageItemsRepository = sourceStorageItemsRepository;
         _folderContainerTypeManager = folderContainerTypeManager;
-
+        _secondaryWindowService = secondaryWindowService;
+        _viewerSettings = viewerSettings;
         DisposableBuilder db = new();
         UpdateAutoSuggestCommand = new R3.ReactiveCommand<string>()
             .AddTo(ref db);
@@ -223,6 +227,8 @@ public sealed partial class InPageSearchContext : IDisposable
     readonly Core.AsyncLock _suggestUpdateLock = new();
     readonly IMessenger _messenger;
     readonly FolderContainerTypeManager _folderContainerTypeManager;
+    private readonly SecondaryWindowService _secondaryWindowService;
+    private readonly ViewerSettings _viewerSettings;
     CancellationTokenSource? _cts;
 
     async Task UpdateAutoSuggestAsync(string parameter, CancellationToken ct)
@@ -284,21 +290,20 @@ public sealed partial class InPageSearchContext : IDisposable
         }
 
         var path = entry.Path;
-        var parameters = new NavigationParameters();
         var storageItem = await SourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
-        parameters.Add(PageNavigationConstants.GeneralPathKey, entry.Path);
+        string pageName = "";
+        bool isListupPage = false;
         if (storageItem is StorageFolder itemFolder)
         {
             var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, ct), CancellationToken.None);
             if (containerType == FolderContainerType.OnlyImages)
             {
-                await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
-                return;
+                pageName = nameof(ImageViewerPage);
             }
             else
             {
-                await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                return;
+                pageName = nameof(FolderListupPage);
+                isListupPage = true;
             }
         }
         else if (storageItem is StorageFile file)
@@ -308,17 +313,36 @@ public sealed partial class InPageSearchContext : IDisposable
                 || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                 )
             {
-                await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                pageName = nameof(ImageViewerPage);
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
             {
-                await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+                pageName = nameof(EBookViewerPage);
             }
             else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
             {
-                await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                pageName = nameof(MovieViewerPage);
+            }
+
+
+            if (!string.IsNullOrEmpty(pageName))
+            {
+                if (isListupPage || !_viewerSettings.IsViewerOpenWithSecondaryWindow)
+                {
+                    var parameters = new NavigationParameters();
+                    parameters.Add(PageNavigationConstants.GeneralPathKey, entry.Path);
+                    await _messenger.NavigateAsync(pageName, parameters);
+                }
+                else
+                {
+                    await _secondaryWindowService.OpenViewerAsync(
+                        new Core.Models.ImageViewer.ImageSource.StorageItemImageSource(storageItem),
+                        false);
+                }
+                return;
             }
         }
+
 
         using (await _suggestUpdateLock.LockAsync(default))
         {

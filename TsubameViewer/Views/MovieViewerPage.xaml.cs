@@ -1128,11 +1128,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             Observable.NextFrame()
                 .SubscribeAwait(async (_, ct) =>
-                {
+                {                    
                     var imageSource = _vm.NextImageSource;
-                    var bkmk = _vm.BookmarkManager.GetBookmarkFacade(_vm.MovieFile.Path);                    
-                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                    var bkmk = _vm.BookmarkManager.GetBookmarkFacade(_vm.MovieFile!.Path);
+                    await _vm.OpenMovieFileAsync(imageSource);
                     _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(imageSource.Name));
                     bkmk.ReadPosition = default;
                 });

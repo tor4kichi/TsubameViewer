@@ -1,32 +1,36 @@
-﻿using R3.Extensions;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using R3;
+using R3.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
 using Windows.ApplicationModel.Activation;
+using Windows.ApplicationModel.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.WindowManagement;
-using System.ComponentModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Windows.ApplicationModel.Core;
 #nullable enable
 namespace TsubameViewer.Services;
 
 public sealed class SecondaryWindowService
 {
-    public SecondaryWindowService()
+    public SecondaryWindowService(NavigationStackRepository navigationStackRepository)
     {
         var appView = ApplicationView.GetForCurrentView();
         _primaryWindow = new PrimaryWindowFacade(appView, CoreApplication.GetCurrentView().TitleBar);
         appView.Consolidated += AppView_Consolidated;
+        _navigationStackRepository = navigationStackRepository;
     }
 
     private void AppView_Consolidated(ApplicationView sender, ApplicationViewConsolidatedEventArgs args)
@@ -37,7 +41,10 @@ public sealed class SecondaryWindowService
         }
     }
 
-    private readonly PrimaryWindowFacade _primaryWindow;
+    readonly PrimaryWindowFacade _primaryWindow;
+    readonly NavigationStackRepository _navigationStackRepository;
+
+    SecondaryWindowItem? _defaultWindowItem;
     public IWindowManagementAware GetCurentFocusWindow()
     {
         if (_nowCreatingAppWindow != null) { return _nowCreatingAppWindow; }
@@ -49,7 +56,7 @@ public sealed class SecondaryWindowService
 
     SecondaryWindowItem? _nowCreatingAppWindow;
 
-    async Task CreateNewWindowAsync(string pageName, INavigationParameters navigationParameters)
+    async Task<SecondaryWindowItem> CreateNewWindowAsync(string pageName, INavigationParameters navigationParameters)
     {
         var appWindow = await AppWindow.TryCreateAsync();
         appWindow.Title = "TsubameViewer";
@@ -58,7 +65,7 @@ public sealed class SecondaryWindowService
         const int defaultHeight = 720;
         appWindow.RequestSize(new Windows.Foundation.Size(defaultWidth, defaultHeight));
 
-        var context = (App.Current as App).InitializeAppWindow(appWindow);
+        SecondaryWindowItem context = (App.Current as App).InitializeAppWindow(appWindow);
         context.AppShell._secondaryWindowService = this;
         context.AppShell._windowContext = context;
         _nowCreatingAppWindow = context;
@@ -68,10 +75,18 @@ public sealed class SecondaryWindowService
             appWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             context.IsDisplay = true;
             appWindow.Closed += (s, e) =>
-            {
+            {                
                 _ = context.ClearNavigationAsync();
                 context.IsDisplay = false;
                 _appWindows.Remove(context);
+                if (_appWindows.Count == 0
+                    && _defaultWindowItem != null
+                    && e.Reason == AppWindowClosedReason.UserInitiated)
+                {
+                    _defaultWindowItem = null;
+                    _navigationStackRepository.ClearViewerNavigationEntry();
+                    Debug.WriteLine("_navigationStackRepository.ClearViewerNavigationEntry");
+                }
             };
 
             _appWindows.Add(context);
@@ -79,6 +94,7 @@ public sealed class SecondaryWindowService
             await appWindow.TryShowAsync();
             await context.NavigateAsync(pageName, navigationParameters);
 
+            return context;
         }
         finally
         {
@@ -103,6 +119,26 @@ public sealed class SecondaryWindowService
         return true;
     }
     
+    public async Task OpenViewerAsync(string pageName, INavigationParameters parameters, bool alwaysOpenNewWindow = true)
+    {
+        if (string.IsNullOrEmpty(pageName)) { throw new InvalidOperationException(); }
+        if (!alwaysOpenNewWindow)
+        {
+            _navigationStackRepository.SetViewerNavigationEntry(new PageEntry(pageName, parameters));
+            if (await TryNavigatingToWithExistWindowAsync(pageName, parameters))
+            {
+                _defaultWindowItem = _appWindows.First();
+                return;
+            }
+        }
+
+        var context = await CreateNewWindowAsync(pageName, parameters);
+        if (!alwaysOpenNewWindow)
+        {
+            _defaultWindowItem = context;
+        }
+    }
+
     public async Task OpenViewerAsync(IImageSource imageSource, bool alwaysOpenNewWindow = true)
     {
         var itemType = SupportedFileTypesHelper.FileExtensionToStorageItemType(imageSource.Path);
@@ -124,18 +160,8 @@ public sealed class SecondaryWindowService
             pageName = nameof(MovieViewerPage);
         }
 
-        if (string.IsNullOrEmpty(pageName)) { throw new InvalidOperationException(); }
         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-        if (!alwaysOpenNewWindow)
-        {
-            if (await TryNavigatingToWithExistWindowAsync(pageName, parameters))
-            {
-                return;
-            }
-        }
-
-        await CreateNewWindowAsync(pageName, parameters);
-
+        await OpenViewerAsync(pageName, parameters, alwaysOpenNewWindow);
     }
 
     public async Task CloseAsync(IWindowManagementAware context)
