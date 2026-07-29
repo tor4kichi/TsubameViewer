@@ -372,7 +372,10 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
         _messenger.Unregister<BackNavigationRequestingMessage>(this);        
 
-        d().FireAndForgetSafe();
+        if (_windowContext.IsPrimary)
+        {
+            d().FireAndForgetSafe();
+        }
         async Task d()
         {
             if (!_vm.NowDoubleImageView

@@ -15,5 +15,9 @@ namespace TsubameViewer.ViewModels.PageNavigation
         public BackNavigationRequestingMessage(BackNavigationRequestingMessageData value) : base(value)
         {
         }
+
+        public BackNavigationRequestingMessage() : base(new BackNavigationRequestingMessageData())
+        {
+        }
     }
 }

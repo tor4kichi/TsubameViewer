@@ -33,8 +33,7 @@ public sealed class SecondaryWindowService
     {
         if (_nowCreatingAppWindow != null) { return _nowCreatingAppWindow; }
         else if (_appWindows.FirstOrDefault(x => x.IsFocused) is { } focusdWindow) { return focusdWindow; }
-        else if (_primaryWindowActivated) { return _primaryWindow; }
-        else { throw new InvalidOperationException(); }
+        else { return _primaryWindow; }
     }
 
     private List<SecondaryWindowItem> _appWindows = new();

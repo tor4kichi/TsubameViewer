@@ -31,10 +31,13 @@ namespace TsubameViewer.Views;
 
 public sealed partial class SecondaryAppShell : UserControl
 {
-    public SecondaryAppShell(IViewLocator _viewLocator)
+    public SecondaryAppShell(
+        IViewLocator _viewLocator,
+        IMessenger messenger)
     {
         this.InitializeComponent();
         this._viewLocator = _viewLocator;
+        _messenger = messenger;
         MyFrame.Navigate(typeof(EmptyPage));        
     }
 
@@ -107,6 +110,7 @@ public sealed partial class SecondaryAppShell : UserControl
 
     CancellationTokenSource? _navigateCts;
     private readonly IViewLocator _viewLocator;
+    private readonly IMessenger _messenger;
     internal SecondaryWindowService _secondaryWindowService;
     internal IWindowManagementAware _windowContext;
 
@@ -154,6 +158,10 @@ public sealed partial class SecondaryAppShell : UserControl
 
     void ExitViewerKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        _ = _secondaryWindowService.CloseAsync(_windowContext);
+        var backReq = _messenger.Send<BackNavigationRequestingMessage>();
+        if (!backReq.Value.IsHandled)
+        {
+            _ = _secondaryWindowService.CloseAsync(_windowContext);
+        }
     }
 }

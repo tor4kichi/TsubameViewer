@@ -437,12 +437,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _playPauseToggleAnimationCts = null;
         }
 
-        d().FireAndForgetSafe();
+        _mediaPlayer.Pause();
+        _audioPlayer.Pause();
+        _mouseCursorAutoHideTimer?.Stop();
+        _mouseCursorAutoHideTimer = null;
+        ShowMouseCursor();
+        _mediaPlayer.Source = null;
+        _audioPlayer.Source = null;
+
+        if (_windowContext.IsPrimary)
+        {
+            d().FireAndForgetSafe();
+        }
+
         async Task d()
         {
-            _mediaPlayer.Pause();
-            _audioPlayer.Pause();
-
             bool isRotate = _vm.PageSettings.IsPlayerRotateEnabled && _mediaPlayer.PlaybackSession.PlaybackRotation is MediaRotation.Clockwise90Degrees or MediaRotation.Clockwise270Degrees;
             bool isStretchAsFill = PlayerScale.ScaleX != 1;
             if (_vm.MovieFile?.Path is { } itemPath
@@ -468,13 +477,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     anim.Cancel();
                 }
             }
-
-            _mouseCursorAutoHideTimer?.Stop();
-            _mouseCursorAutoHideTimer = null;
-            ShowMouseCursor();
-            _mediaPlayer.Source = null;
-            _audioPlayer.Source = null;
-
             base.OnNavigatingFrom(e);
         }
     }
