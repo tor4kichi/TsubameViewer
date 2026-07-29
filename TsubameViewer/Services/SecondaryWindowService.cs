@@ -17,21 +17,27 @@ using Windows.UI.WindowManagement;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Windows.ApplicationModel.Core;
-
+#nullable enable
 namespace TsubameViewer.Services;
 
 public sealed class SecondaryWindowService
 {
     public SecondaryWindowService()
     {
-        _disposable = Windows.UI.Xaml.Window.Current.ObserveActivated()
-            .Subscribe(x => _primaryWindowActivated = x.WindowActivationState != Windows.UI.Core.CoreWindowActivationState.Deactivated);
-        _primaryWindow = new PrimaryWindowFacade();
+        var appView = ApplicationView.GetForCurrentView();
+        _primaryWindow = new PrimaryWindowFacade(appView, CoreApplication.GetCurrentView().TitleBar);
+        appView.Consolidated += AppView_Consolidated;
     }
 
-    IDisposable _disposable;
+    private void AppView_Consolidated(ApplicationView sender, ApplicationViewConsolidatedEventArgs args)
+    {        
+        foreach (var context in _appWindows)
+        {
+            _ = context.AppWindow.CloseAsync();
+        }
+    }
+
     private readonly PrimaryWindowFacade _primaryWindow;
-    bool _primaryWindowActivated;
     public IWindowManagementAware GetCurentFocusWindow()
     {
         if (_nowCreatingAppWindow != null) { return _nowCreatingAppWindow; }
@@ -85,7 +91,15 @@ public sealed class SecondaryWindowService
         if (_appWindows.FirstOrDefault() is not { } context) { return false; }
         await context.ClearNavigationAsync();
         parameters.SetNavigationMode(Windows.UI.Xaml.Navigation.NavigationMode.New);
-        await context.NavigateAsync(pageName, parameters);
+        _nowCreatingAppWindow = context;
+        try
+        {
+            await context.NavigateAsync(pageName, parameters);
+        }
+        finally
+        {
+            _nowCreatingAppWindow = null;
+        }
         return true;
     }
     
@@ -152,10 +166,10 @@ public sealed partial class PrimaryWindowFacade : ObservableObject, IWindowManag
     readonly ApplicationView _appView;
     readonly CoreApplicationViewTitleBar _titleBar;
 
-    public PrimaryWindowFacade()
+    public PrimaryWindowFacade(ApplicationView appView, CoreApplicationViewTitleBar titleBar)
     {
-        _appView = ApplicationView.GetForCurrentView();
-        _titleBar = CoreApplication.GetCurrentView().TitleBar;
+        _appView = appView;
+        _titleBar = titleBar;
         _titleBar.IsVisibleChanged += _titleBar_IsVisibleChanged;
     }
 
