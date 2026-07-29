@@ -11,11 +11,18 @@ public sealed class ViewerSettings : FlagsRepositoryBase
 {
     public ViewerSettings()
     {
+        _isViewerOpenWithSecondaryWindow = Read(false, nameof(IsViewerOpenWithSecondaryWindow));
         _isDetectSimiralyFileNameNeighborsEnabled = Read(true, nameof(IsDetectSimiralyFileNameNeighborsEnabled));
         _thresholdOfSimilarityFileNameNaighborsNormalized = Read(0.60, nameof(ThresholdOfSimilarityFileNameNaighborsNormalized));
         _isAutoMoveToNextEnabled = Read(true, nameof(IsAutoMoveToNextEnabled));
     }
 
+    private bool _isViewerOpenWithSecondaryWindow;
+    public bool IsViewerOpenWithSecondaryWindow
+    {
+        get => _isViewerOpenWithSecondaryWindow;
+        set => SetProperty(ref _isViewerOpenWithSecondaryWindow, value);
+    }
 
     bool _isDetectSimiralyFileNameNeighborsEnabled;
     public bool IsDetectSimiralyFileNameNeighborsEnabled
@@ -37,5 +44,4 @@ public sealed class ViewerSettings : FlagsRepositoryBase
         get => _isAutoMoveToNextEnabled;
         set => SetProperty(ref _isAutoMoveToNextEnabled, value);
     }
-
 }

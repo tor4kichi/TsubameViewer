@@ -6,6 +6,7 @@ using System.Text;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Services;
 using TsubameViewer.Views;
 using Windows.UI.Xaml.Media.Animation;
 #nullable enable
@@ -15,14 +16,20 @@ public sealed class OpenImageViewerCommand : CommandBase
 {
     readonly IMessenger _messenger;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    private readonly SecondaryWindowService _secondaryWindowService;
+    private readonly ViewerSettings _viewerSettings;
 
     public OpenImageViewerCommand(
         IMessenger messenger,
-        DisplaySettingsByPathRepository displaySettingsByPathRepository
+        DisplaySettingsByPathRepository displaySettingsByPathRepository,
+        SecondaryWindowService secondaryWindowService,
+        ViewerSettings viewerSettings
         )
     {
         _messenger = messenger;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        _secondaryWindowService = secondaryWindowService;
+        _viewerSettings = viewerSettings;
     }
 
     public override bool CanExecute(object parameter)
@@ -46,26 +53,33 @@ public sealed class OpenImageViewerCommand : CommandBase
         {
             await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
 
-            var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type is StorageItemTypes.Image 
-                or Core.Models.StorageItemTypes.EBook
-                or StorageItemTypes.Archive 
-                or StorageItemTypes.Folder 
-                or StorageItemTypes.Albam 
-                or StorageItemTypes.AlbamImage)
+            if (_viewerSettings.IsViewerOpenWithSecondaryWindow)
             {
-                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                await _secondaryWindowService.OpenViewerAsync(imageSource, false);
             }
-            else if (type == StorageItemTypes.EBook)
+            else
             {
-                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
-            }
-            else if (type == StorageItemTypes.Movie)
-            {
-                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+                if (type is StorageItemTypes.Image
+                    or Core.Models.StorageItemTypes.EBook
+                    or StorageItemTypes.Archive
+                    or StorageItemTypes.Folder
+                    or StorageItemTypes.Albam
+                    or StorageItemTypes.AlbamImage)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                }
+                else if (type == StorageItemTypes.EBook)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                }
+                else if (type == StorageItemTypes.Movie)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                }
             }
         }
     }

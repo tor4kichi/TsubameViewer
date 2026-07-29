@@ -196,6 +196,8 @@ ImageListupPage_DragAndDrop_Unsupported = 不支持拖放操作。
 
 #### ViewerSettings
 ViewerSettings = 查看器通用设置
+IsViewerOpenWithSecondaryWindow = 在另一个窗口中显示查看器
+IsViewerOpenWithSecondaryWindow_Desc = 启用此选项后，将打开另一个窗口来显示查看器。若要显示三个或更多窗口，请从项目菜单中选择“在新窗口中打开”。
 IsDetectSimiralyFileNameNeighborsEnabled = 检测前后内容
 IsDetectSimiralyFileNameNeighborsEnabled_Desc = 可检测与当前显示内容文件名相似的前后内容，以便跳转
 ThresholdOfSimilarityFileNameNaighborsNormalized = 识别前后文件的文件名相似度

@@ -196,6 +196,8 @@ ImageListupPage_DragAndDrop_Unsupported = ドラッグ＆ドロップに非対�
 
 #### ViewerSettings
 ViewerSettings = ビューア共通設定
+IsViewerOpenWithSecondaryWindow = 別ウィンドウにビューアを表示する
+IsViewerOpenWithSecondaryWindow_Desc = 有効にすると、もう一つのウィンドウを開いてビューアを表示します。３つ以上のウィンドウを表示したい場合はアイテムメニューから「新しいウィンドウで開く」を選択します。
 IsDetectSimiralyFileNameNeighborsEnabled = 前後のコンテンツを検出する
 IsDetectSimiralyFileNameNeighborsEnabled_Desc = 表示中コンテンツのファイル名に近似した前後のコンテンツを検出して移動できるようにします
 ThresholdOfSimilarityFileNameNaighborsNormalized = 前後ファイルと認識するファイル名の近似度

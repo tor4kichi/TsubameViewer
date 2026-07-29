@@ -196,6 +196,8 @@ ImageListupPage_DragAndDrop_Unsupported = Le glisser-déposer n'est pas pris en 
 
 #### ViewerSettings
 ViewerSettings = Paramètres communs à la visionneuse
+IsViewerOpenWithSecondaryWindow = Afficher la visionneuse dans une autre fenêtre
+IsViewerOpenWithSecondaryWindow_Desc = Si cette option est activée, la visionneuse s'affiche dans une autre fenêtre. Si vous souhaitez afficher au moins trois fenêtres, sélectionnez « Ouvrir dans une nouvelle fenêtre » dans le menu des éléments.
 IsDetectSimiralyFileNameNeighborsEnabled = Détecter les contenus précédents et suivants
 IsDetectSimiralyFileNameNeighborsEnabled_Desc = Permet de détecter les contenus précédents et suivants dont le nom de fichier est similaire à celui du contenu affiché, afin de pouvoir y accéder.
 ThresholdOfSimilarityFileNameNaighborsNormalized = Degré de similitude des noms de fichiers considérés comme précédents ou suivants

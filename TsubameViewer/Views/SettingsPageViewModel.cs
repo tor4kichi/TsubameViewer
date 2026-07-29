@@ -152,6 +152,12 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 Items =
                 {
                     new ToggleSwitchSettingItemViewModel<ViewerSettings>(
+                        "IsViewerOpenWithSecondaryWindow".Translate(),
+                        "IsViewerOpenWithSecondaryWindow_Desc".Translate(),
+                        viewerSettings,
+                        viewerSettings.IsViewerOpenWithSecondaryWindow,
+                        (x, v) => x.IsViewerOpenWithSecondaryWindow = v),
+                    new ToggleSwitchSettingItemViewModel<ViewerSettings>(
                         "IsDetectSimiralyFileNameNeighborsEnabled".Translate(),
                         "IsDetectSimiralyFileNameNeighborsEnabled_Desc".Translate(),
                         viewerSettings,

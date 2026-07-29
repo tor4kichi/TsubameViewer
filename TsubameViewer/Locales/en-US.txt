@@ -196,6 +196,8 @@ ImageListupPage_DragAndDrop_Unsupported = Drag and drop is not supported.
 
 #### ViewerSettings
 ViewerSettings = Common Viewer Settings
+IsViewerOpenWithSecondaryWindow = Display the Viewer in a Separate Window
+IsViewerOpenWithSecondaryWindow_Desc = When enabled, the Viewer will be displayed in a separate window. If you want to display three or more windows, select “Open in New Window” from the Item menu.
 IsDetectSimiralyFileNameNeighborsEnabled = Detect Previous and Next Content
 IsDetectSimiralyFileNameNeighborsEnabled_Desc = Enables the detection of previous and next content with filenames similar to the currently displayed content, allowing you to navigate to them.
 ThresholdOfSimilarityFileNameNaighborsNormalized = Similarity Threshold for Filenames Recognized as Previous/Next Files

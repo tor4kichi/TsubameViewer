@@ -80,28 +80,48 @@ public sealed class SecondaryWindowService
         }
     }
 
-    public async Task OpenViewerAsync(IImageSource imageSource)
+    async Task<bool> TryNavigatingToWithExistWindowAsync(string pageName, INavigationParameters parameters)
+    {
+        if (_appWindows.FirstOrDefault() is not { } context) { return false; }
+        await context.ClearNavigationAsync();
+        parameters.SetNavigationMode(Windows.UI.Xaml.Navigation.NavigationMode.New);
+        await context.NavigateAsync(pageName, parameters);
+        return true;
+    }
+    
+    public async Task OpenViewerAsync(IImageSource imageSource, bool alwaysOpenNewWindow = true)
     {
         var itemType = SupportedFileTypesHelper.FileExtensionToStorageItemType(imageSource.Path);
+        string pageName = "";
         if ((itemType is StorageItemTypes.Image
             or StorageItemTypes.Archive
             or StorageItemTypes.ArchiveFolder
             or StorageItemTypes.Folder)
             || imageSource.StorageItem is Windows.Storage.StorageFolder)
         {
-            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-            await CreateNewWindowAsync(nameof(ImageViewerPage), parameters);
+            pageName = nameof(ImageViewerPage);
         }
         else if (itemType is StorageItemTypes.EBook)
         {
-            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-            await CreateNewWindowAsync(nameof(EBookViewerPage), parameters);
+            pageName = nameof(EBookViewerPage);
         }
         else if (itemType is StorageItemTypes.Movie)
         {
-            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-            await CreateNewWindowAsync(nameof(MovieViewerPage), parameters);
+            pageName = nameof(MovieViewerPage);
         }
+
+        if (string.IsNullOrEmpty(pageName)) { throw new InvalidOperationException(); }
+        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+        if (!alwaysOpenNewWindow)
+        {
+            if (await TryNavigatingToWithExistWindowAsync(pageName, parameters))
+            {
+                return;
+            }
+        }
+
+        await CreateNewWindowAsync(pageName, parameters);
+
     }
 
     public async Task CloseAsync(IWindowManagementAware context)
