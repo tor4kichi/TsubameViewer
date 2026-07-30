@@ -85,6 +85,14 @@ public sealed class FolderContainerTypeManager
             var fileItems = await folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery,
                 SupportedFileTypesHelper.SupportedImageFileExtensions)
             { FolderDepth = FolderDepth.Shallow }).GetFilesAsync(0, 1).AsTask(ct);
+            if (fileItems != null && fileItems.Count == 1)
+            {
+                if (fileItems[0].Name.Contains("cover", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
             return fileItems != null && fileItems.Any();
         }
         catch { return false; }

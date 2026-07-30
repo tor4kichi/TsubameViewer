@@ -41,7 +41,7 @@ public record FolderAndArchiveChildFileDisplaySettingEntry
 
     public FileSortType? ChildItemDefaultSort { get; set; }
 
-    public DefaultFolderOrArchiveOpenMode ChildImagesFolderOpenMode { get; set; } = DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+    public DefaultFolderOrArchiveOpenMode? ChildImagesFolderOpenMode { get; set; }
 }
 
 public record AlbamDisplaySettingEntry
