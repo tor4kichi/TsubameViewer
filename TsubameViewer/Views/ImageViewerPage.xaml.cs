@@ -419,7 +419,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
         if (animation != null)
         {
-            if (_windowContext.IsPrimary)
+            if (_windowContext.IsSecondary)
             {
                 animation.Cancel();
             }
