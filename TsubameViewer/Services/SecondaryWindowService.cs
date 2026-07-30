@@ -40,7 +40,7 @@ public sealed class SecondaryWindowService
         appView.Consolidated += AppView_Consolidated;
         _navigationStackRepository = navigationStackRepository;
         _applicationSettings = applicationSettings;
-
+        
         _dispoable = _applicationSettings.ObservePropertyChanged(x => x.Theme)
             .Subscribe(this, (x, s) => 
             {
@@ -151,6 +151,7 @@ public sealed class SecondaryWindowService
                     _defaultWindowItem = null;
                     _navigationStackRepository.ClearViewerNavigationEntry();
                     Debug.WriteLine("_navigationStackRepository.ClearViewerNavigationEntry");
+                    _ = _primaryWindow.ShowAsync();
                 }
             };
 
@@ -158,7 +159,7 @@ public sealed class SecondaryWindowService
 
             await appWindow.TryShowAsync();
             await context.NavigateAsync(pageName, navigationParameters);
-
+            context.IsFullScreenMode = _applicationSettings.IsFullScreenOnAppLaunch;
             return context;
         }
         finally
@@ -292,7 +293,7 @@ public sealed partial class PrimaryWindowFacade : ObservableObject, IWindowManag
 
     public async Task ShowAsync()
     {
-        await ApplicationViewSwitcher.SwitchAsync(_appView.Id);
+        await ApplicationViewSwitcher.TryShowAsStandaloneAsync(_appView.Id);
     }
 }
 
@@ -302,23 +303,20 @@ public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManag
 
     public bool IsPrimary => false;
     public bool IsSecondary => true;
-
-    public bool IsFullScreenMode => _nowFullScreen;
-
-    bool _nowFullScreen = false;
+    
+    [ObservableProperty]
+    bool _isFullScreenMode = false;
     public bool TryEnterFullScreenMode()
     {
         var result = AppWindow.Presenter.RequestPresentation(AppWindowPresentationKind.FullScreen);
-        _nowFullScreen = true;
-        OnPropertyChanged(nameof(IsFullScreenMode));
+        IsFullScreenMode = true;
         return result;
     }
 
     public void ExitFullScreenMode()
     {
         AppWindow.Presenter.RequestPresentation(AppWindowPresentationKind.Default);
-        _nowFullScreen = false;
-        OnPropertyChanged(nameof(IsFullScreenMode));
+        IsFullScreenMode = false;
     }
 
     #endregion
@@ -330,7 +328,8 @@ public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManag
         AppWindow = appWindow;
         AppShell = appShell;
         AppWindow.Changed += AppWindow_Changed;
-        _nowFullScreen = AppWindow.Presenter.GetConfiguration().Kind == AppWindowPresentationKind.FullScreen;
+        var config = AppWindow.Presenter.GetConfiguration();
+        _isFullScreenMode = config.Kind == AppWindowPresentationKind.FullScreen;
         NowDisplayTitleBar = AppWindow.TitleBar.IsVisible;
         if (appShell != null)
         {
@@ -354,6 +353,17 @@ public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManag
             NowDisplayTitleBar = sender.TitleBar.IsVisible;
             OnPropertyChanged(nameof(NowDisplayTitleBar));
         }
+        else if (args.DidSizeChange)
+        {
+            IsFullScreenMode = sender.Presenter.GetConfiguration().Kind == AppWindowPresentationKind.FullScreen;
+        }
+    }
+
+    public void ForceUpdateDisplayStatus()
+    {
+        NowDisplayTitleBar = AppWindow.TitleBar.IsVisible;
+        OnPropertyChanged(nameof(NowDisplayTitleBar));
+        IsFullScreenMode = AppWindow.Presenter.GetConfiguration().Kind == AppWindowPresentationKind.FullScreen;
     }
 
     public bool IsDisplay { get; set; }
