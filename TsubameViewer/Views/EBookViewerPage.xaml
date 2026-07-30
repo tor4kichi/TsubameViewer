@@ -575,8 +575,7 @@
             <StackPanel Padding="0 0 0 32">
 
               <Grid Margin="8" ColumnSpacing="4"
-                    x:Name="NeighborsContentButtonsContainer"
-                    FlowDirection="RightToLeft"
+                    x:Name="NeighborsContentButtonsContainer"                    
                     Visibility="{x:Bind _vm.ViewerSettings.IsDetectSimiralyFileNameNeighborsEnabled, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="1*" />
@@ -585,22 +584,21 @@
                 <Button HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Command="{x:Bind _vm.OpenEpubFileCommand}"
-                        CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
-                        IsEnabled="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"
+                        CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+                        IsEnabled="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"                        
                         Grid.Column="0"
-                        ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
-                  <fluentIcon:SymbolIcon Symbol="ArrowLeft" />
+                        ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
+                  <fluentIcon:SymbolIcon Symbol="ArrowRight" />
                 </Button>
                 <Button HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Command="{x:Bind _vm.OpenEpubFileCommand}"
-                        CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
-                        IsEnabled="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"                        
+                        CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+                        IsEnabled="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"
                         Grid.Column="1"
-                        ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
-                  <fluentIcon:SymbolIcon Symbol="ArrowRight" />
+                        ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
+                  <fluentIcon:SymbolIcon Symbol="ArrowLeft" />
                 </Button>
-
               </Grid>
               
               <Border uwpControls:DockPanel.Dock="Top"
@@ -825,8 +823,6 @@
           <VisualState.Setters>
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
-            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
-                    Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -851,9 +847,6 @@
 
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
-            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
-                    Value="LeftToRight" />
-
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
