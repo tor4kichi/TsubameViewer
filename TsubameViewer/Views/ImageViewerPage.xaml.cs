@@ -414,17 +414,23 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             await Task.Delay(5, navigationCt);
         }
-
         bool isConnectedAnimationDone = false;
         var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
         ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
         if (animation != null)
         {
-            try
+            if (_windowContext.IsPrimary)
             {
-                isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
+                animation.Cancel();
             }
-            catch (OperationCanceledException) { }
+            else
+            {
+                try
+                {
+                    isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
+                }
+                catch (OperationCanceledException) { }
+            }
         }
 
         try
