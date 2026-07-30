@@ -9,58 +9,58 @@ using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 
-namespace TsubameViewer.Views.Helpers
+namespace TsubameViewer.Views.Helpers;
+
+// AppWindowではVisualTreeHelper周りが意図通りに動作しないかもしれない(位置取得は壊れがちでImageViewerPageで使用をやめた）
+public static class VisualTreeExtentions
 {
-    public static class VisualTreeExtentions
+    public static T FindFirstChild<T>(this FrameworkElement element) where T : FrameworkElement
     {
-        public static T FindFirstChild<T>(this FrameworkElement element) where T : FrameworkElement
+        int childrenCount = VisualTreeHelper.GetChildrenCount(element);
+        var children = new FrameworkElement[childrenCount];
+
+        for (int i = 0; i < childrenCount; i++)
         {
-            int childrenCount = VisualTreeHelper.GetChildrenCount(element);
-            var children = new FrameworkElement[childrenCount];
-
-            for (int i = 0; i < childrenCount; i++)
-            {
-                var child = VisualTreeHelper.GetChild(element, i) as FrameworkElement;
-                children[i] = child;
-                if (child is T)
-                    return (T)child;
-            }
-
-            for (int i = 0; i < childrenCount; i++)
-                if (children[i] != null)
-                {
-                    var subChild = FindFirstChild<T>(children[i]);
-                    if (subChild != null)
-                        return subChild;
-                }
-
-            return null;
+            var child = VisualTreeHelper.GetChild(element, i) as FrameworkElement;
+            children[i] = child;
+            if (child is T)
+                return (T)child;
         }
 
-
-        public static async ValueTask WaitFillingValue<TElement>(this TElement element, Predicate<TElement> whenComplete, CancellationToken ct)
-        {
-            while (whenComplete(element) is false)
+        for (int i = 0; i < childrenCount; i++)
+            if (children[i] != null)
             {
-                await Task.Delay(10, ct);
+                var subChild = FindFirstChild<T>(children[i]);
+                if (subChild != null)
+                    return subChild;
             }
+
+        return null;
+    }
+
+
+    public static async ValueTask WaitFillingValue<TElement>(this TElement element, Predicate<TElement> whenComplete, CancellationToken ct)
+    {
+        while (whenComplete(element) is false)
+        {
+            await Task.Delay(10, ct);
         }
+    }
 
-        public static async ValueTask WaitFillingValue(Func<bool> whenComplete, CancellationToken ct)
+    public static async ValueTask WaitFillingValue(Func<bool> whenComplete, CancellationToken ct)
+    {
+        while (whenComplete() is false)
         {
-            while (whenComplete() is false)
-            {
-                await Task.Delay(10, ct);
-            }
+            await Task.Delay(10, ct);
         }
+    }
 
-        public static async ValueTask WaitLoadedAsync<TElement>(Func<TElement> whenComplete, CancellationToken ct)
-            where TElement : FrameworkElement
+    public static async ValueTask WaitLoadedAsync<TElement>(Func<TElement> whenComplete, CancellationToken ct)
+        where TElement : FrameworkElement
+    {
+        while (whenComplete().IsLoaded != true)
         {
-            while (whenComplete().IsLoaded != true)
-            {
-                await Task.Delay(10, ct);
-            }
+            await Task.Delay(10, ct);
         }
     }
 }

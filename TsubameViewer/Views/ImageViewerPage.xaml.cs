@@ -578,43 +578,31 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             if (!_isLastPointerPressedLeft) { return; }
 
             var pt = pointer.Position;
-            if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
-            if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
+            if (pt.IsContactUIElement(ButtonsContainer)) { return; }
+            if (pt.IsContactUIElement(ImageSelectorContainer)) { return; }
             
             if (!IsOpenBottomMenu)
             {
-                var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
-                foreach (var item in uiItems)
+                if (RightPageMoveButton.Visibility == Visibility.Visible
+                    && pt.IsContactUIElementRelativeFrom(RootGrid, RightPageMoveButton)
+                    && (RightPageMoveButton.Command?.CanExecute(null) ?? false))
                 {
-                    if (item.Visibility == Visibility.Collapsed) { continue; }
-
-                    if (item == RightPageMoveButton)
-                    {
-                        if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
-                        {
-                            RightPageMoveButton.Command.Execute(null);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
-                    else if (item == LeftPageMoveButton)
-                    {
-                        if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                        {
-                            LeftPageMoveButton.Command.Execute(null);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
-                    else if (item == ToggleMenuButton)
-                    {
-                        if (ToggleBottomMenuCommand is IRelayCommand command && command.CanExecute(null))
-                        {
-                            command.Execute(null);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
+                    RightPageMoveButton.Command.Execute(null);
+                    e.Handled = true;
+                }
+                else if (LeftPageMoveButton.Visibility == Visibility.Visible
+                    && pt.IsContactUIElementRelativeFrom(RootGrid, LeftPageMoveButton)
+                    && (LeftPageMoveButton.Command?.CanExecute(null) ?? false))
+                {
+                    LeftPageMoveButton.Command.Execute(null);
+                    e.Handled = true;
+                }
+                else if (ToggleMenuButton.Visibility == Visibility.Visible
+                    && pt.IsContactUIElementRelativeFrom(RootGrid, ToggleMenuButton)
+                    && ToggleBottomMenuCommand is IRelayCommand command && command.CanExecute(null))
+                {
+                    command.Execute(null);
+                    e.Handled = true;
                 }
             }
             else
