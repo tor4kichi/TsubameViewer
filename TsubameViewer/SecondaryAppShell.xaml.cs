@@ -75,14 +75,21 @@ public sealed partial class SecondaryAppShell : UserControl
             TitleBarContent.ContentTemplate = titleBar.GetContent();
             TitleBarContent.Content = currentPage?.DataContext;
             titleBar.ObserveTitleChanged()
-                .Subscribe(x => TitleText.Text = !string.IsNullOrEmpty(x) ? x : "TsubameViewer")
+                .Subscribe(x =>
+                {
+                    var title = !string.IsNullOrEmpty(x) ? x : "TsubameViewer";
+                    TitleText.Text = title;
+                    (_windowContext as SecondaryWindowItem)?.Title = title;
+                })
                 .RegisterTo(ct);
+
         }
         else
         {
             TitleBarContent.ContentTemplate = null;
             TitleBarContent.Content = null;
             TitleText.Text = "TsubameViewer";
+            (_windowContext as SecondaryWindowItem)?.Title = "TsubameViewer";
         }
         return handleResult;
     }

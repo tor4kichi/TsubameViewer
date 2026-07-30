@@ -59,7 +59,6 @@ public sealed class SecondaryWindowService
     async Task<SecondaryWindowItem> CreateNewWindowAsync(string pageName, INavigationParameters navigationParameters)
     {
         var appWindow = await AppWindow.TryCreateAsync();
-        appWindow.Title = "TsubameViewer";
 
         const int defaultWidth = 1280;
         const int defaultHeight = 720;
@@ -196,7 +195,7 @@ public sealed partial class PrimaryWindowFacade : ObservableObject, IWindowManag
     {
         _appView = appView;
         _titleBar = titleBar;
-        _titleBar.IsVisibleChanged += _titleBar_IsVisibleChanged;
+        _titleBar.IsVisibleChanged += _titleBar_IsVisibleChanged;        
     }
 
     private void _titleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
@@ -294,6 +293,14 @@ public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManag
     public bool IsDisplay { get; set; }
     public AppWindow AppWindow { get; }
     public SecondaryAppShell AppShell { get; }
+
+    [ObservableProperty]
+    string _title = "";
+
+    partial void OnTitleChanged(string value)
+    {
+        AppWindow.Title = value;
+    }
 
     internal async Task NavigateAsync(string pageName, INavigationParameters navigationParameters)
     {
