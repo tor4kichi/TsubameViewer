@@ -551,6 +551,7 @@
         </i:Interaction.Behaviors>
       </Grid>
       <Grid x:Name="TocContentPanel"
+            Margin="0 0 0 0"
             MinWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
             Background="{ThemeResource ApplicationContentBackgroundBrush}"
@@ -675,6 +676,19 @@
 
 
     <VisualStateManager.VisualStateGroups>
+
+      <!-- セカンダリンウィンドウ -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _windowContext.IsSecondary, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="TocItemsContainer.Margin"
+                    Value="0 32 0 0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>

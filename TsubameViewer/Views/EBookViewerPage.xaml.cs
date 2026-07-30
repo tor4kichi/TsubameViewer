@@ -50,8 +50,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     internal readonly EBookViewerPageViewModel _vm;
     readonly IMessenger _messenger;
-    private readonly SecondaryWindowService _secondaryWindowService;
-    private readonly IWindowManagementAware _windowContext;
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
     readonly Core.AsyncLock _movePageLock = new();
 
     public EBookViewerPage()
@@ -60,7 +60,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         
         DataContext = _vm = Ioc.Default.GetRequiredService<EBookViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
-
+        _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
         EPubRenderer_1.ContentRefreshStarting += WebView_ContentRefreshStarting_1;
