@@ -1515,16 +1515,16 @@ public sealed partial class AppShell : UserControl
             || this.RequestedTheme is ElementTheme.Light
             )
         {
-            titleBar.ButtonBackgroundColor = "#F6F8FB".ToColor();
+            titleBar.ButtonBackgroundColor = "#00F6F8FB".ToColor();
             titleBar.ButtonForegroundColor = "#000000".ToColor();
-            titleBar.ButtonHoverBackgroundColor = "#E9E9E9".ToColor();
+            titleBar.ButtonHoverBackgroundColor = "#F6F8FB".ToColor();
             titleBar.ButtonHoverForegroundColor = "#000000".ToColor();
-            titleBar.ButtonInactiveBackgroundColor = "#F3F3F3".ToColor();
+            titleBar.ButtonInactiveBackgroundColor = "#33F6F8FB".ToColor();
             titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
         }
         else
         {
-            titleBar.ButtonBackgroundColor = "#1F1F1F".ToColor();
+            titleBar.ButtonBackgroundColor = "#001F1F1F".ToColor();
             titleBar.ButtonForegroundColor = "#FFFFFF".ToColor();
             titleBar.ButtonHoverBackgroundColor = "#2d2d2d".ToColor();
             titleBar.ButtonHoverForegroundColor = "#FFFFFF".ToColor();

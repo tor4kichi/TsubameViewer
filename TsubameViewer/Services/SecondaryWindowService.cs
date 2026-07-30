@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.WinUI.Helpers;
 using R3;
 using R3.Extensions;
 using System;
@@ -14,23 +15,51 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
+using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.Core;
+using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.WindowManagement;
+using Windows.UI.Xaml;
+using ApplicationTheme = TsubameViewer.ViewModels.ApplicationTheme;
 #nullable enable
 namespace TsubameViewer.Services;
 
 public sealed class SecondaryWindowService
 {
-    public SecondaryWindowService(NavigationStackRepository navigationStackRepository)
+    public SecondaryWindowService(
+        NavigationStackRepository navigationStackRepository,
+        ApplicationSettings applicationSettings)
     {
         var appView = ApplicationView.GetForCurrentView();
         _primaryWindow = new PrimaryWindowFacade(appView, CoreApplication.GetCurrentView().TitleBar);
         appView.Consolidated += AppView_Consolidated;
         _navigationStackRepository = navigationStackRepository;
+        _applicationSettings = applicationSettings;
+
+        _dispoable = _applicationSettings.ObservePropertyChanged(x => x.Theme)
+            .Subscribe(this, (x, s) => 
+            {
+                var _this = s;
+                var elementTheme = x switch
+                {
+                    ApplicationTheme.Light => ElementTheme.Light,
+                    ApplicationTheme.Dark => ElementTheme.Dark,
+                    ApplicationTheme.Default => ElementTheme.Default,
+                    _ => throw new InvalidOperationException()
+                };
+                
+                foreach (var context in _this._appWindows)
+                {
+                    RefreshTitleBarButtonColors(context.AppWindow, x);
+                    context.AppShell.RequestedTheme = elementTheme;
+                }
+            });
+            
     }
 
     private void AppView_Consolidated(ApplicationView sender, ApplicationViewConsolidatedEventArgs args)
@@ -43,7 +72,8 @@ public sealed class SecondaryWindowService
 
     readonly PrimaryWindowFacade _primaryWindow;
     readonly NavigationStackRepository _navigationStackRepository;
-
+    private readonly ApplicationSettings _applicationSettings;
+    private readonly IDisposable _dispoable;
     SecondaryWindowItem? _defaultWindowItem;
     public IWindowManagementAware GetCurentFocusWindow()
     {
@@ -55,6 +85,35 @@ public sealed class SecondaryWindowService
     private List<SecondaryWindowItem> _appWindows = new();
 
     SecondaryWindowItem? _nowCreatingAppWindow;
+    
+    void RefreshTitleBarButtonColors(AppWindow appWindow, ApplicationTheme theme)
+    {
+        var actualTheme = theme switch
+        {
+            ApplicationTheme.Default => SystemThemeHelper.GetSystemTheme(),
+            _ => theme,
+        };
+
+        var titleBar = appWindow.TitleBar;
+        if (actualTheme == ApplicationTheme.Light)
+        {
+            titleBar.ButtonBackgroundColor = "#55F6F8FB".ToColor();
+            titleBar.ButtonForegroundColor = "#000000".ToColor();
+            titleBar.ButtonHoverBackgroundColor = "#F6F8FB".ToColor();
+            titleBar.ButtonHoverForegroundColor = "#000000".ToColor();
+            titleBar.ButtonInactiveBackgroundColor = "#33F6F8FB".ToColor();
+            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+        }
+        else
+        {
+            titleBar.ButtonBackgroundColor = "#551F1F1F".ToColor();
+            titleBar.ButtonForegroundColor = "#FFFFFF".ToColor();
+            titleBar.ButtonHoverBackgroundColor = "#2d2d2d".ToColor();
+            titleBar.ButtonHoverForegroundColor = "#FFFFFF".ToColor();
+            titleBar.ButtonInactiveBackgroundColor = "#33202020".ToColor();
+            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+        }
+    }
 
     async Task<SecondaryWindowItem> CreateNewWindowAsync(string pageName, INavigationParameters navigationParameters)
     {
@@ -62,11 +121,18 @@ public sealed class SecondaryWindowService
 
         const int defaultWidth = 1280;
         const int defaultHeight = 720;
-        appWindow.RequestSize(new Windows.Foundation.Size(defaultWidth, defaultHeight));
-
+        appWindow.RequestSize(new Windows.Foundation.Size(defaultWidth, defaultHeight));        
+        RefreshTitleBarButtonColors(appWindow, _applicationSettings.Theme);        
         SecondaryWindowItem context = (App.Current as App).InitializeAppWindow(appWindow);
         context.AppShell._secondaryWindowService = this;
         context.AppShell._windowContext = context;
+        context.AppShell.RequestedTheme = _applicationSettings.Theme switch
+        {
+            ApplicationTheme.Light => ElementTheme.Light,
+            ApplicationTheme.Dark => ElementTheme.Dark,
+            ApplicationTheme.Default => ElementTheme.Default,
+            _ => throw new InvalidOperationException()
+        }; ;
         _nowCreatingAppWindow = context;
         try
         {
