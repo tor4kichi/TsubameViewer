@@ -102,7 +102,7 @@ public sealed class ColorAdjustmentEffect : IBasicVideoEffect
         using (var ds = renderTarget.CreateDrawingSession())
         {
             ICanvasImage targetSource = inputBitmap;
-            if (_contrast != 1 && _brightness != 0)
+            if (_contrast != 1 || _brightness != 0)
             {
                 float offset = (1.0f - _contrast) * 0.5f + _brightness;
 
