@@ -5,6 +5,7 @@ using Microsoft.Graphics.Canvas.Effects;
 using System.Collections.Generic;
 using Windows.Foundation.Collections;
 using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Graphics.Effects;
 using Windows.Media.Effects;
 using Windows.Media.MediaProperties;
 
@@ -52,7 +53,37 @@ public sealed class ColorAdjustmentEffect : IBasicVideoEffect
 
     public void SetProperties(IPropertySet configuration)
     {
-        _properties = (PropertySet)configuration;
+        if (_properties != null)
+        {
+            _properties.MapChanged -= _properties_MapChanged;
+        }
+        _properties = (PropertySet)configuration;        
+        _properties.MapChanged += _properties_MapChanged;
+
+        // 外部から変更されたプロパティを読み込む
+        UpdateParameters();
+    }
+
+    private void _properties_MapChanged(IObservableMap<string, object> sender, IMapChangedEventArgs<string> @event)
+    {
+        if (@event.Key.Equals("Brightness", System.StringComparison.Ordinal)
+            && sender.TryGetValue("Brightness", out object b) 
+            && b is float brightness)
+        {
+            _brightness = brightness;
+        }
+        else if (@event.Key.Equals("Contrast", System.StringComparison.Ordinal)
+            && sender.TryGetValue("Contrast", out object c)
+            && c is float contrast)
+        {
+            _contrast = contrast;
+        }
+        else if (@event.Key.Equals("Saturation", System.StringComparison.Ordinal)
+            && sender.TryGetValue("Saturation", out object s)
+            && s is float saturation)
+        {
+            _saturation = saturation;
+        }
     }
 
     public void SetEncodingProperties(VideoEncodingProperties encodingProperties, IDirect3DDevice device)
@@ -61,35 +92,42 @@ public sealed class ColorAdjustmentEffect : IBasicVideoEffect
         _canvasDevice = CanvasDevice.CreateFromDirect3D11Device(device);
         _colorMatrixEffect = new ColorMatrixEffect();
         _saturationEffect = new SaturationEffect();
-        _saturationEffect.Source = _colorMatrixEffect;
     }
 
     public void ProcessFrame(ProcessVideoFrameContext context)
-    {
-        // 外部から変更されたプロパティを読み込む
-        UpdateParameters();
-        
+    {                
         // 入力フレームと出力フレームの D3D サーフェスから CanvasBitmap / CanvasRenderTarget を作成
         using (var inputBitmap = CanvasBitmap.CreateFromDirect3D11Surface(_canvasDevice, context.InputFrame.Direct3DSurface))
         using (var renderTarget = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, context.OutputFrame.Direct3DSurface))
         using (var ds = renderTarget.CreateDrawingSession())
         {
-            float offset = (1.0f - _contrast) * 0.5f + _brightness;
-
-            _colorMatrixEffect.Source = inputBitmap;
-            _colorMatrixEffect.ColorMatrix = new Matrix5x4
+            ICanvasImage targetSource = inputBitmap;
+            if (_contrast != 1 && _brightness != 0)
             {
-                M11 = _contrast, M12 = 0,        M13 = 0,        M14 = 0,
-                M21 = 0,        M22 = _contrast, M23 = 0,        M24 = 0,
-                M31 = 0,        M32 = 0,        M33 = _contrast, M34 = 0,
-                M41 = 0,        M42 = 0,        M43 = 0,        M44 = 1,
-                M51 = offset,   M52 = offset,   M53 = offset,   M54 = 0
-            };
+                float offset = (1.0f - _contrast) * 0.5f + _brightness;
+
+                _colorMatrixEffect.Source = targetSource;
+                _colorMatrixEffect.ColorMatrix = new Matrix5x4
+                {
+                    M11 = _contrast, M12 = 0,        M13 = 0,        M14 = 0,
+                    M21 = 0,        M22 = _contrast, M23 = 0,        M24 = 0,
+                    M31 = 0,        M32 = 0,        M33 = _contrast, M34 = 0,
+                    M41 = 0,        M42 = 0,        M43 = 0,        M44 = 1,
+                    M51 = offset,   M52 = offset,   M53 = offset,   M54 = 0
+                };
+                targetSource = _colorMatrixEffect;
+            }
+
             // 3. 彩度 (SaturationEffect)
-            _saturationEffect.Saturation = _saturation;
+            if (_saturation != 1)
+            {
+                _saturationEffect.Saturation = _saturation;
+                _saturationEffect.Source = targetSource;
+                targetSource = _saturationEffect;
+            }
 
             // 最終結果を出力サーフェスに描画
-            ds.DrawImage(_saturationEffect);
+            ds.DrawImage(targetSource);
         }
     }
 
@@ -109,6 +147,10 @@ public sealed class ColorAdjustmentEffect : IBasicVideoEffect
     {
         _canvasDevice?.Dispose();
         _colorMatrixEffect?.Dispose();
+        if (_properties != null)
+        {
+            _properties.MapChanged -= _properties_MapChanged;
+        }
     }
 
     public void DiscardQueuedFrames() { }
