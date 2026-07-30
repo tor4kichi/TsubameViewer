@@ -151,7 +151,14 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
     CanvasBitmap? _canvasBitmap;
     TimeSpan _lastFrameTime;
     public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
-    {
+    {     
+        if (_source.Device.IsDeviceLost())
+        {
+            _source.Recreate(CanvasDevice.GetSharedDevice());
+            _canvasBitmap?.Dispose();
+            _canvasBitmap = null;
+        }
+
         if (_canvasBitmap == null)
         {            
             using (var sample = await _frameGrabber.ExtractVideoFrameAsync(time).AsTask(ct))
@@ -182,7 +189,7 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
 
         using var frame = await _frameGrabber.ExtractVideoFrameAsync(time, true, (int)Math.Round(_frameGrabber.CurrentVideoStream.FramesPerSecond) * 1).AsTask(ct);
         if (_canvasBitmap == null)
-        {
+        {            
             _canvasBitmap = CanvasBitmap.CreateFromBytes(
                 _source,
                 frame.PixelData,
@@ -192,7 +199,7 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
                 96);
         }
         else
-        {
+        {            
             if (_lastFrameTime == time)
             {
                 return _source.Size;
