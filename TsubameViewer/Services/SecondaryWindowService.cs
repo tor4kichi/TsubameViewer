@@ -121,7 +121,8 @@ public sealed class SecondaryWindowService
 
         const int defaultWidth = 1280;
         const int defaultHeight = 720;
-        appWindow.RequestSize(new Windows.Foundation.Size(defaultWidth, defaultHeight));        
+        appWindow.RequestSize(new Windows.Foundation.Size(defaultWidth, defaultHeight));
+        appWindow.TitleBar.ExtendsContentIntoTitleBar = true;
         RefreshTitleBarButtonColors(appWindow, _applicationSettings.Theme);        
         SecondaryWindowItem context = (App.Current as App).InitializeAppWindow(appWindow);
         context.AppShell._secondaryWindowService = this;
@@ -136,8 +137,8 @@ public sealed class SecondaryWindowService
         _nowCreatingAppWindow = context;
         try
         {
+            context.IsFullScreenMode = _applicationSettings.IsFullScreenOnAppLaunch;
             navigationParameters.SetNavigationMode(Windows.UI.Xaml.Navigation.NavigationMode.New);
-            appWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             context.IsDisplay = true;
             appWindow.Closed += (s, e) =>
             {                
@@ -159,7 +160,7 @@ public sealed class SecondaryWindowService
 
             await appWindow.TryShowAsync();
             await context.NavigateAsync(pageName, navigationParameters);
-            context.IsFullScreenMode = _applicationSettings.IsFullScreenOnAppLaunch;
+
             return context;
         }
         finally

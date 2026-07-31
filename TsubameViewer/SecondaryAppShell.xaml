@@ -42,7 +42,7 @@
                                 Y="1" />
           </TextBlock.RenderTransform>
         </TextBlock>
-        <TextBlock Text="TsubameViewer"
+        <TextBlock Text=""
                    x:Name="TitleText"                   
                    Margin="12"
                    VerticalAlignment="Center"
