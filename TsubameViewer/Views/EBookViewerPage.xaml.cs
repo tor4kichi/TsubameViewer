@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models.EBook;
+using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.EBookControls;
@@ -49,7 +50,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     internal readonly EBookViewerPageViewModel _vm;
     readonly IMessenger _messenger;
-
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
     readonly Core.AsyncLock _movePageLock = new();
 
     public EBookViewerPage()
@@ -58,7 +60,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         
         DataContext = _vm = Ioc.Default.GetRequiredService<EBookViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
-
+        _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
         EPubRenderer_1.ContentRefreshStarting += WebView_ContentRefreshStarting_1;
@@ -75,9 +78,13 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        AnimationBuilder.Create()
+        var uiSettings = new UISettings();
+        if (uiSettings.AnimationsEnabled)
+        {
+            AnimationBuilder.Create()
             .Translation(Axis.X, -320, duration: TimeSpan.FromMilliseconds(1))
             .Start(TocContentPanel);
+        }
 
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
@@ -156,23 +163,16 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         base.OnNavigatingFrom(e);
     }
     Core.AsyncLock _resourceReadLock = new Core.AsyncLock();
-    async void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
+    void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
     {
         var reqesutUri = e.Request.RequestUri;
         using (var defferral = e.GetDeferral())
         {
-            try
-            {                
-                var stream = _vm.ResolveWebResourceRequest(reqesutUri);
-                if (stream != null)
-                {
-                    e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
-                    e.Response.Content = new HttpStreamContent(stream.AsInputStream());
-                }                
-            }
-            finally
+            var stream = _vm.ResolveWebResourceRequest(reqesutUri);
+            if (stream != null)
             {
-                defferral.Complete();
+                e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
+                e.Response.Content = new HttpStreamContent(stream.AsInputStream());
             }
         }
     }
@@ -528,7 +528,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         else if (args.Y < -7.5)
         {
             // 上スワイプ
-            _vm.BackNavigationCommand.Execute(null);
+            if (_windowContext.IsPrimary)
+            {
+                _vm.BackNavigationCommand.Execute(null);
+            }
+            else
+            {
+                _ = _secondaryWindowService.CloseAsync(_windowContext);
+            }
         }
 
 
@@ -539,7 +546,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     Color _foregroundDefaultColor;
     private void ForegroundColorColorPickerFlyoutOpened(object sender, object e)
     {
-        _foregroundDefaultColor = (_vm.GetCurrentTheme() == Core.Models.ApplicationTheme.Dark
+        _foregroundDefaultColor = (_vm.GetCurrentTheme() == ViewModels.ApplicationTheme.Dark
                 ? Color.FromArgb(0xFF, 0xff, 0xe4, 0xd1)
                 : Color.FromArgb(0xFF, 0x1f, 0x1f, 0x1f));
         ForegroundColorPicker.Color = _vm.EBookReaderSettings.ForegroundColor.A == 0x00

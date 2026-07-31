@@ -184,7 +184,6 @@
         <SymbolIconSource Symbol="Back" />
       </XamlUICommand.IconSource>
     </XamlUICommand>
-
   </Page.Resources>
 
   
@@ -264,6 +263,25 @@
 
     </i:Interaction.Behaviors>
 
+    <!-- KeyboardAccelarator用のダミー -->
+    <Grid Opacity="0"
+          x:Name="ShortcutKeyButtonsContainer"
+          Height="1"
+          Width="1"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom">
+      <Grid.RenderTransform>
+        <TranslateTransform X="1"
+                            Y="1" />
+      </Grid.RenderTransform>
+      <Button Command="{x:Bind ToggleEditTransformModeCommand}"
+              Tag="{i18nExt:Localize Key=EditViewerTransform}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Z" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
     <Grid x:Name="ContentContainer">
       <Grid x:Name="ImagesContainer"
             uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
@@ -528,10 +546,10 @@
         </Style>
       </Grid.Resources>
 
-      <Button x:Name="BottomUIBackNavigationButton" Click="ForceClosePage"
+      <Button x:Name="BottomUIBackNavigationButton" 
+              Click="ForceClosePage"
               AccessKey="Q"
-              HorizontalAlignment="Left"
-              >
+              HorizontalAlignment="Left">
         <SymbolIcon Symbol="Clear" />
 
         <Button.KeyboardAccelerators>
@@ -656,7 +674,7 @@
     </Grid>
 
     <uwpControls:DockPanel x:Name="NeighborsContentButtonsContainer"
-                           Visibility="{x:Bind ImageSelectorContainer.Visibility, Mode=OneWay}"
+                           Visibility="Collapsed"
                            FlowDirection="RightToLeft">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
@@ -708,7 +726,7 @@
 
     <Border x:Name="ImageSelectorContainer" 
             Background="{ThemeResource SystemChromeMediumHighColor}"
-            Visibility="{x:Bind IsOpenBottomMenu, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+            Visibility="Collapsed"
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
@@ -726,13 +744,17 @@
         <animation:OpacityAnimation To="1"
                                     EasingType="Cubic"
                                     Duration="0:0:0.175" />
-        <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 0"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
         <animation:OpacityAnimation To="0"
                                     EasingType="Cubic"
                                     Duration="0:0:0.175" />
-        <animation:TranslationAnimation To="0, 24" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 24"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
       <StackPanel Margin="8" Spacing="6">
@@ -977,26 +999,37 @@
           </ComboBox.KeyboardAccelerators>
         </ComboBox>
 
-        <Slider x:Name="PageSelector"
-                uwpControls:DockPanel.Dock="Bottom"                
-                Minimum="0"
-                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
-                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
-                TickFrequency="1"
-                StepFrequency="1"
-                Padding="0"
-                Margin="0 0"
-                XYFocusDown="{x:Bind PageFolderNamesSelector}"
-                FlowDirection="RightToLeft"
-                AccessKey="4"
-                IsThumbToolTipEnabled="False"
-                KeyboardAcceleratorPlacementMode="Hidden"
-                KeyTipPlacementMode="Hidden"
-                ctwu:FrameworkElementExtensions.Cursor="Hand">
-          <Slider.KeyboardAccelerators>
-            <KeyboardAccelerator Key="4" />
-          </Slider.KeyboardAccelerators>
-        </Slider>
+        <Grid>
+          <Slider x:Name="PageSelector"
+                  uwpControls:DockPanel.Dock="Bottom"
+                  Minimum="0"
+                  Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                  ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                  TickFrequency="1"
+                  StepFrequency="1"
+                  Padding="0"
+                  Margin="0 0"
+                  XYFocusDown="{x:Bind PageFolderNamesSelector}"
+                  FlowDirection="RightToLeft"
+                  AccessKey="4"
+                  IsThumbToolTipEnabled="False"
+                  KeyboardAcceleratorPlacementMode="Hidden"
+                  KeyTipPlacementMode="Hidden">
+            <Slider.KeyboardAccelerators>
+              <KeyboardAccelerator Key="4" />
+            </Slider.KeyboardAccelerators>
+          </Slider>
+          <Border x:Name="VideoPositionSliderWall"
+                  IsHitTestVisible="True"
+                  Background="Transparent"
+                  PointerMoved="PageSelectorSliderWall_PointerMoved"
+                  PointerPressed="PageSelectorSliderWall_PointerPressed"
+                  PointerReleased="PageSelectorSliderWall_PointerReleased"
+                  PointerExited="PageSelectorSliderWall_PointerExited"
+                  ctwu:FrameworkElementExtensions.Cursor="Hand">
+
+          </Border>
+        </Grid>
 
         <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
 
@@ -1217,8 +1250,6 @@
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}"
                                                      CollisionRect="0 0 5000 64" />
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
-                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
@@ -1411,8 +1442,6 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
-                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind _vm.NowEditTransformMode, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
@@ -1520,6 +1549,20 @@
           <VisualState.Setters>
             <Setter Target="Page2FavoriteToggleItemButton.Text"
                     Value="{i18nExt:Localize Key=Favorite_RemoveItem}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Visible" />
+            <Setter Target="NeighborsContentButtonsContainer.Visibility"
+                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

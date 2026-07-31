@@ -15,15 +15,12 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     public FolderListingSettings()
     {
         _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
-        _IsImageFileGenerateThumbnailEnabled = Read(true, nameof(IsImageFileGenerateThumbnailEnabled));
-        _IsFolderGenerateThumbnailEnabled = Read(true, nameof(IsFolderGenerateThumbnailEnabled));
-        _IsArchiveFileGenerateThumbnailEnabled = Read(true, nameof(IsArchiveFileGenerateThumbnailEnabled));
-        _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
         _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
         _isInPageSearchWithMigemo = Read(true, nameof(IsInPageSearchWithMigemo));
         _thumbnailDecodeType = Read(ThumbnailDecodeMethod.Skia, nameof(ThumbnailDecodeType));
         _FolderItemThumbnailQuality = Read(1f, nameof(FolderItemThumbnailQuality));
+        _thumbnailImageCacheMode = Read(ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon, nameof(ThumbnailImageCacheMode));
     }
 
     private FileDisplayMode _FileDisplayMode;
@@ -31,34 +28,6 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     {
         get { return _FileDisplayMode; }
         set { SetProperty(ref _FileDisplayMode, value); }
-    }
-
-    private bool _IsImageFileGenerateThumbnailEnabled;
-    public bool IsImageFileGenerateThumbnailEnabled
-    {
-        get { return _IsImageFileGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsImageFileGenerateThumbnailEnabled, value); }
-    }
-
-    private bool _IsFolderGenerateThumbnailEnabled;
-    public bool IsFolderGenerateThumbnailEnabled
-    {
-        get { return _IsFolderGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsFolderGenerateThumbnailEnabled, value); }
-    }
-
-    private bool _IsArchiveFileGenerateThumbnailEnabled;
-    public bool IsArchiveFileGenerateThumbnailEnabled
-    {
-        get { return _IsArchiveFileGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsArchiveFileGenerateThumbnailEnabled, value); }
-    }
-
-    private bool _IsArchiveEntryGenerateThumbnailEnabled;
-    public bool IsArchiveEntryGenerateThumbnailEnabled
-    {
-        get { return _IsArchiveEntryGenerateThumbnailEnabled; }
-        set { SetProperty(ref _IsArchiveEntryGenerateThumbnailEnabled, value); }
     }
 
     private float _FolderItemThumbnailQuality;
@@ -95,6 +64,13 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         get => _thumbnailDecodeType;
         set => SetProperty(ref _thumbnailDecodeType, value);
     }
+
+    ThumbnailImageCacheMode _thumbnailImageCacheMode;
+    public ThumbnailImageCacheMode ThumbnailImageCacheMode
+    {
+        get => _thumbnailImageCacheMode;
+        set => SetProperty(ref _thumbnailImageCacheMode, value);
+    }
 }
 
 public enum ThumbnailDecodeMethod
@@ -102,4 +78,11 @@ public enum ThumbnailDecodeMethod
     Skia,
     WindowsImageCodec,
     Win2D,
+}
+
+public enum ThumbnailImageCacheMode
+{
+    AlwaysGenerateCache,
+    OnlyGenerateCacheIfFsThumbnailImageAsIcon,
+    NeverGenerateCache,
 }

@@ -1,34 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Services;
 using Windows.UI.ViewManagement;
 
-namespace TsubameViewer.ViewModels.ViewManagement.Commands
+namespace TsubameViewer.ViewModels.ViewManagement.Commands;
+
+public sealed class ToggleFullScreenCommand : CommandBase
 {
-    public sealed class ToggleFullScreenCommand : CommandBase
+    private readonly SecondaryWindowService _secondaryWindowService;
+    private readonly IWindowManagementAware _windowContext;
+
+    public ToggleFullScreenCommand(SecondaryWindowService secondaryWindowService)
     {
-        private ApplicationView _currentView;
+        _secondaryWindowService = secondaryWindowService;
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
+    }
+    public override bool CanExecute(object parameter)
+    {
+        return true;
+    }
 
-        public ToggleFullScreenCommand()
+    public override void Execute(object parameter)
+    {
+        if (_windowContext.IsFullScreenMode)
         {
-            _currentView = ApplicationView.GetForCurrentView();
+            _windowContext.ExitFullScreenMode();
         }
-        public override bool CanExecute(object parameter)
+        else
         {
-            return true;
-        }
-
-        public override void Execute(object parameter)
-        {
-            System.Diagnostics.Debug.WriteLine("ToggleFullScreenCommand");
-            if (_currentView.IsFullScreenMode)
-            {
-                _currentView.ExitFullScreenMode();
-            }
-            else
-            {
-                _currentView.TryEnterFullScreenMode();
-            }
+            _windowContext.TryEnterFullScreenMode();
         }
     }
 }

@@ -494,7 +494,7 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Register<SendToOtherFolderMessage>(this);
             _messenger.Register<ImageSourceFavoriteChanged>(this);
 
-            this.ObservePropertyChanged(x => x.SelectedFileSortType)
+            this.ObservePropertyChanged(x => x.SelectedFileSortType, false)
                 .SubscribeAwait(async (sort, ct) =>
                 {
                     await SetSort(sort, ct);
@@ -841,7 +841,7 @@ public sealed partial class ImageListupPageViewModel
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     sortType,
                                     cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    (IStorageItemViewModel itemVM) => itemVM.Name,
                                     ct);
                            
                                 HasFileItem = ImageFileItems.Any();                                
@@ -865,7 +865,7 @@ public sealed partial class ImageListupPageViewModel
                                     (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                     sortType,
                                     cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    (IStorageItemViewModel itemVM) => itemVM.Name,
                                     ct);
                             }
 

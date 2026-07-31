@@ -23,9 +23,11 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels.ViewManagement.Commands;
 using TsubameViewer.Views;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -182,9 +184,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
-{
-    public ICommand? ToggleFullScreenCommand { get; set; }
-
+{    
     public MovieViewerPageViewModel(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -199,7 +199,9 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ViewerSettings viewerSettings,
-        MovieViewerPageSettings pageSettings)
+        MovieViewerPageSettings pageSettings,
+        ToggleFullScreenCommand toggleFullScreenCommand,
+        SecondaryWindowService secondaryWindowService)
     {
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -215,6 +217,9 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         ViewerSettings = viewerSettings;
         PageSettings = pageSettings;
+        ToggleFullScreenCommand = toggleFullScreenCommand;
+        _secondaryWindowService = secondaryWindowService;
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
     }
 
     CancellationToken _navigationCt;
@@ -227,12 +232,15 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     public LocalBookmarkRepository BookmarkManager { get; }
     public StorageItemSettings StorageItemSettings { get; }
     public MovieViewerPageSettings PageSettings { get; }
+    public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
 
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     public ThumbnailImageManager ThumbnailManager { get; }
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     public ViewerSettings ViewerSettings { get; }
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
 
     [ObservableProperty]
     StorageFile? _movieFile;
@@ -259,6 +267,9 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
     [ObservableProperty]
     bool _nowEditTransformMode;
+
+    [ObservableProperty]
+    bool _nowVideoEffectEdit;
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -365,10 +376,17 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     }
 
     [RelayCommand]
-    async Task OpenMovieFileAsync(IImageSource? imageSource)
+    public async Task OpenMovieFileAsync(IImageSource? imageSource)
     {
         if (imageSource == null) { return; }
-        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-        _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+        if (_windowContext.IsPrimary)
+        {
+            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+            _ = _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+        }
+        else
+        {
+            _ = _secondaryWindowService.OpenViewerAsync(imageSource, false);
+        }
     }
 }

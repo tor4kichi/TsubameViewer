@@ -86,10 +86,7 @@ ConfirmRemoveSourceFolderFromAppWithFolderName = Voulez-vous vraiment supprimer 
 ConfirmRemoveSourceFolderFromAppDescription = Cette opération ne supprime pas le dossier spécifié ou les éléments contenus à l'intérieur. \nLe dossier supprimer peut-être réinscrit dans l'application à n'importe quel moment.
 FolderItemListingSettings = Paramètres d'affichage des éléments de dossier
 IsOpenFolderContentListingAsDefault = Définissez « Ouvrir dans la liste des images » comme option par défaut.
-IsGenerateImageFileThumbnail = Générer les miniatures des images
-IsGenerateFolderThumbnail = Générer les miniatures pour les dossier
-IsGenerateArchiveFileThumbnail = Générer les miniatures des fichiers compressés
-IsGenerateArchiveEntryThumbnail = Générer les miniatures des éléments des fichiers compressés
+IsGenerateThumbnailEnabled = Générer un cache pour les images miniatures.
 DeleteThumbnailCache = Supprimer toutes les miniatures du cache
 ThumbnailCacheSize = Montant de mémoire occupé par les images dans le cache
 ProcessingThumbnailCache = Traitement de l'opération de suppression
@@ -135,6 +132,7 @@ Sort_DefaultChildItemSort = Ordre de tri des éléments dans un sous-dossier
 ChildImagesFolderOpenMode = Comment ouvrir un sous-dossier (images)
 OpenImageViewer = Ouvrir dans le visualiseur
 OpenFolderListup = Liste des fichiers
+OpenViewerWithSecondaryWindow = Ouvrir dans une nouvelle fenêtre
 DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le visualiseur
 DefaultFolderOrArchiveOpenMode.Listup = Liste des fichiers
 OpenWithExplorer = Ouvrir dans l'explorateur de fichiers
@@ -142,6 +140,7 @@ OpenWithExternalApplication = Ouvrir avec
 AddSecondaryTile = Épingler au menu de démarrage
 RemoveSecondaryTile = Désépingler du menu de démarrage
 SetThumbnailImage = Définir en tant que miniature
+ResetThumbnailImage = Recharger les images miniatures
 ArchiveOrFolderTransform = Conversion
 TitleDigitCompletionTransform = Complétion des chiffres du titre
 SendToOtherFolder = Se déplacer...
@@ -171,6 +170,17 @@ ThumbnailDecodeMethod.Skia = Skia(CPU)
 ThumbnailDecodeMethod.WindowsImageCodec = WIC(CPU)
 ThumbnailDecodeMethod.Win2D = Win2D(CPU+GPU)
 FolderItemThumbnailQuality = Qualité de l'image miniature
+ThumbnailImageCacheMode = Mode de génération du cache des vignettes
+ThumbnailImageCacheMode_Desc = L'option « Toujours générer » utilise le décodeur d'images de l'application pour générer toutes les vignettes. L'option « Privilégier les vignettes du système de fichiers » utilise par défaut les vignettes du système d'exploitation, mais l'application génère elle-même les vignettes uniquement pour les formats non pris en charge, tels que les fichiers zip ou epub. L'option « Ne pas mettre en cache » ne génère pas de nouveau cache et utilise uniquement le cache d'images existant.
+ThumbnailImageCacheMode.AlwaysGenerateCache = Générer en permanence
+ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Privilégier les vignettes du système de fichiers
+ThumbnailImageCacheMode.NeverGenerateCache = Ne pas mettre en cache
+SetToParentFolderThumbnailImage = Est-il possible d'écraser le fichier cover.jpg dans le dossier ? l'ancien fichier cover.jpg sera supprimé.
+
+
+
+
+
 
 #### History Page
 HistoryPage_Title = Histoire
@@ -186,6 +196,8 @@ ImageListupPage_DragAndDrop_Unsupported = Le glisser-déposer n'est pas pris en 
 
 #### ViewerSettings
 ViewerSettings = Paramètres communs à la visionneuse
+IsViewerOpenWithSecondaryWindow = Afficher la visionneuse dans une autre fenêtre
+IsViewerOpenWithSecondaryWindow_Desc = Si cette option est activée, la visionneuse s'affiche dans une autre fenêtre. Si vous souhaitez afficher au moins trois fenêtres, sélectionnez « Ouvrir dans une nouvelle fenêtre » dans le menu des éléments.
 IsDetectSimiralyFileNameNeighborsEnabled = Détecter les contenus précédents et suivants
 IsDetectSimiralyFileNameNeighborsEnabled_Desc = Permet de détecter les contenus précédents et suivants dont le nom de fichier est similaire à celui du contenu affiché, afin de pouvoir y accéder.
 ThresholdOfSimilarityFileNameNaighborsNormalized = Degré de similitude des noms de fichiers considérés comme précédents ou suivants
@@ -305,6 +317,11 @@ MovieViewer_Settings = Paramètres du visualiseur vidéo
 IsAutoRepeatEnablingEnabled = Activer la lecture en boucle automatique.
 AutoRepeatEnablingTime = Durée de lecture maximale (en secondes) pour l'activation automatique de la lecture en boucle.
 AutoRepeatEnabling = Lecture en boucle : Activée (automatique)
+MovieViewer_VideoEffect = Effets visuels
+MovieViewer_VideoEffect_Edit = Effets de montage vidéo
+MovieViewer_VideoEffect_Brightness = Luminosité
+MovieViewer_VideoEffect_Contrast = Contraste
+MovieViewer_VideoEffect_Saturation = Saturation
 
 
 #### SearchResult

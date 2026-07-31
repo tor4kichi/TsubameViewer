@@ -138,7 +138,6 @@
     <Compile Include="Models\Albam\AlbamMessage.cs" />
     <Compile Include="Models\Albam\AlbamRepository.cs" />
     <Compile Include="Models\Albam\IAlbamImageSource.cs" />
-    <Compile Include="Models\ApplicationSettings.cs" />
     <Compile Include="Models\EBook\EBookReaderSettings.cs" />
     <Compile Include="Helpers\FolderHelper.cs" />
     <Compile Include="Models\Favorite\FavoriteEBookRepository.cs" />

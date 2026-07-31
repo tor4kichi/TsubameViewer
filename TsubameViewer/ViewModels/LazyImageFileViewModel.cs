@@ -176,7 +176,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 if (_status is not LoadingStatus.NowLoading) { return; }
                 if (Item == null) { return; }
 
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
+                using (var stream = await Task.Run(async () => await _thumbnailImageService.EnsureGetImageStreamAsync(Item, imageQuality: 0.5f, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -383,7 +383,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 if (Item == null) { return; }
 
                 using (var outputStream = new MemoryStream())
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, outputStream, ct: ct), ct))
+                using (var stream = await Task.Run(async () => await _thumbnailImageService.EnsureGetImageStreamAsync(Item, outputStream, imageQuality: 0.5f, ct: ct), ct))
                 {
                     if (stream is null || stream.Length == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }

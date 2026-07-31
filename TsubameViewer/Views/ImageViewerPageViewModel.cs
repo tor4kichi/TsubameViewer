@@ -25,6 +25,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -237,8 +238,15 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     async Task OpenMangaFileAsync(IImageSource? imageSource)
     {
         if (imageSource == null) { return; }
-        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-        _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+        if (_windowContext.IsPrimary)
+        {
+            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+            _ = _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+        }
+        else
+        {
+            _ = _secondaryWindowService.OpenViewerAsync(imageSource, false);
+        }
     }
 
     readonly IMessenger _messenger;
@@ -253,7 +261,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     readonly FolderListingSettings _folderListingSettings;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-    
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
+
     public ImageViewerPageViewModel(
         IMessenger messenger,
         ApplicationSettings applicationSettings,
@@ -276,7 +286,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         RefreshNavigationCommand refreshNavigationCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
-        OpenWithExternalApplicationCommand openWithExternalApplicationCommand
+        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
+        SecondaryWindowService secondaryWindowService
         )
     {
         _messenger = messenger;
@@ -302,6 +313,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _folderListingSettings = folderListingSettings;
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        _secondaryWindowService = secondaryWindowService;
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
 
         ClearDisplayImages();
         _DisplayImages_0 = _displayImagesSingle[0];
@@ -838,8 +851,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     && ViewerSettings.IsAutoMoveToNextEnabled
                     && NextImageSource != null)
                 {
-                    var parameters = PageTransitionHelper.CreatePageParameter(NextImageSource);
-                    _ = _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                    _ = OpenMangaFileAsync(NextImageSource);
                     _messenger.SendShowTextNotificationMessage("AutoMoveToNext_Notice".Translate(NextImageSource.Name));
                 }
             })
@@ -1245,18 +1257,18 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         var flattenImageSource1 = imageSource1.FlattenAlbamItemInnerImageSource();
                         var flattenImageSource2 = imageSource2.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut =
-                            (flattenImageSource1 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource1 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
-                            && (flattenImageSource2 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource2 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
-                            ;
-
+                        bool isEnabledThumbnailOut = _folderListingSettings.ThumbnailImageCacheMode != ThumbnailImageCacheMode.NeverGenerateCache;
                         if (isEnabledThumbnailOut)
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                try
+                                {
+                                    using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
+                                    await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                }
+                                catch { }
                                 return thumbImage;
                             }
 
@@ -1309,18 +1321,18 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     if (direction == IndexMoveDirection.Refresh)
                     {
                         var flattenImageSource = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut =
-                            (flattenImageSource is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
-                            || (flattenImageSource is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
-                            ;
-
+                        bool isEnabledThumbnailOut = _folderListingSettings.ThumbnailImageCacheMode != ThumbnailImageCacheMode.NeverGenerateCache;
                         if (isEnabledThumbnailOut)
                         {
                             async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
                             {
-                                using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                try
+                                {
+                                    using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
+                                    await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
+                                }
+                                catch { }
                                 return thumbImage;
                             }
 

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
@@ -14,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -22,6 +24,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -35,6 +38,7 @@ using Windows.Devices.Geolocation;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Search;
+using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Markup;
@@ -128,9 +132,16 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     async Task OpenEpubFileAsync(IImageSource? imageSource)
     {
         if (imageSource == null) { return; }
-        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-        _ = _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
 
+        if (_windowContext.IsPrimary)
+        {
+            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+            _ = _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+        }
+        else
+        {
+            _ = _secondaryWindowService.OpenViewerAsync(imageSource, false);
+        }
     }
 
     [RelayCommand]
@@ -157,6 +168,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
     public EBookReaderSettings EBookReaderSettings { get; }
     public ViewerSettings ViewerSettings { get; }
+
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
+
     public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
     public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
     public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
@@ -186,7 +201,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         EBookReaderSettings themeSettings,
         ViewerSettings viewerSettings,
         ToggleFullScreenCommand toggleFullScreenCommand,
-        BackNavigationCommand backNavigationCommand
+        BackNavigationCommand backNavigationCommand,
+        SecondaryWindowService secondaryWindowService
         )
     {
         _messenger = messenger;
@@ -201,6 +217,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         BackNavigationCommand = backNavigationCommand;
         EBookReaderSettings = themeSettings;
         ViewerSettings = viewerSettings;
+        _secondaryWindowService = secondaryWindowService;
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
     }
 
     public string ToImageIndexStartWithOne(int bindFor_InnerCurrentImageIndex)
@@ -849,7 +867,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
     const string _dummyReosurceRequestDomain = "https://dummy.com/";
     readonly object _lock = new object();
-    StringBuilder _resourceSb = new();    
+    StringBuilder _resourceSb = new();
     public Stream? ResolveWebResourceRequest(Uri requestUri)
     {
         if (CurrentBook == null) { return null; }
@@ -860,6 +878,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         //    EPubReader内部の別スレッドにスイッチする（確証なし）ようなので、
         //    ResolveWebResourceRequest呼び出し元とは違うスレッドになってしまう可能性がある
         //    ライブラリ側としてはかなり例外的な内部処理だと思うがAsync系メソッドさえ回避すれば問題ない
+        //using (await _webResourceRequestLock.LockAsync(_navigationCt))
         lock (_lock)
         {
             _resourceSb.Clear();
@@ -870,13 +889,18 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 if (image.Key.Equals(key, StringComparison.Ordinal))
                 {
-                    var stream = new MemoryStream();
-                    using (var imageStream = image.GetContentStream())
+                    var stream = new InMemoryRandomAccessStream();
+                    int count = 0;
+                    while (stream.Size == 0 && count++ < 3)
                     {
-                        imageStream.CopyTo(stream);
+                        using (var imageStream = image.GetContentStream())
+                        {
+                            imageStream.CopyTo(stream.AsStreamForWrite());
+                        }
+                        _navigationCt.ThrowIfCancellationRequested();
                     }
-                    stream.Seek(0, SeekOrigin.Begin);
-                    return stream;
+                    stream.Seek(0);
+                    return stream.AsStreamForRead();
                 }
             }
 
@@ -884,13 +908,13 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 if (css.Key.Equals(key, StringComparison.Ordinal))
                 {
-                    var stream = new MemoryStream();
+                    var stream = new InMemoryRandomAccessStream();
                     using (var imageStream = css.GetContentStream())
                     {
-                        imageStream.CopyTo(stream);
+                        imageStream.CopyTo(stream.AsStreamForWrite());
                     }
-                    stream.Seek(0, SeekOrigin.Begin);
-                    return stream;
+                    stream.Seek(0);
+                    return stream.AsStreamForRead();
                 }
             }
 
@@ -947,7 +971,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 .Select(x => new TocItemViewModel(x)).ToList();
         }
 
-        var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(CurrentFolderItem, ct));
+        var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(CurrentFolderItem, 1.0f, ct));
         if (thumbnailImageStream != null)
         {
             using (var ras = thumbnailImageStream.AsRandomAccessStream())

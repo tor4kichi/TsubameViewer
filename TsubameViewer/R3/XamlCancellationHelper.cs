@@ -56,7 +56,10 @@ public static class XamlCancellationHelper
             var frame = (Frame)sender;
             frame.Navigating -= Frame_Navigating;
             var page = (FrameworkElement)frame.Content;
-            Cancel(page);
+            if (page != null)
+            {
+                Cancel(page);
+            }
             Debug.WriteLine($"[GetCancellationTokenOnNavigatingFrom] unregistered: {page.GetType().Name}");
         }
 

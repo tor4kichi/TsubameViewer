@@ -60,7 +60,8 @@
                       ItemTemplate="{StaticResource LocalizeTextTemplate}"
                       SelectionChanged="Segmented_SelectionChanged"
                       Loaded="ListView_Loaded"
-                      ctwu:FrameworkElementExtensions.Cursor="Hand">
+                      ctwu:FrameworkElementExtensions.Cursor="Hand"
+                      MaxWidth="320">
               
             </ListView>
           </winUIControls:SettingsCard>

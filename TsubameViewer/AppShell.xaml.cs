@@ -110,7 +110,8 @@ public sealed partial class AppShell : UserControl
 
     readonly AppShellViewModel _vm;
     readonly IMessenger _messenger;
-
+    private readonly SecondaryWindowService _secondaryWindowService;
+    private readonly ViewerSettings _viewerSettings;
     readonly DispatcherQueue _dispatcherQueue;
     readonly IViewLocator _viewLocator;
     readonly DispatcherQueueTimer _animationCancelTimer;
@@ -127,13 +128,17 @@ public sealed partial class AppShell : UserControl
 
     public AppShell(
         AppShellViewModel viewModel, 
-        IMessenger messenger
+        IMessenger messenger,
+        SecondaryWindowService secondaryWindowService,
+        ViewerSettings viewerSettings
         )
     {
         this.InitializeComponent();
 
         DataContext = _vm = viewModel;
         _messenger = messenger;
+        _secondaryWindowService = secondaryWindowService;
+        _viewerSettings = viewerSettings;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _viewLocator = Ioc.Default.GetRequiredService<IViewLocator>();
         InitializeNavigation();
@@ -942,22 +947,36 @@ public sealed partial class AppShell : UserControl
         {
             if (navigationManager.GetViewerNavigationEntry() is { } viewerEntry)
             {
-                var viewerNavigationParameters = MakeNavigationParameter(viewerEntry.Parameters);
-                if (!viewerNavigationParameters.ContainsKey(PageNavigationConstants.Restored))
+                try
                 {
-                    viewerNavigationParameters.Add(PageNavigationConstants.Restored, string.Empty);
-                }
+                    var viewerNavigationParameters = MakeNavigationParameter(viewerEntry.Parameters);
+                    if (!viewerNavigationParameters.ContainsKey(PageNavigationConstants.Restored))
+                    {
+                        viewerNavigationParameters.Add(PageNavigationConstants.Restored, string.Empty);
+                    }
 
-                var viewerResult = await _messenger.NavigateAsync(viewerEntry.PageName, viewerNavigationParameters);
-                if (!viewerResult.IsSuccess)
+                    if (!_viewerSettings.IsViewerOpenWithSecondaryWindow)
+                    {
+                        var viewerResult = await _messenger.NavigateAsync(viewerEntry.PageName, viewerNavigationParameters);
+                        if (!viewerResult.IsSuccess)
+                        {
+                            await Task.Delay(50);
+                            Debug.WriteLine("[NavigationRestore] Failed restore CurrentPage: " + viewerEntry.PageName);
+                            await ResetNavigationAsync();
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        await _secondaryWindowService.OpenViewerAsync(viewerEntry.PageName, viewerNavigationParameters, false);
+                    }
+
+                    sw.ElapsedWrite("Restore Viewer State");
+                }
+                catch (Exception ex)
                 {
-                    await Task.Delay(50);
-                    Debug.WriteLine("[NavigationRestore] Failed restore CurrentPage: " + viewerEntry.PageName);
-                    await ResetNavigationAsync();
-                    return;
+                    Debug.WriteLine(ex.ToString());
                 }
-
-                sw.ElapsedWrite("Restore Viewer State");
             }
 
             //using (await _navigationLock.LockAsync(CancellationToken.None))
@@ -1474,10 +1493,10 @@ public sealed partial class AppShell : UserControl
         SetTheme(_vm.ApplicationSettings.Theme);
     }
 
-    public void SetTheme(Core.Models.ApplicationTheme applicationTheme)
+    public void SetTheme(ViewModels.ApplicationTheme applicationTheme)
     {
 #if WINDOWS_UWP
-        if (applicationTheme == Core.Models.ApplicationTheme.Default)
+        if (applicationTheme == ViewModels.ApplicationTheme.Default)
         {
             applicationTheme = SystemThemeHelper.GetSystemTheme();
         }
@@ -1485,9 +1504,9 @@ public sealed partial class AppShell : UserControl
 
         this.RequestedTheme = applicationTheme switch
         {
-            Core.Models.ApplicationTheme.Light => ElementTheme.Light,
-            Core.Models.ApplicationTheme.Dark => ElementTheme.Dark,
-            Core.Models.ApplicationTheme.Default => ElementTheme.Default,
+            ViewModels.ApplicationTheme.Light => ElementTheme.Light,
+            ViewModels.ApplicationTheme.Dark => ElementTheme.Dark,
+            ViewModels.ApplicationTheme.Default => ElementTheme.Default,
             _ => throw new NotSupportedException(),
         };
 
@@ -1496,16 +1515,16 @@ public sealed partial class AppShell : UserControl
             || this.RequestedTheme is ElementTheme.Light
             )
         {
-            titleBar.ButtonBackgroundColor = "#F6F8FB".ToColor();
+            titleBar.ButtonBackgroundColor = "#00F6F8FB".ToColor();
             titleBar.ButtonForegroundColor = "#000000".ToColor();
-            titleBar.ButtonHoverBackgroundColor = "#E9E9E9".ToColor();
+            titleBar.ButtonHoverBackgroundColor = "#F6F8FB".ToColor();
             titleBar.ButtonHoverForegroundColor = "#000000".ToColor();
-            titleBar.ButtonInactiveBackgroundColor = "#F3F3F3".ToColor();
+            titleBar.ButtonInactiveBackgroundColor = "#33F6F8FB".ToColor();
             titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
         }
         else
         {
-            titleBar.ButtonBackgroundColor = "#1F1F1F".ToColor();
+            titleBar.ButtonBackgroundColor = "#001F1F1F".ToColor();
             titleBar.ButtonForegroundColor = "#FFFFFF".ToColor();
             titleBar.ButtonHoverBackgroundColor = "#2d2d2d".ToColor();
             titleBar.ButtonHoverForegroundColor = "#FFFFFF".ToColor();
@@ -1584,17 +1603,21 @@ public sealed partial class AppShell : UserControl
 
                 if (dropItems.Count == 1)
                 {
+                    string pageName = "";
+                    bool isListupPage = false;
                     if (openStorageItem is StorageFolder folder)
                     {
                         FolderContainerTypeManager folderContainerTypeManager = Ioc.Default.GetRequiredService<FolderContainerTypeManager>();
                         var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(folder, ct), CancellationToken.None);
                         if (containerType == FolderContainerType.Other)
                         {
-                            var result = await _messenger.NavigateAsync(nameof(FolderListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                            pageName = nameof(FolderListupPage);
+                            isListupPage = true;
                         }
                         else
                         {
-                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                            pageName = nameof(ImageListupPage);
+                            isListupPage = true;
                         }
                     }
                     else if (openStorageItem is StorageFile fileItem)
@@ -1603,16 +1626,28 @@ public sealed partial class AppShell : UserControl
                             || SupportedFileTypesHelper.IsSupportedImageFileExtension(fileItem.FileType)
                             )
                         {
-                            await _messenger.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                            pageName = nameof(ImageViewerPage);
                         }
                         else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                         {
-                            await _messenger.NavigateAsync(nameof(Views.EBookViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                            pageName = nameof(EBookViewerPage);
                         }
                         else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(fileItem.FileType))
                         {
-                            await _messenger.NavigateAsync(nameof(Views.MovieViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                            pageName = nameof(MovieViewerPage);
                         }
+                    }
+                    if (!string.IsNullOrEmpty(pageName))
+                    {
+                        if (!_this._viewerSettings.IsViewerOpenWithSecondaryWindow)
+                        {
+                            await _messenger.NavigateAsync(pageName, new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        }
+                        else
+                        {
+                            await _this._secondaryWindowService.OpenViewerAsync(pageName, new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        }
+
                     }
                 }
             }

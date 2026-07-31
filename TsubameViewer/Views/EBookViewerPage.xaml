@@ -551,6 +551,7 @@
         </i:Interaction.Behaviors>
       </Grid>
       <Grid x:Name="TocContentPanel"
+            Margin="0 0 0 0"
             MinWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
             Background="{ThemeResource ApplicationContentBackgroundBrush}"
@@ -574,8 +575,7 @@
             <StackPanel Padding="0 0 0 32">
 
               <Grid Margin="8" ColumnSpacing="4"
-                    x:Name="NeighborsContentButtonsContainer"
-                    FlowDirection="RightToLeft"
+                    x:Name="NeighborsContentButtonsContainer"                    
                     Visibility="{x:Bind _vm.ViewerSettings.IsDetectSimiralyFileNameNeighborsEnabled, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="1*" />
@@ -584,22 +584,21 @@
                 <Button HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Command="{x:Bind _vm.OpenEpubFileCommand}"
-                        CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
-                        IsEnabled="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"
+                        CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+                        IsEnabled="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"                        
                         Grid.Column="0"
-                        ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
-                  <fluentIcon:SymbolIcon Symbol="ArrowLeft" />
+                        ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
+                  <fluentIcon:SymbolIcon Symbol="ArrowRight" />
                 </Button>
                 <Button HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Command="{x:Bind _vm.OpenEpubFileCommand}"
-                        CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
-                        IsEnabled="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"                        
+                        CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+                        IsEnabled="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToTrueConverter}}"
                         Grid.Column="1"
-                        ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
-                  <fluentIcon:SymbolIcon Symbol="ArrowRight" />
+                        ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
+                  <fluentIcon:SymbolIcon Symbol="ArrowLeft" />
                 </Button>
-
               </Grid>
               
               <Border uwpControls:DockPanel.Dock="Top"
@@ -675,6 +674,19 @@
 
 
     <VisualStateManager.VisualStateGroups>
+
+      <!-- セカンダリンウィンドウ -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _windowContext.IsSecondary, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="TocItemsContainer.Margin"
+                    Value="0 32 0 0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>
@@ -811,8 +823,6 @@
           <VisualState.Setters>
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
-            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
-                    Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -837,9 +847,6 @@
 
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
-            <Setter Target="NeighborsContentButtonsContainer.FlowDirection"
-                    Value="LeftToRight" />
-
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

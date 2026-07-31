@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Controls;
+using DryIoc;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
@@ -23,6 +25,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -78,7 +81,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     internal readonly ImageViewerPageViewModel _vm;
 
     readonly IMessenger _messenger;
-    readonly FocusHelper _focusHelper;
+    readonly FocusHelper _focusHelper;    
+    readonly SecondaryWindowService _secondaryWindowService;
+    readonly IWindowManagementAware _windowContext;
 
     public ImageViewerPage()
     {
@@ -87,7 +92,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<ImageViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-        _coreAppView = CoreApplication.GetCurrentView();
+        _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
+        _windowContext = _secondaryWindowService.GetCurentFocusWindow();
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -109,11 +115,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    private void PageSelector_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        //_vm.CurrentImageIndex = (int)e.NewValue;
-    }
-
 
     [ObservableProperty]
     int _pageSelectorCandidateImageIndex;
@@ -121,54 +122,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [ObservableProperty]
     CanvasImageSource? _seekbarFrameImageSource;
 
-    CanvasBitmap? _videoFrameBitmap;
-
     PointerDeviceType _lastPointerDeviceType;
-
     bool _nowPressedOnPageSlider;
-    private void CoreWindow_PageSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
-    {
-        _nowPressedOnPageSlider = args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos) 
-            && ImageSelectorContainer.Visibility == Visibility.Visible;
-        if (_nowPressedOnPageSlider)
-        {
-            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
-            _lastPointerPosition = pos;
-            RefreshPageSelectorTooltipContainerTranslation();
-            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
-            {
-                if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
-                {
-                    _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
-                    _lastPageChangeRequestImageIndex = PageSelectorCandidateImageIndex;
-                }
-                PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                PageSelectorTooltipContainer.Visibility = Visibility.Visible;
-            }
-        }
-    }
-    private void CoreWindow_PageSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
-    {
-        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
-        _nowPressedOnPageSlider = false;
-
-        if (_lastPointerDeviceType == PointerDeviceType.Touch)
-        {
-            if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos))
-            {
-                _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
-            }
-            else
-            {
-                PageSelector.Value = _vm.CurrentImageIndex;
-            }
-        }
-    }    
-
-    readonly CoreApplicationView _coreAppView;
     Vector2 _lastPointerPosition;
     int _lastPageChangeRequestImageIndex;    
     void RefreshPageSelectorTooltipContainerTranslation()
@@ -186,18 +141,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             (float)UIContainer.ActualWidth - (halfContainerWidth)  - 8);        
         PageSelectorTooltipContainer.Translation = new Vector3(
             clampedPosX - halfContainerWidth,
-            -offset.Y - (_coreAppView.TitleBar.IsVisible ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
+            -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
         PageSelectorCandidateImageIndex = pagePos;
     }
 
-    private void CoreWindow_PageSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
+    private void PageSelectorSliderWall_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos)
+        if (e.IsContactUIElement(PageSelector, out Vector2 pos)
             && ImageSelectorContainer.Visibility == Visibility.Visible)
         {
-            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+            _lastPointerDeviceType = e.Pointer.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
             if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
@@ -218,6 +173,54 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private void PageSelectorSliderWall_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _nowPressedOnPageSlider = e.IsContactUIElement(PageSelector, out Vector2 pos)
+            && ImageSelectorContainer.Visibility == Visibility.Visible;
+        if (_nowPressedOnPageSlider)
+        {
+            _lastPointerDeviceType = e.Pointer.PointerDeviceType;
+            _lastPointerPosition = pos;
+            RefreshPageSelectorTooltipContainerTranslation();
+            if (_nowPressedOnPageSlider && _lastPointerDeviceType != PointerDeviceType.Touch)
+            {
+                if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
+                {
+                    _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+                    _lastPageChangeRequestImageIndex = PageSelectorCandidateImageIndex;
+                }
+                PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                PageSelectorTooltipContainer.Visibility = Visibility.Visible;
+            }
+        }
+    }
+
+    private void PageSelectorSliderWall_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+        _nowPressedOnPageSlider = false;
+
+        if (_lastPointerDeviceType == PointerDeviceType.Touch)
+        {
+            if (e.IsContactUIElement(PageSelector, out Vector2 pos))
+            {
+                _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+            }
+            else
+            {
+                PageSelector.Value = _vm.CurrentImageIndex;
+            }
+        }
+    }
+
+    private void PageSelectorSliderWall_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
     }
 
     public bool IsReadyToImageDisplay
@@ -242,8 +245,15 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void ClosePage()
     {
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);
-        (_vm.BackNavigationCommand as ICommand).Execute(null);
+        if (_windowContext.IsPrimary)
+        {
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            (_vm.BackNavigationCommand as ICommand).Execute(null);
+        }
+        else
+        {
+            _ = _secondaryWindowService.CloseAsync(_windowContext);
+        }
     }
 
     CancellationToken _navigationCt;
@@ -260,10 +270,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
 
         KeyDown += ImageViewerPage_KeyDown;
-
-        Window.Current.CoreWindow.PointerPressed += CoreWindow_PageSlider_PointerPressed;
-        Window.Current.CoreWindow.PointerReleased += CoreWindow_PageSlider_PointerReleased;
-        Window.Current.CoreWindow.PointerMoved += CoreWindow_PageSlider_PointerMoved;
 
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
         {
@@ -310,7 +316,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 long ts = TimeProvider.System.GetTimestamp();
 
                 var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
-                using (var imageStream = await thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct))
+                using (var imageStream = await thumbnailManager.EnsureGetImageStreamAsync(imageSource, imageQuality: 0.5f, ct: ct))
                 {
                     if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
                     {
@@ -331,14 +337,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         db.Build().RegisterTo(_navigationCt);
 
-        AnimationBuilder.Create()
-            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
-            .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
-            .Start(ButtonsContainer);
-        AnimationBuilder.Create()
-            .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
-            .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
-            .Start(ImageSelectorContainer);
+        var uiSettings = new UISettings();
+        if (uiSettings.AnimationsEnabled)
+        {
+            AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+                .Translation(new Vector2(0, -24), duration: TimeSpan.FromMilliseconds(1))
+                .Start(ButtonsContainer);
+            AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+                .Translation(new Vector2(0, 24), duration: TimeSpan.FromMilliseconds(1))
+                .Start(ImageSelectorContainer);
+        }
 
         AnimationBuilder.Create()
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
@@ -352,10 +362,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
         KeyDown -= ImageViewerPage_KeyDown;
-        Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
         _messenger.Unregister<BackNavigationRequestingMessage>(this);        
 
-        d().FireAndForgetSafe();
+        if (_windowContext.IsPrimary)
+        {
+            d().FireAndForgetSafe();
+        }
         async Task d()
         {
             if (!_vm.NowDoubleImageView
@@ -402,17 +414,23 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             await Task.Delay(5, navigationCt);
         }
-
         bool isConnectedAnimationDone = false;
         var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
         ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
         if (animation != null)
         {
-            try
+            if (_windowContext.IsSecondary)
             {
-                isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
+                animation.Cancel();
             }
-            catch (OperationCanceledException) { }
+            else
+            {
+                try
+                {
+                    isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
+                }
+                catch (OperationCanceledException) { }
+            }
         }
 
         try
@@ -560,43 +578,31 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             if (!_isLastPointerPressedLeft) { return; }
 
             var pt = pointer.Position;
-            if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
-            if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
+            if (pt.IsContactUIElement(ButtonsContainer)) { return; }
+            if (pt.IsContactUIElement(ImageSelectorContainer)) { return; }
             
             if (!IsOpenBottomMenu)
             {
-                var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
-                foreach (var item in uiItems)
+                if (RightPageMoveButton.Visibility == Visibility.Visible
+                    && pt.IsContactUIElementRelativeFrom(RootGrid, RightPageMoveButton)
+                    && (RightPageMoveButton.Command?.CanExecute(null) ?? false))
                 {
-                    if (item.Visibility == Visibility.Collapsed) { continue; }
-
-                    if (item == RightPageMoveButton)
-                    {
-                        if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
-                        {
-                            RightPageMoveButton.Command.Execute(null);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
-                    else if (item == LeftPageMoveButton)
-                    {
-                        if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                        {
-                            LeftPageMoveButton.Command.Execute(null);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
-                    else if (item == ToggleMenuButton)
-                    {
-                        if (ToggleBottomMenuCommand is IRelayCommand command && command.CanExecute(null))
-                        {
-                            command.Execute(null);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
+                    RightPageMoveButton.Command.Execute(null);
+                    e.Handled = true;
+                }
+                else if (LeftPageMoveButton.Visibility == Visibility.Visible
+                    && pt.IsContactUIElementRelativeFrom(RootGrid, LeftPageMoveButton)
+                    && (LeftPageMoveButton.Command?.CanExecute(null) ?? false))
+                {
+                    LeftPageMoveButton.Command.Execute(null);
+                    e.Handled = true;
+                }
+                else if (ToggleMenuButton.Visibility == Visibility.Visible
+                    && pt.IsContactUIElementRelativeFrom(RootGrid, ToggleMenuButton)
+                    && ToggleBottomMenuCommand is IRelayCommand command && command.CanExecute(null))
+                {
+                    command.Execute(null);
+                    e.Handled = true;
                 }
             }
             else
@@ -695,20 +701,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 if (isEnabled)
                 {
                     s.CloseBottomUI();
-                }
-            })
-            .AddTo(ref db);
-
-        R3.Observable.Merge(
-            Window.Current.CoreWindow.ObserveKeyDown().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => true),
-            Window.Current.CoreWindow.ObserveKeyUp().Where(x => x.EventArgs.VirtualKey == VirtualKey.Control).Select(_ => false)
-            )
-            .Subscribe(this, static (isControlDown, s) =>
-            {
-                if (s._vm.NowEditTransformMode != isControlDown)
-                {
-                    s._vm.NowEditTransformMode = isControlDown;
-                    Debug.WriteLine($"NowEditTransformMode: {s._vm.NowEditTransformMode}");
                 }
             })
             .AddTo(ref db);

@@ -152,6 +152,12 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 Items =
                 {
                     new ToggleSwitchSettingItemViewModel<ViewerSettings>(
+                        "IsViewerOpenWithSecondaryWindow".Translate(),
+                        "IsViewerOpenWithSecondaryWindow_Desc".Translate(),
+                        viewerSettings,
+                        viewerSettings.IsViewerOpenWithSecondaryWindow,
+                        (x, v) => x.IsViewerOpenWithSecondaryWindow = v),
+                    new ToggleSwitchSettingItemViewModel<ViewerSettings>(
                         "IsDetectSimiralyFileNameNeighborsEnabled".Translate(),
                         "IsDetectSimiralyFileNameNeighborsEnabled_Desc".Translate(),
                         viewerSettings,
@@ -177,11 +183,12 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 Label = "FolderItemListingSettings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsImageFileGenerateThumbnailEnabled, (x, v) => x.IsImageFileGenerateThumbnailEnabled = v),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateFolderThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsFolderGenerateThumbnailEnabled, (x, v) => x.IsFolderGenerateThumbnailEnabled = v),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsArchiveFileGenerateThumbnailEnabled, (x, v) => x.IsArchiveFileGenerateThumbnailEnabled = v),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled, (x, v) => x.IsArchiveEntryGenerateThumbnailEnabled = v),
-                    _cacheSizeButton,
+                    new SelectorSettingsItemViewModel<ThumbnailImageCacheMode>(
+                        "ThumbnailImageCacheMode".Translate(),
+                        "ThumbnailImageCacheMode_Desc".Translate(),
+                        [ThumbnailImageCacheMode.AlwaysGenerateCache, ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon, ThumbnailImageCacheMode.NeverGenerateCache],
+                        _folderListingSettings.ThumbnailImageCacheMode,
+                        type => _folderListingSettings.ThumbnailImageCacheMode = type),
                     new SelectorSettingsItemViewModel<ThumbnailDecodeMethod>("ThumbnailDecodeMethod".Translate(), "ThumbnailDecodeMethod_Desc".Translate(), [ThumbnailDecodeMethod.Skia, ThumbnailDecodeMethod.WindowsImageCodec, ThumbnailDecodeMethod.Win2D], _folderListingSettings.ThumbnailDecodeType, type => _folderListingSettings.ThumbnailDecodeType = type),
                     new SliderSettingItemViewModel(
                         "FolderItemThumbnailQuality".Translate(),                        
@@ -190,6 +197,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         1.5,
                         0.05,
                         f => _folderListingSettings.FolderItemThumbnailQuality = (float)f),
+                    _cacheSizeButton,
                     new ToggleSwitchSettingItemViewModel<StorageItemSettings>(
                         "StorageItemSettings_IsDisplayFolderItemsCount".Translate(),
                         "StorageItemSettings_IsDisplayFolderItemsCount_Desc".Translate(),

@@ -1,0 +1,81 @@
+﻿<UserControl x:Class="TsubameViewer.Views.SecondaryAppShell"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:TsubameViewer.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
+             xmlns:ctwu="using:CommunityToolkit.WinUI"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="400">
+  <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid Opacity="0"
+          IsHitTestVisible="False">
+      <Button>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F11"
+                               Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
+          <KeyboardAccelerator Key="Escape"
+                               Invoked="ExitViewerKeyboardAccelerator_Invoked" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
+    <Frame x:Name="MyFrame"            
+           HorizontalAlignment="Stretch"
+           VerticalAlignment="Stretch"
+           CacheSize="0"/>
+
+    <uwpControls:DockPanel HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Visibility="{x:Bind _windowContext.NowDisplayTitleBar, Mode=OneWay}">
+
+      <Grid uwpControls:DockPanel.Dock="Top">
+        <TextBlock Text="{x:Bind TitleText.Text, Mode=OneWay}"                   
+                   Margin="12"
+                   VerticalAlignment="Center"
+                   MaxWidth="400"
+                   TextWrapping="Wrap"
+                   Foreground="{ThemeResource ApplicationContentBackgroundBrush}">
+          <TextBlock.RenderTransform>
+            <TranslateTransform X="1"
+                                Y="1" />
+          </TextBlock.RenderTransform>
+        </TextBlock>
+        <TextBlock Text=""
+                   x:Name="TitleText"                   
+                   Margin="12"
+                   VerticalAlignment="Center"
+                   MaxWidth="400"
+                   TextWrapping="Wrap"
+                   Foreground="{ThemeResource ApplicationForegroundThemeBrush}"
+                   />
+        
+      </Grid>
+
+      <Grid Background="{ThemeResource SystemAltLowColor}"
+            CornerRadius="4"
+            HorizontalAlignment="Left">
+        <DropDownButton CornerRadius="4"
+                        Foreground="{ThemeResource AppBarItemForegroundThemeBrush}">
+          <Image Source="/Assets/Square44x44Logo.png"
+                 Width="24" />
+
+          <DropDownButton.Flyout>
+            <Flyout Placement="RightEdgeAlignedTop"
+                    AreOpenCloseAnimationsEnabled="False">
+              <StackPanel>
+                <ContentControl x:Name="TitleBarContent"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch" />
+              </StackPanel>
+            </Flyout>
+          </DropDownButton.Flyout>
+        </DropDownButton>
+      </Grid>
+
+    </uwpControls:DockPanel>
+  </Grid>
+</UserControl>

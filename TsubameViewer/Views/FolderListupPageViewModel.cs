@@ -782,7 +782,7 @@ public sealed partial class FolderListupPageViewModel
                             (RangeObservableCollection<IStorageItemViewModel>)items.Source,          
                             sortType,
                             itemFacotry,
-                            (IStorageItemViewModel itemVM) => itemVM.Path,
+                            (IStorageItemViewModel itemVM) => itemVM.Name,
                             ct);
                     });
 
@@ -814,7 +814,7 @@ public sealed partial class FolderListupPageViewModel
                                 (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                 sortType,
                                 cacheImageViewModelFactory,
-                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                (IStorageItemViewModel itemVM) => itemVM.Name,
                                 ct);
                         }
                         catch (OperationCanceledException) { }
