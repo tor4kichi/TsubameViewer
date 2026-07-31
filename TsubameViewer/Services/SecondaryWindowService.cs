@@ -159,6 +159,7 @@ public sealed class SecondaryWindowService
             _appWindows.Add(context);
 
             await appWindow.TryShowAsync();
+            await Observable.NextFrame().WaitAsync(); // ウィンドウのレイアウト完了まで待機したい
             await context.NavigateAsync(pageName, navigationParameters);
 
             return context;
