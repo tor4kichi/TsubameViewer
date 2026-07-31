@@ -196,6 +196,7 @@ public sealed class SecondaryWindowService
             if (await TryNavigatingToWithExistWindowAsync(pageName, parameters))
             {
                 _defaultWindowItem = _appWindows.First();
+                await _defaultWindowItem.ShowAsync();
                 return;
             }
         }

@@ -1,10 +1,42 @@
+# TsubameViewer （ツバメビューア）
 
+Windows専用の画像・小説・動画ビューアです
 
-## ツバメビューア（TsubameViewer）
+![](image-12.png)
 
-Windows系OSで動作する漫画・小説ビューアです。
+## ダウンロード
 
-ホームページは tor4kichi.github.io に移動しました。下記リンクをご確認ください。
+<a href="https://apps.microsoft.com/detail/9ndxxqrg4pl8?referrer=appbadge&cid=github_io_about_jp&mode=full" target="_blank"  rel="noopener noreferrer">
+	<img src="https://get.microsoft.com/images/ja%20dark.svg" width="200"/>
+</a>
+
+[https://www.microsoft.com/store/apps/9NDXXQRG4PL8](https://www.microsoft.com/store/apps/9NDXXQRG4PL8)
+
+### 対応プラットフォーム
+
+* Windows11
+* Windows10 （バージョン1809 以降必須）
+
+### 使い方
+
+* [ツバメビューアの使い方](https://tor4kichi.github.io/tsubame_viewer/how-to-use_ja)
+
+## アプリ概要
+
+* フォルダをアプリに登録して利用開始
+* 圧縮ファイル内の画像をストレージに展開せずに表示
+* 画像ビューアは見開き表示にも対応
+* 小説ビューアはEPUB対応、縦書き表示を自由に切り替え
+* 動画ビューアはシンプルUIで視聴をサポート
+* タブレットにも最適な画面レイアウト（狭い幅で表示しても画面が崩れない）
+* アプリ全体に渡って統一感のあるUI
+* 完全オフライン動作（アプリ更新時の通信はOS側で処理されます）
+* 広告無し・課金無しですべての機能にアクセス可能
+* 開発支援アドオンとしてアプリ内課金があります。アドオンを購入して開発者を応援してください
+
+（ホームページに続く）
+
+## ホームページは tor4kichi.github.io に移動しました。下記リンクをご確認ください。
 
 [ツバメビューアのホームページはこちら](https://tor4kichi.github.io/tsubame_viewer/about_ja.html)
 
@@ -13,7 +45,7 @@ Windows系OSで動作する漫画・小説ビューアです。
 
 ## 翻訳協力について/Translation Support
 
-https://github.com/tor4kichi/TsubameViewer/issues/20
+[https://github.com/tor4kichi/TsubameViewer/issues/20](https://github.com/tor4kichi/TsubameViewer/issues/20)
 
 ## ライセンス GPLv3
 
