@@ -536,8 +536,8 @@ public sealed partial class ImageListupPageViewModel
             if (_imageCollectionContext is FolderImageCollectionContext)
             {
                 Window.Current.WindowActivationStateChanged()
-                    .ObserveOnCurrentSynchronizationContext()
-                    .Debounce(TimeSpan.FromSeconds(1))
+                    .ObserveOnThreadPool()
+                    .ThrottleLast(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>
                     {
                         if (visible && !s.RequireRefresh)
@@ -549,7 +549,7 @@ public sealed partial class ImageListupPageViewModel
                                 s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
                             }
                         }
-                    }, AwaitOperation.Drop)
+                    }, AwaitOperation.Sequential)
                     .AddTo(ref db);
             }
 

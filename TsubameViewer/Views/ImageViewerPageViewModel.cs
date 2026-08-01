@@ -790,7 +790,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 })
                 .AddTo(ref db);
 
-            Window.Current.WindowActivationStateChanged()                
+            Window.Current.WindowActivationStateChanged()    
+                .ThrottleLast(TimeSpan.FromSeconds(1))
                 .ObserveOnCurrentSynchronizationContext()
                 .SubscribeAwait(async (visible, ct) =>
                 {

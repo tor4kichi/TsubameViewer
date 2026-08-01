@@ -504,21 +504,21 @@ public sealed partial class FolderListupPageViewModel
         if (_imageCollectionContext != null)
         {
             Window.Current.WindowActivationStateChanged()                    
-                    .ObserveOnCurrentSynchronizationContext()
-                    .Debounce(TimeSpan.FromSeconds(1))
-                    .SubscribeAwait(this, static async (visible, s, ct) =>
+                .ObserveOnThreadPool()
+                .ThrottleLast(TimeSpan.FromSeconds(1))
+                .SubscribeAwait(this, static async (visible, s, ct) =>
+                {
+                    if (visible && !s.RequireRefresh)
                     {
-                        if (visible && !s.RequireRefresh)
+                        if (s._imageCollectionContext is FolderImageCollectionContext folderContext
+                            && await folderContext.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
-                            if (s._imageCollectionContext is FolderImageCollectionContext folderContext
-                                && await folderContext.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
-                            {
-                                s.RequireRefresh = true;
-                                s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
-                            }
+                            s.RequireRefresh = true;
+                            s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
                         }
-                    }, AwaitOperation.Drop)
-                    .AddTo(ref db);
+                    }
+                }, AwaitOperation.Sequential)
+                .AddTo(ref db);
         }
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
         {
