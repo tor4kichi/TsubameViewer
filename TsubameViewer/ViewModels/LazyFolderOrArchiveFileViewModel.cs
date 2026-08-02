@@ -519,7 +519,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             IStorageItem storageItem;
             try
             {
-                storageItem = await _imageCollectionContext.Folder.GetItemAsync(_cacheEntry.Name);
+                storageItem = await _imageCollectionContext.Context.ExactStorageItemAsync(_cacheEntry);
             }
             catch (DirectoryNotFoundException)
             {

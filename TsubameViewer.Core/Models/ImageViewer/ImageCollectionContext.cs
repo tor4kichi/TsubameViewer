@@ -818,6 +818,19 @@ public sealed class FolderStructureCacheContext : IDisposable
     {
         _repo.Dispose();
     }
+
+    public async Task<IStorageItem> ExactStorageItemAsync(FolderStructureFileEntry cacheEntry)
+    {
+        try
+        {
+            return await Folder.GetItemAsync(cacheEntry.Name);
+        }
+        catch
+        {
+            _repo.FileRemoved(cacheEntry);
+            throw;
+        }
+    }
 }
 
 public sealed class FolderStructureFileEntry
