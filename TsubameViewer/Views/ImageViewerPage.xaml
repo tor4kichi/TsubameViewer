@@ -761,7 +761,7 @@
 
         <Grid>
           <Grid.Resources>
-            <ScaleTransform x:Key="FavoriteIconTransform" ScaleX="0.9" ScaleY="0.9" />
+            <ScaleTransform x:Key="FavoriteRibbonTransform" ScaleX="0.9" ScaleY="0.9" />
           </Grid.Resources>
           <Grid.ColumnDefinitions>
             <ColumnDefinition />

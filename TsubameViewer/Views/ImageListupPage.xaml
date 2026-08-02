@@ -201,7 +201,7 @@
                             Style="{StaticResource ImageItemSelectionToggleButtonStyle}"
                             IsChecked="{Binding IsSelected, Mode=TwoWay}"
                             Margin="0 0 4 0"
-                            Translation="0, 0, 8"
+                            Windows10version1903:Translation="0, 0, 8"
                             Tapped="ImageListToggleSelectButton_Tapped"
                             uwpControls:DockPanel.Dock="Left"
                             ctwu:FrameworkElementExtensions.Cursor="Hand">
@@ -225,19 +225,8 @@
                   Width="4"
                   HorizontalAlignment="Right"
                   Opacity="{Binding IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                  RenderTransformOrigin="0.5, 0.5">
-            <Border.RenderTransform>
-              <CompositeTransform Rotation="0"
-                                  TranslateX="0"
-                                  TranslateY="0" />
-            </Border.RenderTransform>
-          </Border>
-
+                  RenderTransformOrigin="0.5, 0.5" />
           <VisualStateManager.VisualStateGroups>
-            <VisualStateGroup>
-              <VisualState x:Name="VS_ToggleButtonCollapsed" />
-              <VisualState x:Name="VS_ToggleButtonVisible" />
-            </VisualStateGroup>
             <VisualStateGroup>
               <VisualState>
                 <VisualState.StateTriggers>
@@ -255,6 +244,11 @@
         </Grid>
       </UserControl>
     </DataTemplate>
+
+    <CompositeTransform x:Name="FavoriteRibbonTransform_Small"
+                        Rotation="-45"
+                        TranslateX="-42"
+                        TranslateY="-8" />
 
     <DataTemplate x:Key="FileItemTemplate_Small"
                   x:DataType="vm:IStorageItemViewModel">
@@ -308,7 +302,7 @@
                           Margin="3"
                           HorizontalAlignment="Right"
                           VerticalAlignment="Top"
-                          Translation="0, 0, 8"
+                          Windows10version1903:Translation="0, 0, 8"
                           Tapped="ImageListToggleSelectButton_Tapped"
                           Visibility="Collapsed">
               <Windows10version1903:ToggleButton.Shadow>
@@ -321,12 +315,8 @@
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Opacity="{Binding IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                    RenderTransformOrigin="0.5, 0.5">
-              <Border.RenderTransform>
-                <CompositeTransform Rotation="-45"
-                                    TranslateX="-42"
-                                    TranslateY="-8" />
-              </Border.RenderTransform>
+                    RenderTransformOrigin="0.5, 0.5"
+                    RenderTransform="{StaticResource FavoriteRibbonTransform_Small}">
             </Border>
           </Grid>
 
@@ -375,6 +365,10 @@
       </UserControl>
     </DataTemplate>
 
+    <CompositeTransform x:Name="FavoriteRibbonTransform_Midium" 
+                        Rotation="-45"
+                        TranslateX="-42"
+                        TranslateY="0" />
     <DataTemplate x:Key="FileItemTemplate_Midium"
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
@@ -425,7 +419,7 @@
                           Margin="3"
                           HorizontalAlignment="Right"
                           VerticalAlignment="Top"
-                          Translation="0, 0, 8"
+                          Windows10version1903:Translation="0, 0, 8"
                           Tapped="ImageListToggleSelectButton_Tapped"
                           Visibility="Collapsed">
               <Windows10version1903:ToggleButton.Shadow>
@@ -438,12 +432,8 @@
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Opacity="{Binding IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                    RenderTransformOrigin="0.5, 0.5">
-              <Border.RenderTransform>
-                <CompositeTransform Rotation="-45"
-                                    TranslateX="-42"
-                                    TranslateY="0" />
-              </Border.RenderTransform>
+                    RenderTransformOrigin="0.5, 0.5"
+                    RenderTransform="{StaticResource FavoriteRibbonTransform_Midium}">
             </Border>
           </Grid>
 
@@ -492,6 +482,10 @@
       </UserControl>
     </DataTemplate>
 
+    <CompositeTransform x:Name="FavoriteRibbonTransform_Large"
+                        Rotation="-45"
+                        TranslateX="-38"
+                        TranslateY="0" />
     <DataTemplate x:Key="FileItemTemplate_Large"
                   x:DataType="vm:IStorageItemViewModel">
       <UserControl x:Name="ItemControl"
@@ -541,7 +535,7 @@
                           Margin="3"
                           HorizontalAlignment="Right"
                           VerticalAlignment="Top"
-                          Translation="0, 0, 8"
+                          Windows10version1903:Translation="0, 0, 8"
                           Tapped="ImageListToggleSelectButton_Tapped"
                           Visibility="Collapsed">
               <Windows10version1903:ToggleButton.Shadow>
@@ -554,12 +548,8 @@
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Opacity="{Binding IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
-                    RenderTransformOrigin="0.5, 0.5">
-              <Border.RenderTransform>
-                <CompositeTransform Rotation="-45"
-                                    TranslateX="-38"
-                                    TranslateY="0" />
-              </Border.RenderTransform>
+                    RenderTransformOrigin="0.5, 0.5"
+                    RenderTransform="{StaticResource FavoriteRibbonTransform_Large}">
             </Border>
           </Grid>
 
