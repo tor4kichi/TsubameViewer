@@ -284,9 +284,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _messenger.CreateObservable<ImageLoadedMessage>()
             .ToObservable()
             .Take(1)
-            .Subscribe(m =>
+            .Subscribe(async m =>
             {
-                _ = StartNavigatedAnimationAsync(_navigationCt);
+                async Task<Unit> db()
+                {
+                    await StartNavigatedAnimationAsync(_navigationCt);
+                    return Unit.Default;
+                }
+                m.Reply(db());
             })
             .AddTo(ref db);
 

@@ -536,7 +536,7 @@ public sealed partial class ImageListupPageViewModel
             if (_imageCollectionContext is FolderImageCollectionContext)
             {
                 Window.Current.WindowActivationStateChanged()
-                    .ObserveOnThreadPool()
+                    .ObserveOnCurrentSynchronizationContext()
                     .ThrottleLast(TimeSpan.FromSeconds(1))
                     .SubscribeAwait(this, static async (visible, s, ct) =>
                     {
