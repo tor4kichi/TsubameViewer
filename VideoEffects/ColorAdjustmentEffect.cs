@@ -95,7 +95,7 @@ public sealed class ColorAdjustmentEffect : IBasicVideoEffect
     }
 
     public void ProcessFrame(ProcessVideoFrameContext context)
-    {                
+    {
         // 入力フレームと出力フレームの D3D サーフェスから CanvasBitmap / CanvasRenderTarget を作成
         using (var inputBitmap = CanvasBitmap.CreateFromDirect3D11Surface(_canvasDevice, context.InputFrame.Direct3DSurface))
         using (var renderTarget = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, context.OutputFrame.Direct3DSurface))
@@ -127,6 +127,8 @@ public sealed class ColorAdjustmentEffect : IBasicVideoEffect
             }
 
             // 最終結果を出力サーフェスに描画
+            ds.Blend = CanvasBlend.Copy;
+            ds.Antialiasing = CanvasAntialiasing.Aliased;
             ds.DrawImage(targetSource);
         }
     }

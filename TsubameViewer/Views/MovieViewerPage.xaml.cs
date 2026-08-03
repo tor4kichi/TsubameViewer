@@ -481,6 +481,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        _mediaPlayer.CommandManager.IsEnabled = false;
         _mediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
@@ -1070,8 +1071,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             if (!_isColorAdjustmentEffectAdded)
             {
-                _mediaPlayer.AddVideoEffect(typeof(ColorAdjustmentEffect).FullName, false, _myVideoEffectConfig);
                 _isColorAdjustmentEffectAdded = true;
+                _mediaPlayer.RemoveAllEffects();
+                _mediaPlayer.AddVideoEffect(typeof(ColorAdjustmentEffect).FullName, false, _myVideoEffectConfig);
                 ReOpenMediaPlayerSource();
             }
         }
