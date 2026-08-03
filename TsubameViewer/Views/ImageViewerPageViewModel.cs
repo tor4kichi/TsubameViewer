@@ -1352,7 +1352,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                                     );
 
                             try
-                            {
+                            {                                
                                 await _messenger.Send(new ImageLoadedMessage());
                             }
                             catch { }
@@ -2113,8 +2113,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     {
         if (_nowCurrenImageIndexChanging) { return; }
 
-        await ResetImageIndex((int)parameter.Value);
-        OnPropertyChanged(nameof(CurrentImageIndex));
+        var index = (int)parameter.Value;
+        await ResetImageIndex(index);
+        //if (index == CurrentImageIndex)
+        //{
+        //    OnPropertyChanged(nameof(CurrentImageIndex));
+        //}
     }
 
     [RelayCommand]

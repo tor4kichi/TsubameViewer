@@ -130,9 +130,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     {
         bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
         var pos = _lastPointerPosition;
-        var ts = Window.Current.Content.TransformToVisual(PageSelector);
+        var ts = RootGrid.TransformToVisual(VideoPositionSliderWall);
         var offset = ts.TransformPoint(new Point()).ToVector2();
-        var posRatio = pos.X / (PageSelector.ActualWidth);
+        var posRatio = Math.Clamp(pos.X / (VideoPositionSliderWall.ActualWidth), 0, 1);
         var pagePos = (int)Math.Round((_vm.ImageCount - 1) * posRatio);
         PageSelectorTooltipText.Text = (pagePos + 1).ToString();
         var halfContainerWidth = (float)PageSelectorTooltipContainer.ActualWidth * 0.5f;
@@ -141,7 +141,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             (float)UIContainer.ActualWidth - (halfContainerWidth)  - 8);        
         PageSelectorTooltipContainer.Translation = new Vector3(
             clampedPosX - halfContainerWidth,
-            -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 48 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
+            -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 0 : 0)  - (float)PageSelectorTooltipContainer.ActualHeight,
             0);
 
         PageSelectorCandidateImageIndex = pagePos;
@@ -149,7 +149,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     private void PageSelectorSliderWall_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (e.IsContactUIElement(PageSelector, out Vector2 pos)
+        if (e.IsContactUIElement(VideoPositionSliderWall, out Vector2 pos)
             && ImageSelectorContainer.Visibility == Visibility.Visible)
         {
             _lastPointerDeviceType = e.Pointer.PointerDeviceType;
@@ -177,10 +177,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     private void PageSelectorSliderWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        _nowPressedOnPageSlider = e.IsContactUIElement(PageSelector, out Vector2 pos)
+        _nowPressedOnPageSlider = e.IsContactUIElement(VideoPositionSliderWall, out Vector2 pos)
             && ImageSelectorContainer.Visibility == Visibility.Visible;
         if (_nowPressedOnPageSlider)
         {
+            VideoPositionSliderWall.CapturePointer(e.Pointer);
             _lastPointerDeviceType = e.Pointer.PointerDeviceType;
             _lastPointerPosition = pos;
             RefreshPageSelectorTooltipContainerTranslation();
@@ -204,10 +205,10 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     {
         PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
         _nowPressedOnPageSlider = false;
-
+        VideoPositionSliderWall.ReleasePointerCapture(e.Pointer);
         if (_lastPointerDeviceType == PointerDeviceType.Touch)
         {
-            if (e.IsContactUIElement(PageSelector, out Vector2 pos))
+            if (e.IsContactUIElement(VideoPositionSliderWall, out Vector2 pos))
             {
                 _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
             }
@@ -216,11 +217,21 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 PageSelector.Value = _vm.CurrentImageIndex;
             }
         }
+        else
+        {
+            PageSelector.Value = _vm.CurrentImageIndex;
+        }
     }
 
     private void PageSelectorSliderWall_PointerExited(object sender, PointerRoutedEventArgs e)
     {
         PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+    }
+
+
+    private void MovieSeekbarTooltipImage_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        RefreshPageSelectorTooltipContainerTranslation();
     }
 
     public bool IsReadyToImageDisplay
@@ -283,7 +294,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         DisposableBuilder db = new();
         _messenger.CreateObservable<ImageLoadedMessage>()
             .ToObservable()
-            .Take(1)
+            .Index()
             .Subscribe(async m =>
             {
                 async Task<Unit> db()
@@ -291,7 +302,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     await StartNavigatedAnimationAsync(_navigationCt);
                     return Unit.Default;
                 }
-                m.Reply(db());
+                if (m.Index == 0)
+                {
+                    m.Item.Reply(db());
+                }
+                else
+                {
+                    m.Item.Reply(Task.FromResult<Unit>(Unit.Default));
+                }
             })
             .AddTo(ref db);
 
