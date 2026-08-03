@@ -654,6 +654,7 @@
                     StepFrequency="1"
                     Padding="0" 
                     Margin="0"
+                    IsHitTestVisible="False"
                     FlowDirection="LeftToRight"
                     AccessKey="B"
                     IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
@@ -671,7 +672,8 @@
                     PointerPressed="VideoPositionSliderWall_PointerPressed"
                     PointerReleased="VideoPositionSliderWall_PointerReleased"
                     PointerExited="VideoPositionSliderWall_PointerExited"
-                    ctwu:FrameworkElementExtensions.Cursor="Hand">
+                    ctwu:FrameworkElementExtensions.Cursor="Hand"
+                    Margin="8 0">
 
             </Border>
           </Grid>

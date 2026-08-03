@@ -20,9 +20,9 @@ public static class PointerRoutedEventArgsExtensions
         var ts = rootElement.TransformToVisual(target);
         var p = ts.TransformPoint(e.CurrentPoint.Position);        
         Vector2 pointerRelativePos = p.ToVector2();
-        if (pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y)
+        if (pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y)
         {
             return true;
         }
@@ -35,9 +35,9 @@ public static class PointerRoutedEventArgsExtensions
         var p = ts.TransformPoint(e.CurrentPoint.Position);
         Vector2 pointerRelativePos = p.ToVector2();
         outRelativePointerPos = pointerRelativePos;
-        return pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y;
+        return pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y;
     }
 
 
@@ -45,9 +45,9 @@ public static class PointerRoutedEventArgsExtensions
     {
         var p = e.GetCurrentPoint(target);
         Vector2 pointerRelativePos = p.Position.ToVector2();
-        if (pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y)
+        if (pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y)
         {
             return true;
         }
@@ -60,9 +60,9 @@ public static class PointerRoutedEventArgsExtensions
         var p = e.GetCurrentPoint(target);
         Vector2 pointerRelativePos = p.Position.ToVector2();
         outRelativePointerPos = pointerRelativePos;
-        if (pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y)
+        if (pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y)
         {
             return true;
         }
@@ -73,9 +73,9 @@ public static class PointerRoutedEventArgsExtensions
     {
         var p = e.GetPosition(target);
         Vector2 pointerRelativePos = p.ToVector2();
-        if (pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y)
+        if (pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y)
         {
             return true;
         }
@@ -86,9 +86,9 @@ public static class PointerRoutedEventArgsExtensions
     {
         var p = e.GetPosition(target);
         Vector2 pointerRelativePos = p.ToVector2();
-        if (pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y)
+        if (pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y)
         {
             return true;
         }
@@ -110,9 +110,9 @@ public static class PointerRoutedEventArgsExtensions
 
     public static bool IsContactUIElement(this Point pointerRelativePos, UIElement target)
     {        
-        if (pointerRelativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > pointerRelativePos.X
-            && target.ActualSize.Y > pointerRelativePos.Y)
+        if (pointerRelativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= pointerRelativePos.X
+            && target.ActualSize.Y >= pointerRelativePos.Y)
         {
             return true;
         }
@@ -123,9 +123,9 @@ public static class PointerRoutedEventArgsExtensions
     {
         var transform = relativeFrom.TransformToVisual(target);
         var relativePos = transform.TransformPoint(tapPos);
-        if (relativePos is { X: > 0, Y: > 0 }
-            && target.ActualSize.X > relativePos.X
-            && target.ActualSize.Y > relativePos.Y)
+        if (relativePos is { X: >= 0, Y: >= 0 }
+            && target.ActualSize.X >= relativePos.X
+            && target.ActualSize.Y >= relativePos.Y)
         {
             return true;
         }
