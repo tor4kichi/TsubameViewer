@@ -18,6 +18,12 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
         _isAppMenuShowWithLeft = Read(false, nameof(IsAppMenuShowWithLeft));
     }
 
+    public static string GetDefaultLocale()
+    {
+        return StaticRead(default(string), nameof(Locale));
+    }
+
+
     private ApplicationTheme _Theme;
     public ApplicationTheme Theme
     {
