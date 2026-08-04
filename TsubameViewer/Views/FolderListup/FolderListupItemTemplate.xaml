@@ -174,7 +174,7 @@
         
         <ContentControl Content="{x:Bind}"
                         ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
-                        Foreground="{ThemeResource SystemAltLowColor}"
+                        Foreground="{ThemeResource SystemBaseMediumLowColor}"
                         IsTabStop="False"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Right"
@@ -237,7 +237,7 @@
 
         <ContentControl Content="{x:Bind}"
                         ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
-                        Foreground="{ThemeResource SystemAltLowColor}"
+                        Foreground="{ThemeResource SystemBaseMediumLowColor}"
                         IsTabStop="False"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Right"
