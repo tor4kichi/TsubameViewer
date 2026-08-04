@@ -795,22 +795,6 @@ public sealed partial class ImageListupPageViewModel
                                 Selection);
                 };
 
-                var d1 = imageCollectionContext.CreateImageFileChangedObserver()
-                    .ObserveOnCurrentSynchronizationContext()   
-                    .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
-                    {
-                        var (col, items, itemFacotry) = s;                        
-                        var ignore = col.Context.HandleDiffImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,
-                            sortType,
-                            itemFacotry,
-                            (IStorageItemViewModel itemVM) => itemVM.Path,
-                            ct);
-                    });
-
-                disposable.Add(d1);
-                _itemsDisposable = disposable;
-
                 if (col.Context.GetCachedImagesCount() != 0)
                 {
                     using (FileItemsView.DeferRefresh())
@@ -875,6 +859,26 @@ public sealed partial class ImageListupPageViewModel
                         catch (OperationCanceledException) { }
                     }).FireAndForgetSafe();
                 }
+
+                var d1 = imageCollectionContext.CreateImageFileChangedObserver()
+                    .ObserveOnCurrentSynchronizationContext()
+                    .SubscribeAwait((this, col, FileItemsView, cacheImageViewModelFactory, _navigationLock), async (_, s, ct) =>
+                    {
+                        var (_this, col, items, itemFacotry, navLock) = s;
+                        using (await navLock.LockAsync(ct))
+                        {
+                            var ignore = col.Context.HandleDiffImages(
+                                (RangeObservableCollection<IStorageItemViewModel>)items.Source,
+                                sortType,
+                                itemFacotry,
+                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                ct);
+                        }
+                    });
+
+                disposable.Add(d1);
+                _itemsDisposable = disposable;
+
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
