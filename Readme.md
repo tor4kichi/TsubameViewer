@@ -2,7 +2,7 @@
 
 Windows専用の画像・小説・動画ビューアです
 
-![](image-12.png)
+![](https://tor4kichi.github.io/tsubame_viewer/image-12.png)
 
 ## ダウンロード
 
