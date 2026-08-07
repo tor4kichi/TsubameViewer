@@ -440,7 +440,7 @@
       <Version>0.0.1</Version>
     </PackageReference>
     <PackageReference Include="DryIoc">
-      <Version>5.3.1</Version>
+      <Version>5.4.3</Version>
     </PackageReference>
     <PackageReference Include="FFmpegInteropX">
       <Version>2.1.0.81200</Version>
