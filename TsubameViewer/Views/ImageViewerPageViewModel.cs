@@ -46,9 +46,9 @@ using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 
 namespace TsubameViewer.ViewModels;
 
-public sealed class ImageLoadedMessage : ValueChangedMessage<Unit>
+public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
 {
-    public ImageLoadedMessage() : base(Unit.Default)
+    public ImageLoadedMessage() : base()
     {
     }
 }
@@ -790,7 +790,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 })
                 .AddTo(ref db);
 
-            Window.Current.WindowActivationStateChanged()                
+            Window.Current.WindowActivationStateChanged()    
+                .ThrottleLast(TimeSpan.FromSeconds(1))
                 .ObserveOnCurrentSynchronizationContext()
                 .SubscribeAwait(async (visible, ct) =>
                 {
@@ -1111,7 +1112,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                 NowImageLoadingLongRunning = false;
 
-                _messenger.Send(new ImageLoadedMessage());
+                try
+                {
+                    await _messenger.Send(new ImageLoadedMessage());
+                }
+                catch { }
 
                 await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
             }
@@ -1280,7 +1285,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                                 imageSource2, await thumbnailLoadTask2
                                     );
 
-                            _messenger.Send(new ImageLoadedMessage());
+                            try
+                            {
+                                await _messenger.Send(new ImageLoadedMessage());
+                            }
+                            catch { }
                         }                            
                     }
 
@@ -1342,7 +1351,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                                 sizeCheckResult.Slot1Image, await thumbnailLoadTask
                                     );
 
-                            _messenger.Send(new ImageLoadedMessage());
+                            try
+                            {                                
+                                await _messenger.Send(new ImageLoadedMessage());
+                            }
+                            catch { }
                         }
                     }
 
@@ -2100,8 +2113,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     {
         if (_nowCurrenImageIndexChanging) { return; }
 
-        await ResetImageIndex((int)parameter.Value);
-        OnPropertyChanged(nameof(CurrentImageIndex));
+        var index = (int)parameter.Value;
+        await ResetImageIndex(index);
+        //if (index == CurrentImageIndex)
+        //{
+        //    OnPropertyChanged(nameof(CurrentImageIndex));
+        //}
     }
 
     [RelayCommand]

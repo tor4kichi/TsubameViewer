@@ -17,11 +17,17 @@ namespace TsubameViewer.Core.Infrastructure
     /// </remarks>
     public abstract class FlagsRepositoryBase : ObservableObject
     {
-        private readonly IStorageHelper _LocalStorageHelper;
+        private readonly static IStorageHelper _LocalStorageHelper;
         private static readonly AsyncLock _fileUpdateLock = new ();
-        public FlagsRepositoryBase()
+        static FlagsRepositoryBase()
         {
             _LocalStorageHelper = Ioc.Default.GetRequiredService<IStorageHelper>();
+        }
+
+
+        protected static T StaticRead<T>(T @default = default, [CallerMemberName] string propertyName = null)
+        {
+            return _LocalStorageHelper.Read<T>(propertyName, @default);
         }
 
         protected T Read<T>(T @default = default, [CallerMemberName] string propertyName = null)

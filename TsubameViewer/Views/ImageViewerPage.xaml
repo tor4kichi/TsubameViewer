@@ -761,7 +761,7 @@
 
         <Grid>
           <Grid.Resources>
-            <ScaleTransform x:Key="FavoriteIconTransform" ScaleX="0.9" ScaleY="0.9" />
+            <ScaleTransform x:Key="FavoriteRibbonTransform" ScaleX="0.9" ScaleY="0.9" />
           </Grid.Resources>
           <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -1012,6 +1012,7 @@
                   XYFocusDown="{x:Bind PageFolderNamesSelector}"
                   FlowDirection="RightToLeft"
                   AccessKey="4"
+                  IsHitTestVisible="False"
                   IsThumbToolTipEnabled="False"
                   KeyboardAcceleratorPlacementMode="Hidden"
                   KeyTipPlacementMode="Hidden">
@@ -1022,11 +1023,13 @@
           <Border x:Name="VideoPositionSliderWall"
                   IsHitTestVisible="True"
                   Background="Transparent"
+                  FlowDirection="RightToLeft"
                   PointerMoved="PageSelectorSliderWall_PointerMoved"
                   PointerPressed="PageSelectorSliderWall_PointerPressed"
                   PointerReleased="PageSelectorSliderWall_PointerReleased"
-                  PointerExited="PageSelectorSliderWall_PointerExited"
-                  ctwu:FrameworkElementExtensions.Cursor="Hand">
+                  PointerExited="PageSelectorSliderWall_PointerExited"                  
+                  ctwu:FrameworkElementExtensions.Cursor="Hand"
+                  Margin="8 0">
 
           </Border>
         </Grid>
@@ -1143,7 +1146,7 @@
           VerticalAlignment="Top"
           CornerRadius="4"
           Width="240"
-          Height="240">
+          MaxHeight="240">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
                                     Duration="0:0:0.125" />
@@ -1164,7 +1167,8 @@
           <Windows10version1903:ThemeShadow />
         </Windows10version1903:Border.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"       
-               Stretch="Uniform"               
+               Stretch="Uniform"     
+               SizeChanged="MovieSeekbarTooltipImage_SizeChanged"
                />
       </Border>
       <Border Background="{ThemeResource SystemAltMediumColor}"
@@ -1462,6 +1466,8 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PageSelector.FlowDirection"
+                    Value="LeftToRight" />
+            <Setter Target="VideoPositionSliderWall.FlowDirection"
                     Value="LeftToRight" />
             <Setter Target="ReadOnlySeekBar.FlowDirection"
                     Value="LeftToRight" />

@@ -481,6 +481,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        _mediaPlayer.CommandManager.IsEnabled = false;
         _mediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
@@ -1070,8 +1071,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             if (!_isColorAdjustmentEffectAdded)
             {
-                _mediaPlayer.AddVideoEffect(typeof(ColorAdjustmentEffect).FullName, false, _myVideoEffectConfig);
                 _isColorAdjustmentEffectAdded = true;
+                _mediaPlayer.RemoveAllEffects();
+                _mediaPlayer.AddVideoEffect(typeof(ColorAdjustmentEffect).FullName, false, _myVideoEffectConfig);
                 ReOpenMediaPlayerSource();
             }
         }
@@ -1796,14 +1798,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void RefreshMovieSeekbarTooltipContainerPosition(Vector2 pos)
     {
-        if (VideoPositionSlider.ActualWidth == 0) { return; }        
+        if (VideoPositionSliderWall.ActualWidth == 0) { return; }        
 
-        var ts = PageRoot.TransformToVisual(VideoPositionSlider);
+        var ts = PageRoot.TransformToVisual(VideoPositionSliderWall);
         var offset = ts.TransformPoint(new Point()).ToVector2();
-        var posRatio = pos.X / VideoPositionSlider.ActualWidth;
-        var videoPos = VideoDuration * posRatio;
+        var posRatio = Math.Clamp(pos.X / VideoPositionSliderWall.ActualWidth, 0, 1);
+        var videoPos =  VideoDuration * posRatio;
         var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
-
         if (SeekbarFrameTime != videoPosAligned)
         {
             var halfContainerWidth = MovieSeekbarTooltipImage.ActualWidth * 0.5;
@@ -1830,7 +1831,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void VideoPositionSliderWall_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (_mediaPlayer.Source == null) { return; }
-        if ((e.IsContactUIElement(VideoPositionSlider, out Vector2 pos)
+        if ((e.IsContactUIElement(VideoPositionSliderWall, out Vector2 pos)
             || _videoPositionsliderPointerPressed)
                 && IsDisplayControlUI
                 && !IsFlyoutOpen
@@ -1863,7 +1864,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             else if (_lastPointerDeviceType == PointerDeviceType.Touch)
             {
-                if (e.IsContactUIElement(VideoPositionSlider))
+                if (e.IsContactUIElement(VideoPositionSliderWall))
                 {
                     MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
                 }
@@ -1882,7 +1883,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void VideoPositionSliderWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (_mediaPlayer.Source == null) { return; }
-        if (e.IsContactUIElement(VideoPositionSlider, out var pos)
+        if (e.IsContactUIElement(VideoPositionSliderWall, out var pos)
             && !IsFlyoutOpen
             && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed
             && (VideoEffectUIContainer.Visibility == Visibility.Collapsed || !e.IsContactUIElement(VideoEffectUIContainer)))
@@ -1918,11 +1919,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (_videoPositionsliderPointerPressed)
         {
             VideoPositionSliderWall.ReleasePointerCapture(e.Pointer);
-            if (e.IsContactUIElement(VideoPositionSlider, out Vector2 pos))
+            if (e.IsContactUIElement(VideoPositionSliderWall, out Vector2 pos))
             {
-                var ts = PageRoot.TransformToVisual(VideoPositionSlider);
+                var ts = PageRoot.TransformToVisual(VideoPositionSliderWall);
                 var offset = ts.TransformPoint(new Point()).ToVector2();
-                var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+                var posRatio = Math.Clamp(pos.X / VideoPositionSliderWall.ActualWidth, 0, 1);
                 var videoPos = VideoDuration * posRatio;
                 //var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
 

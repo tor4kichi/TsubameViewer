@@ -12,7 +12,8 @@
                     xmlns:fluentIcon="using:FluentIcons.Uwp"
                     xmlns:uwpUI="using:CommunityToolkit.WinUI"
                     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
-                    xmlns:ctwu="using:CommunityToolkit.WinUI">
+                    xmlns:ctwu="using:CommunityToolkit.WinUI"
+                    xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)">
 
   <Style TargetType="ProgressBar" x:Key="ReadParcentageProgressBarStyle" >
     <Setter Property="Minimum" Value="0.0" />
@@ -140,15 +141,18 @@
     </local:StorageItemIconTemplateSelector.MovieIcon>
   </local:StorageItemIconTemplateSelector>
 
+  <CompositeTransform x:Key="FavoriteRibbonTransform" 
+                      Rotation="-45"
+                      TranslateX="-40"
+                      TranslateY="0" />
+
+  <Windows10version1903:ThemeShadow x:Key="StorageItemThemeShadow" />
   <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
-    <Grid Background="Transparent"
-          IsHitTestVisible="True"
-          AllowDrop="True"
-          DragEnter="Grid_DragEnter"
-          Drop="Grid_Drop"
-          uwpUI:UIElementExtensions.ClipToBounds="True"
+    <Grid uwpUI:UIElementExtensions.ClipToBounds="True"
           CornerRadius="6"
-          PointerEntered="Grid_PointerEntered"
+          PointerEntered="Grid_PointerEntered"          
+          Windows10version1903:Translation="0, 0, 8"
+          Windows10version1903:Grid.Shadow="{StaticResource StorageItemThemeShadow}"
           >
       <Grid.RowDefinitions>
         <RowDefinition Height="1*" />
@@ -165,15 +169,22 @@
             x:Name="BottomContainer">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
-                          VerticalAlignment="Bottom"
-                          Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
-                        Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
-                        />
+                     VerticalAlignment="Bottom"
+                     Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        
+        <ContentControl Content="{x:Bind}"
+                        ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
+                        Foreground="{ThemeResource SystemBaseMediumLowColor}"
+                        IsTabStop="False"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right"
+                        Margin="0 0 16 0"
+                        UseLayoutRounding="True"                        
+                        uwpControls:DockPanel.Dock="Right" />
         <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
 
-      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+      <Border Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Background="{ThemeResource ApplicationContentBackgroundBrush}"
@@ -183,7 +194,7 @@
             Padding="6 2 6 3"
             Grid.Row="0">
         <TextBlock Text="{x:Bind Duration, Mode=OneWay}" />
-      </Grid>
+      </Border>
       <Border Background="{ThemeResource SystemAccentColor}"
               Width="80"
               Height="24"
@@ -191,17 +202,74 @@
               VerticalAlignment="Top"
               Opacity="{x:Bind IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
               RenderTransformOrigin="0.5, 0.5"
-              Grid.Row="0">
-        <Border.RenderTransform>
-          <CompositeTransform Rotation="-45"
-                              TranslateX="-40"
-                              TranslateY="0" />
-        </Border.RenderTransform>
-      </Border>
+              Grid.Row="0"
+              RenderTransform="{StaticResource FavoriteRibbonTransform}" />
     </Grid>
   </DataTemplate>
 
+  <DataTemplate x:Key="FolderStorageItemCardTemplate"
+                x:DataType="vm:IStorageItemViewModel">
+    <Grid Background="Transparent"
+          IsHitTestVisible="True"
+          AllowDrop="True"
+          DragEnter="Grid_DragEnter"
+          Drop="Grid_Drop"
+          uwpUI:UIElementExtensions.ClipToBounds="True"
+          CornerRadius="6"
+          PointerEntered="Grid_PointerEntered"
+          Windows10version1903:Translation="0, 0, 8"
+          Windows10version1903:Grid.Shadow="{StaticResource StorageItemThemeShadow}">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="1*" />
+        <RowDefinition Height="{StaticResource FolderItemTitleHeight}" />
+      </Grid.RowDefinitions>
 
+      <Image Style="{StaticResource FolderItemImageStyle}"
+             Source="{Binding Image, Mode=OneWay}"
+             Stretch="UniformToFill"
+             VerticalAlignment="Center"
+             Grid.RowSpan="2"
+             x:Name="ImageControl" />
+      <Grid Grid.Row="1"
+            x:Name="BottomContainer">
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                Opacity="0.8" />
+
+        <ContentControl Content="{x:Bind}"
+                        ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
+                        Foreground="{ThemeResource SystemBaseMediumLowColor}"
+                        IsTabStop="False"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right"
+                        Margin="0 0 16 0"
+                        UseLayoutRounding="True"
+                        uwpControls:DockPanel.Dock="Right" />
+        <TextBlock Text="{x:Bind Name}"
+                   Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+
+      <Border Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Bottom"
+              Background="{ThemeResource ApplicationContentBackgroundBrush}"
+              CornerRadius="4 4 4 4"
+              Margin="1"
+              Opacity="0.8"
+              Padding="6 2 6 3"
+              Grid.Row="0">
+        <TextBlock Text="{x:Bind Duration, Mode=OneWay}" />
+      </Border>
+      <Border Background="{ThemeResource SystemAccentColor}"
+              Width="80"
+              Height="24"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Opacity="{x:Bind IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+              RenderTransformOrigin="0.5, 0.5"
+              Grid.Row="0"
+              RenderTransform="{StaticResource FavoriteRibbonTransform}" />
+    </Grid>
+  </DataTemplate>
 
   <DataTemplate x:Key="AddNewFolderTemplate" x:DataType="vm:IStorageItemViewModel">
     <uwpControls:DockPanel>
@@ -224,7 +292,7 @@
 
   <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector"
                                  LazyFolderOrArchiveFile="{StaticResource StorageItemCardTemplate}"
-                                 Folder="{StaticResource StorageItemCardTemplate}"
+                                 Folder="{StaticResource FolderStorageItemCardTemplate}"
                                  AddNewFolder="{StaticResource AddNewFolderTemplate}"
                                  Archive="{StaticResource StorageItemCardTemplate}"
                                  ArchiveFolder="{StaticResource StorageItemCardTemplate}"
