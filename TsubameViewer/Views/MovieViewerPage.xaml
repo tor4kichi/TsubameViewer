@@ -1351,6 +1351,7 @@
           SizeChanged="MovieSeekbarTooltipContainer_SizeChanged">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
+                                    Delay="0:0:0.150"
                                     Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>

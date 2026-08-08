@@ -1149,6 +1149,7 @@
           MaxHeight="240">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
+                                    Delay="0:0:0.150"
                                     Duration="0:0:0.125" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
