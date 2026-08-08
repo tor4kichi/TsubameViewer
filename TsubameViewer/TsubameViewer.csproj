@@ -188,6 +188,7 @@
     <Compile Include="ViewModels\LatestContentViewUpdateMessage.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenViewerWithSecondaryWindowCommand.cs" />
     <Compile Include="ViewModels\PageNavigation\NavigationCompletedMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\PreNavigationNotifyMessage.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ResetThumbnailImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />
     <Compile Include="ViewModels\ViewerSettings.cs" />

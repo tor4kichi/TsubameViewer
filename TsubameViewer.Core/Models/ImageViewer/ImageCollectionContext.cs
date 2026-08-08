@@ -62,11 +62,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
     public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None);
 
-    private StorageItemQueryResult? _folderAndArchiveFileSearchQuery;
-    private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
+    private StorageItemQueryResult CreateFolderAndArchiveFileSearchQuery() => Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
 
-    private StorageFileQueryResult? _imageFileSearchQuery;
-    private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
+    private StorageFileQueryResult CreateImageFileSearchQuery() => Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
 
     public string Name => Folder?.Name ?? "";
 
@@ -90,7 +88,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     private FileSortType _lastFolderAndArchiveFilesSortType;
     public async ValueTask<int> GetFolderOrArchiveFilesCountAsync(CancellationToken ct)
     {
-        return (int)await FolderAndArchiveFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        return (int)await CreateFolderAndArchiveFileSearchQuery().GetItemCountAsync().AsTask(ct);
     }
 
     int _prevAccessIndex = -1;
@@ -102,10 +100,11 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     {
         using var _ = await _lock.LockAsync(ct);
 
+        var query = CreateFolderAndArchiveFileSearchQuery();
         if (_lastFolderAndArchiveFilesSortType != sort)
         {
             _lastFolderAndArchiveFilesSortType = sort;
-            FolderAndArchiveFileSearchQuery.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
+            query.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
             _prevAccessIndex = -1;
             _cachedPage = -1;
         }
@@ -117,7 +116,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             if (checkPage != _cachedPage)
             {
                 _cachedPage = checkPage;
-                var items = await FolderAndArchiveFileSearchQuery.GetItemsAsync((uint)(checkPage * _cachedPageItems.Length), (uint)_cachedPageItems.Length).AsTask(ct);
+                var items = await query.GetItemsAsync((uint)(checkPage * _cachedPageItems.Length), (uint)_cachedPageItems.Length).AsTask(ct);
                 for (int i = 0; i < items.Count; i++)
                 {
                     _cachedPageItems[i] = items[i];
@@ -138,7 +137,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         }
         else
         {
-            if (await FolderAndArchiveFileSearchQuery.GetItemsAsync((uint)index, 1).AsTask(ct) is not null and var files
+            if (await query.GetItemsAsync((uint)index, 1).AsTask(ct) is not null and var files
                 && files.ElementAtOrDefault(0) is not null and var imageSource)
             {
                 Debug.WriteLine($"index:{index}, Name:{imageSource.Name}");
@@ -153,23 +152,24 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<int> GetFolderOrArchiveFilesIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
+        var query = CreateFolderAndArchiveFileSearchQuery();
         if (_lastFolderAndArchiveFilesSortType != sort)
         {
             _lastFolderAndArchiveFilesSortType = sort;
-            FolderAndArchiveFileSearchQuery.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
+            query.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
         }
 
         if (sort is FileSortType.None or FileSortType.TitleAscending or FileSortType.TitleDecending)
         {
             string filename = Path.GetFileName(key);
-            uint result = await FolderAndArchiveFileSearchQuery.FindStartIndexAsync(filename);
+            uint result = await query.FindStartIndexAsync(filename);
             return result != uint.MaxValue ? (int)result : throw new KeyNotFoundException($"not found file : {filename}");
         }
         else
         {
             // FindStartIndexAsync が意図したIndexを返さないので頭から走査する
             int index = 0;
-            await foreach (var file in FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct).WithCancellation(ct))
+            await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
             {
                 if (file.Name == key || file.Path == key)
                 {
@@ -239,7 +239,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {
-        return FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
+        return CreateFolderAndArchiveFileSearchQuery().ToAsyncEnumerable(ct)
             .Select(x => new StorageItemImageSource(x) as IImageSource);
     }
 
@@ -255,19 +255,19 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
     {        
-        return ImageFileSearchQuery.ToAsyncEnumerable(ct)
+        return CreateImageFileSearchQuery().ToAsyncEnumerable(ct)
             .Select(x => new StorageItemImageSource(x) as IImageSource);
     }
 
     public async ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
     {
-        var count = await FolderAndArchiveFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        var count = await CreateFolderAndArchiveFileSearchQuery().GetItemCountAsync().AsTask(ct);
         return count > 0;
     }
 
     public async ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
     {
-        var count = await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        var count = await CreateImageFileSearchQuery().GetItemCountAsync().AsTask(ct);
         return count > 0;
     }
 
@@ -382,8 +382,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             {
                 observer.OnNext(Unit.Default);
             }
-            FolderAndArchiveFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
-            return Disposable.Create(() => FolderAndArchiveFileSearchQuery.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
+            var query = CreateFolderAndArchiveFileSearchQuery();
+            query.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
+            return Disposable.Create(() => query.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
         })
             .ThrottleLast(TimeSpan.FromSeconds(1));
     }
@@ -398,8 +399,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             {                
                 observer.OnNext(Unit.Default);
             }
-            ImageFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
-            return Disposable.Create(() => ImageFileSearchQuery.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
+            var query = CreateImageFileSearchQuery();
+            query.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
+            return Disposable.Create(() => query.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
         })
             .ThrottleLast(TimeSpan.FromSeconds(1));
     }

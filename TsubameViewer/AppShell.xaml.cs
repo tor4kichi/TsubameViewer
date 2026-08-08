@@ -145,6 +145,14 @@ public sealed partial class AppShell : UserControl
         InitializeViewerFrameNavigation();
         InitializeThemeChangeRequest();
         InitializeSelection();
+        _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) => 
+        {
+            // リスト系ページの読み込み処理をキャンセルする
+            // 
+            RotationNextCancellationTokenSource(null);
+            Debug.WriteLine("PreNavigationNotifyMessage");
+        });
+
 
         _animationCancelTimer = _dispatcherQueue.CreateTimer();
         CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());

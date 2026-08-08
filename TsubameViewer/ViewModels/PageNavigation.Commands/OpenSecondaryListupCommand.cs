@@ -88,6 +88,9 @@ public sealed class OpenSecondaryListupCommand : CommandBase
         {
             await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
 
+            // ファイル・フォルダの差分検出処理を止める
+            _messenger.Send<PreNavigationNotifyMessage>();
+
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
             if (type == StorageItemTypes.Archive)
             {

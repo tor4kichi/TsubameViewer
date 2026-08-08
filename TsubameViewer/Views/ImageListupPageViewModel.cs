@@ -769,6 +769,7 @@ public sealed partial class ImageListupPageViewModel
                     .ObserveOnCurrentSynchronizationContext()
                     .SubscribeAwait(async (_, ct) =>
                     {
+                        using var lockReleaser = await _navigationLock.LockAsync(ct);
                         await ReloadItemsAsync(_imageCollectionContext, ct);
                         Debug.WriteLine("Images Update required. " + _currentImageSource);
                     });
@@ -818,6 +819,7 @@ public sealed partial class ImageListupPageViewModel
                         NowLoadingItems = false;
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
+                            using var lockReleaser = await _navigationLock.LockAsync(ct);
                             try
                             {
                                 // Note: リネームを検知したいので同数チェックしない
@@ -838,6 +840,7 @@ public sealed partial class ImageListupPageViewModel
                 {
                     DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
+                        using var lockReleaser = await _navigationLock.LockAsync(ct);
                         try
                         {
                             using (FileItemsView.DeferRefresh())
