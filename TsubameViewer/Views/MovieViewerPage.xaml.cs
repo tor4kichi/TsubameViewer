@@ -1805,15 +1805,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var posRatio = Math.Clamp(pos.X / VideoPositionSliderWall.ActualWidth, 0, 1);
         var videoPos =  VideoDuration * posRatio;
         var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+        var halfContainerWidth = MovieSeekbarTooltipImage.ActualWidth * 0.5;
+        var clampedPosX = Math.Clamp(pos.X - offset.X,
+            halfContainerWidth + 8,
+            ImageSelectorContainer.ActualWidth - halfContainerWidth - 8);
+        MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
+        MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 0 : 0) - (float)MovieSeekbarTooltipImage.ActualHeight;
+
         if (SeekbarFrameTime != videoPosAligned)
         {
-            var halfContainerWidth = MovieSeekbarTooltipImage.ActualWidth * 0.5;
-            var clampedPosX = Math.Clamp(pos.X - offset.X,
-                halfContainerWidth + 8,
-                ImageSelectorContainer.ActualWidth - halfContainerWidth - 8);
-            MovieSeekbarTooltipContainerTransform.TranslateX = clampedPosX - (float)halfContainerWidth;
-            MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - (_windowContext.IsPrimary && _windowContext.NowDisplayTitleBar ? 0 : 0) - (float)MovieSeekbarTooltipImage.ActualHeight;
-
             if (_videoPositionsliderPointerPressed
                 && _lastPointerDeviceType != PointerDeviceType.Touch)
             {
@@ -1845,15 +1846,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
             MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
 
-            if (_frameGrabber == null
-                || MovieSeekbarTooltipContainer.ActualWidth == 0)
+            if (_frameGrabber == null)
             {
                 MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
             }           
             else if (!_videoPositionsliderPointerPressed)
             {
                 // Note: Source再適用後の表示画像のリサイズがレイアウト再計算がないと発生しないので
-                if (MovieSeekbarTooltipImage.ActualHeight == 1)
+                if (MovieSeekbarTooltipImage.Width <= 1)
                 {
                     MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                 }
