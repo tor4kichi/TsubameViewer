@@ -463,6 +463,7 @@ public sealed partial class FolderListupPageViewModel
             .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
             .SubscribeAwait(async (s, ct) =>
             {
+                if (NowLoading) { return; }
                 using (FileItemsView.DeferRefresh())
                 {
                     if (_filterQueryCts != null)
@@ -484,6 +485,8 @@ public sealed partial class FolderListupPageViewModel
                         }
                     }
                     else { _migemoQueryRegex = null; }
+
+                    if (NowLoading) { return; }
                     FileItemsView.RefreshFilter(lastQueryCt);
                 }
             }, AwaitOperation.Switch)

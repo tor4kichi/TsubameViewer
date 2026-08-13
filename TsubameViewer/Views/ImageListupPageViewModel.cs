@@ -505,6 +505,7 @@ public sealed partial class ImageListupPageViewModel
                 .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
                 .SubscribeAwait(this, static async (x, s, ct)=>
                 {
+                    if (s.NowLoadingItems) { return; }
                     using (s.FileItemsView.DeferRefresh())
                     {
                         if (s._filterQueryCts != null)
@@ -526,6 +527,8 @@ public sealed partial class ImageListupPageViewModel
                             }
                         }
                         else { s._migemoQueryRegex = null; }
+
+                        if (s.NowLoadingItems) { return; }
                         s.FileItemsView.RefreshFilter(lastQueryCt);
                     }
                 }, AwaitOperation.Switch)
