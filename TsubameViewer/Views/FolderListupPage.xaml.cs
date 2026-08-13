@@ -211,7 +211,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
 
             var imageControl = args.ItemContainer.FindDescendant<Image>();
-            if (imageControl != null)
+            if (imageControl != null && imageControl.Source != null)
             {
                 _fadeOutAnim.Start(imageControl);
             }
@@ -219,7 +219,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             if (!args.InRecycleQueue)
             {
                 _realizedItems.Add(args.ItemContainer, itemVM);
-
+                
                 itemVM.Image = imageControl?.Source as BitmapImage;
                 using (_vm._thumbnailManager.GetCachedThumbnailSize(itemVM.Path) != null
                     ? Disposable.Empty
@@ -274,11 +274,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
             else
             {
-                _realizedItems.Remove(args.ItemContainer);
-                itemVM.StopImageLoading();
-                if (imageControl != null)
+                if (_realizedItems.Remove(args.ItemContainer))
                 {
-                    _fadeOutAnim.Start(imageControl);
+                    itemVM.StopImageLoading();
+                    if (imageControl != null)
+                    {
+                        _fadeOutAnim.Start(imageControl);
+                    }
                 }
             }
         }

@@ -502,7 +502,7 @@ public sealed partial class ImageListupPageViewModel
                 .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
-                .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
+                .ThrottleLast(TimeSpan.FromSeconds(0.5))
                 .SubscribeAwait(this, static async (x, s, ct)=>
                 {
                     if (s.NowLoadingItems) { return; }

@@ -460,7 +460,7 @@ public sealed partial class FolderListupPageViewModel
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.FilterText, false)
-            .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
+            .ThrottleLast(TimeSpan.FromSeconds(0.5))
             .SubscribeAwait(async (s, ct) =>
             {
                 if (NowLoading) { return; }
