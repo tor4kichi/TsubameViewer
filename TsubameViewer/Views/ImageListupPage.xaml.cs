@@ -95,6 +95,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         ContentViewTypeSelector.SelectedIndex = 1;
 
+        _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<PreNavigationNotifyMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);
+
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) => 
         {            
             if (_realizedItems.FirstOrDefault(x => x.Value.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false) is { } itemVM
@@ -112,15 +116,25 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 m.Reply(Task.FromResult<UIElement?>(null));
             }
         });
+
+
+        _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) =>
+        {
+            _manualCts?.Cancel();
+            _manualCts?.Dispose();
+            _linkedCts?.Dispose();
+            _manualCts = null;
+        });
+
+
         _messenger.Register<NavigationCompletedMessage>(this, (r, m) => 
         {
-            if (m.Value.SourcePageType == typeof(ImageViewerPage))
+            if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                XamlCancellationHelper.Cancel(this);
-            }
-            else if (m.Value.SourcePageType == typeof(EmptyPage))
-            {
-                var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+                _manualCts = new CancellationTokenSource();
+                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
+                _linkedCt = _linkedCts.Token;
+                var ct = _linkedCt;
                 _realizedItems.ToObservable()
                     .ForEachAsync(async (x) =>
                     {
@@ -129,12 +143,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                         itemVM.RestoreThumbnailLoadingTask(ct);
                         if (elem.FindDescendant<Image>() is { } imageControl)
                         {
-                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                            await _fadeInAnim.StartAsync(imageControl, ct);
                         }
                     }, ct).FireAndForgetSafe();
-
-                HandleCreateFolderDialogTextChanging(ct);
-                InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
             }
         });
     }
@@ -142,9 +153,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {        
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);
-
     }
+
+    CancellationTokenSource? _manualCts;
+    CancellationToken _linkedCt;
+    CancellationTokenSource? _linkedCts;
+
+
 
     void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -177,6 +194,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         base.OnNavigatedTo(e);
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        _manualCts = new CancellationTokenSource();
+        _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
+        _linkedCt = _linkedCts.Token;
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
 
@@ -194,7 +214,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     itemVM.RestoreThumbnailLoadingTask(ct);
                     if (elem.FindDescendant<Image>() is { } imageControl)
                     {
-                        await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                        await _fadeInAnim.StartAsync(imageControl, _linkedCt);
                     }
 
 
@@ -390,16 +410,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 if (imageControl == null) { return; }
                 _fadeOutAnim.Start(imageControl);                
                 itemVM.Image = imageControl.Source as BitmapImage;
-                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
+                await itemVM.EnsureImageSizeRatioAsync(_linkedCt);
                 using (itemVM.ImageAspectRatioWH != null 
                     ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(_navigationCt))
+                    : await _imageGeneratingLock.LockAsync(_linkedCt))
                 {
                     // Note: ここでreturnすると読み込まれないケースが頻発する
-                    await itemVM.InitializeAsync(_navigationCt);
+                    await itemVM.InitializeAsync(_linkedCt);
                 }
 
-                await _fadeInAnim.StartAsync(imageControl, _navigationCt);                
+                await _fadeInAnim.StartAsync(imageControl, _linkedCt);                
             }
             catch (OperationCanceledException) { }
         }

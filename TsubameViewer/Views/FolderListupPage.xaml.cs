@@ -83,6 +83,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<PreNavigationNotifyMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
@@ -109,19 +111,26 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             using var pooled = _realizedItems.AsValueEnumerable().ToArrayPool();
             foreach (var (elem, itemVM) in pooled.Span)
             {
-                itemVM.RestoreThumbnailLoadingTask(_navigationCt);
+                itemVM.RestoreThumbnailLoadingTask(_linkedCt);
             }
+        });
+
+        _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) => 
+        {
+            _manualCts?.Cancel();
+            _manualCts?.Dispose();
+            _linkedCts?.Dispose();
+            _manualCts = null;
         });
 
         _messenger.Register<NavigationCompletedMessage>(this, (r, m) =>
         {
-            if (m.Value.SourcePageType == typeof(ImageViewerPage))
+            if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                XamlCancellationHelper.Cancel(this);
-            }
-            else if (m.Value.SourcePageType == typeof(EmptyPage))
-            {
-                var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+                _manualCts = new CancellationTokenSource();
+                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
+                _linkedCt = _linkedCts.Token;
+                var ct = _linkedCt;
                 _realizedItems.ToObservable()
                     .ForEachAsync(async (x) =>
                     {
@@ -129,17 +138,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                         itemVM.RestoreThumbnailLoadingTask(ct);
                         if (elem.FindDescendant<Image>() is { } imageControl)
                         {
-                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                            await _fadeInAnim.StartAsync(imageControl, ct);
                         }
-                    }, ct).FireAndForgetSafe();
-
-                DisposableBuilder db = new ();
-                HandleCreateFolderDialogTextChanging(ref db);
-                db.Build().RegisterTo(ct);
-                InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
+                    }, ct).FireAndForgetSafe();                
             }
         });
     }
+
+    CancellationTokenSource? _manualCts;
+    CancellationToken _linkedCt;
+    CancellationTokenSource? _linkedCts;
 
     private void ClearRealizedItems()
     {
@@ -168,6 +176,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);        
     }
 
@@ -200,6 +209,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         async Task d(ContainerContentChangingEventArgs args)
         {
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
+
             var imageControl = args.ItemContainer.FindDescendant<Image>();
             if (imageControl != null)
             {
@@ -213,13 +223,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 itemVM.Image = imageControl?.Source as BitmapImage;
                 using (_vm._thumbnailManager.GetCachedThumbnailSize(itemVM.Path) != null
                     ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(_navigationCt))
+                    : await _imageGeneratingLock.LockAsync(_linkedCt))
                 {                    
-                    await itemVM.InitializeAsync(_navigationCt);
+                    await itemVM.InitializeAsync(_linkedCt);
                 }
                 if (imageControl != null)
                 {
-                    _ = _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                    _ = _fadeInAnim.StartAsync(imageControl, _linkedCt);
                 }
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない                
                 if (itemVM.Item != null)
@@ -307,6 +317,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        _manualCts = new CancellationTokenSource();
+        _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
+        _linkedCt = _linkedCts.Token;
         ConnectedAnimationService.GetForCurrentView()
                     .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
         try
@@ -324,7 +337,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                         itemVM.RestoreThumbnailLoadingTask(ct);
                         if (elem.FindDescendant<Image>() is { } imageControl)
                         {
-                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                            await _fadeInAnim.StartAsync(imageControl, _linkedCt);
                         }
                     }, ct).FireAndForgetSafe();
             }
@@ -417,7 +430,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             //    if (itemContainer.FindDescendant<Image>() is { } image
             //        && EnsureGetBitmapImage(image) is { } targetBitmap)
             //    {
-            //        itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
+            //        itemVM.RestoreThumbnailLoadingTask(targetBitmap, _linkedCt);
             //    }
             //}
         }
@@ -913,7 +926,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _isItemsForceInfoLoaded = true;
             foreach (var itemVM in _vm.FolderItems)
             {
-                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_navigationCt).FireAndForgetSafe();
+                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_linkedCt).FireAndForgetSafe();
             }
         }
     }
