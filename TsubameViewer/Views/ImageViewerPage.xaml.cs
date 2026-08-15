@@ -7,10 +7,13 @@ using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Controls;
 using DryIoc;
+using DryIoc.FastExpressionCompiler.LightExpression;
+using DryIoc.ImTools;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
 using R3.Extensions;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -94,6 +97,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
         _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
+
+        _image1Source = new CanvasVirtualImageSource(CanvasDevice.GetSharedDevice(), 1, 1, 96);
+        _image2Source = new CanvasVirtualImageSource(CanvasDevice.GetSharedDevice(), 1, 1, 96);
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -267,6 +273,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    CanvasVirtualImageSource _image1Source;
+    CanvasVirtualImageSource _image2Source;
     CancellationToken _navigationCt;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -276,7 +284,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _vm.TransformScale = 1;
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         CloseBottomUI();
-        
+
         IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
 
@@ -290,8 +298,80 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 ToggleOpenCloseBottomUI();
             }            
         });
-
         DisposableBuilder db = new();
+
+        _vm.ObservePropertyChanged(x => x.SourceImages)
+            .SubscribeAwait(async (images, ct) =>
+            {
+                CanvasBitmap ToSafeBitmap(SKBitmap skBitmap)
+                {
+                    if (skBitmap.Info.ColorType != SKImageInfo.PlatformColorType)
+                    {
+                        var bitmap = skBitmap.Copy(SKImageInfo.PlatformColorType);
+                        skBitmap.Dispose();
+                        skBitmap = bitmap;
+                    }
+                    return CanvasBitmap.CreateFromBytes(CanvasDevice.GetSharedDevice(), skBitmap.Bytes, skBitmap.Width, skBitmap.Height, DirectXPixelFormat.B8G8R8A8UIntNormalized);
+                }
+                long time = TimeProvider.System.GetTimestamp();
+                var canvasHeight = RootGrid.ActualHeight;
+                var canvasWidth = RootGrid.ActualWidth;
+                if (images.Length >= 1 && images[0] is IImageSource img1)
+                {
+                    Image1.Height = canvasHeight;
+                    using (var stream = await img1.GetImageStreamAsync(ct))
+                    using (var skBitmap = SKBitmap.Decode(stream))
+                    using (var bitmap = ToSafeBitmap(skBitmap))
+                    {
+                        float scale = (float)canvasHeight / (float)bitmap.Size.Height;
+                        var scaledSize = new Size((int)(bitmap.Size.Width * scale), (int)(bitmap.Size.Height * scale));
+                        _image1Source.Resize(scaledSize);
+                        using (var ds = _image1Source.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
+                        {
+                            ds.Blend = CanvasBlend.Copy;
+                            ds.Antialiasing = CanvasAntialiasing.Antialiased;
+                            ds.Transform = Matrix3x2.CreateScale(scale);
+                            ds.DrawImage(bitmap);
+                        }
+                        Image1.Width = scaledSize.Width;
+                    }
+                }
+                else
+                {
+                    Image1.Width = 0;
+                }
+                
+                if (images.Length >= 2 && images[1] is IImageSource img2)
+                {
+                    Image2.Height = canvasHeight;
+                    using (var stream = await img2.GetImageStreamAsync(ct))
+                    using (var skBitmap = SKBitmap.Decode(stream))
+                    using (var bitmap = ToSafeBitmap(skBitmap))
+                    {
+                        float scale = (float)canvasHeight / (float)bitmap.Size.Height;
+                        var scaledSize = new Size((int)(bitmap.Size.Width * scale), (int)(bitmap.Size.Height * scale));
+                        _image2Source.Resize(scaledSize);
+                        using (var ds = _image2Source.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
+                        {
+                            ds.Blend = CanvasBlend.Copy;
+                            ds.Antialiasing = CanvasAntialiasing.Antialiased;
+                            ds.Transform = Matrix3x2.CreateScale(scale);
+                            ds.DrawImage(bitmap);
+                        }
+                        Image2.Width = scaledSize.Width;
+                    }
+                }
+                else
+                {
+                    Image2.Width = 0;
+                    Image1.Height = double.NaN;
+                    Image1.Width = canvasWidth;
+                }
+
+                Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
+            })
+            .AddTo(ref db);
+
         _messenger.CreateObservable<ImageLoadedMessage>()
             .ToObservable()
             .Index()
@@ -375,7 +455,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         AnimationBuilder.Create()
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
-            .Start(ImageItemsControl_0);
+            .Start(ImagesContainer);
 
         base.OnNavigatedTo(e);
     }
@@ -396,29 +476,29 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             if (!_vm.NowDoubleImageView
                 && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
             {
-                var imageContainer = _vm.CurrentDisplayImageIndex switch
-                {
-                    0 => ImageItemsControl_0,
-                    1 => ImageItemsControl_1,
-                    2 => ImageItemsControl_2,
-                    _ => throw new InvalidOperationException(),
-                };
-                var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-                var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
-                try
-                {
-                    var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
-                    if (res is { } target)
-                    {
-                        anim.Configuration = new DirectConnectedAnimationConfiguration();
-                        anim.TryStart(target);
-                    }
-                    else { anim.Cancel(); }
-                }
-                catch
-                {
-                    anim.Cancel();
-                }
+                //var imageContainer = _vm.CurrentDisplayImageIndex switch
+                //{
+                //    0 => ImageItemsControl_0,
+                //    1 => ImageItemsControl_1,
+                //    2 => ImageItemsControl_2,
+                //    _ => throw new InvalidOperationException(),
+                //};
+                //var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+                //var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
+                //try
+                //{
+                //    var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
+                //    if (res is { } target)
+                //    {
+                //        anim.Configuration = new DirectConnectedAnimationConfiguration();
+                //        anim.TryStart(target);
+                //    }
+                //    else { anim.Cancel(); }
+                //}
+                //catch
+                //{
+                //    anim.Cancel();
+                //}
             }
 
             base.OnNavigatingFrom(e);
@@ -460,9 +540,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             if (isConnectedAnimationDone is false)
             {
-                await WaitImageLoadingAsync(navigationCt);
                 await AnimationBuilder.Create()
-                   .CenterPoint(ImageItemsControl_0.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
+                   .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                    .Scale()
                        .TimedKeyFrames(ke =>
                        {
@@ -470,7 +549,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                            ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                        })
                    .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                   .StartAsync(ImageItemsControl_0, navigationCt);
+                   .StartAsync(ImagesContainer, navigationCt);
             }
         }
         catch (OperationCanceledException) { }
@@ -484,14 +563,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, navigationCt);
             var ct = linkedCts.Token;
-            if (await WaitImageLoadingAsync(ct) is not null and var images && images.Count() == 1)
+            if (!_vm.NowDoubleImageView)
             {
                 // ConnectedAnimation.Start後にタイムアウトでフォールバックのアニメーションが起動する可能性に配慮が必要
                 isConnectedAnimationDone = true;
-                animation.TryStart(images.ElementAt(0));
+                animation.TryStart(ImagesContainer);
                 AnimationBuilder.Create()
                     .Opacity(1.0, duration: TimeSpan.FromMilliseconds(1))
-                    .Start(ImageItemsControl_0);
+                    .Start(ImagesContainer);
             }
             else
             {
@@ -515,33 +594,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
 
         return isConnectedAnimationDone;
-    }
-
-    async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
-    {
-        if (_vm.DisplayImages_0.Length == 1)
-        {
-            UIElement? image = null;
-            await VisualTreeExtentions.WaitFillingValue(() => 
-            {
-                image ??= ImageItemsControl_0.TryGetElement(0);
-                if (image == null) { return false; }
-                return image.ActualSize.X is not 0 && image.ActualSize.Y is not 0;
-            }, ct);
-            return new[] { image! };
-        }
-        else
-        {
-            UIElement[] images = new UIElement[2];
-            await VisualTreeExtentions.WaitFillingValue(() =>
-            {
-                images[0] ??= ImageItemsControl_0.TryGetElement(0);
-                images[1] ??= ImageItemsControl_0.TryGetElement(1);
-                if (images.Any(x => x is null)) { return false; }
-                return images.All(x => x.ActualSize.X is not 0 && x.ActualSize.Y is not 0);
-            }, ct);
-            return images;
-        }
     }
 
     #endregion Navigation
@@ -795,7 +847,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 if (scale > 1.0)
                 {
-                    await s._vm.DisableImageDecodeWhenImageSmallerCanvasSize();
+                    //await s._vm.DisableImageDecodeWhenImageSmallerCanvasSize();
                 }
             })
             .AddTo(ref db);
