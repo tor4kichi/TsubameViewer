@@ -321,14 +321,18 @@
           </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+        <StackPanel Orientation="Horizontal" 
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     x:Name="ImagesPanel">
           <Image x:Name="Image1"
                  Stretch="Uniform"
-                 Source="{x:Bind _image1Source.Source, Mode=OneWay}" />
+                 Source="{x:Bind _image1Source.Source, Mode=OneWay}"
+                 Width="0"/>
           <Image x:Name="Image2"
                  Stretch="Uniform"
-                 Source="{x:Bind _image2Source.Source, Mode=OneWay}" />
+                 Source="{x:Bind _image2Source.Source, Mode=OneWay}"
+                 Width="0" />
         </StackPanel>
       </Grid>
 
@@ -1158,8 +1162,9 @@
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
-              <DoubleAnimation Duration="0:0:0.05"
+              <DoubleAnimation Duration="0:0:0.05"                               
                                To="0.25"
+                               BeginTime="0:0:0.5"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />
             </Storyboard>
@@ -1172,7 +1177,7 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.125"
-                               To="0.0"
+                               To="0.0"                               
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />
             </Storyboard>

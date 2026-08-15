@@ -67,21 +67,21 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
 
     public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct)
     {
-        using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
-        var memoryStream = new MemoryStream();
-        await Task.Run(() => 
+        return await Task.Run(async () => 
         {
+            using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
+            var memoryStream = new MemoryStream();
             using (var entryStream = _entry.OpenEntryStream())
             {
                 // Note: コメントアウトした書き方だと稀にコピーできないケースが発生する
                 // entryStream.CopyTo(memoryStream.AsStream());
                 ct.ThrowIfCancellationRequested();
-                entryStream.CopyTo(memoryStream);
+                await entryStream.CopyToAsync(memoryStream, 81920, ct);
                 ct.ThrowIfCancellationRequested();
                 memoryStream.Seek(0, SeekOrigin.Begin);
             }
+            return memoryStream;
         }, ct);
-        return memoryStream;
     }
 
 

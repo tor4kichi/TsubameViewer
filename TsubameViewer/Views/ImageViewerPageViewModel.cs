@@ -63,7 +63,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     private IImageCollectionContext _imageCollectionContext;
 
     CancellationTokenSource? _imageLoadingCts;
-    Core.AsyncLock _imageLoadingLock = new();
+
+    // View側の画像読み込みと共有する
+    // アーカイブ画像のデータ読み込みとEntriesの列挙を同時に行えないため。
+    internal Core.AsyncLock _imageLoadingLock = new();
 
     public int ImageCount => Images?.Length ?? 0;
 
@@ -1068,20 +1071,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 CurrentImageIndex = movedIndex;
                 _nowCurrenImageIndexChanging = false;
 
-                NowImageLoadingLongRunning = false;
-
-                try
-                {
-                    await _messenger.Send(new ImageLoadedMessage());
-                }
-                catch { }
-
-                //await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
             }
         }
         catch (OperationCanceledException)
         {
-            NowImageLoadingLongRunning = true;                
+            
         }
         catch (NotSupportedImageFormatException ex)
         {
@@ -1226,7 +1220,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             }
             else
             {
-                SetDisplayImages_Internal(sizeCheckResult.Slot1Image, null);
+                SetDisplayImages_Internal(sizeCheckResult.Slot1Image);
                 return 1;
             }
         }
