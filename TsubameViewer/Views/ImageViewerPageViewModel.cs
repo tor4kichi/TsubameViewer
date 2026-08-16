@@ -323,28 +323,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     [RelayCommand]
     async Task ToggleLeftBinding()
     {
-        static bool SwapIfDoubleView(BitmapImage[] images)
-        {
-            if (images.Any() && images.Length == 2)
-            {
-                (images[0], images[1]) = (images[1], images[0]);
-
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
         IsLeftBindingEnabled = !IsLeftBindingEnabled;
         ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled, IsLeftBindingEnabled, DefaultZoom);
-
-        var images = GetSourceImages();
-        if (images.Length == 2)
-        {
-            (images[0], images[1]) = (images[1], images[0]);
-        }
     }
 
     [RelayCommand]

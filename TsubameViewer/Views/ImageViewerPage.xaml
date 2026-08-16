@@ -1102,11 +1102,13 @@
               Width="2"
               HorizontalAlignment="Left"
               Background="{ThemeResource SystemAccentColor}"
+              x:Name="Page1FavoriteBorder"
               />
       <Border Opacity="{x:Bind _vm.Page2Favorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
               Width="2"
               HorizontalAlignment="Right"
-              Background="{ThemeResource SystemAccentColor}" />
+              Background="{ThemeResource SystemAccentColor}"
+              x:Name="Page2FavoriteBorder"/>
     </Grid>
 
     <Grid x:Name="PageSelectorTooltipContainer"
@@ -1327,6 +1329,14 @@
                     Value="2" />
             <Setter Target="Page2ActionButtonsContainer.(Grid.Column)"
                     Value="0" />
+            <Setter Target="Page1ActionButtonsContainer.FlowDirection"
+                    Value="RightToLeft" />
+            <Setter Target="Page2ActionButtonsContainer.FlowDirection"
+                    Value="RightToLeft" />
+            <Setter Target="Page1FavoriteBorder.HorizontalAlignment"
+                    Value="Right" />
+            <Setter Target="Page2FavoriteBorder.HorizontalAlignment"
+                    Value="Left" />
             <Setter Target="ImagesPanel.FlowDirection"
                     Value="RightToLeft" />
           </VisualState.Setters>
