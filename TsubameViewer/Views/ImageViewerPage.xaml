@@ -1158,13 +1158,18 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowImageLoadingLongRunning, Mode=OneWay}" />
+            <ctwu:CompareStateTrigger Value="{x:Bind BusyRenderingCount, Mode=OneWay}"
+                                      Comparison="GreaterThanOrEqual">
+              <ctwu:CompareStateTrigger.To>
+                <!--ThrottleFirstLastを使っているため3  -->
+                <x:Int32>3</x:Int32>
+              </ctwu:CompareStateTrigger.To>
+            </ctwu:CompareStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.05"                               
                                To="0.25"
-                               BeginTime="0:0:0.040"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />
             </Storyboard>

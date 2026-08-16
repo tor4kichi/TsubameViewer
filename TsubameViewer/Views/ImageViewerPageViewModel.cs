@@ -197,13 +197,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         private set { SetProperty(ref _ItemType, value); }
     }
 
-    private bool _nowImageLoadingLongRunning;
-    public bool NowImageLoadingLongRunning
-    {
-        get { return _nowImageLoadingLongRunning; }
-        set { SetProperty(ref _nowImageLoadingLongRunning, value); }
-    }
-
     readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
     public ApplicationSettings ApplicationSettings { get; }

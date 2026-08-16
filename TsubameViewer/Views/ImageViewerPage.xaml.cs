@@ -501,6 +501,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 #endregion
 
+    [ObservableProperty]
+    int _busyRenderingCount = 0;
 
     readonly CanvasVirtualImageSource _image1Source;
     readonly CanvasVirtualImageSource _image2Source;
@@ -531,8 +533,10 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
 
         this.ObserveSizeChanged()
+            .Skip(1)
             .Subscribe(size => 
             {
+                BusyRenderingCount += 5;
                 ClearCachedCanvasBitmap();
                 _vm.CanvasWidth = size.NewSize.Width;
                 _vm.CanvasHeight = size.NewSize.Height;
@@ -543,11 +547,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         Observable.Merge(
             _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.SourceImages, false).AsUnitObservable(),
-            this.ObserveSizeChanged().AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(250)),
+            this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(250)),
             _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable()
             )
-            .ThrottleFirstLast(TimeSpan.FromMilliseconds(32))
+            .ThrottleLast(TimeSpan.FromMilliseconds(32))
             .SubscribeAwait(async (u, ct) =>
             {
                 static void  DrawImage(double canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
@@ -567,9 +571,13 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 IImageSource? firstImage = _vm.SourceImages.ElementAtOrDefault(0);
                 IImageSource? secondImage = _vm.SourceImages.ElementAtOrDefault(1);
+
+                if (firstImage == null) { return; }
+
+                BusyRenderingCount++;
                 using var _ = await _cacheBitmapLock.LockAsync(ct);
                 long time = TimeProvider.System.GetTimestamp();
-                _vm.NowImageLoadingLongRunning = true;
+                
                 int currentIndex = _vm.CurrentImageIndex;
                 var canvasHeight = ImagesContainer.ActualHeight;
                 var canvasWidth = ImagesContainer.ActualWidth;                                
@@ -635,12 +643,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 ct.ThrowIfCancellationRequested();
                 if (currentIndex != _vm.CurrentImageIndex) { return; }
-                _vm.NowImageLoadingLongRunning = false;
+                
                 Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
                 await Task.Delay(1);
 
                 if (!_vm.ImageViewerSettings.IsEnablePrefetch) { return; }
-                
+                BusyRenderingCount = 0;
                 PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
                 
             }, AwaitOperation.Switch)
