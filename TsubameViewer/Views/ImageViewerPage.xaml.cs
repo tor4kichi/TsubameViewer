@@ -499,7 +499,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
     }
-#endregion
+    #endregion
 
     [ObservableProperty]
     int _busyRenderingCount = 0;
@@ -755,10 +755,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
         async Task d()
         {
-            using (await _cacheBitmapLock.LockAsync(default))
-            {
-                ClearCachedCanvasBitmap();
-            }
             if (!_vm.NowDoubleImageView
                 && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
             {
@@ -778,6 +774,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     anim.Cancel();
                 }
+            }
+
+            using (await _cacheBitmapLock.LockAsync(default))
+            {
+                ClearCachedCanvasBitmap();
             }
 
             base.OnNavigatingFrom(e);
