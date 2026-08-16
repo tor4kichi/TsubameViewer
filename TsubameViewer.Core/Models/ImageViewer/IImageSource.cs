@@ -38,7 +38,7 @@ public sealed class IImageSourceEqualityComparer : EqualityComparer<IImageSource
     public static readonly IImageSourceEqualityComparer Default = new IImageSourceEqualityComparer();
     public override bool Equals(IImageSource x, IImageSource y)
     {
-        return x.Equals(y);
+        return x?.Equals(y) ?? y == null;
     }
 
     public override int GetHashCode(IImageSource obj)

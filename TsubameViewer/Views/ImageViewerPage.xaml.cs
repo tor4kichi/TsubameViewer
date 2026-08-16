@@ -428,7 +428,23 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     {
         CanvasBitmap? bitmap = null;
 
-        if (TryGetCachedCanvasBitmap(item, out bitmap)) { return bitmap!; }
+        if (TryGetCachedCanvasBitmap(item, out bitmap) && bitmap != null)
+        {
+            if (requestHeight == bitmap.Size.Height)
+            {
+                return bitmap!;
+            }   
+            else
+            {
+                bitmap = null;
+                var info = _cachedBitmap.FirstOrDefault(x => x.Item == item);
+                if (info != null)
+                {
+                    _cachedBitmap.Remove(info);
+                    info.Bitmap.Dispose();                    
+                }
+            }
+        }
 
         bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
         bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
@@ -513,9 +529,26 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         });
         DisposableBuilder db = new();
 
-        _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex)
+
+        this.ObserveSizeChanged()
+            .Subscribe(size => 
+            {
+                ClearCachedCanvasBitmap();
+                _vm.CanvasWidth = size.NewSize.Width;
+                _vm.CanvasHeight = size.NewSize.Height;
+                _vm.SizeChangedCommand.Execute(null);
+            })
+            .AddTo(ref db);
+
+        Observable.Merge(
+            _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex, false).AsUnitObservable(),
+            _vm.ObservePropertyChanged(x => x.SourceImages, false).AsUnitObservable(),
+            this.ObserveSizeChanged().AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(250)),
+            _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
+            _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable()
+            )
             .ThrottleFirstLast(TimeSpan.FromMilliseconds(32))
-            .SubscribeAwait(async (images, ct) =>
+            .SubscribeAwait(async (u, ct) =>
             {
                 static void  DrawImage(double canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
                 {
@@ -554,10 +587,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         DrawImage(canvasHeight, bitmap1, _image1Source, Image1);
                         DrawImage(canvasHeight, bitmap2, _image2Source, Image2);
                     }
-                    catch (OperationCanceledException) { }
+                    catch (OperationCanceledException) { return; }
                     catch (Exception ex)
                     {
                         Debug.WriteLine(ex.ToString());
+                        return;
                     }
 
                     try
@@ -577,13 +611,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         var bitmap1 = await EnsureGetBitmapWithCacheAsync(source1, canvasHeight, ct);
                         DrawImage(canvasHeight, bitmap1, _image1Source, Image1);
                     }
-                    catch (OperationCanceledException) { }
+                    catch (OperationCanceledException) { return; }
                     catch (Exception ex)
                     {
                         Debug.WriteLine(ex.ToString());
+                        return;
                     }
                     Image1.Height = double.NaN;
-                    Image1.Width = canvasWidth;
+                    //Image1.Width = canvasWidth;
                     try
                     {
                         await _messenger.Send(new ImageLoadedMessage());
@@ -712,7 +747,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
         async Task d()
         {
-            using (_cacheBitmapLock.LockAsync(default))
+            using (await _cacheBitmapLock.LockAsync(default))
             {
                 ClearCachedCanvasBitmap();
             }
@@ -776,6 +811,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             if (isConnectedAnimationDone is false)
             {
+                Image1.UpdateLayout();
                 await AnimationBuilder.Create()
                    .CenterPoint(Image1.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                    .Scale()
