@@ -547,7 +547,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         Observable.Merge(
             _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.SourceImages, false).AsUnitObservable(),
-            this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(250)),
+            this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(120)),
             _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable()
             )
@@ -626,7 +626,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         return;
                     }
                     Image1.Height = double.NaN;
-                    //Image1.Width = canvasWidth;
+                    if (Image1.Width > canvasWidth)
+                    {
+                        Image1.Width = canvasWidth;
+                    }
+
                     try
                     {
                         await _messenger.Send(new ImageLoadedMessage());
