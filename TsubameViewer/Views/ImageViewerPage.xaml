@@ -1164,7 +1164,7 @@
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.05"                               
                                To="0.25"
-                               BeginTime="0:0:0.5"
+                               BeginTime="0:0:0.040"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />
             </Storyboard>

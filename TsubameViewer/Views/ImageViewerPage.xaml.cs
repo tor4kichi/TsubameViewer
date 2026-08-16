@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -15,7 +16,9 @@ using R3;
 using R3.Extensions;
 using SkiaSharp;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -276,6 +279,213 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    class PrefetchImageInfo(IImageSource Item, CanvasBitmap Bitmap)
+    {
+        public IImageSource Item { get; } = Item;
+        public CanvasBitmap Bitmap { get; } = Bitmap;
+    }
+
+    #region Display Image Cache
+    readonly List<PrefetchImageInfo> _cachedBitmap = new ();
+    readonly AsyncLock _cacheBitmapLock = new();
+
+    static CanvasBitmap ToCanvasBitmap(SKBitmap skBitmap)
+    {
+        if (skBitmap.Info.ColorType != SKImageInfo.PlatformColorType)
+        {
+            var bitmap = skBitmap.Copy(SKImageInfo.PlatformColorType);
+            skBitmap.Dispose();
+            skBitmap = bitmap;
+        }
+        return CanvasBitmap.CreateFromBytes(
+            CanvasDevice.GetSharedDevice(),
+            skBitmap.Bytes,
+            skBitmap.Width,
+            skBitmap.Height,
+            DirectXPixelFormat.B8G8R8A8UIntNormalized);
+    }
+
+    async Task<Stream> GetImageStreamAsync(IImageSource item, CancellationToken ct)
+    {
+        using (await _vm._imageLoadingLock.LockAsync(ct))
+        {
+            return await item.GetImageStreamAsync(ct);
+        }
+    }
+
+    async Task<IImageSource> GetImageSourceAsync(int requestIndex, CancellationToken ct)
+    {
+        using (await _vm._imageLoadingLock.LockAsync(ct))
+        {
+            return await _vm.GetImageSourceWithCacheAsync(requestIndex, ct);
+        }
+    }
+
+    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithSkia(IImageSource item, double? requestHeight, CancellationToken ct)
+    {
+        try
+        {
+            using (var stream = await GetImageStreamAsync(item, ct))
+            using (var skData = SKData.Create(stream))
+            {
+                if (requestHeight == null)
+                {
+                    using (var skBitmap = SKBitmap.Decode(skData))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (skBitmap == null) { return null; }
+                        else return ToCanvasBitmap(skBitmap);
+                    }
+                }
+                else
+                {
+                    var info = SKBitmap.DecodeBounds(skData);
+                    float scaledWidth = info.Width * (float)requestHeight.Value / info.Height;
+                    using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo((int)scaledWidth, (int)requestHeight.Value)))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (skBitmap == null) { return null; }
+                        else return ToCanvasBitmap(skBitmap);
+                    }
+                }
+            }
+        }
+        catch { return null; }
+    }
+
+    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithWin2d(IImageSource item, double? requestHeight, CancellationToken ct)
+    {
+        try
+        {
+            using (var stream = await GetImageStreamAsync(item, ct))
+            {
+                if (requestHeight == null)
+                {
+                    return await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream.AsRandomAccessStream(), 96).AsTask(ct);
+                }
+                else 
+                {
+                    using (var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream.AsRandomAccessStream(), 96).AsTask(ct))
+                    {
+                        var scale = requestHeight.Value / bitmap.Size.Height;
+                        var scaledWidth = bitmap.Size.Width * scale;
+                        var rtb = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (int)scaledWidth, (int)requestHeight.Value, 96);
+                        try
+                        {
+                            using (var ds = rtb.CreateDrawingSession())
+                            {
+                                ds.Blend = CanvasBlend.Copy;
+                                ds.Antialiasing = CanvasAntialiasing.Antialiased;
+                                ds.Transform = Matrix3x2.CreateScale((float)scale);
+                                ds.DrawImage(bitmap);
+                            }
+                            return rtb;
+                        }
+                        catch
+                        {
+                            rtb.Dispose();
+                            throw;
+                        }
+                    }
+                }
+            }
+        }
+        catch { return null; }
+    }
+
+    bool TryGetCachedCanvasBitmap(IImageSource item, out CanvasBitmap? bitmap)
+    {
+        if (!_vm.ImageViewerSettings.IsEnablePrefetch) 
+        {
+            bitmap = null;
+            return false;
+        }
+
+        if (_cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item,item)) is { } cached)
+        {
+            bitmap = cached.Bitmap;
+            _cachedBitmap.Remove(cached);            
+            _cachedBitmap.Insert(0, cached);
+            return true;
+        }
+        else
+        {
+            bitmap = null;
+            return false;
+        }
+    }
+    void ClearCachedCanvasBitmap()
+    {
+        var items = _cachedBitmap.ToArray();
+        _cachedBitmap.Clear();
+        foreach (var prefetchInfoItem in items)
+        {
+            prefetchInfoItem.Bitmap.Dispose();
+        }
+    }
+
+    async Task<CanvasBitmap> EnsureGetBitmapWithCacheAsync(IImageSource item, double? requestHeight, CancellationToken ct)
+    {
+        CanvasBitmap? bitmap = null;
+
+        if (TryGetCachedCanvasBitmap(item, out bitmap)) { return bitmap!; }
+
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
+        Guard.IsNotNull(bitmap);
+        if (_vm.ImageViewerSettings.IsEnablePrefetch)
+        {
+            _cachedBitmap.Insert(0, new(item, bitmap));
+            Debug.WriteLine($"PushedCache: {item.Name}");
+        }
+        return bitmap;
+    }
+
+    async Task PrefetchBitmapAsync( int currentIndex, double? requestHeight, CancellationToken ct)
+    {
+        using var _ = await _cacheBitmapLock.LockAsync(ct);
+
+        int[] prefetchTargets = [currentIndex + 1, currentIndex + 2, currentIndex + 3, currentIndex - 1, currentIndex - 2];
+        HashSet<IImageSource> liveImages = new([.. _vm.SourceImages], IImageSourceEqualityComparer.Default);
+        try
+        {
+            foreach (var index in prefetchTargets)
+            {
+                if (index < 0) { continue; }
+                if (index > _vm.ImageCount - 1) { return; }
+
+                var item = await GetImageSourceAsync(index, ct);
+                liveImages.Add(item);
+                if (_cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, item)) is { } cached)
+                {
+                    continue;
+                }
+
+                CanvasBitmap? bitmap = null;
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
+                if (bitmap == null) 
+                {
+                    Debug.WriteLine($"Failed Cache: {item.Name}");
+                    continue; 
+                }
+                _cachedBitmap.Add(new(item, bitmap));
+                Debug.WriteLine($"PushedCache: {item.Name}");
+            }
+        }
+        finally
+        {
+            foreach (var item in _cachedBitmap.Where(x => !liveImages.Contains(x.Item, IImageSourceEqualityComparer.Default)).ToList())
+            {
+                _cachedBitmap.Remove(item);
+                item.Bitmap.Dispose();
+                Debug.WriteLine($"RemovedCache: {item.Item.Name}");
+            }
+        }
+    }
+#endregion
+
+
     readonly CanvasVirtualImageSource _image1Source;
     readonly CanvasVirtualImageSource _image2Source;
     CancellationToken _navigationCt;
@@ -303,26 +513,10 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         });
         DisposableBuilder db = new();
 
-        _vm.ObservePropertyChanged(x => x.SourceImages)
-            .Debounce(TimeSpan.FromMilliseconds(1))
+        _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex)
+            .ThrottleFirstLast(TimeSpan.FromMilliseconds(32))
             .SubscribeAwait(async (images, ct) =>
             {
-                static CanvasBitmap ToSafeBitmap(SKBitmap skBitmap)
-                {
-                    if (skBitmap.Info.ColorType != SKImageInfo.PlatformColorType)
-                    {
-                        var bitmap = skBitmap.Copy(SKImageInfo.PlatformColorType);
-                        skBitmap.Dispose();
-                        skBitmap = bitmap;
-                    }
-                    return CanvasBitmap.CreateFromBytes(
-                        CanvasDevice.GetSharedDevice(),
-                        skBitmap.Bytes,
-                        skBitmap.Width,
-                        skBitmap.Height,
-                        DirectXPixelFormat.B8G8R8A8UIntNormalized);
-                }
-
                 static void  DrawImage(double canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
                 {
                     float scale = (float)canvasHeight / (float)bitmap.Size.Height;
@@ -337,83 +531,28 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
                     imageControl.Width = scaledSize.Width;
                 }
-                static async Task LoadImageAsync(
-                    IImageSource item, 
-                    double canvasHeight, 
-                    ImageViewerPageViewModel _vm, 
-                    Image imageControl,
-                    CanvasVirtualImageSource imageSource,
-                    CancellationToken ct)
-                {
-                    if (item is PdfPageImageSource)
-                    {
-                        using (var stream = new MemoryStream())
-                        {
-                            var size = await item.TryGetSizedImageStreamAsync((int)canvasHeight, stream, ct);
-                            if (size != null)
-                            {
-                                try
-                                {
-                                    using (var skBitmap = SKBitmap.Decode(stream))
-                                    {
-                                        if (skBitmap != null)
-                                        {
-                                            using (var bitmap = ToSafeBitmap(skBitmap))
-                                            {
-                                                DrawImage(canvasHeight, bitmap, imageSource, imageControl);
-                                                return;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch { }
-                            }
-                        }
-                    }
 
-                    try
-                    {
-                        using (var stream = await item.GetImageStreamAsync(ct))
-                        using (var skBitmap = SKBitmap.Decode(stream))
-                        {
-                            if (skBitmap != null)
-                            {
-                                using (var bitmap = ToSafeBitmap(skBitmap))
-                                {
-                                    DrawImage(canvasHeight, bitmap, imageSource, imageControl);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                    
-                    using (var stream = await item.GetImageStreamAsync(ct))
-                    using (var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream.AsRandomAccessStream(), 96))
-                    {
-                        DrawImage(canvasHeight, bitmap, imageSource, imageControl);
-                    }
-                }
-
-                using var _ = await _vm._imageLoadingLock.LockAsync(ct);
+                IImageSource? firstImage = _vm.SourceImages.ElementAtOrDefault(0);
+                IImageSource? secondImage = _vm.SourceImages.ElementAtOrDefault(1);
+                using var _ = await _cacheBitmapLock.LockAsync(ct);
                 long time = TimeProvider.System.GetTimestamp();
                 _vm.NowImageLoadingLongRunning = true;
-                await Task.Delay(1);
                 int currentIndex = _vm.CurrentImageIndex;
                 var canvasHeight = ImagesContainer.ActualHeight;
                 var canvasWidth = ImagesContainer.ActualWidth;                                
-                if (images.Length == 2
-                    && images[0] is IImageSource src1
-                    && images[1] is IImageSource src2)
+                if (firstImage is IImageSource src1
+                   && secondImage is IImageSource src2)
                 {
                     if (currentIndex != _vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
                     Image1.Height = canvasHeight;
                     Image2.Height = canvasHeight;
                     try
-                    {
-                        await LoadImageAsync(src1, canvasHeight, _vm, Image1, _image1Source, ct);
-                        await LoadImageAsync(src2, canvasHeight, _vm, Image2, _image2Source, ct);
+                    {                        
+                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(src1, canvasHeight, ct);
+                        var bitmap2 = await EnsureGetBitmapWithCacheAsync(src2, canvasHeight, ct);
+                        DrawImage(canvasHeight, bitmap1, _image1Source, Image1);
+                        DrawImage(canvasHeight, bitmap2, _image2Source, Image2);
                     }
                     catch (OperationCanceledException) { }
                     catch (Exception ex)
@@ -427,8 +566,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
                     catch { }
                 }
-                else if (images.Length == 1 
-                    && images[0] is IImageSource source1)
+                else if (firstImage is IImageSource source1)
                 {
                     Image2.Width = 0;
                     if (currentIndex != _vm.CurrentImageIndex) { return; }
@@ -436,7 +574,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     
                     try
                     {
-                        await LoadImageAsync(source1, canvasHeight, _vm, Image1, _image1Source, ct);
+                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(source1, canvasHeight, ct);
+                        DrawImage(canvasHeight, bitmap1, _image1Source, Image1);
                     }
                     catch (OperationCanceledException) { }
                     catch (Exception ex)
@@ -460,9 +599,15 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 }
 
                 ct.ThrowIfCancellationRequested();
+                if (currentIndex != _vm.CurrentImageIndex) { return; }
                 _vm.NowImageLoadingLongRunning = false;
-
                 Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
+                await Task.Delay(1);
+
+                if (!_vm.ImageViewerSettings.IsEnablePrefetch) { return; }
+                
+                PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
+                
             }, AwaitOperation.Switch)
             .AddTo(ref db);
 
@@ -512,7 +657,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 long ts = TimeProvider.System.GetTimestamp();
 
-                var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
+                var imageSource = await s.GetImageSourceAsync(s.PageSelectorCandidateImageIndex, ct);
                 using (var imageStream = await thumbnailManager.EnsureGetImageStreamAsync(imageSource, imageQuality: 0.5f, ct: ct))
                 {
                     if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
@@ -559,14 +704,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
         KeyDown -= ImageViewerPage_KeyDown;
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);        
-
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        
         if (_windowContext.IsPrimary)
         {
             d().FireAndForgetSafe();
         }
         async Task d()
         {
+            using (_cacheBitmapLock.LockAsync(default))
+            {
+                ClearCachedCanvasBitmap();
+            }
             if (!_vm.NowDoubleImageView
                 && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
             {
@@ -977,6 +1126,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+
 
     void Page1MenuFlyout_Opening(object sender, object e)
     {

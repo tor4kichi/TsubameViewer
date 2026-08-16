@@ -661,7 +661,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             )
             .Subscribe(_ =>
             {
-                //using (_imageLoadingLock.LockAsync(ct))
                 {
                     if (Images == null || Images.Length == 0) { return; }
                     if (_imageCollectionContext is null) { return; }
@@ -786,20 +785,20 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         requireRefresh = false;
                         var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType, ct)).Path;
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
 
-                        try
-                        {
-                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
-                            await ResetImageIndex(index >= 0 ? index : 0);
-                        }
-                        catch
-                        {
-                            if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
+                            try
                             {
-                                await ResetImageIndex(0);
+                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
+                                await ResetImageIndex(index >= 0 ? index : 0);
                             }
-                        }
+                            catch
+                            {
+                                if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
+                                {
+                                    await ResetImageIndex(0);
+                                }
+                            }
 
 
                         Debug.WriteLine("Images Updated. " + _currentImageSource.Path);
@@ -1168,7 +1167,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     candidateImages.Add(await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType, ct), ct));
                 }
             }
-            
+
             if (candidateImages.Any() is false)
             {
                 throw new InvalidOperationException();
@@ -1563,7 +1562,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         images[0] = firstSource;
         NotifySourceImagesChanged();
     }
-    
+
     void SetDisplayImages_Internal(IImageSource firstSource, IImageSource secondSource)
     {
         NowDoubleImageView = true;

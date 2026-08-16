@@ -68,7 +68,7 @@ public sealed class StorageItemImageSource : IImageSource
     public bool Equals(IImageSource other)
     {
         if (other == null) { return false; }
-        return this.Path == other.Path;
+        return this.Path.Equals(other.Path, StringComparison.Ordinal);        
     }
 
     public override string ToString()
