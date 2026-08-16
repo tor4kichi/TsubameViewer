@@ -452,7 +452,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         if (_vm.ImageViewerSettings.IsEnablePrefetch)
         {
             _cachedBitmap.Insert(0, new(item, bitmap));
-            Debug.WriteLine($"PushedCache: {item.Name}");
+            Debug.WriteLine($"PushedCache: {item.Name} ({bitmap.Size.Width:F0} x {bitmap.Size.Height:F0})");
         }
         return bitmap;
     }
@@ -486,7 +486,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     continue; 
                 }
                 _cachedBitmap.Add(new(item, bitmap));
-                Debug.WriteLine($"PushedCache: {item.Name}");
+                Debug.WriteLine($"PushedCache: {item.Name} ({bitmap.Size.Width:F0} x {bitmap.Size.Height:F0})");
             }
         }
         finally
@@ -507,6 +507,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     readonly CanvasVirtualImageSource _image1Source;
     readonly CanvasVirtualImageSource _image2Source;
     CancellationToken _navigationCt;
+    
+    [ObservableProperty]
+    bool _nowIgnoreDecodeToCanvasHeight;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
@@ -529,9 +532,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 ToggleOpenCloseBottomUI();
             }            
         });
+
         DisposableBuilder db = new();
-
-
         this.ObserveSizeChanged()
             .Skip(1)
             .Subscribe(size => 
@@ -544,19 +546,28 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        _vm.ObservePropertyChanged(x => x.TransformScale)
+            .Subscribe(x => 
+            {
+                NowIgnoreDecodeToCanvasHeight = 1 < x;
+                Debug.WriteLine($"NowIgnoreDecodeToCanvasHeight : {NowIgnoreDecodeToCanvasHeight}");
+            })
+            .AddTo(ref db);
+
         Observable.Merge(
             _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.SourceImages, false).AsUnitObservable(),
             this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(120)),
             _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
-            _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable()
+            _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight).Where(x => x).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(32))
             .SubscribeAwait(async (u, ct) =>
             {
-                static void  DrawImage(double canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
+                static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
                 {
-                    float scale = (float)canvasHeight / (float)bitmap.Size.Height;
+                    float scale = canvasHeight != null ? (float)canvasHeight.Value / (float)bitmap.Size.Height : 1;
                     var scaledSize = new Size((int)(bitmap.Size.Width * scale), (int)(bitmap.Size.Height * scale));
                     imageSource.Resize(scaledSize);
                     using (var ds = imageSource.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
@@ -586,14 +597,15 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     if (currentIndex != _vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    Image1.Height = canvasHeight;
-                    Image2.Height = canvasHeight;
+                    //Image1.Height = canvasHeight;
+                    //Image2.Height = canvasHeight;
+                    double? requestHeight = _vm.TransformScale != 1 ? null : canvasHeight;
                     try
                     {                        
-                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(src1, canvasHeight, ct);
-                        var bitmap2 = await EnsureGetBitmapWithCacheAsync(src2, canvasHeight, ct);
-                        DrawImage(canvasHeight, bitmap1, _image1Source, Image1);
-                        DrawImage(canvasHeight, bitmap2, _image2Source, Image2);
+                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
+                        var bitmap2 = await EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
+                        DrawImage(requestHeight, bitmap1, _image1Source, Image1);
+                        DrawImage(requestHeight, bitmap2, _image2Source, Image2);
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -613,11 +625,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     Image2.Width = 0;
                     if (currentIndex != _vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    
+                    double? requestHeight = _vm.TransformScale != 1 ? null : canvasHeight;
                     try
                     {
-                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(source1, canvasHeight, ct);
-                        DrawImage(canvasHeight, bitmap1, _image1Source, Image1);
+                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
+                        DrawImage(requestHeight, bitmap1, _image1Source, Image1);
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
