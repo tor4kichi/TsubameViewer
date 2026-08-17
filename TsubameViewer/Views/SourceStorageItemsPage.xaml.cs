@@ -68,26 +68,6 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
 
         if (!args.InRecycleQueue)
         {
-            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
-            {
-                var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
-                if (size.Y == 0)
-                {
-                    size = new Vector2(120, 200);
-                }
-                ToolTipService.SetToolTip(args.ItemContainer, 
-                    new ToolTip() 
-                    { 
-                        Content = new TextBlock() 
-                        { 
-                            Text = itemVM.Name, 
-                            TextWrapping = TextWrapping.Wrap 
-                        },
-                        PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                        Placement = PlacementMode.Bottom 
-                    });
-            }
-
             using (await _imageGenerationLock.LockAsync(_navigationCt))
             {
                 await itemVM.InitializeAsync(_navigationCt);
@@ -99,6 +79,26 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
                 {
                     args.ItemContainer.Focus(FocusState.Keyboard);
                 }
+            }
+
+            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
+            {
+                var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                if (size.Y == 0)
+                {
+                    size = new Vector2(120, 200);
+                }
+                ToolTipService.SetToolTip(args.ItemContainer,
+                    new ToolTip()
+                    {
+                        Content = new TextBlock()
+                        {
+                            Text = itemVM.Name,
+                            TextWrapping = TextWrapping.Wrap
+                        },
+                        PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
+                        Placement = PlacementMode.Bottom
+                    });
             }
         }
         else 
