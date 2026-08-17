@@ -550,7 +550,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _vm.ObservePropertyChanged(x => x.TransformScale)
             .Subscribe(this, static (x, s) => 
             {
-                s.NowIgnoreDecodeToCanvasHeight = 1 < x;
+                s.NowIgnoreDecodeToCanvasHeight = 1 < x;                
                 Debug.WriteLine($"NowIgnoreDecodeToCanvasHeight : {s.NowIgnoreDecodeToCanvasHeight}");
             })
             .AddTo(ref db);
@@ -561,7 +561,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(120)),
             _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight).Where(x => x).AsUnitObservable()
+            this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight, false).AsUnitObservable() // 拡大時にオリジナルサイズ読み込み＋リセット時にコンパクトサイズ読み込み（と表示崩れを直すため再読み込み）
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(32))
             .SubscribeAwait(this, static async (u, s, ct) =>
