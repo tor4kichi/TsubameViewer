@@ -87,6 +87,8 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
         {
             _tiles.Add(tile.TileId, tile);
         }
+
+        if (_tiles.Count == 0) { return; }
         // tilesに含まれない生成済みのセカンダリタイル用サムネイルを削除する
         await _secondaryTileThumbnailImageService.SecondaryThumbnailDeleteNotExist(tiles.Select(x => x.TileId));
     }
