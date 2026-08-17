@@ -307,34 +307,21 @@
           <i:EventTriggerBehavior EventName="Loaded">
             <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <i:ChangePropertyAction TargetObject="{x:Bind _vm,Mode=OneWay}"
+            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-          </i:EventTriggerBehavior>
-          <i:EventTriggerBehavior EventName="SizeChanged">
-            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
-                                    PropertyName="CanvasWidth"
-                                    Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
-                                    PropertyName="CanvasHeight"
-                                    Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-            <i:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
           </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
 
         <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"                          
                     x:Name="ImagesPanel">
-          <Viewbox>
-            <Image x:Name="Image1"
-                   Stretch="None"                   
-                   Source="{x:Bind _image1Source.Source, Mode=OneWay}" />
-          </Viewbox>
-          <Viewbox>
-            <Image x:Name="Image2"
-                   Stretch="None"
-                   Source="{x:Bind _image2Source.Source, Mode=OneWay}" />
-          </Viewbox>
+          <Image x:Name="Image1"
+                 Stretch="Uniform"
+                 VerticalAlignment="Stretch"
+                 Source="{x:Bind _image1Source.Source, Mode=OneWay}" />
+          <Image x:Name="Image2"
+                 Stretch="Uniform"          
+                 Source="{x:Bind _image2Source.Source, Mode=OneWay}" />
         </StackPanel>
       </Grid>
 

@@ -536,6 +536,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         DisposableBuilder db = new();
         this.ObserveSizeChanged()
             .Skip(1)
+            .ThrottleLast(TimeSpan.FromMilliseconds(50))
             .Subscribe(size => 
             {
                 BusyRenderingCount += 5;
@@ -576,8 +577,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         ds.Antialiasing = CanvasAntialiasing.Antialiased;
                         ds.Transform = Matrix3x2.CreateScale(scale);
                         ds.DrawImage(bitmap);
-                    }
-                    imageControl.Width = scaledSize.Width;
+                    }                    
                 }
 
                 IImageSource? firstImage = _vm.SourceImages.ElementAtOrDefault(0);
@@ -597,8 +597,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     if (currentIndex != _vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    //Image1.Height = canvasHeight;
-                    //Image2.Height = canvasHeight;
                     double? requestHeight = _vm.TransformScale != 1 ? null : canvasHeight;
                     try
                     {                        
@@ -606,6 +604,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         var bitmap2 = await EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
                         DrawImage(requestHeight, bitmap1, _image1Source, Image1);
                         DrawImage(requestHeight, bitmap2, _image2Source, Image2);
+                        Image1.Width = requestHeight != null ? _image1Source.Size.Width : double.NaN;
+                        Image2.Width = requestHeight != null ? _image2Source.Size.Width : double.NaN;
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -613,6 +613,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         Debug.WriteLine(ex.ToString());
                         return;
                     }
+
+                    Image2.Visibility = Visibility.Visible;
 
                     try
                     {
@@ -622,7 +624,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 }
                 else if (firstImage is IImageSource source1)
                 {
-                    Image2.Width = 0;
+                    Image2.Visibility = Visibility.Collapsed;
                     if (currentIndex != _vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
                     double? requestHeight = _vm.TransformScale != 1 ? null : canvasHeight;
@@ -637,12 +639,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         Debug.WriteLine(ex.ToString());
                         return;
                     }
-                    Image1.Height = double.NaN;
-                    if (Image1.Width > canvasWidth)
-                    {
-                        Image1.Width = canvasWidth;
-                    }
-
+                    
+                    // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                    Image1.Width = _image1Source.Size.Width > canvasWidth 
+                        ? canvasWidth 
+                        : _image1Source.Size.Width;
                     try
                     {
                         await _messenger.Send(new ImageLoadedMessage());
@@ -652,9 +653,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 else
                 {
                     Image1.Width = double.NaN;
-                    Image1.Height = double.NaN;
-                    Image2.Width = 0;
-                    Image2.Height = double.NaN;
+                    Image2.Width = double.NaN;
                 }
 
                 ct.ThrowIfCancellationRequested();
