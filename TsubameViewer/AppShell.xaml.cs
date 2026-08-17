@@ -168,29 +168,33 @@ public sealed partial class AppShell : UserControl
 
         InitialziePurchase().FireAndForgetSafe();
 
+        string startMultiSelectionText = "StartMultiSelection".Translate();
+        string addNewFolderText = "AddNewFolder".Translate();
+        string refreshLatestText = "RefreshLatest".Translate();
+        string settingsText = "Settings".Translate();
         _footerItemsForTop = new()
         {
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "StartMultiSelection".Translate(),
+                Tooltip = startMultiSelectionText,
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "AddNewFolder".Translate(),
+                Tooltip = addNewFolderText,
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "RefreshLatest".Translate(),
+                Tooltip = refreshLatestText,
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "Settings".Translate(),
+                Tooltip = settingsText,
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
@@ -200,25 +204,25 @@ public sealed partial class AppShell : UserControl
         {
             new MenuItemInvokeActionViewModel()
             {
-                Title = "StartMultiSelection".Translate(),
+                Title = startMultiSelectionText,
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Title = "AddNewFolder".Translate(),
+                Title = addNewFolderText,
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Title = "RefreshLatest".Translate(),
+                Title = refreshLatestText,
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Title = "Settings".Translate(),
+                Title = settingsText,
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
