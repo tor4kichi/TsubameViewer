@@ -537,21 +537,21 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         this.ObserveSizeChanged()
             .Skip(1)
             .ThrottleLast(TimeSpan.FromMilliseconds(50))
-            .Subscribe(size => 
+            .Subscribe(this, static (size, s) => 
             {
-                BusyRenderingCount += 5;
-                ClearCachedCanvasBitmap();
-                _vm.CanvasWidth = size.NewSize.Width;
-                _vm.CanvasHeight = size.NewSize.Height;
-                _vm.SizeChangedCommand.Execute(null);
+                s.BusyRenderingCount += 5;
+                s.ClearCachedCanvasBitmap();
+                s._vm.CanvasWidth = size.NewSize.Width;
+                s._vm.CanvasHeight = size.NewSize.Height;
+                s._vm.SizeChangedCommand.Execute(null);
             })
             .AddTo(ref db);
 
         _vm.ObservePropertyChanged(x => x.TransformScale)
-            .Subscribe(x => 
+            .Subscribe(this, static (x, s) => 
             {
-                NowIgnoreDecodeToCanvasHeight = 1 < x;
-                Debug.WriteLine($"NowIgnoreDecodeToCanvasHeight : {NowIgnoreDecodeToCanvasHeight}");
+                s.NowIgnoreDecodeToCanvasHeight = 1 < x;
+                Debug.WriteLine($"NowIgnoreDecodeToCanvasHeight : {s.NowIgnoreDecodeToCanvasHeight}");
             })
             .AddTo(ref db);
 
@@ -564,7 +564,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight).Where(x => x).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(32))
-            .SubscribeAwait(async (u, ct) =>
+            .SubscribeAwait(this, static async (u, s, ct) =>
             {
                 static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
                 {
@@ -580,32 +580,32 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }                    
                 }
 
-                IImageSource? firstImage = _vm.SourceImages.ElementAtOrDefault(0);
-                IImageSource? secondImage = _vm.SourceImages.ElementAtOrDefault(1);
+                IImageSource? firstImage = s._vm.SourceImages.ElementAtOrDefault(0);
+                IImageSource? secondImage = s._vm.SourceImages.ElementAtOrDefault(1);
 
                 if (firstImage == null) { return; }
 
-                BusyRenderingCount++;
-                using var _ = await _cacheBitmapLock.LockAsync(ct);
+                s.BusyRenderingCount++;
+                using var _ = await s._cacheBitmapLock.LockAsync(ct);
                 long time = TimeProvider.System.GetTimestamp();
                 
-                int currentIndex = _vm.CurrentImageIndex;
-                var canvasHeight = ImagesContainer.ActualHeight;
-                var canvasWidth = ImagesContainer.ActualWidth;                                
+                int currentIndex = s._vm.CurrentImageIndex;
+                var canvasHeight = s.ImagesContainer.ActualHeight;
+                var canvasWidth = s.ImagesContainer.ActualWidth;                                
                 if (firstImage is IImageSource src1
                    && secondImage is IImageSource src2)
                 {
-                    if (currentIndex != _vm.CurrentImageIndex) { return; }
+                    if (currentIndex != s._vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    double? requestHeight = _vm.TransformScale != 1 ? null : canvasHeight;
+                    double? requestHeight = s._vm.TransformScale != 1 ? null : canvasHeight;
                     try
                     {                        
-                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
-                        var bitmap2 = await EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
-                        DrawImage(requestHeight, bitmap1, _image1Source, Image1);
-                        DrawImage(requestHeight, bitmap2, _image2Source, Image2);
-                        Image1.Width = requestHeight != null ? _image1Source.Size.Width : double.NaN;
-                        Image2.Width = requestHeight != null ? _image2Source.Size.Width : double.NaN;
+                        var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
+                        var bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
+                        DrawImage(requestHeight, bitmap1, s._image1Source, s.Image1);
+                        DrawImage(requestHeight, bitmap2, s._image2Source, s.Image2);
+                        s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
+                        s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -614,24 +614,24 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         return;
                     }
 
-                    Image2.Visibility = Visibility.Visible;
+                    s.Image2.Visibility = Visibility.Visible;
 
                     try
                     {
-                        await _messenger.Send(new ImageLoadedMessage());
+                        await s._messenger.Send(new ImageLoadedMessage());
                     }
                     catch { }
                 }
                 else if (firstImage is IImageSource source1)
                 {
-                    Image2.Visibility = Visibility.Collapsed;
-                    if (currentIndex != _vm.CurrentImageIndex) { return; }
+                    s.Image2.Visibility = Visibility.Collapsed;
+                    if (currentIndex != s._vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    double? requestHeight = _vm.TransformScale != 1 ? null : canvasHeight;
+                    double? requestHeight = s._vm.TransformScale != 1 ? null : canvasHeight;
                     try
                     {
-                        var bitmap1 = await EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
-                        DrawImage(requestHeight, bitmap1, _image1Source, Image1);
+                        var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
+                        DrawImage(requestHeight, bitmap1, s._image1Source, s.Image1);
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -639,32 +639,32 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         Debug.WriteLine(ex.ToString());
                         return;
                     }
-                    
+
                     // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
-                    Image1.Width = _image1Source.Size.Width > canvasWidth 
+                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth 
                         ? canvasWidth 
-                        : _image1Source.Size.Width;
+                        : s._image1Source.Size.Width;
                     try
                     {
-                        await _messenger.Send(new ImageLoadedMessage());
+                        await s._messenger.Send(new ImageLoadedMessage());
                     }
                     catch { }
                 }
                 else
                 {
-                    Image1.Width = double.NaN;
-                    Image2.Width = double.NaN;
+                    s.Image1.Width = double.NaN;
+                    s.Image2.Width = double.NaN;
                 }
 
                 ct.ThrowIfCancellationRequested();
-                if (currentIndex != _vm.CurrentImageIndex) { return; }
+                if (currentIndex != s._vm.CurrentImageIndex) { return; }
                 
                 Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
                 await Task.Delay(1);
 
-                if (!_vm.ImageViewerSettings.IsEnablePrefetch) { return; }
-                BusyRenderingCount = 0;
-                PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
+                if (!s._vm.ImageViewerSettings.IsEnablePrefetch) { return; }
+                s.BusyRenderingCount = 0;
+                s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
                 
             }, AwaitOperation.Switch)
             .AddTo(ref db);
@@ -672,16 +672,16 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _messenger.CreateObservable<ImageLoadedMessage>()
             .ToObservable()
             .Index()
-            .Subscribe(async m =>
+            .Subscribe(this, static (m, s) =>
             {
-                async Task<Unit> db()
+                async Task<Unit> db(ImageViewerPage s)
                 {
-                    await StartNavigatedAnimationAsync(_navigationCt);
+                    await s.StartNavigatedAnimationAsync(s._navigationCt);
                     return Unit.Default;
                 }
                 if (m.Index == 0)
                 {
-                    m.Item.Reply(db());
+                    m.Item.Reply(db(s));
                 }
                 else
                 {
@@ -691,11 +691,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
-            .Subscribe(x =>
+            .Subscribe(this, static (x, s) =>
             {
-                if (!_nowPressedOnPageSlider)
+                if (!s._nowPressedOnPageSlider)
                 {
-                    PageSelector.Value = x;
+                    s.PageSelector.Value = x;
                 }
             })
             .AddTo(ref db);
