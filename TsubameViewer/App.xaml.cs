@@ -370,30 +370,40 @@ sealed partial class App : Application
     {
         foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenance>())
         {
+#if DEBUG
+            long time = TimeProvider.System.GetTimestamp();
+#endif
             var maintenanceType = maintenanceInst.GetType();
             Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
             try
             {
                 maintenanceInst.Maintenance();
-                Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+#if DEBUG
+                Debug.WriteLine($"Done maintenance: {maintenanceType.Name} ({TimeProvider.System.GetElapsedTime(time)})");
+#endif
             }
             catch
             {
                 Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
-            } 
+            }
         }
 
         // Note: Task.Runで囲むと初回インストール時にハングアップしていた
         foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenanceAsync>())
         {
+#if DEBUG
+            long time = TimeProvider.System.GetTimestamp();
+#endif
             var maintenanceType = maintenanceInst.GetType();
             Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
             try
             {
                 await maintenanceInst.MaintenanceAsync();
-                Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+#if DEBUG
+                Debug.WriteLine($"Done maintenance: {maintenanceType.Name} ({TimeProvider.System.GetElapsedTime(time)})");
+#endif
             }
             catch
             {
