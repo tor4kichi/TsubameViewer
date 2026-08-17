@@ -430,7 +430,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         if (TryGetCachedCanvasBitmap(item, out bitmap) && bitmap != null)
         {
-            if (requestHeight == bitmap.Size.Height)
+            if (requestHeight <= bitmap.Size.Height)
             {
                 return bitmap!;
             }   
@@ -597,7 +597,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     if (currentIndex != s._vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    double? requestHeight = s._vm.TransformScale != 1 ? null : canvasHeight;
+                    double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
                     try
                     {                        
                         var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
@@ -627,7 +627,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     s.Image2.Visibility = Visibility.Collapsed;
                     if (currentIndex != s._vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
-                    double? requestHeight = s._vm.TransformScale != 1 ? null : canvasHeight;
+                    double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
                     try
                     {
                         var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
