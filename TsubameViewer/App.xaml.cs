@@ -152,16 +152,16 @@ sealed partial class App : Application
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
         container.Register<AppShell>(reuse: Reuse.Singleton);
-        container.Register<SourceStorageItemsPage>();
-        container.Register<ImageListupPage>();
-        container.Register<FolderListupPage>();
-        container.Register<ImageViewerPage>();
-        container.Register<EBookViewerPage>();
-        container.Register<MovieViewerPage>();
-        container.Register<SettingsPage>();
-        container.Register<SearchResultPage>();
-        container.Register<AlbamListupPage>();
-        container.Register<HistoryPage>();
+        //container.Register<SourceStorageItemsPage>();
+        //container.Register<ImageListupPage>();
+        //container.Register<FolderListupPage>();
+        //container.Register<ImageViewerPage>();
+        //container.Register<EBookViewerPage>();
+        //container.Register<MovieViewerPage>();
+        //container.Register<SettingsPage>();
+        //container.Register<SearchResultPage>();
+        //container.Register<AlbamListupPage>();
+        //container.Register<HistoryPage>();
     }
 
     void RegisterTypes(Container container)
