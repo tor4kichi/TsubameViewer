@@ -24,7 +24,8 @@
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)" 
   xmlns:fluentIcon="using:FluentIcons.Uwp"
   mc:Ignorable="d"
-      xmlns:ctwu="using:CommunityToolkit.WinUI">
+      xmlns:ctwu="using:CommunityToolkit.WinUI"
+      xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml">
 
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent" 
@@ -306,64 +307,22 @@
           <i:EventTriggerBehavior EventName="Loaded">
             <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <i:ChangePropertyAction TargetObject="{x:Bind _vm,Mode=OneWay}"
+            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
                                        PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
           </i:EventTriggerBehavior>
-          <i:EventTriggerBehavior EventName="SizeChanged">
-            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
-                                    PropertyName="CanvasWidth"
-                                    Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <i:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
-                                    PropertyName="CanvasHeight"
-                                    Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-            <i:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
-          </i:EventTriggerBehavior>
         </i:Interaction.Behaviors>
-        <Grid.Resources>
-          <Style TargetType="muxc:ItemsRepeater">
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalCacheLength" Value="100000" />
-            <Setter Property="HorizontalCacheLength" Value="100000" />
-            <Setter Property="ItemTemplate">
-              <Setter.Value>
-                <DataTemplate x:DataType="BitmapImage">
-                  <Image Source="{x:Bind}" Stretch="Uniform" />
-                </DataTemplate>
-              </Setter.Value>
-            </Setter>
-            <Setter Property="Layout">
-              <Setter.Value>
-                <muxc:StackLayout Orientation="Horizontal" />
-              </Setter.Value>
-            </Setter>
-          </Style>
-        </Grid.Resources>
 
-        <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_0, Mode=OneWay}"
-                    x:Name="ImageItemsControl_0"   
-                            DataContext="{x:Null}"
-                    >
-          <muxc:ItemsRepeater.RenderTransform>
-            <TranslateTransform X="-10000" />
-          </muxc:ItemsRepeater.RenderTransform>
-        </muxc:ItemsRepeater>
-
-        <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_1, Mode=OneWay}"
-                    x:Name="ImageItemsControl_1"  
-                            DataContext="{x:Null}"
-                    >
-          <muxc:ItemsRepeater.RenderTransform>
-            <TranslateTransform X="-10000" />
-          </muxc:ItemsRepeater.RenderTransform>
-        </muxc:ItemsRepeater>
-        <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_2, Mode=OneWay}"
-                    x:Name="ImageItemsControl_2"  
-                            DataContext="{x:Null}"
-                    >
-          <muxc:ItemsRepeater.RenderTransform>
-            <TranslateTransform X="-10000" />
-          </muxc:ItemsRepeater.RenderTransform>
-        </muxc:ItemsRepeater>
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"                          
+                    x:Name="ImagesPanel">
+          <Image x:Name="Image1"
+                 Stretch="Uniform"
+                 VerticalAlignment="Stretch"
+                 Source="{x:Bind _image1Source.Source, Mode=OneWay}" />
+          <Image x:Name="Image2"
+                 Stretch="Uniform"          
+                 Source="{x:Bind _image2Source.Source, Mode=OneWay}" />
+        </StackPanel>
       </Grid>
 
       <Grid >
@@ -1132,11 +1091,13 @@
               Width="2"
               HorizontalAlignment="Left"
               Background="{ThemeResource SystemAccentColor}"
+              x:Name="Page1FavoriteBorder"
               />
       <Border Opacity="{x:Bind _vm.Page2Favorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
               Width="2"
               HorizontalAlignment="Right"
-              Background="{ThemeResource SystemAccentColor}" />
+              Background="{ThemeResource SystemAccentColor}"
+              x:Name="Page2FavoriteBorder"/>
     </Grid>
 
     <Grid x:Name="PageSelectorTooltipContainer"
@@ -1188,11 +1149,17 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowImageLoadingLongRunning, Mode=OneWay}" />
+            <ctwu:CompareStateTrigger Value="{x:Bind BusyRenderingCount, Mode=OneWay}"
+                                      Comparison="GreaterThanOrEqual">
+              <ctwu:CompareStateTrigger.To>
+                <!--ThrottleFirstLastを使っているため3  -->
+                <x:Int32>3</x:Int32>
+              </ctwu:CompareStateTrigger.To>
+            </ctwu:CompareStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
-              <DoubleAnimation Duration="0:0:0.05"
+              <DoubleAnimation Duration="0:0:0.05"                               
                                To="0.25"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />
@@ -1206,46 +1173,13 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.125"
-                               To="0.0"
+                               To="0.0"                               
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
 
-      </VisualStateGroup>
-
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}"
-                                    EqualTo="0" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ImageItemsControl_0.(UIElement.RenderTransform).(TranslateTransform.X)"
-                    Value="0" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}"
-                                    EqualTo="1" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ImageItemsControl_1.(UIElement.RenderTransform).(TranslateTransform.X)"
-                    Value="0" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}"
-                                    EqualTo="2" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ImageItemsControl_2.(UIElement.RenderTransform).(TranslateTransform.X)"
-                    Value="0" />
-          </VisualState.Setters>
-        </VisualState>
       </VisualStateGroup>
 
       <!-- マウスカーソルの自動非表示 -->
@@ -1384,6 +1318,16 @@
                     Value="2" />
             <Setter Target="Page2ActionButtonsContainer.(Grid.Column)"
                     Value="0" />
+            <Setter Target="Page1ActionButtonsContainer.FlowDirection"
+                    Value="RightToLeft" />
+            <Setter Target="Page2ActionButtonsContainer.FlowDirection"
+                    Value="RightToLeft" />
+            <Setter Target="Page1FavoriteBorder.HorizontalAlignment"
+                    Value="Right" />
+            <Setter Target="Page2FavoriteBorder.HorizontalAlignment"
+                    Value="Left" />
+            <Setter Target="ImagesPanel.FlowDirection"
+                    Value="RightToLeft" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

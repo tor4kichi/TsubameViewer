@@ -85,7 +85,14 @@ public sealed class PdfPageImageSource : IImageSource
     public bool Equals(IImageSource other)
     {
         if (other == null) { return false; }
-        return this.Path == other.Path;
+        if (other is PdfPageImageSource image)
+        {
+            return this.PageIndex == image.PageIndex;
+        }
+        else
+        {
+            return this.Path.Equals(other.Path, StringComparison.Ordinal);
+        }
     }
 
     public override string ToString()

@@ -57,7 +57,7 @@ public sealed class AlbamRepository
     {
         public AlbamDatabase(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
-            
+            _collection.EnsureIndex(x => x.Name);
         }
 
         internal AlbamEntry FindById(Guid albamId)
