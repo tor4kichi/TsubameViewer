@@ -506,12 +506,14 @@ public sealed class FolderStructureCacheContext : IDisposable
         Dictionary<ulong, FolderStructureFileEntry> cached;
         bool isInitial = !_repo.HasFolderImages(Folder);
         DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        var thumbnailManager = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ThumbnailImageManager>();
         // filesにあるアイテムがcachedに無い → 増分        
         if (isInitial)
         {
             cached = [];
             await Task.Run(async () =>
             {
+                Task[] prepareThumbnailSizeTasks = new Task[imagesCount];
 #if DEBUG
                 PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
 #endif
@@ -526,7 +528,14 @@ public sealed class FolderStructureCacheContext : IDisposable
                     if (lastLoadTask != null && loaded.Any() is false) { break; }
 
                     if (loaded.Any())
-                    {
+                    {                        
+                        foreach (var file in loaded)
+                        {                            
+                            prepareThumbnailSizeTasks[currentCount++] = thumbnailManager.PrepareThumbnailSizeAsync(file, ct);
+                        }
+
+                        await Task.WhenAll(prepareThumbnailSizeTasks).ConfigureAwait(false);
+
                         dispatcherQueue.TryEnqueue(() =>
                         {
                             items.AddRange(loaded.Select(x =>
@@ -543,7 +552,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                         await Task.Delay((int)oneTimeLoadCount / 2, ct);
                     }
 
-                    currentCount += (uint)loaded.Count;
+                    //currentCount += (uint)loaded.Count;
 
 #if DEBUG
                     sw.ElapsedWrite(currentCount.ToString());
@@ -562,8 +571,9 @@ public sealed class FolderStructureCacheContext : IDisposable
             {
                 if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry))
                 {
+                    await thumbnailManager.PrepareThumbnailSizeAsync(file, ct).ConfigureAwait(false);
                     dispatcherQueue.TryEnqueue(() =>
-                    {
+                    {                        
                         entry = _repo.AddOrUpdateItem(file);
                         var itemVM = cacheImageViewModelFactory(entry);
                         items.Add(itemVM);
@@ -573,6 +583,9 @@ public sealed class FolderStructureCacheContext : IDisposable
                 // ImageListupからImageViewerを開く際はキャンセルが効かないため
                 // Task.Delay(1)をここに書くべからず
             }
+
+            // UIスレッドに戻す
+            await Observable.NextFrame().ObserveOnCurrentSynchronizationContext().WaitAsync().ConfigureAwait(false);
 
             if (cached.Count == 0) { return; }
 

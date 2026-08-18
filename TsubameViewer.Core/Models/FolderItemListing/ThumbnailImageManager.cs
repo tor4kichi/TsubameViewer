@@ -590,6 +590,18 @@ public sealed class ThumbnailImageManager
         };
     }
 
+    public async Task PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
+    {
+        using var _ = await _fileReadWriteLock.LockAsync(ct);
+        try
+        {
+            var props = await file.Properties.GetImagePropertiesAsync();
+            var replacedId = ToId(file.Path);
+            var item = SetThumbanilSize(replacedId, props.Width, props.Height);            
+        }
+        catch { }
+    }
+
     #endregion
 
     public async Task DeleteAllThumbnailsAsync()
