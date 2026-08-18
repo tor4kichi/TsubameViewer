@@ -823,6 +823,7 @@ public sealed partial class ImageListupPageViewModel
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
                             using var lockReleaser = await _navigationLock.LockAsync(ct);
+                            NowLoadingItems = true;
                             try
                             {
                                 // Note: リネームを検知したいので同数チェックしない
@@ -836,49 +837,56 @@ public sealed partial class ImageListupPageViewModel
                                 HasFileItem = ImageFileItems.Any();                                
                             }
                             catch (OperationCanceledException) { }
+                            finally
+                            {
+                                NowLoadingItems = false;
+                            }
                         }).FireAndForgetSafe();
                     }
                 }
                 else                    
                 {
-                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                    using (FileItemsView.DeferRefresh())
                     {
-                        using var lockReleaser = await _navigationLock.LockAsync(ct);
-                        try
-                        {
-                            using (FileItemsView.DeferRefresh())
-                            {
-                                ImageFileItems.Clear();
-                                await SetSort(SelectedFileSortType, ct);                                
-                                IsFavoriteFilteredDisplayEnabled = false;
-                                await col.Context.HandleDiffImages(
-                                    (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                    sortType,
-                                    cacheImageViewModelFactory,
-                                    (IStorageItemViewModel itemVM) => itemVM.Name,
-                                    ct);
-                            }
+                        ImageFileItems.Clear();
+                        await SetSort(SelectedFileSortType, ct);
+                        IsFavoriteFilteredDisplayEnabled = false;
+                        await col.Context.HandleDiffImages(
+                            (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                            sortType,
+                            cacheImageViewModelFactory,
+                            (IStorageItemViewModel itemVM) => itemVM.Name,
+                            ct);
+                    }
 
-                            HasFileItem = ImageFileItems.Any();
-                            NowLoadingItems = false;
-                        }
-                        catch (OperationCanceledException) { }
-                    }).FireAndForgetSafe();
+                    HasFileItem = ImageFileItems.Any();
+                    NowLoadingItems = false;
                 }
 
                 var d1 = imageCollectionContext.CreateImageFileChangedObserver()
                     .ObserveOnCurrentSynchronizationContext()
-                    .SubscribeAwait((this, col, FileItemsView, cacheImageViewModelFactory, _navigationLock), async (_, s, ct) =>
+                    .SubscribeAwait((this, col, FileItemsView, cacheImageViewModelFactory, _navigationLock, sortType), static async (_, s, ct) =>
                     {
-                        var (_this, col, items, itemFacotry, navLock) = s;
+                        var (_this, col, items, itemFacotry, navLock, sortType) = s;
+                        if (_this.NowLoadingItems) { return; }
                         using (await navLock.LockAsync(ct))
                         {
-                            var ignore = col.Context.HandleDiffImages(
-                                (RangeObservableCollection<IStorageItemViewModel>)items.Source,
-                                sortType,
-                                itemFacotry,
-                                (IStorageItemViewModel itemVM) => itemVM.Path,
-                                ct);
+                            if (_this.NowLoadingItems) { return; }
+
+                            _this.NowLoadingItems = true;
+                            try
+                            {
+                                await col.Context.HandleDiffImages(
+                                    (RangeObservableCollection<IStorageItemViewModel>)items.Source,
+                                    sortType,
+                                    itemFacotry,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                            }
+                            finally
+                            {
+                                _this.NowLoadingItems = false;
+                            }
                         }
                     });
 
