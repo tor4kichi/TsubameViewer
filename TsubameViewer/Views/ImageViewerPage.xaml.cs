@@ -313,12 +313,16 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    async Task<IImageSource> GetImageSourceAsync(int requestIndex, CancellationToken ct)
+    async ValueTask<IImageSource> GetImageSourceAsync(int requestIndex, CancellationToken ct)
     {
-        using (await _vm._imageLoadingLock.LockAsync(ct))
+        if (_vm.Images[requestIndex] is not { } image) 
         {
-            return await _vm.GetImageSourceWithCacheAsync(requestIndex, ct);
+            using (await _vm._imageLoadingLock.LockAsync(ct))
+            {
+                image = await _vm.GetImageSourceWithCacheAsync(requestIndex, ct);
+            }
         }
+        return image;
     }
 
     async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithSkia(IImageSource item, double? requestHeight, CancellationToken ct)
@@ -424,7 +428,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    async Task<CanvasBitmap> EnsureGetBitmapWithCacheAsync(IImageSource item, double? requestHeight, CancellationToken ct)
+    async ValueTask<CanvasBitmap> EnsureGetBitmapWithCacheAsync(IImageSource item, double? requestHeight, CancellationToken ct)
     {
         CanvasBitmap? bitmap = null;
 
@@ -566,16 +570,16 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             .ThrottleLast(TimeSpan.FromMilliseconds(32))
             .SubscribeAwait(this, static async (u, s, ct) =>
             {
-                static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource, Image imageControl)
+                static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource)
                 {
-                    float scale = canvasHeight != null ? (float)canvasHeight.Value / (float)bitmap.Size.Height : 1;
-                    var scaledSize = new Size((int)(bitmap.Size.Width * scale), (int)(bitmap.Size.Height * scale));
+                    double scale = canvasHeight != null ? canvasHeight.Value / bitmap.Size.Height : 1;
+                    var scaledSize = new Size(Math.Round(bitmap.Size.Width * scale), Math.Round(bitmap.Size.Height * scale));
                     imageSource.Resize(scaledSize);
                     using (var ds = imageSource.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
                     {
                         ds.Blend = CanvasBlend.Copy;
-                        ds.Antialiasing = CanvasAntialiasing.Antialiased;
-                        ds.Transform = Matrix3x2.CreateScale(scale);
+                        ds.Antialiasing = CanvasAntialiasing.Aliased;
+                        ds.Transform = Matrix3x2.CreateScale((float)scale);
                         ds.DrawImage(bitmap);
                     }                    
                 }
@@ -587,8 +591,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 s.BusyRenderingCount++;
                 using var _ = await s._cacheBitmapLock.LockAsync(ct);
+#if DEBUG
                 long time = TimeProvider.System.GetTimestamp();
-                
+#endif
                 int currentIndex = s._vm.CurrentImageIndex;
                 var canvasHeight = s.ImagesContainer.ActualHeight;
                 var canvasWidth = s.ImagesContainer.ActualWidth;                                
@@ -602,8 +607,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     {                        
                         var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
                         var bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
-                        DrawImage(requestHeight, bitmap1, s._image1Source, s.Image1);
-                        DrawImage(requestHeight, bitmap2, s._image2Source, s.Image2);
+                        DrawImage(requestHeight, bitmap1, s._image1Source);
+                        DrawImage(requestHeight, bitmap2, s._image2Source);                        
+                        // 画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
                         s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
                         s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;
                     }
@@ -631,7 +637,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     try
                     {
                         var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
-                        DrawImage(requestHeight, bitmap1, s._image1Source, s.Image1);
+                        DrawImage(requestHeight, bitmap1, s._image1Source);
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -658,12 +664,20 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 ct.ThrowIfCancellationRequested();
                 if (currentIndex != s._vm.CurrentImageIndex) { return; }
-                
+#if DEBUG
                 Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
+#endif
+                // 描画結果を画面に反映させるために待ち
                 await Task.Delay(1, ct);
 
+                // 先読み処理の前にビジー表示を解除
                 s.BusyRenderingCount = 0;
                 if (!s._vm.ImageViewerSettings.IsEnablePrefetch) { return; }
+
+                // 先読みを実行
+                // SubscribeAwait + AwaitOperation.Switch によって
+                // 次の画像読み込みがリクエストされると ct がキャンセルされる
+                // ここで await するとリピート入力詰まりが生じるため FireAndForget で実行している
                 s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
                 
             }, AwaitOperation.Switch)
@@ -892,7 +906,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return isConnectedAnimationDone;
     }
 
-    #endregion Navigation
+#endregion Navigation
 
 
     #region Page Next/Prev
