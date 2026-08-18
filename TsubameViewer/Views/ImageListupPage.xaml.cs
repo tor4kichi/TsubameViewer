@@ -142,6 +142,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        _realizedItems.Clear();
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);
@@ -170,6 +171,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     CancellationToken _navigationCt;    
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _linkedCts?.Dispose();
+        _linkedCts = null;
+        _manualCts = null;
+
         _messenger.Unregister<StartMultiSelectionMessage>(this);
 
         ClearSelection();
@@ -403,7 +410,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
-    {
+    {        
         if (_realizedItems.Remove(args.Element, out var itemVM))
         {
             var imageControl = args.Element.FindDescendant<Image>();
