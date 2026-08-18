@@ -634,6 +634,12 @@ public sealed partial class AppShell : UserControl
         Window.Current.SetTitleBar(TitlebarBG);
     }
 
+
+    [ObservableProperty]
+    bool _isLoadMyNavigationView;
+    [ObservableProperty]
+    bool _isLoadTitleBar;
+
     void Frame_Navigated(object sender, NavigationEventArgs e)
     {        
         if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
@@ -644,6 +650,8 @@ public sealed partial class AppShell : UserControl
         {
             SetTitleContentForPrimary(frame);
         }
+
+        IsLoadMyNavigationView = true;
 
         // アプリメニュー表示の切替
         //MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
@@ -857,6 +865,11 @@ public sealed partial class AppShell : UserControl
             SetCurrentNavigationParameters(parameters);
         }
 
+        if (!IsLoadTitleBar)
+        {
+            frame.Navigated += VisibleTitlebarWhen_Frame_Navigated;
+        }
+
         frame.Visibility = Visibility.Visible;
         await Observable.NextFrame().WaitAsync();
 
@@ -880,10 +893,18 @@ public sealed partial class AppShell : UserControl
         var page = frame.Content;
         var currentPage = page as Page;        
         var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters, ct);
-        sw.ElapsedWrite("After HandleViewModelNavigation");
+        sw.ElapsedWrite("After HandleViewModelNavigation");        
         return handleResult;
     }
 
+    private async void VisibleTitlebarWhen_Frame_Navigated(object sender, NavigationEventArgs e)
+    {
+        var frame = (Frame)sender;
+        frame.Navigated -= VisibleTitlebarWhen_Frame_Navigated;
+
+        await Task.Delay(100);
+        IsLoadTitleBar = true;
+    }
 
     CancellationToken RotationNextCancellationTokenSource(Type? pageType)
     {
