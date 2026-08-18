@@ -385,7 +385,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             {
                 var imageControl = fe.FindDescendant<Image>();
                 if (imageControl == null) { return; }
-                _fadeOutAnim.Start(imageControl);                
+                _fadeOutAnim.Start(imageControl, _navigationCt);                
                 itemVM.Image = imageControl.Source as BitmapImage;
                 await itemVM.EnsureImageSizeRatioAsync(_linkedCt);
                 using (itemVM.ImageAspectRatioWH != null 
@@ -396,7 +396,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     await itemVM.InitializeAsync(_linkedCt);
                 }
 
-                await _fadeInAnim.StartAsync(imageControl, _linkedCt);                
+                _fadeInAnim.Start(imageControl, _linkedCt);                
             }
             catch (OperationCanceledException) { }
         }
@@ -409,7 +409,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             var imageControl = args.Element.FindDescendant<Image>();
             if (imageControl != null)
             {
-                _fadeOutAnim.Start(imageControl);
+                _fadeOutAnim.Start(imageControl, _navigationCt);
             }
             itemVM.StopImageLoading();
         }
@@ -474,7 +474,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             AnimationBuilder.Create()
                 .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(1))
                 .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Start(image);
+                .Start(image, _navigationCt);
 
             if (image.Source is BitmapImage bitmapImage
                 && bitmapImage.IsAnimatedBitmap)
@@ -494,7 +494,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         AnimationBuilder.Create()
             .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(1))
             .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-            .Start(image);
+            .Start(image, _navigationCt);
 
         if (image.Source is BitmapImage bitmapImage
             && bitmapImage.IsAnimatedBitmap)

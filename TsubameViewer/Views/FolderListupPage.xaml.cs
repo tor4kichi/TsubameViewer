@@ -216,7 +216,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             var imageControl = args.ItemContainer.FindDescendant<Image>();
             if (imageControl != null && imageControl.Source != null)
             {
-                _fadeOutAnim.Start(imageControl);
+                _fadeOutAnim.Start(imageControl, _linkedCt);
             }
 
             if (!args.InRecycleQueue)
@@ -232,7 +232,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
                 if (imageControl != null)
                 {
-                    _ = _fadeInAnim.StartAsync(imageControl, _linkedCt);
+                    _fadeInAnim.Start(imageControl, _linkedCt);
                 }
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない                
                 if (itemVM.Item != null)
@@ -282,7 +282,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     itemVM.StopImageLoading();
                     if (imageControl != null)
                     {
-                        _fadeOutAnim.Start(imageControl);
+                        _fadeOutAnim.Start(imageControl, _linkedCt);
                     }
                 }
             }
