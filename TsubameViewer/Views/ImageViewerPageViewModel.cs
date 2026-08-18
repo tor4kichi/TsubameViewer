@@ -1109,7 +1109,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 var candidateIndex = requestIndex + index;
                 if (0 <= candidateIndex && candidateIndex < _Images.Length)
                 {
-                    candidateImages.Add(await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType, ct), ct));
+                    candidateImages.Add(await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType, ct));
                 }
             }
 

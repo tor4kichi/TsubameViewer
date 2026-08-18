@@ -452,7 +452,8 @@
                                       CanDragItems="True"
                                       DragItemsStarting="FoldersAdaptiveGridView_DragItemsStarting"
                                       DragItemsCompleted="FoldersAdaptiveGridView_DragItemsCompleted"
-                                      AllowDrop="True">
+                                      AllowDrop="True"
+                                       DataFetchSize="0.5">
 
           <GridView.ItemContainerTransitions>
             <TransitionCollection />
