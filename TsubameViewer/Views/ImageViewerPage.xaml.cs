@@ -660,10 +660,10 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 if (currentIndex != s._vm.CurrentImageIndex) { return; }
                 
                 Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
-                await Task.Delay(1);
+                await Task.Delay(1, ct);
 
-                if (!s._vm.ImageViewerSettings.IsEnablePrefetch) { return; }
                 s.BusyRenderingCount = 0;
+                if (!s._vm.ImageViewerSettings.IsEnablePrefetch) { return; }
                 s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
                 
             }, AwaitOperation.Switch)
