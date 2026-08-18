@@ -28,12 +28,14 @@
       xmlns:fluentIcon="using:FluentIcons.Uwp"
       xmlns:storage="using:Windows.Storage"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
-      NavigationCacheMode="Enabled"
+      NavigationCacheMode="Disabled"
       x:Name="PageRoot">
 
   <!-- NavigaitonCacheMode = Enabled にすると
     ItemsRepeaterの中身が残る？ためキャッシュは利用していない
   -->
+  
+  <!-- NavigationCacheMode = Enabled にすると ItemsRepeater が時間経過でレイアウトシステム？がクラッシュする-->
 
   <!-- ItemsRepeaterのメモリリークの修正
   https://github.com/microsoft/microsoft-ui-xaml/issues/1954
@@ -1006,6 +1008,8 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Line}"
                                      DataContext="{x:Null}"
                                      CanDrag="True"
+                                     ElementPrepared="FileItemsRepeater_ElementPrepared"
+                                     ElementClearing="FileItemsRepeater_Large_ElementClearing"
                                      PointerReleased="ImageListItem_PointerReleased">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:UniformGridLayout Orientation="Horizontal"
@@ -1021,7 +1025,9 @@
                                      ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                      DataContext="{x:Null}"
                                      VerticalCacheLength="3"
-                                     CanDrag="True">
+                                     CanDrag="True"
+                                     ElementPrepared="FileItemsRepeater_ElementPrepared"
+                                     ElementClearing="FileItemsRepeater_Large_ElementClearing">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:FlowLayout MinColumnSpacing="4"
                                       MinRowSpacing="4"
@@ -1038,7 +1044,9 @@
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
                                      VerticalCacheLength="4"
-                                     CanDrag="True">
+                                     CanDrag="True"
+                                     ElementPrepared="FileItemsRepeater_ElementPrepared"
+                                     ElementClearing="FileItemsRepeater_Large_ElementClearing">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:FlowLayout MinColumnSpacing="6"
                                       MinRowSpacing="6"
@@ -1054,7 +1062,9 @@
                                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                      DataContext="{x:Null}"
                                      VerticalCacheLength="5"
-                                     CanDrag="True">
+                                     CanDrag="True"
+                                     ElementPrepared="FileItemsRepeater_ElementPrepared"
+                                     ElementClearing="FileItemsRepeater_Large_ElementClearing">
                   <winUI:ItemsRepeater.Layout>
                     <winUI:FlowLayout MinColumnSpacing="8"
                                       MinRowSpacing="8"

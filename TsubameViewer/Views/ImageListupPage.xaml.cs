@@ -79,16 +79,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         Loaded += FolderListupPage_Loaded;
         Unloaded += FolderListupPage_Unloaded;
-
-        FileItemsRepeater_Line.ElementPrepared += FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
-
-        FileItemsRepeater_Line.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;        
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -151,7 +141,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
-    {        
+    {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);
@@ -312,19 +302,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (_focusHelper.IsRequireSetFocus() && await WaitTargetIndexItemLoadingAsync(0, ct) is Control control)
         {
             control.Focus(FocusState.Keyboard);
-        }
-    }
-
-
-    void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-    {
-        this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-        this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-        this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-
-        if (_focusHelper.IsRequireSetFocus())
-        {
-            (args.Element as Control)?.Focus(FocusState.Keyboard);
         }
     }
 
