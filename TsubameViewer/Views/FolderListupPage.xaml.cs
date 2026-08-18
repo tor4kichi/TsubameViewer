@@ -455,10 +455,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             return;
         }
 
-        FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
-
-        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(lastIntaractItem) != null, ct);
-
         DependencyObject item;
         item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
 
@@ -474,6 +470,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             await Task.Delay(50, ct);
             control.Focus(FocusState.Keyboard);
         }
+
+        FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
+
+        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(lastIntaractItem) != null, ct);
     }
 
     #region Selection
