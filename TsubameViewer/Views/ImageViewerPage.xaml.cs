@@ -604,9 +604,44 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     ct.ThrowIfCancellationRequested();
                     double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
                     try
-                    {                        
-                        var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
-                        var bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
+                    {
+                        CanvasBitmap? bitmap1 = null;
+                        CanvasBitmap? bitmap2 = null;
+                        using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
+                        {
+                            if (memoryStream != null)
+                            {
+                                bitmap1 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);                                
+                            }
+                        }
+
+                        using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(secondImage, null, ct: ct))
+                        {
+                            if (memoryStream != null)
+                            {
+                                bitmap2 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);
+                            }
+                        }
+
+                        if (bitmap1 != null && bitmap2 != null)
+                        {
+                            DrawImage(requestHeight, bitmap1, s._image1Source);
+                            DrawImage(requestHeight, bitmap2, s._image2Source);
+                            s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
+                            s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;
+                            s.Image2.Visibility = Visibility.Visible;
+                            try
+                            {
+                                await s._messenger.Send(new ImageLoadedMessage());
+                            }
+                            catch { }
+
+                            bitmap1?.Dispose();
+                            bitmap2?.Dispose();
+                        }
+
+                        bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
+                        bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
                         DrawImage(requestHeight, bitmap1, s._image1Source);
                         DrawImage(requestHeight, bitmap2, s._image2Source);                        
                         // 画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
@@ -630,12 +665,35 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 }
                 else if (firstImage is IImageSource source1)
                 {
-                    s.Image2.Visibility = Visibility.Collapsed;
                     if (currentIndex != s._vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
                     double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
+                    bool withThumbnailImage = false;
                     try
                     {
+                        using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
+                        {
+                            if (memoryStream != null)
+                            {
+                                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);
+                                DrawImage(requestHeight, bitmap, s._image1Source);
+
+                                // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                                s.Image1.Width = s._image1Source.Size.Width > canvasWidth
+                                    ? canvasWidth
+                                    : s._image1Source.Size.Width;
+                                try
+                                {
+                                    await s._messenger.Send(new ImageLoadedMessage());
+                                }
+                                catch { }
+                                withThumbnailImage = true;
+                            }
+                        }
+
+                        // ここで切り替えないと描画フレームを跨いだ更新になってしまう
+                        // 見開き表示時からシングル表示の切り替えがスムーズにするためにもタイミング調整が必要。
+                        s.Image2.Visibility = Visibility.Collapsed;
                         var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
                         DrawImage(requestHeight, bitmap1, s._image1Source);
                     }
@@ -647,14 +705,17 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
 
                     // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
-                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth 
-                        ? canvasWidth 
+                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth
+                        ? canvasWidth
                         : s._image1Source.Size.Width;
-                    try
+                    if (!withThumbnailImage)
                     {
-                        await s._messenger.Send(new ImageLoadedMessage());
+                        try
+                        {
+                            await s._messenger.Send(new ImageLoadedMessage());
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
                 else
                 {
