@@ -117,10 +117,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) => 
         {
-            _manualCts?.Cancel();
-            _manualCts?.Dispose();
+            // 順序大事
             _linkedCts?.Dispose();
+            _linkedCts = null;
+            var manualCts = _manualCts;
             _manualCts = null;
+            manualCts?.Cancel();
+            manualCts?.Dispose();            
         });
 
         _messenger.Register<NavigationCompletedMessage>(this, (r, m) =>
