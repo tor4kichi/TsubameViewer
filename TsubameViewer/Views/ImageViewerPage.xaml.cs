@@ -802,6 +802,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     s.Image1.Width = s._image1Source.Size.Width > canvasWidth
                         ? canvasWidth
                         : s._image1Source.Size.Width;
+
+                    // 幅いっぱいに伸長した表示を強制するために必要
+                    s.Image1.Stretch = Stretch.None;
+                    s.Image1.Stretch = Stretch.Uniform;
+
                     if (!withThumbnailImage)
                     {
                         try
