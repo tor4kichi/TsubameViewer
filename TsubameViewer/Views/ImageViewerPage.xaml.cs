@@ -611,7 +611,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         {
                             if (memoryStream != null)
                             {
-                                bitmap1 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);                                
+                                bitmap1 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);                                
                             }
                         }
 
@@ -619,7 +619,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         {
                             if (memoryStream != null)
                             {
-                                bitmap2 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);
+                                bitmap2 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
                             }
                         }
 
@@ -675,7 +675,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         {
                             if (memoryStream != null)
                             {
-                                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);
+                                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
                                 DrawImage(requestHeight, bitmap, s._image1Source);
 
                                 // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
@@ -798,7 +798,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         s.MovieSeekbarTooltipImage.Source = image = new BitmapImage();
                     }
 
-                    await image.SetSourceAsync(imageStream.AsRandomAccessStream());
+                    await image.SetSourceAsync(imageStream);
 
                     s.MovieSeekbarTooltipImage.Source = image;
                 }

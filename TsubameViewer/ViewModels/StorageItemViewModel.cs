@@ -190,16 +190,16 @@ public sealed partial class StorageItemViewModel : ObservableObject, IStorageIte
 
             using (var stream = await Task.Run(async () => await _thumbnailImageService.EnsureGetImageStreamAsync(Item, imageQuality: 0.5f, ct: ct), ct))
             {
-                if (stream is null || stream.Length == 0) { return; }
+                if (stream is null || stream.Size == 0) { return; }
                 
                 ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 if (IsRequestImageLoading is false) { return; }
 
-                stream.Seek(0, System.IO.SeekOrigin.Begin);
+                stream.Seek(0);
                 using (await _imageLoadingLock.LockAsync(ct))
                 {
                     var image = Image ?? new BitmapImage() { AutoPlay = false };
-                    await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                    await image.SetSourceAsync(stream).AsTask(ct);
                     Image = image;
                 }
            }            

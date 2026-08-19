@@ -259,7 +259,7 @@ public sealed class ThumbnailImageManager
     }
 
     static AsyncLock _renderLock = new AsyncLock();
-    public async ValueTask<Stream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
         using var releaser = await _renderLock.LockAsync(ct);
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
@@ -276,7 +276,7 @@ public sealed class ThumbnailImageManager
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
             }
-            return stream;
+            return stream.AsRandomAccessStream();
         }
         else if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.AlwaysGenerateCache)
         {
@@ -285,17 +285,17 @@ public sealed class ThumbnailImageManager
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
             }
-            return stream;
+            return stream.AsRandomAccessStream();
         }
         else
         {
             return await GetImageStreamFromFileSystemAsync(imageSource, false, ct)
-                ?? await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+                ?? (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream();
         }
     }
 
 
-    public async ValueTask<Stream?> GetCachedImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream?> GetCachedImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
         if (imageSource == null) { return null; }        
         var itemId = GetId(imageSource);
@@ -306,18 +306,18 @@ public sealed class ThumbnailImageManager
                 cachedImageStream.CopyTo(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
                 cachedImageStream.Dispose();
-                return outputStream;
+                return outputStream.AsRandomAccessStream();
             }
             else
             {
-                return cachedImageStream;
+                return cachedImageStream.AsRandomAccessStream();
             }
         }
 
         return null;
     }
 
-    async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
+    async ValueTask<IRandomAccessStream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
     {
         StorageFile? targetFile = null;
         if (imageSource.StorageItem is StorageFile file
@@ -365,9 +365,8 @@ public sealed class ThumbnailImageManager
             else
             {
                 var itemId = ToId(targetFile);
-                var stream = image.AsStreamForRead();
                 SetThumbanilSize(itemId, image.OriginalWidth, image.OriginalHeight);
-                return stream;
+                return image;
             }
         }
         else { return null; }

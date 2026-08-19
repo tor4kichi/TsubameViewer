@@ -182,7 +182,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         ClearSelection();
 
         Debug.WriteLine($"Images RealizedItems: {_realizedItems.Count}");
-        
+
         base.OnNavigatingFrom(e);
     }
 
@@ -413,12 +413,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {        
         if (_realizedItems.Remove(args.Element, out var itemVM))
         {
-            var imageControl = args.Element.FindDescendant<Image>();
-            if (imageControl != null)
+            itemVM.StopImageLoading();
+            if (args.Element.FindDescendant<Image>() is { }  imageControl)
             {
                 _fadeOutAnim.Start(imageControl, _navigationCt);
             }
-            itemVM.StopImageLoading();
         }
     }
 

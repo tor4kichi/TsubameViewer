@@ -178,16 +178,16 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
                 using (var stream = await _thumbnailImageService.EnsureGetImageStreamAsync(Item, imageQuality: 0.5f, ct: ct))
                 {
-                    if (stream is null || stream.Length == 0) { return; }
+                    if (stream is null || stream.Size == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
                     ImageAspectRatioWH = (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
-                    stream.Seek(0, System.IO.SeekOrigin.Begin);
+                    stream.Seek(0);
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
                         var image = Image ?? new BitmapImage() { AutoPlay = false };
-                        await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        await image.SetSourceAsync(stream).AsTask(ct);
                         Image = image;
                     }
                 }
@@ -385,16 +385,16 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 using (var outputStream = new MemoryStream())
                 using (var stream = await _thumbnailImageService.EnsureGetImageStreamAsync(Item, outputStream, imageQuality: 0.5f, ct: ct))
                 {
-                    if (stream is null || stream.Length == 0) { return; }
+                    if (stream is null || stream.Size == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
 
-                    stream.Seek(0, System.IO.SeekOrigin.Begin);
+                    stream.Seek(0);
 
                     ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
                     var image = Image ?? new BitmapImage() { AutoPlay = false };
                     Image = image;
                     // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
-                    using (var ras = stream.AsRandomAccessStream())
+                    using (var ras = stream)
                     using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
