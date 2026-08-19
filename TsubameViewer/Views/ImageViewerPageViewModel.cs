@@ -844,6 +844,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         await ReloadItemsAsync(imageCollectionContext, ct);
 
+        // ページ切替の最適化のため事前にArchiveEntryImageSourceを生成しておく
+        // 500ページ程度で80ms掛からない程度のコスト
+        if (imageCollectionContext is ArchiveImageCollectionContext archiveContext)
+        {
+            long time = TimeProvider.System.GetTimestamp();
+            int index = 0;
+            await foreach (var item in archiveContext.GetAllImageFilesAsync(ct))
+            {
+                Images[index++] = item;
+            }
+            Debug.WriteLine(TimeProvider.System.GetElapsedTime(time));
+        }
+
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () => 
         {
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
@@ -1358,13 +1371,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RefreshNavigationCommand RefreshCommand { get; }
 
-    private RelayCommand _GoNextImageCommand;
-    public RelayCommand GoNextImageCommand =>
-        _GoNextImageCommand ??= new RelayCommand(ExecuteGoNextImageCommand, CanGoNextCommand);
-
-    void ExecuteGoNextImageCommand()
+    [RelayCommand(CanExecute = nameof(CanGoNextCommand))]
+    async Task GoNextImage()
     {
-        MoveImageIndex(IndexMoveDirection.Forward).FireAndForgetSafe();
+        await MoveImageIndex(IndexMoveDirection.Forward);
         _pageMovedCount++;
     }
 
@@ -1374,13 +1384,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         return true;
     }
 
-    private RelayCommand _GoPrevImageCommand;
-    public RelayCommand GoPrevImageCommand =>
-        _GoPrevImageCommand ??= new RelayCommand(ExecuteGoPrevImageCommand, CanGoPrevCommand);
-
-    void ExecuteGoPrevImageCommand()
+    [RelayCommand(CanExecute = nameof(CanGoPrevCommand))]
+    async Task GoPrevImage()
     {
-        MoveImageIndex(IndexMoveDirection.Backward).FireAndForgetSafe();
+        await MoveImageIndex(IndexMoveDirection.Backward);
         _pageMovedCount--;
     }
 
