@@ -14,6 +14,7 @@ using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
 using R3.Extensions;
+using SharpCompress.Compressors.Xz;
 using SkiaSharp;
 using System;
 using System.Collections;
@@ -383,6 +384,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 #endif
         try
         {
+            if (requestHeight != null && item is PdfPageImageSource)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    if (await item.TryGetSizedImageStreamAsync((int)requestHeight.Value, memoryStream, ct) is { } size)
+                    {
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                        return await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);
+                    }
+                }
+            }
+
             using (var stream = await GetImageRandomAccessStreamAsync(item, ct))
             {
                 if (requestHeight == null)
@@ -401,7 +414,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                             using (var ds = rtb.CreateDrawingSession())
                             {
                                 ds.Blend = CanvasBlend.Copy;
-                                ds.Antialiasing = CanvasAntialiasing.Antialiased;
+                                ds.Antialiasing = CanvasAntialiasing.Aliased;
                                 ds.Transform = Matrix3x2.CreateScale((float)scale);
                                 ds.DrawImage(bitmap);
                             }
@@ -608,7 +621,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     using (var ds = imageSource.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
                     {
                         ds.Blend = CanvasBlend.Copy;
-                        ds.Antialiasing = CanvasAntialiasing.Aliased;
+                        ds.Antialiasing = CanvasAntialiasing.Antialiased;
                         ds.Transform = Matrix3x2.CreateScale((float)scale);
                         ds.DrawImage(bitmap);
                     }                    

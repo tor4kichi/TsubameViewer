@@ -52,8 +52,8 @@ public sealed class PdfPageImageSource : IImageSource
         using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
         {
             // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
-            PDFtoImage.Conversion.SavePng(imageStream, pdfStream, page: PageIndex, 
-                options: new PDFtoImage.RenderOptions(Dpi: 96, Width: requestedSize, WithAspectRatio: true));
+            PDFtoImage.Conversion.SaveWebp(imageStream, pdfStream, page: PageIndex, 
+                options: new PDFtoImage.RenderOptions(Dpi: 96, Height: requestedSize, WithAspectRatio: true));
 
             ct.ThrowIfCancellationRequested();
 
@@ -75,7 +75,7 @@ public sealed class PdfPageImageSource : IImageSource
             using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
             {
                 // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
-                PDFtoImage.Conversion.SavePng(memoryStream, pdfStream, page: PageIndex);
+                PDFtoImage.Conversion.SaveWebp(memoryStream, pdfStream, page: PageIndex);
             }
         }, ct);
         memoryStream.Seek(0, SeekOrigin.Begin);
@@ -90,7 +90,7 @@ public sealed class PdfPageImageSource : IImageSource
             using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
             {
                 // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
-                PDFtoImage.Conversion.SavePng(memoryStream.AsStreamForWrite(), pdfStream, page: PageIndex);
+                PDFtoImage.Conversion.SaveWebp(memoryStream.AsStreamForWrite(), pdfStream, page: PageIndex);
             }
         }, ct);
         memoryStream.Seek(0);
