@@ -209,15 +209,15 @@ public sealed class ThumbnailImageManager
         )
     {
         _temporaryDbOpener = temporaryDbOpener;
-        _temporaryDb = temporaryDbOpener();       
+        _temporaryDb = temporaryDbOpener();        
         _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
-        _thumbnailDb = _temporaryDb.FileStorage;
-        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);
+        _thumbnailDb = _temporaryDb.FileStorage;        
+        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);        
         _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();
         _folderCollection = localDb.GetCollection<ThumbnilFolderEntry>();
         _folderListingSettings = folderListingSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        _canvasDevice = new CanvasDevice();
+        _canvasDevice = new CanvasDevice();        
     }
 
     private readonly CanvasDevice _canvasDevice;
@@ -246,7 +246,15 @@ public sealed class ThumbnailImageManager
             ImageHeight = height,
             RatioWH = (float)width / height
         };
-        _thumbnailImageInfoRepository.UpdateItem(info);
+        try
+        {
+            _thumbnailImageInfoRepository.UpdateItem(info);
+        }
+        catch (LiteDB.LiteException liteEx)
+        {
+            ReOpenInsideDb();
+            _thumbnailImageInfoRepository.UpdateItem(info);
+        }
         //Debug.WriteLine($"{Path.GetFileName(itemId)}: thumb size: w= {width} h= {height}");
         return info;
     }

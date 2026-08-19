@@ -433,6 +433,11 @@ sealed partial class App : Application
             Debug.WriteLine(collectionName);
         }
 #endif
+        if (SystemInformation.Instance.IsFirstRun)
+        {
+            // 初回だけサムネイル画像ローカルDBのwrite lockが閉じられない問題があるため再オープン
+            Container.Resolve<ThumbnailImageManager>().ReOpenInsideDb();
+        }
 
         await UpdateMigrationAsync();
 
