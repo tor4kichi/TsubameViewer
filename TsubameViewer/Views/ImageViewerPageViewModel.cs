@@ -6,7 +6,10 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,7 +63,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     private IImageCollectionContext _imageCollectionContext;
 
     CancellationTokenSource? _imageLoadingCts;
-    Core.AsyncLock _imageLoadingLock = new();
+
+    // View側の画像読み込みと共有する
+    // アーカイブ画像のデータ読み込みとEntriesの列挙を同時に行えないため。
+    internal Core.AsyncLock _imageLoadingLock = new();
 
     public int ImageCount => Images?.Length ?? 0;
 
@@ -191,13 +197,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         private set { SetProperty(ref _ItemType, value); }
     }
 
-    private bool _nowImageLoadingLongRunning;
-    public bool NowImageLoadingLongRunning
-    {
-        get { return _nowImageLoadingLongRunning; }
-        set { SetProperty(ref _nowImageLoadingLongRunning, value); }
-    }
-
     readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
     public ApplicationSettings ApplicationSettings { get; }
@@ -257,7 +256,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly StorageItemSettings _storageItemSettings;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
-    readonly ThumbnailImageManager _thumbnailManager;
+    internal readonly ThumbnailImageManager _thumbnailManager;
     readonly FolderListingSettings _folderListingSettings;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
@@ -317,10 +316,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
 
         ClearDisplayImages();
-        _DisplayImages_0 = _displayImagesSingle[0];
-        _DisplayImages_1 = _displayImagesSingle[1];
-        _DisplayImages_2 = _displayImagesSingle[2];
-
         SelectedFileSortType = DefaultFileSortType;
        
     }
@@ -328,35 +323,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     [RelayCommand]
     async Task ToggleLeftBinding()
     {
-        static bool SwapIfDoubleView(BitmapImage[] images)
-        {
-            if (images.Any() && images.Length == 2)
-            {
-                (images[0], images[1]) = (images[1], images[0]);
-
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
         IsLeftBindingEnabled = !IsLeftBindingEnabled;
         ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled, IsLeftBindingEnabled, DefaultZoom);
-
-        if (SwapIfDoubleView(DisplayImages_0))
-        {
-            OnPropertyChanged(nameof(DisplayImages_0));
-        }
-        if (SwapIfDoubleView(DisplayImages_1))
-        {
-            OnPropertyChanged(nameof(DisplayImages_1));
-        }
-        if (SwapIfDoubleView(DisplayImages_2))
-        {
-            OnPropertyChanged(nameof(DisplayImages_2));
-        }
     }
 
     [RelayCommand]
@@ -388,9 +356,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             catch { }
         }
 
-        ClearCachedImages();
         ClearDisplayImages();
-        _currentDisplayImageIndex = 0;
         IsAlreadySetDisplayImages = false;
 
         if (Images?.Any() ?? false)
@@ -654,9 +620,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         Debug.WriteLine($"SetImages: {TimeProvider.System.GetElapsedTime(time)}");
         time = TimeProvider.System.GetTimestamp();
 #endif
-
-        SetCurrentDisplayImageIndex(CurrentDisplayImageIndex);
-
+       
         IsAlreadySetDisplayImages = true;
 
         // 表示画像が揃ったら改めてボタンを有効化
@@ -670,12 +634,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             )
             .Subscribe(_ =>
             {
-                //using (_imageLoadingLock.LockAsync(ct))
                 {
                     if (Images == null || Images.Length == 0) { return; }
                     if (_imageCollectionContext is null) { return; }
                     int imageIndex = CurrentImageIndex;
-                    var imageSources = GetSourceImages(PrefetchIndexType.Current);
+                    var imageSources = GetSourceImages();
                     UpdateDisplayName(imageSources);
 
                     _currentDisplayImageSources ??= new IImageSource[2];
@@ -711,38 +674,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 var oldImage = await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, pair.Previous, ct);
                 var newIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(oldImage.Name, pair.Current, ct);
                 await ResetImageIndex(newIndex);
-            })
-            .AddTo(ref db);
-
-        _SizeChangedSubject
-            .Where(x => Images != null)
-            .Select(x => (X: CanvasWidth, Y:CanvasHeight))
-            .Pairwise()
-            .Where(x => x.Current != x.Previous)
-            .Do(_ => NowImageLoadingLongRunning = true)
-            .ThrottleLast(TimeSpan.FromMilliseconds(50))
-            .SubscribeAwait(async (size, ct) =>
-            {
-                using (await _imageLoadingLock.LockAsync(CancellationToken.None))
-                {
-                    ClearCachedImages();
-                    ClearDisplayImages(PrevDisplayImageIndex);
-                    ClearDisplayImages(NextDisplayImageIndex);
-                    OnPropertyChanged(DisplayImageIndexToName(PrevDisplayImageIndex));
-                    OnPropertyChanged(DisplayImageIndexToName(NextDisplayImageIndex));
-                }
-
-                await ResetImageIndex(CurrentImageIndex);
-            })
-            .AddTo(ref db);
-
-        ImageViewerSettings.ObservePropertyChanged(x => x.IsEnablePrefetch, false)
-            .Subscribe(async isEnabledPrefetch => 
-            {
-                if (isEnabledPrefetch)
-                {
-                    await PrefetchDisplayImagesAsync(IndexMoveDirection.Refresh, CurrentImageIndex, _imageLoadingCts.Token);
-                }
             })
             .AddTo(ref db);
 
@@ -799,20 +730,20 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         requireRefresh = false;
                         var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType, ct)).Path;
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
 
-                        try
-                        {
-                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
-                            await ResetImageIndex(index >= 0 ? index : 0);
-                        }
-                        catch
-                        {
-                            if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
+                            try
                             {
-                                await ResetImageIndex(0);
+                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
+                                await ResetImageIndex(index >= 0 ? index : 0);
                             }
-                        }
+                            catch
+                            {
+                                if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
+                                {
+                                    await ResetImageIndex(0);
+                                }
+                            }
 
 
                         Debug.WriteLine("Images Updated. " + _currentImageSource.Path);
@@ -826,7 +757,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             .Subscribe(x => 
             {
                 var (prev, imageIndex) = x;
-                var imageSources = GetSourceImages(PrefetchIndexType.Current);
+                var imageSources = GetSourceImages();
                 var imageSource = imageSources[0];
                 if (imageSource == null) { return; }
                 if (_currentImageSource.StorageItem is IStorageItem)
@@ -912,6 +843,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
 
         await ReloadItemsAsync(imageCollectionContext, ct);
+
+        // ページ切替の最適化のため事前にArchiveEntryImageSourceを生成しておく
+        // 500ページ程度で80ms掛からない程度のコスト
+        if (imageCollectionContext is ArchiveImageCollectionContext archiveContext)
+        {
+            long time = TimeProvider.System.GetTimestamp();
+            int index = 0;
+            await foreach (var item in archiveContext.GetAllImageFilesAsync(ct))
+            {
+                Images[index++] = item;
+            }
+            Debug.WriteLine(TimeProvider.System.GetElapsedTime(time));
+        }
 
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () => 
         {
@@ -1008,32 +952,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
     }
 
-
-    private BitmapImage[] _DisplayImages_0;
-    public BitmapImage[] DisplayImages_0
-    {
-        get { return _DisplayImages_0; }
-        set { SetProperty(ref _DisplayImages_0, value); }
-    }
-
-    private BitmapImage[] _DisplayImages_1;
-    public BitmapImage[] DisplayImages_1
-    {
-        get { return _DisplayImages_1; }
-        set { SetProperty(ref _DisplayImages_1, value); }
-    }
-
-    private BitmapImage[] _DisplayImages_2;
-    public BitmapImage[] DisplayImages_2
-    {
-        get { return _DisplayImages_2; }
-        set { SetProperty(ref _DisplayImages_2, value); }
-    }
-
-
-    BitmapImage _emptyImage = new BitmapImage();
-
-
     private bool _NowDoubleImageView;
     public bool NowDoubleImageView
     {
@@ -1074,7 +992,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 int displayImageCount = requestImageCount;
                 try
                 {
-                    displayImageCount = await SetDisplayImagesAsync(PrefetchIndexType.Current, direction, requestIndex, requestImageCount == 2, ct);
+                    displayImageCount = await SetDisplayImagesAsync(direction, requestIndex, requestImageCount == 2, ct);
                     movedIndex = displayImageCount == 2 && direction == IndexMoveDirection.Backward ? requestIndex - 1 : requestIndex;
                 }
                 catch (OperationCanceledException)
@@ -1110,20 +1028,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 CurrentImageIndex = movedIndex;
                 _nowCurrenImageIndexChanging = false;
 
-                NowImageLoadingLongRunning = false;
-
-                try
-                {
-                    await _messenger.Send(new ImageLoadedMessage());
-                }
-                catch { }
-
-                await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
             }
         }
         catch (OperationCanceledException)
         {
-            NowImageLoadingLongRunning = true;                
+            
         }
         catch (NotSupportedImageFormatException ex)
         {
@@ -1194,9 +1103,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         return image;
     }
-    async ValueTask<int> SetDisplayImagesAsync(PrefetchIndexType indexType, IndexMoveDirection direction, int requestIndex, bool requestDoubleView, CancellationToken ct)
+    async ValueTask<int> SetDisplayImagesAsync(IndexMoveDirection direction, int requestIndex, bool requestDoubleView, CancellationToken ct)
     {
-        bool canNotSwapping = indexType != PrefetchIndexType.Current;
         if (requestDoubleView)
         {
             // RightToLeftを基準に
@@ -1214,10 +1122,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 var candidateIndex = requestIndex + index;
                 if (0 <= candidateIndex && candidateIndex < _Images.Length)
                 {
-                    candidateImages.Add(await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType, ct), ct));
+                    candidateImages.Add(await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType, ct));
                 }
             }
-            
+
             if (candidateImages.Any() is false)
             {
                 throw new InvalidOperationException();
@@ -1226,175 +1134,26 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             var sizeCheckResult = await CheckImagesCanDoubleViewInCurrentCanvasSizeAsync(candidateImages, ct);
             if (sizeCheckResult.CanDoubleView)
             {
-                bool isLoadRequired = false;
-                if (direction == IndexMoveDirection.Backward)
+                var (imageSource1, imageSource2) = direction switch
                 {
-                    if (canNotSwapping || !TryDisplayImagesSwapBackward(sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image))
-                    {
-                        isLoadRequired = true;
-                       
-                    }
-                }
-                else if (direction == IndexMoveDirection.Forward)
-                {
-                    if (canNotSwapping || !TryDisplayImagesSwapForward(sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image))
-                    {
-                        isLoadRequired = true;
-                    }
-                }
-                else
-                {
-                    isLoadRequired = true;
-                }
+                    IndexMoveDirection.Backward => (sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image),
+                    _ => (sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image)
+                };
 
-                if (isLoadRequired is true)
-                {
-                    var (imageSource1, imageSource2) = direction switch
-                    {
-                        IndexMoveDirection.Backward => (sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image),
-                        _ => (sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image)
-                    };
-
-                    var originalImageLoadTask1 = GetBitmapImageWithCacheAsync(imageSource1, ct);
-                    var originalImageLoadTask2 = GetBitmapImageWithCacheAsync(imageSource2, ct);
-
-                    if (direction == IndexMoveDirection.Refresh)
-                    {
-                        var flattenImageSource1 = imageSource1.FlattenAlbamItemInnerImageSource();
-                        var flattenImageSource2 = imageSource2.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut = _folderListingSettings.ThumbnailImageCacheMode != ThumbnailImageCacheMode.NeverGenerateCache;
-                        if (isEnabledThumbnailOut)
-                        {
-                            async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
-                            {
-                                var thumbImage = new BitmapImage();
-                                try
-                                {
-                                    using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
-                                    await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
-                                }
-                                catch { }
-                                return thumbImage;
-                            }
-
-                            var thumbnailLoadTask1 = LoadThumbnailAsync(imageSource1, ct);
-                            var thumbnailLoadTask2 = LoadThumbnailAsync(imageSource2, ct);
-
-                            SetDisplayImages(indexType,
-                                imageSource1, await thumbnailLoadTask1,
-                                imageSource2, await thumbnailLoadTask2
-                                    );
-
-                            try
-                            {
-                                await _messenger.Send(new ImageLoadedMessage());
-                            }
-                            catch { }
-                        }                            
-                    }
-
-                    SetDisplayImages(indexType,
-                        imageSource1, await originalImageLoadTask1,
-                        imageSource2, await originalImageLoadTask2
-                    );
-                }
+                SetDisplayImages_Internal(imageSource1, imageSource2);               
 
                 return 2;
             }
             else
-            {                   
-                bool isRequireLoad = false;
-                if (direction == IndexMoveDirection.Backward)
-                {
-                    if (canNotSwapping || !TryDisplayImagesSwapBackward(sizeCheckResult.Slot1Image))
-                    {
-                        isRequireLoad = true;
-                    }
-                }
-                else if (direction == IndexMoveDirection.Forward)
-                {
-                    if (canNotSwapping || !TryDisplayImagesSwapForward(sizeCheckResult.Slot1Image))
-                    {
-                        isRequireLoad = true;
-                    }
-                }
-                else
-                {
-                    isRequireLoad = true;
-                }
-
-                if (isRequireLoad is true)
-                {
-                    var originalImageLoadTask = GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct);
-
-                    if (direction == IndexMoveDirection.Refresh)
-                    {
-                        var flattenImageSource = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
-                        bool isEnabledThumbnailOut = _folderListingSettings.ThumbnailImageCacheMode != ThumbnailImageCacheMode.NeverGenerateCache;
-                        if (isEnabledThumbnailOut)
-                        {
-                            async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
-                            {
-                                var thumbImage = new BitmapImage();
-                                try
-                                {
-                                    using var imageStream = await Task.Run(async () => await _thumbnailManager.EnsureGetImageStreamAsync(imageSource, ct: ct));
-                                    await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
-                                }
-                                catch { }
-                                return thumbImage;
-                            }
-
-                            var thumbnailLoadTask = LoadThumbnailAsync(sizeCheckResult.Slot1Image, ct);
-
-                            SetDisplayImages(indexType,
-                                sizeCheckResult.Slot1Image, await thumbnailLoadTask
-                                    );
-
-                            try
-                            {                                
-                                await _messenger.Send(new ImageLoadedMessage());
-                            }
-                            catch { }
-                        }
-                    }
-
-                    SetDisplayImages(indexType,
-                        sizeCheckResult.Slot1Image, await originalImageLoadTask
-                        );
-                }
-
+            {
+                SetDisplayImages_Internal(sizeCheckResult.Slot1Image);
                 return 1;
             }
         }
         else
         {
             var image = await GetImageSourceWithCacheAsync(requestIndex, ct);
-            if (direction == IndexMoveDirection.Backward)
-            {
-                if (canNotSwapping || !TryDisplayImagesSwapBackward(image))
-                {
-                    SetDisplayImages(indexType,
-                        image, await GetBitmapImageWithCacheAsync(image, ct)
-                        );
-                }
-            }
-            else if (direction == IndexMoveDirection.Forward)
-            {
-                if (canNotSwapping || !TryDisplayImagesSwapForward(image))
-                {
-                    SetDisplayImages(indexType,
-                        image, await GetBitmapImageWithCacheAsync(image, ct)
-                        );
-                }
-            }
-            else
-            {
-                SetDisplayImages(indexType,
-                        image, await GetBitmapImageWithCacheAsync(image, ct)
-                        );
-            }
-
+            SetDisplayImages_Internal(image);
             return 1;
         }
     }
@@ -1439,17 +1198,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         return (requestIndex, isJumpHeadTail, requestImageCount);
     }
-
-    async ValueTask<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
-    {
-        var (requestIndex, isJumpHeadTail, requestImageCount) = GetMovedIndex(direction, currentIndex);
-
-        var displayImageCount = await SetDisplayImagesAsync(prefetchIndexType, direction, requestIndex, requestImageCount == 2, ct);
-
-        return (displayImageCount == 2 && direction == IndexMoveDirection.Backward ? requestIndex - 1 : requestIndex, displayImageCount, isJumpHeadTail);
-    }
-
-
 
     public enum IndexMoveDirection
     {
@@ -1525,484 +1273,73 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     async ValueTask<ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
     {
         if (_thumbnailManager.GetCachedThumbnailSize(source) is not null and ThumbnailSize thumbSize) { return thumbSize; }
-
+        
         if (source.IsStorageItemNotFound())
         {
             return default;
         }
         else
         {
-            var image = await GetBitmapImageWithCacheAsync(source, ct);
-            return _thumbnailManager.SetThumbnailSize(source, (uint)image.PixelWidth, (uint)image.PixelHeight);
+            using (var stream = await source.GetImageStreamAsync())
+            {
+                var bounds = SKBitmap.DecodeBounds(stream);
+                return _thumbnailManager.SetThumbnailSize(source, (uint)bounds.Width, (uint)bounds.Height);
+            }
         }                
     }
  
-    async ValueTask<BitmapImage> GetBitmapImageWithCacheAsync(IImageSource source, CancellationToken ct)
+    public IImageSource[] SourceImages => GetSourceImages();
+
+    void NotifySourceImagesChanged()
     {
-        var image = _CachedImages.FirstOrDefault(x => x.ImageSource == source);
-        if (image != null)
+        OnPropertyChanged(nameof(SourceImages));
+    }
+    
+    IImageSource[] _sourceImagesSingle = new IImageSource[1];
+    IImageSource[] _sourceImagesDouble = new IImageSource[2];
+
+    IImageSource[] GetSourceImages()
+    {
+        return NowDoubleImageView ? _sourceImagesDouble : _sourceImagesSingle;
+    }
+
+    void SetDisplayImages(IImageSource firstSource, IImageSource secondSource)
+    {
+        Guard.IsNotNull(firstSource);
+        if (secondSource == null)
         {
-            _CachedImages.Remove(image);
-            _CachedImages.Insert(0, image);
+            SetDisplayImages_Internal(firstSource);
+
         }
         else
         {
-            image = new PrefetchImageInfo(source, (int)CanvasWidth);
-            _CachedImages.Insert(0, image);
-
-            if (_CachedImages.Count > 8)
-            {
-                var last = _CachedImages.Last();
-                last.Dispose();
-                _CachedImages.Remove(last);
-                if (last.Image != null)
-                {
-                    //RemoveFromDisplayImages(last.Image);
-                }
-
-                Debug.WriteLine($"remove from display cache: {last.ImageSource.Name}");
-            }
-        }
-
-        return await image.GetBitmapImageAsync(ct);
-    }
-
-
-    readonly List<PrefetchImageInfo> _CachedImages = new ();
-
-    void ClearCachedImages()
-    {
-        _CachedImages.ForEach(x => x.Cancel());
-        _CachedImages.Clear();
-    }
-
-    int _currentDisplayImageIndex = 0;
-
-    enum PrefetchIndexType
-    {
-        Prev,
-        Current,
-        Next,
-    }
-
-    public int CurrentDisplayImageIndex => _currentDisplayImageIndex;
-    public int PrevDisplayImageIndex => _currentDisplayImageIndex - 1 < 0 ? 2 : _currentDisplayImageIndex - 1;
-    public int NextDisplayImageIndex => _currentDisplayImageIndex + 1 > 2 ? 0 : _currentDisplayImageIndex + 1;
-
-    static string DisplayImageIndexToName(int index)
-    {
-        return index switch
-        {
-            0 => nameof(DisplayImages_0),
-            1 => nameof(DisplayImages_1),
-            2 => nameof(DisplayImages_2),
-            _ => throw new NotSupportedException()
-        };
-    }
-
-    void SetCurrentDisplayImageIndex(int index)
-    {
-        _currentDisplayImageIndex = index;
-        OnPropertyChanged(nameof(CurrentDisplayImageIndex));
-        OnPropertyChanged(nameof(PrevDisplayImageIndex));
-        OnPropertyChanged(nameof(NextDisplayImageIndex));
-    }
-
-    int GetDisplayImageIndex(PrefetchIndexType type)
-    {
-        return type switch
-        {
-            PrefetchIndexType.Current => CurrentDisplayImageIndex,
-            PrefetchIndexType.Prev => PrevDisplayImageIndex,
-            PrefetchIndexType.Next => NextDisplayImageIndex,
-            _ => throw new NotSupportedException(),
-        };
-    }
-
-    BitmapImage[][] _displayImagesSingle = new BitmapImage[][] 
-    {
-        new BitmapImage[1],
-        new BitmapImage[1],
-        new BitmapImage[1],
-    };
-    BitmapImage[][] _displayImagesDouble = new BitmapImage[][] 
-    {
-        new BitmapImage[2],
-        new BitmapImage[2],
-        new BitmapImage[2],
-    };
-
-    IImageSource[][] _sourceImagesSingle = new IImageSource[][]
-    {
-        new IImageSource[1],
-        new IImageSource[1],
-        new IImageSource[1],
-    };
-    IImageSource[][] _sourceImagesDouble = new IImageSource[][]
-    {
-        new IImageSource[2],
-        new IImageSource[2],
-        new IImageSource[2],
-    };
-
-    IImageSource[] GetSourceImages(PrefetchIndexType type)
-    {
-        var index = GetDisplayImageIndex(type);
-        return NowDoubleImageView ? _sourceImagesDouble[index] : _sourceImagesSingle[index];
-    }
-
-    public async Task DisableImageDecodeWhenImageSmallerCanvasSize()
-    {
-        var ct = _imageLoadingCts?.Token ?? default;
-        try
-        {
-            using (await _imageLoadingLock.LockAsync(ct))
-            {
-                // 現在表示中の画像がデコード済みだった場合だけ、デコードしていない画像として読み込む
-
-                var images = GetDisplayImages(PrefetchIndexType.Current);
-                if (images.Any(x => x == null) || images.All(x => x.DecodePixelHeight == 0 && x.DecodePixelWidth == 0))
-                {
-                    return;
-                }
-
-                var indexType = GetDisplayImageIndex(PrefetchIndexType.Current);
-                if (NowDoubleImageView)
-                {
-                    BitmapImage image1 = images[0];
-                    BitmapImage image2 = images[1];
-
-                    var imageSource1 = _sourceImagesDouble[indexType][0];
-                    var imageSource2 = _sourceImagesDouble[indexType][1];
-
-                    if (image1.DecodePixelHeight != 0)
-                    {
-                        using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth);
-                        image1 = await loader1.GetBitmapImageAsync(ct);
-                        Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
-                    }
-                    if (image2.DecodePixelHeight != 0)
-                    {
-                        using var loader2 = new PrefetchImageInfo(imageSource2, (int)CanvasWidth);
-                        image2 = await loader2.GetBitmapImageAsync(ct);
-                        Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
-                    }
-
-                    SetDisplayImages_Internal(PrefetchIndexType.Current,
-                        imageSource1, image1,
-                        imageSource2, image2
-                        );
-                }
-                else
-                {
-                    var imageSource1 = _sourceImagesSingle[indexType][0];
-                    using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth);
-                    SetDisplayImages_Internal(PrefetchIndexType.Current,
-                        imageSource1, await loader1.GetBitmapImageAsync(ct)
-                        );
-                }
-            }
-        }
-        catch (OperationCanceledException) { }
-    }
-
-    
-    void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage)
-    {
-        static void SetDecodePixelSize(BitmapImage image, float canvasWidth, float canvasHeight)
-        {                
-            if (image is not null && image.DecodePixelWidth == 0 && image.DecodePixelHeight == 0)
-            {
-                if (image.PixelWidth > canvasWidth || image.PixelHeight > canvasHeight)
-                {
-                    // 最適化を期待してVector2で計算
-                    //var imageRatioWH = image.PixelWidth / (float)image.PixelHeight;
-                    //var canvasRatioWH = CanvasWidth.Value / (float)CanvasHeight.Value;
-                    //if (imageRatioWH > canvasRatioWH)
-                    Vector2 vector = new Vector2((float)image.PixelWidth, (float)canvasWidth) / new Vector2((float)image.PixelHeight, (float)canvasHeight);
-                    if (vector.X > vector.Y)
-                    {
-                        image.DecodePixelWidth = (int)canvasWidth;
-                        Debug.WriteLine($"decode to width {image.PixelWidth} -> {image.DecodePixelWidth}");
-                    }
-                    else
-                    {
-                        image.DecodePixelHeight = (int)canvasHeight;
-                        Debug.WriteLine($"decode to height {image.PixelHeight} -> {image.DecodePixelHeight}");
-                    }
-                }
-            }
-        }
-
-        if (TransformScale <= 1)
-        {
-            SetDecodePixelSize(firstImage, (float)CanvasWidth, (float)CanvasHeight);
-        }
-
-        SetDisplayImages_Internal(type, firstSource, firstImage);
-    }
-
-    void SetDisplayImages_Internal(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage)
-    {
-        switch (GetDisplayImageIndex(type))
-        {
-            case 0:
-                _DisplayImages_0 = _displayImagesSingle[0];
-                _DisplayImages_0[0] = firstImage;
-                _sourceImagesSingle[0][0] = firstSource;
-                OnPropertyChanged(nameof(DisplayImages_0));
-                break;
-            case 1:
-                _DisplayImages_1 = _displayImagesSingle[1];
-                _DisplayImages_1[0] = firstImage;
-                _sourceImagesSingle[1][0] = firstSource;
-                OnPropertyChanged(nameof(DisplayImages_1));
-                break;
-            case 2:
-                _DisplayImages_2 = _displayImagesSingle[2];
-                _DisplayImages_2[0] = firstImage;
-                _sourceImagesSingle[2][0] = firstSource;
-                OnPropertyChanged(nameof(DisplayImages_2));
-                break;
+            SetDisplayImages_Internal(firstSource, secondSource);
         }
     }
 
-    void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
-    {
-        // (firstImage.PixelWidth + secondImage.PixelWidth < CanvasWidth.Value) は常にtrue
-        SetDecodePixelHeightWhenLargerThenCanvasHeight(firstImage);
-        SetDecodePixelHeightWhenLargerThenCanvasHeight(secondImage);
 
-        SetDisplayImages_Internal(type, firstSource, firstImage, secondSource, secondImage);            
+    void SetDisplayImages_Internal(IImageSource firstSource)
+    {
+        NowDoubleImageView = false;
+        var images = GetSourceImages();
+        images[0] = firstSource;
+        NotifySourceImagesChanged();
     }
 
-    void SetDecodePixelHeightWhenLargerThenCanvasHeight(BitmapImage image)
+    void SetDisplayImages_Internal(IImageSource firstSource, IImageSource secondSource)
     {
-        if (TransformScale <= 1 && image.PixelHeight > CanvasHeight)
-        {
-            image.DecodePixelHeight = (int)CanvasHeight;
-        }
-    }
-
-    void SetDisplayImages_Internal(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
-    {
-        switch (GetDisplayImageIndex(type))
-        {
-            case 0:
-                _DisplayImages_0 = _displayImagesDouble[0];
-                _DisplayImages_0[0] = firstImage;
-                _DisplayImages_0[1] = secondImage;
-                _sourceImagesDouble[0][0] = firstSource;
-                _sourceImagesDouble[0][1] = secondSource;
-                OnPropertyChanged(nameof(DisplayImages_0));
-                break;
-            case 1:
-                _DisplayImages_1 = _displayImagesDouble[1];
-                _DisplayImages_1[0] = firstImage;
-                _DisplayImages_1[1] = secondImage;
-                _sourceImagesDouble[1][0] = firstSource;
-                _sourceImagesDouble[1][1] = secondSource;
-                OnPropertyChanged(nameof(DisplayImages_1));
-                break;
-            case 2:
-                _DisplayImages_2 = _displayImagesDouble[2];
-                _DisplayImages_2[0] = firstImage;
-                _DisplayImages_2[1] = secondImage;
-                _sourceImagesDouble[2][0] = firstSource;
-                _sourceImagesDouble[2][1] = secondSource;
-                OnPropertyChanged(nameof(DisplayImages_2));
-                break;
-        }
-    }
-
-    private BitmapImage[] GetDisplayImages(PrefetchIndexType type)
-    {
-        return GetDisplayImageIndex(type) switch
-        {
-            0 => _DisplayImages_0,
-            1 => _DisplayImages_1,
-            2 => _DisplayImages_2,
-            _ => throw new NotSupportedException(),
-        };
+        NowDoubleImageView = true;
+        var images = GetSourceImages();
+        images[0] = firstSource;
+        images[1] = secondSource;
+        NotifySourceImagesChanged();
     }
 
     void ClearDisplayImages()
     {
-        ClearDisplayImages(0);
-        ClearDisplayImages(1);
-        ClearDisplayImages(2);
-    }
-
-    void ClearDisplayImages(int displayImageIndex)
-    {
-        _displayImagesSingle[displayImageIndex][0] = _emptyImage;
-
-        _displayImagesDouble[displayImageIndex][0] = _emptyImage;
-        _displayImagesDouble[displayImageIndex][1] = _emptyImage;
-
-        _sourceImagesSingle[displayImageIndex][0] = null;
-
-        _sourceImagesDouble[displayImageIndex][0] = null;
-        _sourceImagesDouble[displayImageIndex][1] = null;
-    }
-
-    void RemoveFromDisplayImages(BitmapImage target)
-    {
-        BitmapImage[][][] images = new BitmapImage[][][]
-        {
-            _displayImagesSingle,
-            _displayImagesDouble,
-        };
-
-        foreach (var outerIndex in Enumerable.Range(0, images.Length))
-        {
-            var middleImages = images[outerIndex];
-            foreach (var middleIndex in Enumerable.Range(0, middleImages.Length))
-            {
-                var innerImages = middleImages[middleIndex];
-                foreach (var innerIndex in Enumerable.Range(0, innerImages.Length))
-                {
-                    if (innerImages[innerIndex] == target)
-                    {
-                        if (outerIndex == 0)
-                        {
-                            _sourceImagesSingle[middleIndex][innerIndex] = null;
-                        }
-                        else
-                        {
-                            _sourceImagesDouble[middleIndex][innerIndex] = null;
-                        }
-
-                        innerImages[innerIndex] = null;
-                    }
-                }
-            }
-        }
-    }
-
-
-
-    private bool TryDisplayImagesSwapForward(IImageSource firstSource)
-    {
-        var firstForwardCachedImageSource = _sourceImagesSingle[NextDisplayImageIndex][0];
-        if (firstForwardCachedImageSource == null)
-        {
-            return false;
-        }
-
-        if (firstForwardCachedImageSource.Equals(firstSource))
-        {
-            Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {NextDisplayImageIndex}");
-            SetCurrentDisplayImageIndex(NextDisplayImageIndex);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private bool TryDisplayImagesSwapForward(IImageSource firstSource, IImageSource secondSource)
-    {
-        var firstForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][0];
-        var secondForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][1];
-        if (firstForwardCachedImageSource == null || secondForwardCachedImageSource == null)
-        {
-            return false;
-        }
-
-        if (firstForwardCachedImageSource.Equals(firstSource)
-            && secondForwardCachedImageSource.Equals(secondSource)
-            )
-        {
-            Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {NextDisplayImageIndex}");
-            SetCurrentDisplayImageIndex(NextDisplayImageIndex);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-
-
-    private bool TryDisplayImagesSwapBackward(IImageSource firstSource)
-    {
-        var firstForwardCachedImageSource = _sourceImagesSingle[PrevDisplayImageIndex][0];
-        if (firstForwardCachedImageSource == null)
-        {
-            return false;
-        }
-
-        if (firstForwardCachedImageSource.Equals(firstSource))
-        {
-            Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {PrevDisplayImageIndex}");
-            SetCurrentDisplayImageIndex(PrevDisplayImageIndex);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private bool TryDisplayImagesSwapBackward(IImageSource firstSource, IImageSource secondSource)
-    {
-        var firstForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][0];
-        var secondForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][1];
-
-        if (firstForwardCachedImageSource == null || secondForwardCachedImageSource == null)
-        {
-            return false;
-        }
-
-        if (firstForwardCachedImageSource.Equals(firstSource)
-            && secondForwardCachedImageSource.Equals(secondSource)
-            )
-        {
-            Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {PrevDisplayImageIndex}");
-            SetCurrentDisplayImageIndex(PrevDisplayImageIndex);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-
-    async ValueTask PrefetchDisplayImagesAsync(IndexMoveDirection direction, int requestIndex, CancellationToken ct)
-    {
-        if (ImageViewerSettings.IsEnablePrefetch is false) { return; }
-
-        if (direction is IndexMoveDirection.Refresh or IndexMoveDirection.Forward)
-        {
-            await LoadImagesAsync(PrefetchIndexType.Next, IndexMoveDirection.Forward, requestIndex, ct);
-            SetPrefetchDisplayImageSingleWhenNowDoubleView(PrefetchIndexType.Next);
-        }
-        else if (direction is IndexMoveDirection.Backward)
-        {
-            await LoadImagesAsync(PrefetchIndexType.Prev, IndexMoveDirection.Backward, requestIndex, ct);
-        }
-    }
-
-    void SetPrefetchDisplayImageSingleWhenNowDoubleView(PrefetchIndexType type)
-    {
-        var index = GetDisplayImageIndex(type);
-        bool isDoubleView = index switch
-        {
-            0 => _DisplayImages_0.Length == 2,
-            1 => _DisplayImages_1.Length == 2,
-            2 => _DisplayImages_2.Length == 2,
-            _ => throw new NotSupportedException(),
-        };
-
-        if (isDoubleView)
-        {
-            _displayImagesSingle[index][0] = _displayImagesDouble[index][0];
-            _sourceImagesSingle[index][0] = _sourceImagesDouble[index][0];
-        }
+        _sourceImagesSingle[0] = null;
+        _sourceImagesDouble[0] = null;
+        _sourceImagesDouble[1] = null;
     }
 
 
@@ -2018,13 +1355,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     {
         if (IsAlreadySetDisplayImages is false) { return 0; }
 
-        return GetDisplayImageIndex(PrefetchIndexType.Current) switch
-        {
-            0 => _DisplayImages_0.Length,
-            1 => _DisplayImages_1.Length,
-            2 => _DisplayImages_2.Length,
-            _ => throw new NotImplementedException(),
-        };
+        return GetSourceImages().Length;
     }
 
 
@@ -2040,13 +1371,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RefreshNavigationCommand RefreshCommand { get; }
 
-    private RelayCommand _GoNextImageCommand;
-    public RelayCommand GoNextImageCommand =>
-        _GoNextImageCommand ??= new RelayCommand(ExecuteGoNextImageCommand, CanGoNextCommand);
-
-    void ExecuteGoNextImageCommand()
+    [RelayCommand(CanExecute = nameof(CanGoNextCommand))]
+    async Task GoNextImage()
     {
-        MoveImageIndex(IndexMoveDirection.Forward).FireAndForgetSafe();
+        await MoveImageIndex(IndexMoveDirection.Forward);
         _pageMovedCount++;
     }
 
@@ -2056,13 +1384,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         return true;
     }
 
-    private RelayCommand _GoPrevImageCommand;
-    public RelayCommand GoPrevImageCommand =>
-        _GoPrevImageCommand ??= new RelayCommand(ExecuteGoPrevImageCommand, CanGoPrevCommand);
-
-    void ExecuteGoPrevImageCommand()
+    [RelayCommand(CanExecute = nameof(CanGoPrevCommand))]
+    async Task GoPrevImage()
     {
-        MoveImageIndex(IndexMoveDirection.Backward).FireAndForgetSafe();
+        await MoveImageIndex(IndexMoveDirection.Backward);
         _pageMovedCount--;
     }
 
@@ -2072,15 +1397,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         return true;
     }
 
-
-    ReactiveProperty<int> _SizeChangedSubject = new ReactiveProperty<int>(-1);
-
     [RelayCommand]
     void SizeChanged()
     {
         if (!(Images?.Any() ?? false)) { return; }
 
-        _SizeChangedSubject.OnNext(CurrentImageIndex);
+        _ = ResetImageIndex(CurrentImageIndex);
     }
 
 

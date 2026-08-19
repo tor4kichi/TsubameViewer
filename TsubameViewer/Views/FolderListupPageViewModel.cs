@@ -460,9 +460,10 @@ public sealed partial class FolderListupPageViewModel
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.FilterText, false)
-            .ThrottleFirstLast(TimeSpan.FromSeconds(0.25))
+            .ThrottleLast(TimeSpan.FromSeconds(0.5))
             .SubscribeAwait(async (s, ct) =>
             {
+                if (NowLoading) { return; }
                 using (FileItemsView.DeferRefresh())
                 {
                     if (_filterQueryCts != null)
@@ -484,6 +485,8 @@ public sealed partial class FolderListupPageViewModel
                         }
                     }
                     else { _migemoQueryRegex = null; }
+
+                    if (NowLoading) { return; }
                     FileItemsView.RefreshFilter(lastQueryCt);
                 }
             }, AwaitOperation.Switch)
@@ -777,6 +780,7 @@ public sealed partial class FolderListupPageViewModel
                     .ObserveOnCurrentSynchronizationContext()
                     .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
+                        using var lockObject = await _refreshLock.LockAsync(ct);
                         var (col, items, itemFacotry) = s;                        
                         var ignore = col.Context.HandleDiffNotImages(
                             (RangeObservableCollection<IStorageItemViewModel>)items.Source,          
@@ -806,6 +810,7 @@ public sealed partial class FolderListupPageViewModel
                     NowLoading = false;
                     DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
+                        using var lockObject = await _refreshLock.LockAsync(ct);
                         try
                         {
                             // Note: リネームを検知したいので同数チェックしない                            
@@ -851,6 +856,7 @@ public sealed partial class FolderListupPageViewModel
 
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
+                            using var lockObject = await _refreshLock.LockAsync(ct);
                             try
                             {
                                 var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
@@ -873,6 +879,7 @@ public sealed partial class FolderListupPageViewModel
 
         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
+            using var lockObject = await _refreshLock.LockAsync(ct);
             await Task.Delay(150);
             try
             {

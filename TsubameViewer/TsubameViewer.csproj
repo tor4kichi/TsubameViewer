@@ -27,7 +27,7 @@
     <AppxBundlePlatforms>x86|x64|arm64</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
+    <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -188,6 +188,7 @@
     <Compile Include="ViewModels\LatestContentViewUpdateMessage.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenViewerWithSecondaryWindowCommand.cs" />
     <Compile Include="ViewModels\PageNavigation\NavigationCompletedMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\PreNavigationNotifyMessage.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ResetThumbnailImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />
     <Compile Include="ViewModels\ViewerSettings.cs" />
@@ -477,6 +478,9 @@
     </PackageReference>
     <PackageReference Include="sharpcompress">
       <Version>0.50.4</Version>
+    </PackageReference>
+    <PackageReference Include="SkiaSharp.Views.NativeAssets.UWP">
+      <Version>2.88.9</Version>
     </PackageReference>
     <PackageReference Include="System.Linq.Async">
       <Version>7.0.1</Version>

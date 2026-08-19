@@ -62,11 +62,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
     public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None);
 
-    private StorageItemQueryResult? _folderAndArchiveFileSearchQuery;
-    private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
+    private StorageItemQueryResult CreateFolderAndArchiveFileSearchQuery() => Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
 
-    private StorageFileQueryResult? _imageFileSearchQuery;
-    private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
+    private StorageFileQueryResult CreateImageFileSearchQuery() => Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
 
     public string Name => Folder?.Name ?? "";
 
@@ -90,7 +88,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     private FileSortType _lastFolderAndArchiveFilesSortType;
     public async ValueTask<int> GetFolderOrArchiveFilesCountAsync(CancellationToken ct)
     {
-        return (int)await FolderAndArchiveFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        return (int)await CreateFolderAndArchiveFileSearchQuery().GetItemCountAsync().AsTask(ct);
     }
 
     int _prevAccessIndex = -1;
@@ -102,10 +100,11 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     {
         using var _ = await _lock.LockAsync(ct);
 
+        var query = CreateFolderAndArchiveFileSearchQuery();
         if (_lastFolderAndArchiveFilesSortType != sort)
         {
             _lastFolderAndArchiveFilesSortType = sort;
-            FolderAndArchiveFileSearchQuery.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
+            query.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
             _prevAccessIndex = -1;
             _cachedPage = -1;
         }
@@ -117,7 +116,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             if (checkPage != _cachedPage)
             {
                 _cachedPage = checkPage;
-                var items = await FolderAndArchiveFileSearchQuery.GetItemsAsync((uint)(checkPage * _cachedPageItems.Length), (uint)_cachedPageItems.Length).AsTask(ct);
+                var items = await query.GetItemsAsync((uint)(checkPage * _cachedPageItems.Length), (uint)_cachedPageItems.Length).AsTask(ct);
                 for (int i = 0; i < items.Count; i++)
                 {
                     _cachedPageItems[i] = items[i];
@@ -138,7 +137,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         }
         else
         {
-            if (await FolderAndArchiveFileSearchQuery.GetItemsAsync((uint)index, 1).AsTask(ct) is not null and var files
+            if (await query.GetItemsAsync((uint)index, 1).AsTask(ct) is not null and var files
                 && files.ElementAtOrDefault(0) is not null and var imageSource)
             {
                 Debug.WriteLine($"index:{index}, Name:{imageSource.Name}");
@@ -153,23 +152,24 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<int> GetFolderOrArchiveFilesIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
+        var query = CreateFolderAndArchiveFileSearchQuery();
         if (_lastFolderAndArchiveFilesSortType != sort)
         {
             _lastFolderAndArchiveFilesSortType = sort;
-            FolderAndArchiveFileSearchQuery.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
+            query.ApplyNewQueryOptions(GetFolderOrArchiveFilesSortQueryOptions(sort));
         }
 
         if (sort is FileSortType.None or FileSortType.TitleAscending or FileSortType.TitleDecending)
         {
             string filename = Path.GetFileName(key);
-            uint result = await FolderAndArchiveFileSearchQuery.FindStartIndexAsync(filename);
+            uint result = await query.FindStartIndexAsync(filename);
             return result != uint.MaxValue ? (int)result : throw new KeyNotFoundException($"not found file : {filename}");
         }
         else
         {
             // FindStartIndexAsync が意図したIndexを返さないので頭から走査する
             int index = 0;
-            await foreach (var file in FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct).WithCancellation(ct))
+            await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
             {
                 if (file.Name == key || file.Path == key)
                 {
@@ -239,7 +239,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {
-        return FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
+        return CreateFolderAndArchiveFileSearchQuery().ToAsyncEnumerable(ct)
             .Select(x => new StorageItemImageSource(x) as IImageSource);
     }
 
@@ -255,19 +255,19 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
     {        
-        return ImageFileSearchQuery.ToAsyncEnumerable(ct)
+        return CreateImageFileSearchQuery().ToAsyncEnumerable(ct)
             .Select(x => new StorageItemImageSource(x) as IImageSource);
     }
 
     public async ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
     {
-        var count = await FolderAndArchiveFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        var count = await CreateFolderAndArchiveFileSearchQuery().GetItemCountAsync().AsTask(ct);
         return count > 0;
     }
 
     public async ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
     {
-        var count = await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        var count = await CreateImageFileSearchQuery().GetItemCountAsync().AsTask(ct);
         return count > 0;
     }
 
@@ -382,8 +382,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             {
                 observer.OnNext(Unit.Default);
             }
-            FolderAndArchiveFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
-            return Disposable.Create(() => FolderAndArchiveFileSearchQuery.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
+            var query = CreateFolderAndArchiveFileSearchQuery();
+            query.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
+            return Disposable.Create(() => query.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
         })
             .ThrottleLast(TimeSpan.FromSeconds(1));
     }
@@ -398,8 +399,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             {                
                 observer.OnNext(Unit.Default);
             }
-            ImageFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
-            return Disposable.Create(() => ImageFileSearchQuery.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
+            var query = CreateImageFileSearchQuery();
+            query.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
+            return Disposable.Create(() => query.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
         })
             .ThrottleLast(TimeSpan.FromSeconds(1));
     }
@@ -504,6 +506,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         Dictionary<ulong, FolderStructureFileEntry> cached;
         bool isInitial = !_repo.HasFolderImages(Folder);
         DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        var thumbnailManager = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ThumbnailImageManager>();
         // filesにあるアイテムがcachedに無い → 増分        
         if (isInitial)
         {
@@ -515,6 +518,7 @@ public sealed class FolderStructureCacheContext : IDisposable
 #endif
                 uint oneTimeLoadCount = 1000;
                 uint currentCount = 0;
+                Task[] prepareThumbnailSizeTasks = new Task[oneTimeLoadCount];
                 Task<IReadOnlyList<StorageFile>>? loadTask = null;//= query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
                 while (true)
                 {
@@ -524,7 +528,15 @@ public sealed class FolderStructureCacheContext : IDisposable
                     if (lastLoadTask != null && loaded.Any() is false) { break; }
 
                     if (loaded.Any())
-                    {
+                    {                        
+                        foreach (var (index, file) in loaded.AsValueEnumerable().Index())
+                        {                            
+                            prepareThumbnailSizeTasks[index] = thumbnailManager.PrepareThumbnailSizeAsync(file, ct);
+                        }
+
+                        await Task.WhenAll(prepareThumbnailSizeTasks.Take(loaded.Count)).ConfigureAwait(false);
+                        Array.Clear(prepareThumbnailSizeTasks, 0, (int)oneTimeLoadCount);
+
                         dispatcherQueue.TryEnqueue(() =>
                         {
                             items.AddRange(loaded.Select(x =>
@@ -542,7 +554,6 @@ public sealed class FolderStructureCacheContext : IDisposable
                     }
 
                     currentCount += (uint)loaded.Count;
-
 #if DEBUG
                     sw.ElapsedWrite(currentCount.ToString());
 #endif
@@ -560,8 +571,9 @@ public sealed class FolderStructureCacheContext : IDisposable
             {
                 if (!cached.Remove(HashHelper.CalculateFNV1a64(file.Name), out var entry))
                 {
+                    await thumbnailManager.PrepareThumbnailSizeAsync(file, ct).ConfigureAwait(false);
                     dispatcherQueue.TryEnqueue(() =>
-                    {
+                    {                        
                         entry = _repo.AddOrUpdateItem(file);
                         var itemVM = cacheImageViewModelFactory(entry);
                         items.Add(itemVM);
@@ -571,6 +583,9 @@ public sealed class FolderStructureCacheContext : IDisposable
                 // ImageListupからImageViewerを開く際はキャンセルが効かないため
                 // Task.Delay(1)をここに書くべからず
             }
+
+            // UIスレッドに戻す
+            await Observable.NextFrame().ObserveOnCurrentSynchronizationContext().WaitAsync().ConfigureAwait(false);
 
             if (cached.Count == 0) { return; }
 

@@ -16,6 +16,7 @@ using TsubameViewer.Core.Models.Navigation;
 using VersOne.Epub;
 using Windows.ApplicationModel.Payments;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using ZLinq;
 using static TsubameViewer.Core.Models.ImageViewer.ArchiveFileInnerStructureCache;
 
@@ -526,6 +527,17 @@ public sealed class EpubLocalImageSource : IImageSource
     public ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default)
     {        
         return new (_imageFileRef.GetContentStream());
+    }
+
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct = default)
+    {
+        InMemoryRandomAccessStream memoryStream = new InMemoryRandomAccessStream();
+        using (var contentStream = _imageFileRef.GetContentStream())
+        {
+            await RandomAccessStream.CopyAsync(contentStream.AsInputStream(), memoryStream);
+            memoryStream.Seek(0);
+            return memoryStream;
+        }
     }
 
     public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)

@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -7,12 +8,18 @@ using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
 using CommunityToolkit.WinUI.Controls;
 using DryIoc;
+using DryIoc.FastExpressionCompiler.LightExpression;
+using DryIoc.ImTools;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using R3;
 using R3.Extensions;
+using SharpCompress.Compressors.Xz;
+using SkiaSharp;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -20,11 +27,14 @@ using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Input;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -35,6 +45,7 @@ using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.Display;
+using Windows.Storage.Streams;
 using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
@@ -49,6 +60,8 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
+using static System.Net.Mime.MediaTypeNames;
+
 #nullable enable
 namespace TsubameViewer.Views;
 
@@ -94,6 +107,31 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
         _secondaryWindowService = Ioc.Default.GetRequiredService<SecondaryWindowService>();
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
+
+        _image1Source = new CanvasVirtualImageSource(CanvasDevice.GetSharedDevice(), 1, 1, 96);
+        _image2Source = new CanvasVirtualImageSource(CanvasDevice.GetSharedDevice(), 1, 1, 96);
+
+        _image1Source.RegionsInvalidated += _image1Source_RegionsInvalidated;
+        _image2Source.RegionsInvalidated += _image1Source_RegionsInvalidated;
+    }
+
+    private void _image1Source_RegionsInvalidated(CanvasVirtualImageSource sender, CanvasRegionsInvalidatedEventArgs args)
+    {
+        if (_vm.SourceImages.Length == 0) { return; }
+        IImageSource item = sender == _image1Source
+            ? _vm.SourceImages.ElementAtOrDefault(0)
+            : _vm.SourceImages.ElementAtOrDefault(1);
+        if(item == null) { return; }
+        if (TryGetCachedCanvasBitmap(item, out var bitmap) && bitmap != null)
+        {
+            foreach (var region in args.InvalidatedRegions)
+            {
+                using (var ds = sender.CreateDrawingSession(Colors.Transparent, region))
+                {
+                    ds.DrawImage(bitmap, region, region);
+                }
+            }
+        }
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -267,7 +305,281 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    class PrefetchImageInfo(IImageSource Item, CanvasBitmap Bitmap)
+    {
+        public IImageSource Item { get; } = Item;
+        public CanvasBitmap Bitmap { get; } = Bitmap;
+    }
+
+    #region Display Image Cache
+    readonly List<PrefetchImageInfo> _cachedBitmap = new ();
+    readonly AsyncLock _cacheBitmapLock = new();
+
+    static CanvasBitmap ToCanvasBitmap(SKBitmap skBitmap)
+    {
+        if (skBitmap.Info.ColorType != SKImageInfo.PlatformColorType)
+        {
+            var bitmap = skBitmap.Copy(SKImageInfo.PlatformColorType);
+            skBitmap.Dispose();
+            skBitmap = bitmap;
+        }
+        return CanvasBitmap.CreateFromBytes(
+            CanvasDevice.GetSharedDevice(),
+            skBitmap.Bytes,
+            skBitmap.Width,
+            skBitmap.Height,
+            DirectXPixelFormat.B8G8R8A8UIntNormalized);
+    }
+
+    async Task<Stream> GetImageStreamAsync(IImageSource item, CancellationToken ct)
+    {
+        using (await _vm._imageLoadingLock.LockAsync(ct))
+        {
+            return await item.GetImageStreamAsync(ct);
+        }
+    }
+
+    async Task<IRandomAccessStream> GetImageRandomAccessStreamAsync(IImageSource item, CancellationToken ct)
+    {
+        using (await _vm._imageLoadingLock.LockAsync(ct))
+        {
+            return await item.GetImageRandomAccessStreamAsync(ct);
+        }
+    }
+
+    async ValueTask<IImageSource> GetImageSourceAsync(int requestIndex, CancellationToken ct)
+    {
+        if (_vm.Images[requestIndex] is not { } image) 
+        {
+            using (await _vm._imageLoadingLock.LockAsync(ct))
+            {
+                image = await _vm.GetImageSourceWithCacheAsync(requestIndex, ct);
+            }
+        }
+        return image;
+    }
+
+    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithSkia(IImageSource item, double? requestHeight, CancellationToken ct)
+    {
+#if DEBUG
+        var time = TimeProvider.System.GetTimestamp();
+#endif
+        try
+        {
+            using (var stream = await GetImageStreamAsync(item, ct))
+            using (var skData = SKData.Create(stream))
+            {
+                if (requestHeight == null)
+                {
+                    using (var skBitmap = SKBitmap.Decode(skData))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (skBitmap == null) { return null; }
+                        else return ToCanvasBitmap(skBitmap);
+                    }
+                }
+                else
+                {
+                    var info = SKBitmap.DecodeBounds(skData);
+                    float scaledWidth = info.Width * (float)requestHeight.Value / info.Height;
+                    using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo((int)scaledWidth, (int)requestHeight.Value, SKColorType.Bgra8888)))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (skBitmap == null) { return null; }
+                        else return ToCanvasBitmap(skBitmap);
+                    }
+                }
+            }
+        }
+        catch { return null; }
+#if DEBUG
+        finally
+        {
+            Debug.WriteLine($"TryCreateCanvasBitmapDecodeWithSkia: {TimeProvider.System.GetElapsedTime(time)}");
+        }
+#endif
+    }
+
+    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithWin2d(IImageSource item, double? requestHeight, CancellationToken ct)
+    {
+#if DEBUG
+        var time = TimeProvider.System.GetTimestamp();
+#endif
+        try
+        {
+            if (requestHeight != null && item is PdfPageImageSource)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    if (await item.TryGetSizedImageStreamAsync((int)requestHeight.Value, memoryStream, ct) is { } size)
+                    {
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                        return await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream.AsRandomAccessStream(), 96).AsTask(ct);
+                    }
+                }
+            }
+
+            using (var stream = await GetImageRandomAccessStreamAsync(item, ct))
+            {
+                if (requestHeight == null)
+                {
+                    return await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream, 96).AsTask(ct);
+                }
+                else 
+                {
+                    using (var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream, 96).AsTask(ct))
+                    {
+                        var scale = requestHeight.Value / bitmap.Size.Height;
+                        var scaledWidth = bitmap.Size.Width * scale;
+                        var rtb = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (int)scaledWidth, (int)requestHeight.Value, 96);
+                        try
+                        {
+                            using (var ds = rtb.CreateDrawingSession())
+                            {
+                                ds.Blend = CanvasBlend.Copy;
+                                ds.Antialiasing = CanvasAntialiasing.Aliased;
+                                ds.Transform = Matrix3x2.CreateScale((float)scale);
+                                ds.DrawImage(bitmap);
+                            }
+                            return rtb;
+                        }
+                        catch
+                        {
+                            rtb.Dispose();
+                            throw;
+                        }
+                    }
+                }
+            }
+        }
+        catch { return null; }
+#if DEBUG
+        finally
+        {
+            Debug.WriteLine($"TryCreateCanvasBitmapDecodeWithWin2d: {TimeProvider.System.GetElapsedTime(time)}");
+        }
+#endif
+    }
+
+    bool TryGetCachedCanvasBitmap(IImageSource item, out CanvasBitmap? bitmap)
+    {
+        if (!_vm.ImageViewerSettings.IsEnablePrefetch) 
+        {
+            bitmap = null;
+            return false;
+        }
+
+        if (_cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item,item)) is { } cached)
+        {
+            bitmap = cached.Bitmap;
+            _cachedBitmap.Remove(cached);            
+            _cachedBitmap.Insert(0, cached);
+            return true;
+        }
+        else
+        {
+            bitmap = null;
+            return false;
+        }
+    }
+    void ClearCachedCanvasBitmap()
+    {
+        var items = _cachedBitmap.ToArray();
+        _cachedBitmap.Clear();
+        foreach (var prefetchInfoItem in items)
+        {
+            prefetchInfoItem.Bitmap.Dispose();
+        }
+    }
+
+    async ValueTask<CanvasBitmap> EnsureGetBitmapWithCacheAsync(IImageSource item, double? requestHeight, CancellationToken ct)
+    {
+        CanvasBitmap? bitmap = null;
+
+        if (TryGetCachedCanvasBitmap(item, out bitmap) && bitmap != null)
+        {
+            if (requestHeight <= bitmap.Size.Height)
+            {
+                return bitmap!;
+            }   
+            else
+            {
+                bitmap = null;
+                var info = _cachedBitmap.FirstOrDefault(x => x.Item == item);
+                if (info != null)
+                {
+                    _cachedBitmap.Remove(info);
+                    info.Bitmap.Dispose();                    
+                }
+            }
+        }
+
+        // オリジナルサイズで読み込む
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+        Guard.IsNotNull(bitmap);
+        if (_vm.ImageViewerSettings.IsEnablePrefetch)
+        {
+            _cachedBitmap.Insert(0, new(item, bitmap));
+            Debug.WriteLine($"PushedCache: {item.Name} ({bitmap.Size.Width:F0} x {bitmap.Size.Height:F0})");
+        }
+        return bitmap;
+    }
+
+    async Task PrefetchBitmapAsync( int currentIndex, double? requestHeight, CancellationToken ct)
+    {
+        using var _ = await _cacheBitmapLock.LockAsync(ct);
+
+        int[] prefetchTargets = [currentIndex + 1, currentIndex + 2, currentIndex + 3, currentIndex - 1, currentIndex - 2];
+        HashSet<IImageSource> liveImages = new([.. _vm.SourceImages], IImageSourceEqualityComparer.Default);
+        try
+        {
+            foreach (var index in prefetchTargets)
+            {
+                if (index < 0) { continue; }
+                if (index > _vm.ImageCount - 1) { return; }
+
+                var item = await GetImageSourceAsync(index, ct);
+                liveImages.Add(item);
+                if (_cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, item)) is { } cached)
+                {
+                    continue;
+                }
+               
+                // 基本Win2Dの方が高速にデコードできる
+                CanvasBitmap? bitmap = null;
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+                if (bitmap == null) 
+                {
+                    Debug.WriteLine($"Failed Cache: {item.Name}");
+                    continue; 
+                }
+                _cachedBitmap.Add(new(item, bitmap));
+                Debug.WriteLine($"PushedCache: {item.Name} ({bitmap.Size.Width:F0} x {bitmap.Size.Height:F0})");
+            }
+        }
+        finally
+        {
+            foreach (var item in _cachedBitmap.Where(x => !liveImages.Contains(x.Item, IImageSourceEqualityComparer.Default)).ToList())
+            {
+                _cachedBitmap.Remove(item);
+                item.Bitmap.Dispose();
+                Debug.WriteLine($"RemovedCache: {item.Item.Name}");
+            }
+        }
+    }
+#endregion
+
+    [ObservableProperty]
+    int _busyRenderingCount = 0;
+
+    readonly CanvasVirtualImageSource _image1Source;
+    readonly CanvasVirtualImageSource _image2Source;
     CancellationToken _navigationCt;
+    
+    [ObservableProperty]
+    bool _nowIgnoreDecodeToCanvasHeight;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
@@ -276,7 +588,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         _vm.TransformScale = 1;
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         CloseBottomUI();
-        
+
         IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
 
@@ -292,19 +604,258 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         });
 
         DisposableBuilder db = new();
+        this.ObserveSizeChanged()
+            .Skip(1)
+            .ThrottleLast(TimeSpan.FromMilliseconds(50))
+            .Subscribe(this, static (size, s) => 
+            {
+                s.BusyRenderingCount += 5;
+                s.ClearCachedCanvasBitmap();
+                s._vm.CanvasWidth = size.NewSize.Width;
+                s._vm.CanvasHeight = size.NewSize.Height;
+                s._vm.SizeChangedCommand.Execute(null);
+            })
+            .AddTo(ref db);
+
+        _vm.ObservePropertyChanged(x => x.TransformScale)
+            .Subscribe(this, static (x, s) => 
+            {
+                s.NowIgnoreDecodeToCanvasHeight = 1 < x;                
+                Debug.WriteLine($"NowIgnoreDecodeToCanvasHeight : {s.NowIgnoreDecodeToCanvasHeight}");
+                if (s.NowIgnoreDecodeToCanvasHeight)
+                {
+                    s._image1Source.RaiseRegionsInvalidatedIfAny();
+                    s._image2Source.RaiseRegionsInvalidatedIfAny();
+                }
+            })
+            .AddTo(ref db);
+
+        Observable.Merge(
+            PlayerTranslate.ObserveDependencyProperty(TranslateTransform.XProperty),
+            PlayerTranslate.ObserveDependencyProperty(TranslateTransform.YProperty)
+            )
+            .Debounce(TimeSpan.FromMilliseconds(16))
+            .Subscribe(this, (_, s) => 
+            {                
+                s._image1Source.RaiseRegionsInvalidatedIfAny();
+                s._image2Source.RaiseRegionsInvalidatedIfAny();
+            })
+            .AddTo(ref db);
+
+        Observable.Merge(
+            _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex, false).AsUnitObservable(),
+            _vm.ObservePropertyChanged(x => x.SourceImages, false).AsUnitObservable(),
+            this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(120)),
+            _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
+            _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight, false).AsUnitObservable() // 拡大時にオリジナルサイズ読み込み＋リセット時にコンパクトサイズ読み込み（と表示崩れを直すため再読み込み）
+            )
+            .ThrottleLast(TimeSpan.FromMilliseconds(32))
+            .SubscribeAwait(this, static async (u, s, ct) =>
+            {
+                static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource)
+                {
+                    double scale = canvasHeight != null ? canvasHeight.Value / bitmap.Size.Height : 1;
+                    var scaledSize = new Size(Math.Round(bitmap.Size.Width * scale), Math.Round(bitmap.Size.Height * scale));
+                    imageSource.Resize(scaledSize);
+                    using (var ds = imageSource.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
+                    {
+                        ds.Blend = CanvasBlend.Copy;
+                        ds.Antialiasing = CanvasAntialiasing.Antialiased;
+                        ds.Transform = Matrix3x2.CreateScale((float)scale);
+                        ds.DrawImage(bitmap);
+                    }                    
+                }
+
+                IImageSource? firstImage = s._vm.SourceImages.ElementAtOrDefault(0);
+                IImageSource? secondImage = s._vm.SourceImages.ElementAtOrDefault(1);
+
+                if (firstImage == null) { return; }
+
+                s.BusyRenderingCount++;
+                using var _ = await s._cacheBitmapLock.LockAsync(ct);
+#if DEBUG
+                long time = TimeProvider.System.GetTimestamp();
+#endif
+                int currentIndex = s._vm.CurrentImageIndex;
+                var canvasHeight = s.ImagesContainer.ActualHeight;
+                var canvasWidth = s.ImagesContainer.ActualWidth;                                
+                if (firstImage is IImageSource src1
+                   && secondImage is IImageSource src2)
+                {
+                    if (currentIndex != s._vm.CurrentImageIndex) { return; }
+                    ct.ThrowIfCancellationRequested();
+                    double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
+                    try
+                    {
+                        // キャッシュ済みの場合はすぐ描画できるからサムネイル画像読み込みをスキップ
+                        bool hasCache = s._cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, src1)) != null
+                            && s._cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, src2)) != null;
+
+                        CanvasBitmap? bitmap1 = null;
+                        CanvasBitmap? bitmap2 = null;
+                        if (!hasCache)
+                        {
+                            using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
+                            {
+                                if (memoryStream != null)
+                                {
+                                    bitmap1 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                }
+                            }
+
+                            using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(secondImage, null, ct: ct))
+                            {
+                                if (memoryStream != null)
+                                {
+                                    bitmap2 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                }
+                            }
+                        }
+
+                        if (bitmap1 != null && bitmap2 != null)
+                        {
+                            DrawImage(requestHeight, bitmap1, s._image1Source);
+                            DrawImage(requestHeight, bitmap2, s._image2Source);
+                            s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
+                            s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;
+                            s.Image2.Visibility = Visibility.Visible;
+                            try
+                            {
+                                await s._messenger.Send(new ImageLoadedMessage());
+                            }
+                            catch { }
+
+                            bitmap1?.Dispose();
+                            bitmap2?.Dispose();
+                        }
+
+                        bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
+                        bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
+                        DrawImage(requestHeight, bitmap1, s._image1Source);
+                        DrawImage(requestHeight, bitmap2, s._image2Source);                        
+                        // 画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                        s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
+                        s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;                        
+                    }
+                    catch (OperationCanceledException) { return; }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.ToString());
+                        return;
+                    }
+
+                    s.Image2.Visibility = Visibility.Visible;
+
+                    try
+                    {
+                        await s._messenger.Send(new ImageLoadedMessage());
+                    }
+                    catch { }
+                }
+                else if (firstImage is IImageSource source1)
+                {
+                    if (currentIndex != s._vm.CurrentImageIndex) { return; }
+                    ct.ThrowIfCancellationRequested();
+                    double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
+                    bool withThumbnailImage = false;                    
+                    try
+                    {
+                        // キャッシュ済みの場合はすぐ描画できるからサムネイル画像読み込みをスキップ
+                        if (s._cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, source1)) == null)
+                        {
+                            using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
+                            {
+                                if (memoryStream != null)
+                                {
+                                    using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                    DrawImage(requestHeight, bitmap, s._image1Source);
+
+                                    // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth
+                                        ? canvasWidth
+                                        : s._image1Source.Size.Width;
+                                    try
+                                    {
+                                        await s._messenger.Send(new ImageLoadedMessage());
+                                    }
+                                    catch { }
+                                    withThumbnailImage = true;
+                                }
+                            }
+                        }
+
+                        // ここで切り替えないと描画フレームを跨いだ更新になってしまう
+                        // 見開き表示時からシングル表示の切り替えがスムーズにするためにもタイミング調整が必要。
+                        s.Image2.Visibility = Visibility.Collapsed;
+                        var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
+                        DrawImage(requestHeight, bitmap1, s._image1Source);
+                    }
+                    catch (OperationCanceledException) { return; }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.ToString());
+                        return;
+                    }
+
+                    // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth
+                        ? canvasWidth
+                        : s._image1Source.Size.Width;
+
+                    // 幅いっぱいに伸長した表示を強制するために必要
+                    s.Image1.Stretch = Stretch.None;
+                    s.Image1.Stretch = Stretch.Uniform;
+
+                    if (!withThumbnailImage)
+                    {
+                        try
+                        {
+                            await s._messenger.Send(new ImageLoadedMessage());
+                        }
+                        catch { }
+                    }
+                }
+                else
+                {
+                    s.Image1.Width = double.NaN;
+                    s.Image2.Width = double.NaN;
+                }
+
+                ct.ThrowIfCancellationRequested();
+                if (currentIndex != s._vm.CurrentImageIndex) { return; }
+#if DEBUG
+                Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
+#endif
+                // 描画結果を画面に反映させるために待ち
+                await Task.Delay(1, ct);
+
+                // 先読み処理の前にビジー表示を解除
+                s.BusyRenderingCount = 0;
+                if (!s._vm.ImageViewerSettings.IsEnablePrefetch) { return; }
+
+                // 先読みを実行
+                // SubscribeAwait + AwaitOperation.Switch によって
+                // 次の画像読み込みがリクエストされると ct がキャンセルされる
+                // ここで await するとリピート入力詰まりが生じるため FireAndForget で実行している
+                s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
+                
+            }, AwaitOperation.Switch)
+            .AddTo(ref db);
+
         _messenger.CreateObservable<ImageLoadedMessage>()
             .ToObservable()
             .Index()
-            .Subscribe(async m =>
+            .Subscribe(this, static (m, s) =>
             {
-                async Task<Unit> db()
+                async Task<Unit> db(ImageViewerPage s)
                 {
-                    await StartNavigatedAnimationAsync(_navigationCt);
+                    await s.StartNavigatedAnimationAsync(s._navigationCt);
                     return Unit.Default;
                 }
                 if (m.Index == 0)
                 {
-                    m.Item.Reply(db());
+                    m.Item.Reply(db(s));
                 }
                 else
                 {
@@ -314,11 +865,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
-            .Subscribe(x =>
+            .Subscribe(this, static (x, s) =>
             {
-                if (!_nowPressedOnPageSlider)
+                if (!s._nowPressedOnPageSlider)
                 {
-                    PageSelector.Value = x;
+                    s.PageSelector.Value = x;
                 }
             })
             .AddTo(ref db);
@@ -338,7 +889,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 long ts = TimeProvider.System.GetTimestamp();
 
-                var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
+                var imageSource = await s.GetImageSourceAsync(s.PageSelectorCandidateImageIndex, ct);
                 using (var imageStream = await thumbnailManager.EnsureGetImageStreamAsync(imageSource, imageQuality: 0.5f, ct: ct))
                 {
                     if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
@@ -346,7 +897,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         s.MovieSeekbarTooltipImage.Source = image = new BitmapImage();
                     }
 
-                    await image.SetSourceAsync(imageStream.AsRandomAccessStream());
+                    await image.SetSourceAsync(imageStream);
 
                     s.MovieSeekbarTooltipImage.Source = image;
                 }
@@ -375,7 +926,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         AnimationBuilder.Create()
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
-            .Start(ImageItemsControl_0);
+            .Start(Image1);
 
         base.OnNavigatedTo(e);
     }
@@ -385,8 +936,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
         KeyDown -= ImageViewerPage_KeyDown;
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);        
-
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        
         if (_windowContext.IsPrimary)
         {
             d().FireAndForgetSafe();
@@ -396,15 +947,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             if (!_vm.NowDoubleImageView
                 && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
             {
-                var imageContainer = _vm.CurrentDisplayImageIndex switch
-                {
-                    0 => ImageItemsControl_0,
-                    1 => ImageItemsControl_1,
-                    2 => ImageItemsControl_2,
-                    _ => throw new InvalidOperationException(),
-                };
                 var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-                var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
+                var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, Image1);
                 try
                 {
                     var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
@@ -419,6 +963,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     anim.Cancel();
                 }
+            }
+
+            using (await _cacheBitmapLock.LockAsync(default))
+            {
+                ClearCachedCanvasBitmap();
             }
 
             base.OnNavigatingFrom(e);
@@ -460,9 +1009,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             if (isConnectedAnimationDone is false)
             {
-                await WaitImageLoadingAsync(navigationCt);
+                Image1.UpdateLayout();
                 await AnimationBuilder.Create()
-                   .CenterPoint(ImageItemsControl_0.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
+                   .CenterPoint(Image1.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                    .Scale()
                        .TimedKeyFrames(ke =>
                        {
@@ -470,7 +1019,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                            ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                        })
                    .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                   .StartAsync(ImageItemsControl_0, navigationCt);
+                   .StartAsync(Image1, navigationCt);
             }
         }
         catch (OperationCanceledException) { }
@@ -484,14 +1033,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, navigationCt);
             var ct = linkedCts.Token;
-            if (await WaitImageLoadingAsync(ct) is not null and var images && images.Count() == 1)
+            if (!_vm.NowDoubleImageView)
             {
                 // ConnectedAnimation.Start後にタイムアウトでフォールバックのアニメーションが起動する可能性に配慮が必要
                 isConnectedAnimationDone = true;
-                animation.TryStart(images.ElementAt(0));
+                animation.TryStart(Image1);
                 AnimationBuilder.Create()
                     .Opacity(1.0, duration: TimeSpan.FromMilliseconds(1))
-                    .Start(ImageItemsControl_0);
+                    .Start(Image1);
             }
             else
             {
@@ -517,34 +1066,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return isConnectedAnimationDone;
     }
 
-    async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
-    {
-        if (_vm.DisplayImages_0.Length == 1)
-        {
-            UIElement? image = null;
-            await VisualTreeExtentions.WaitFillingValue(() => 
-            {
-                image ??= ImageItemsControl_0.TryGetElement(0);
-                if (image == null) { return false; }
-                return image.ActualSize.X is not 0 && image.ActualSize.Y is not 0;
-            }, ct);
-            return new[] { image! };
-        }
-        else
-        {
-            UIElement[] images = new UIElement[2];
-            await VisualTreeExtentions.WaitFillingValue(() =>
-            {
-                images[0] ??= ImageItemsControl_0.TryGetElement(0);
-                images[1] ??= ImageItemsControl_0.TryGetElement(1);
-                if (images.Any(x => x is null)) { return false; }
-                return images.All(x => x.ActualSize.X is not 0 && x.ActualSize.Y is not 0);
-            }, ct);
-            return images;
-        }
-    }
-
-    #endregion Navigation
+#endregion Navigation
 
 
     #region Page Next/Prev
@@ -795,7 +1317,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 if (scale > 1.0)
                 {
-                    await s._vm.DisableImageDecodeWhenImageSmallerCanvasSize();
+                    //await s._vm.DisableImageDecodeWhenImageSmallerCanvasSize();
                 }
             })
             .AddTo(ref db);
@@ -838,6 +1360,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+
 
     void Page1MenuFlyout_Opening(object sender, object e)
     {

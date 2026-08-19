@@ -97,21 +97,21 @@ public sealed class SecondaryWindowService
         var titleBar = appWindow.TitleBar;
         if (actualTheme == ApplicationTheme.Light)
         {
-            titleBar.ButtonBackgroundColor = "#55F6F8FB".ToColor();
-            titleBar.ButtonForegroundColor = "#000000".ToColor();
-            titleBar.ButtonHoverBackgroundColor = "#F6F8FB".ToColor();
-            titleBar.ButtonHoverForegroundColor = "#000000".ToColor();
-            titleBar.ButtonInactiveBackgroundColor = "#33F6F8FB".ToColor();
-            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+            titleBar.ButtonBackgroundColor = Color.FromArgb(0x55, 0xF6, 0xF8, 0xFB);
+            titleBar.ButtonForegroundColor = Color.FromArgb(0xFF, 0x00, 0x00, 0x00);
+            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(0xFF, 0xF6, 0xF8, 0xFB);
+            titleBar.ButtonHoverForegroundColor = Color.FromArgb(0xFF, 0x00, 0x00, 0x00);
+            titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0x33, 0xF6, 0xF8, 0xFB);
+            titleBar.ButtonInactiveForegroundColor = Color.FromArgb(0xFF, 0x79, 0x79, 0x79);
         }
         else
         {
-            titleBar.ButtonBackgroundColor = "#551F1F1F".ToColor();
-            titleBar.ButtonForegroundColor = "#FFFFFF".ToColor();
-            titleBar.ButtonHoverBackgroundColor = "#2d2d2d".ToColor();
-            titleBar.ButtonHoverForegroundColor = "#FFFFFF".ToColor();
-            titleBar.ButtonInactiveBackgroundColor = "#33202020".ToColor();
-            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+            titleBar.ButtonBackgroundColor = Color.FromArgb(0x55, 0x1F, 0x1F, 0x1F);
+            titleBar.ButtonForegroundColor = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
+            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(0xFF, 0x2D, 0x2D, 0x2D);
+            titleBar.ButtonHoverForegroundColor = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
+            titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0x33, 0x20, 0x20, 0x20);
+            titleBar.ButtonInactiveForegroundColor = Color.FromArgb(0xFF, 0x79, 0x79, 0x79);
         }
     }
 

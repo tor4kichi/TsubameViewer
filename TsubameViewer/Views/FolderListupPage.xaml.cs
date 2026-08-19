@@ -83,6 +83,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<PreNavigationNotifyMessage>(this);
+        _messenger.Unregister<NavigationCompletedMessage>(this);
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
@@ -109,19 +111,29 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             using var pooled = _realizedItems.AsValueEnumerable().ToArrayPool();
             foreach (var (elem, itemVM) in pooled.Span)
             {
-                itemVM.RestoreThumbnailLoadingTask(_navigationCt);
+                itemVM.RestoreThumbnailLoadingTask(_linkedCt);
             }
+        });
+
+        _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) => 
+        {
+            // 順序大事
+            _linkedCts?.Dispose();
+            _linkedCts = null;
+            var manualCts = _manualCts;
+            _manualCts = null;
+            manualCts?.Cancel();
+            manualCts?.Dispose();            
         });
 
         _messenger.Register<NavigationCompletedMessage>(this, (r, m) =>
         {
-            if (m.Value.SourcePageType == typeof(ImageViewerPage))
+            if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                XamlCancellationHelper.Cancel(this);
-            }
-            else if (m.Value.SourcePageType == typeof(EmptyPage))
-            {
-                var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+                _manualCts = new CancellationTokenSource();
+                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
+                _linkedCt = _linkedCts.Token;
+                var ct = _linkedCt;
                 _realizedItems.ToObservable()
                     .ForEachAsync(async (x) =>
                     {
@@ -129,17 +141,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                         itemVM.RestoreThumbnailLoadingTask(ct);
                         if (elem.FindDescendant<Image>() is { } imageControl)
                         {
-                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                            await _fadeInAnim.StartAsync(imageControl, ct);
                         }
-                    }, ct).FireAndForgetSafe();
-
-                DisposableBuilder db = new ();
-                HandleCreateFolderDialogTextChanging(ref db);
-                db.Build().RegisterTo(ct);
-                InitializeMoveToFolders(ct).FireAndForgetSafe("InitializeMoveToFolders");
+                    }, ct).FireAndForgetSafe();                
             }
         });
     }
+
+    CancellationTokenSource? _manualCts;
+    CancellationToken _linkedCt;
+    CancellationTokenSource? _linkedCts;
 
     private void ClearRealizedItems()
     {
@@ -168,6 +179,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);        
     }
 
@@ -200,26 +212,27 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         async Task d(ContainerContentChangingEventArgs args)
         {
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
+
             var imageControl = args.ItemContainer.FindDescendant<Image>();
-            if (imageControl != null)
+            if (imageControl != null && imageControl.Source != null)
             {
-                _fadeOutAnim.Start(imageControl);
+                _fadeOutAnim.Start(imageControl, _linkedCt);
             }
 
             if (!args.InRecycleQueue)
             {
                 _realizedItems.Add(args.ItemContainer, itemVM);
-
+                
                 itemVM.Image = imageControl?.Source as BitmapImage;
                 using (_vm._thumbnailManager.GetCachedThumbnailSize(itemVM.Path) != null
                     ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(_navigationCt))
+                    : await _imageGeneratingLock.LockAsync(_linkedCt))
                 {                    
-                    await itemVM.InitializeAsync(_navigationCt);
+                    await itemVM.InitializeAsync(_linkedCt);
                 }
                 if (imageControl != null)
                 {
-                    _ = _fadeInAnim.StartAsync(imageControl, _navigationCt);
+                    _fadeInAnim.Start(imageControl, _linkedCt);
                 }
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない                
                 if (itemVM.Item != null)
@@ -264,11 +277,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
             else
             {
-                _realizedItems.Remove(args.ItemContainer);
-                itemVM.StopImageLoading();
-                if (imageControl != null)
+                if (_realizedItems.Remove(args.ItemContainer))
                 {
-                    _fadeOutAnim.Start(imageControl);
+                    itemVM.StopImageLoading();
+                    if (imageControl != null)
+                    {
+                        _fadeOutAnim.Start(imageControl, _linkedCt);
+                    }
                 }
             }
         }
@@ -307,6 +322,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        _manualCts = new CancellationTokenSource();
+        _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
+        _linkedCt = _linkedCts.Token;
         ConnectedAnimationService.GetForCurrentView()
                     .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
         try
@@ -317,16 +335,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 && Uri.UnescapeDataString(dirtyPath) is { } path
                 && path == _vm.DisplayCurrentPath)
             {
-                _realizedItems.ToObservable()
-                    .ForEachAsync(async (x) =>
-                    {
-                        var (elem, itemVM) = x;
-                        itemVM.RestoreThumbnailLoadingTask(ct);
-                        if (elem.FindDescendant<Image>() is { } imageControl)
-                        {
-                            await _fadeInAnim.StartAsync(imageControl, _navigationCt);
-                        }
-                    }, ct).FireAndForgetSafe();
+                //_realizedItems.ToObservable()
+                //    .ForEachAsync(async (x) =>
+                //    {
+                //        var (elem, itemVM) = x;
+                //        itemVM.RestoreThumbnailLoadingTask(ct);
+                //        if (elem.FindDescendant<Image>() is { } imageControl)
+                //        {
+                //            await _fadeInAnim.StartAsync(imageControl, _linkedCt);
+                //        }
+                //    }, ct).FireAndForgetSafe();
             }
             else
             {
@@ -340,8 +358,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             base.OnNavigatedTo(e);
             
             DisposableBuilder db = new();
-            HandleCreateFolderDialogTextChanging(ref db);
-            InitializeMoveToFolders(ct).FireAndForgetSafe();            
+            HandleCreateFolderDialogTextChanging(ref db);            
             db.Build().RegisterTo(ct);
 
             if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
@@ -381,7 +398,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(_vm.DisplayCurrentPath!), out double ratio))
                     {
-                        await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
+                        //await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
                         bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
                         Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {_vm.DisplayCurrentPath}");
                     }
@@ -417,7 +434,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             //    if (itemContainer.FindDescendant<Image>() is { } image
             //        && EnsureGetBitmapImage(image) is { } targetBitmap)
             //    {
-            //        itemVM.RestoreThumbnailLoadingTask(targetBitmap, _navigationCt);
+            //        itemVM.RestoreThumbnailLoadingTask(targetBitmap, _linkedCt);
             //    }
             //}
         }
@@ -440,10 +457,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             return;
         }
 
-        FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
-
-        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(lastIntaractItem) != null, ct);
-
         DependencyObject item;
         item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
 
@@ -459,6 +472,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             await Task.Delay(50, ct);
             control.Focus(FocusState.Keyboard);
         }
+
+        FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
+
+        await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(lastIntaractItem) != null, ct);
     }
 
     #region Selection
@@ -523,34 +540,31 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     async Task InitializeMoveToFolders(CancellationToken ct)
     {
-        _vm.ObservePropertyChanged(x => x.CurrentFolderItem)
-            .Debounce(TimeSpan.FromSeconds(1))
-            .SubscribeAwait(async (folderVM, ct) => 
-            {
-                Folders = [];
-                ToggleDisplaySiblingFoldersButton.IsEnabled = false;
-                if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
-                {
-                    var folderQuery = parentFolder.CreateFolderQuery();
-                    Folders.Add(parentFolder);
-                    Folders.Add(null!);
-                    await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        if (!FolderSelectionSplitView.IsPaneOpen)
-                        {
-                            await Task.Delay(250, ct);
-                        }
-                        Folders.Add(folder);
+        if (_vm.CurrentFolderItem == null) { return; }
+        if (Folders != null && Folders.Any()) { return; }
 
-                        if (Folders.Count >= 1)
-                        {
-                            ToggleDisplaySiblingFoldersButton.IsEnabled = true;
-                        }
-                    }
+        Folders = [];
+        //ToggleDisplaySiblingFoldersButton.IsEnabled = false;
+        if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
+        {
+            var folderQuery = parentFolder.CreateFolderQuery();
+            Folders.Add(parentFolder);
+            Folders.Add(null!);
+            await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!FolderSelectionSplitView.IsPaneOpen)
+                {
+                    await Task.Delay(250, ct);
                 }
-            })
-            .RegisterTo(ct);
+                Folders.Add(folder);
+
+                if (Folders.Count >= 1)
+                {
+                    //ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                }
+            }
+        }
     }
 
     [ObservableProperty]
@@ -587,6 +601,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     void ToggleSiblingFolderPaneDisplay()
     {
         FolderSelectionSplitView.IsPaneOpen = !FolderSelectionSplitView.IsPaneOpen;
+        InitializeMoveToFolders(_navigationCt).FireAndForgetSafe();
     }
 
     private void FoldersAdaptiveGridView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
@@ -913,7 +928,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _isItemsForceInfoLoaded = true;
             foreach (var itemVM in _vm.FolderItems)
             {
-                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_navigationCt).FireAndForgetSafe();
+                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_linkedCt).FireAndForgetSafe();
             }
         }
     }

@@ -152,16 +152,16 @@ sealed partial class App : Application
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
         container.Register<AppShell>(reuse: Reuse.Singleton);
-        container.Register<SourceStorageItemsPage>();
-        container.Register<ImageListupPage>();
-        container.Register<FolderListupPage>();
-        container.Register<ImageViewerPage>();
-        container.Register<EBookViewerPage>();
-        container.Register<MovieViewerPage>();
-        container.Register<SettingsPage>();
-        container.Register<SearchResultPage>();
-        container.Register<AlbamListupPage>();
-        container.Register<HistoryPage>();
+        //container.Register<SourceStorageItemsPage>();
+        //container.Register<ImageListupPage>();
+        //container.Register<FolderListupPage>();
+        //container.Register<ImageViewerPage>();
+        //container.Register<EBookViewerPage>();
+        //container.Register<MovieViewerPage>();
+        //container.Register<SettingsPage>();
+        //container.Register<SearchResultPage>();
+        //container.Register<AlbamListupPage>();
+        //container.Register<HistoryPage>();
     }
 
     void RegisterTypes(Container container)
@@ -370,30 +370,40 @@ sealed partial class App : Application
     {
         foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenance>())
         {
+#if DEBUG
+            long time = TimeProvider.System.GetTimestamp();
+#endif
             var maintenanceType = maintenanceInst.GetType();
             Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
             try
             {
                 maintenanceInst.Maintenance();
-                Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+#if DEBUG
+                Debug.WriteLine($"Done maintenance: {maintenanceType.Name} ({TimeProvider.System.GetElapsedTime(time)})");
+#endif
             }
             catch
             {
                 Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
-            } 
+            }
         }
 
         // Note: Task.Runで囲むと初回インストール時にハングアップしていた
         foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenanceAsync>())
         {
+#if DEBUG
+            long time = TimeProvider.System.GetTimestamp();
+#endif
             var maintenanceType = maintenanceInst.GetType();
             Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
             try
             {
                 await maintenanceInst.MaintenanceAsync();
-                Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+#if DEBUG
+                Debug.WriteLine($"Done maintenance: {maintenanceType.Name} ({TimeProvider.System.GetElapsedTime(time)})");
+#endif
             }
             catch
             {
@@ -423,6 +433,11 @@ sealed partial class App : Application
             Debug.WriteLine(collectionName);
         }
 #endif
+        if (SystemInformation.Instance.IsFirstRun)
+        {
+            // 初回だけサムネイル画像ローカルDBのwrite lockが閉じられない問題があるため再オープン
+            Container.Resolve<ThumbnailImageManager>().ReOpenInsideDb();
+        }
 
         await UpdateMigrationAsync();
 

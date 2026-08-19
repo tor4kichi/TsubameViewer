@@ -160,7 +160,7 @@
       </Grid.RowDefinitions>
 
       <Image Style="{StaticResource FolderItemImageStyle}"
-             Source="{Binding Image, Mode=OneWay}"
+             Source="{x:Bind Image, Mode=OneWay}"
              Stretch="UniformToFill"
              VerticalAlignment="Center"
              Grid.RowSpan="2"
@@ -217,15 +217,14 @@
           uwpUI:UIElementExtensions.ClipToBounds="True"
           CornerRadius="6"
           PointerEntered="Grid_PointerEntered"
-          Windows10version1903:Translation="0, 0, 8"
-          Windows10version1903:Grid.Shadow="{StaticResource StorageItemThemeShadow}">
+          >
       <Grid.RowDefinitions>
         <RowDefinition Height="1*" />
         <RowDefinition Height="{StaticResource FolderItemTitleHeight}" />
       </Grid.RowDefinitions>
 
       <Image Style="{StaticResource FolderItemImageStyle}"
-             Source="{Binding Image, Mode=OneWay}"
+             Source="{x:Bind Image, Mode=OneWay}"
              Stretch="UniformToFill"
              VerticalAlignment="Center"
              Grid.RowSpan="2"

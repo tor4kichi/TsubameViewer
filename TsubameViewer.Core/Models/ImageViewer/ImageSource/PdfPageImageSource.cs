@@ -52,8 +52,8 @@ public sealed class PdfPageImageSource : IImageSource
         using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
         {
             // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
-            PDFtoImage.Conversion.SavePng(imageStream, pdfStream, page: PageIndex, 
-                options: new PDFtoImage.RenderOptions(Dpi: 96, Width: requestedSize, WithAspectRatio: true));
+            PDFtoImage.Conversion.SaveWebp(imageStream, pdfStream, page: PageIndex, 
+                options: new PDFtoImage.RenderOptions(Dpi: 96, Height: requestedSize, WithAspectRatio: true));
 
             ct.ThrowIfCancellationRequested();
 
@@ -75,17 +75,39 @@ public sealed class PdfPageImageSource : IImageSource
             using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
             {
                 // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
-                PDFtoImage.Conversion.SavePng(memoryStream, pdfStream, page: PageIndex);
+                PDFtoImage.Conversion.SaveWebp(memoryStream, pdfStream, page: PageIndex);
             }
         }, ct);
         memoryStream.Seek(0, SeekOrigin.Begin);
         return memoryStream;
     }
 
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct)
+    {
+        var memoryStream = new InMemoryRandomAccessStream();
+        await Task.Run(async () =>
+        {
+            using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
+            {
+                // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
+                PDFtoImage.Conversion.SaveWebp(memoryStream.AsStreamForWrite(), pdfStream, page: PageIndex);
+            }
+        }, ct);
+        memoryStream.Seek(0);
+        return memoryStream;
+    }
+
     public bool Equals(IImageSource other)
     {
         if (other == null) { return false; }
-        return this.Path == other.Path;
+        if (other is PdfPageImageSource image)
+        {
+            return this.PageIndex == image.PageIndex;
+        }
+        else
+        {
+            return this.Path.Equals(other.Path, StringComparison.Ordinal);
+        }
     }
 
     public override string ToString()

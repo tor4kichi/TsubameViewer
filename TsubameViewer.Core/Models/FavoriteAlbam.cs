@@ -15,16 +15,15 @@ public sealed class FavoriteAlbam
 
     public static void EnsureFavoriteAlbam(AlbamRepository albamRepository, string favoriteAlbamTitle)
     {
-        if (albamRepository.IsExistAlbam(FavoriteAlbamId) is false)
+        if (albamRepository.GetAlbam(FavoriteAlbamId) is not { } favorteAlbam)
         {
             albamRepository.CreateAlbam(FavoriteAlbamId, favoriteAlbamTitle);
         }
         else
         {
-            var albam = albamRepository.GetAlbam(FavoriteAlbamId);
-            if (!albam.Name.Equals(favoriteAlbamTitle))
+            if (!favorteAlbam.Name.Equals(favoriteAlbamTitle))
             {
-                albamRepository.UpdateAlbam(albam with { Name = favoriteAlbamTitle });
+                albamRepository.UpdateAlbam(favorteAlbam with { Name = favoriteAlbamTitle });
             }
         }
     }

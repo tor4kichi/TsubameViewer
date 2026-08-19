@@ -92,6 +92,9 @@ public sealed class OpenFolderItemCommand : CommandBase
         {
             await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
 
+            // ファイル・フォルダの差分検出処理を止める
+            _messenger.Send<PreNavigationNotifyMessage>();
+
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
             if (type is StorageItemTypes.Image or StorageItemTypes.AlbamImage
                 or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)

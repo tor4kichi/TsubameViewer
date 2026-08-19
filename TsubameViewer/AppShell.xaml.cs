@@ -168,29 +168,33 @@ public sealed partial class AppShell : UserControl
 
         InitialziePurchase().FireAndForgetSafe();
 
+        string startMultiSelectionText = "StartMultiSelection".Translate();
+        string addNewFolderText = "AddNewFolder".Translate();
+        string refreshLatestText = "RefreshLatest".Translate();
+        string settingsText = "Settings".Translate();
         _footerItemsForTop = new()
         {
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "StartMultiSelection".Translate(),
+                Tooltip = startMultiSelectionText,
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "AddNewFolder".Translate(),
+                Tooltip = addNewFolderText,
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "RefreshLatest".Translate(),
+                Tooltip = refreshLatestText,
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Tooltip = "Settings".Translate(),
+                Tooltip = settingsText,
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
@@ -200,25 +204,25 @@ public sealed partial class AppShell : UserControl
         {
             new MenuItemInvokeActionViewModel()
             {
-                Title = "StartMultiSelection".Translate(),
+                Title = startMultiSelectionText,
                 Invoked = () => _vm.StartSelectionCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Multiselect },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Title = "AddNewFolder".Translate(),
+                Title = addNewFolderText,
                 Invoked = () => _vm.SourceChoiceCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ImageAdd },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Title = "RefreshLatest".Translate(),
+                Title = refreshLatestText,
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.ArrowSync },
             },
             new MenuItemInvokeActionViewModel()
             {
-                Title = "Settings".Translate(),
+                Title = settingsText,
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
@@ -630,6 +634,12 @@ public sealed partial class AppShell : UserControl
         Window.Current.SetTitleBar(TitlebarBG);
     }
 
+
+    [ObservableProperty]
+    bool _isLoadMyNavigationView;
+    [ObservableProperty]
+    bool _isLoadTitleBar;
+
     void Frame_Navigated(object sender, NavigationEventArgs e)
     {        
         if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
@@ -640,6 +650,8 @@ public sealed partial class AppShell : UserControl
         {
             SetTitleContentForPrimary(frame);
         }
+
+        IsLoadMyNavigationView = true;
 
         // アプリメニュー表示の切替
         //MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
@@ -853,6 +865,11 @@ public sealed partial class AppShell : UserControl
             SetCurrentNavigationParameters(parameters);
         }
 
+        if (!IsLoadTitleBar)
+        {
+            frame.Navigated += VisibleTitlebarWhen_Frame_Navigated;
+        }
+
         frame.Visibility = Visibility.Visible;
         await Observable.NextFrame().WaitAsync();
 
@@ -876,10 +893,18 @@ public sealed partial class AppShell : UserControl
         var page = frame.Content;
         var currentPage = page as Page;        
         var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters, ct);
-        sw.ElapsedWrite("After HandleViewModelNavigation");
+        sw.ElapsedWrite("After HandleViewModelNavigation");        
         return handleResult;
     }
 
+    private async void VisibleTitlebarWhen_Frame_Navigated(object sender, NavigationEventArgs e)
+    {
+        var frame = (Frame)sender;
+        frame.Navigated -= VisibleTitlebarWhen_Frame_Navigated;
+
+        await Task.Delay(100);
+        IsLoadTitleBar = true;
+    }
 
     CancellationToken RotationNextCancellationTokenSource(Type? pageType)
     {
@@ -1515,23 +1540,22 @@ public sealed partial class AppShell : UserControl
             || this.RequestedTheme is ElementTheme.Light
             )
         {
-            titleBar.ButtonBackgroundColor = "#00F6F8FB".ToColor();
-            titleBar.ButtonForegroundColor = "#000000".ToColor();
-            titleBar.ButtonHoverBackgroundColor = "#F6F8FB".ToColor();
-            titleBar.ButtonHoverForegroundColor = "#000000".ToColor();
-            titleBar.ButtonInactiveBackgroundColor = "#33F6F8FB".ToColor();
-            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+            titleBar.ButtonBackgroundColor = Color.FromArgb(0x00, 0xF6, 0xF8, 0xFB);
+            titleBar.ButtonForegroundColor = Color.FromArgb(0xFF, 0x00, 0x00, 0x00);
+            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(0xFF, 0xF6, 0xF8, 0xFB);
+            titleBar.ButtonHoverForegroundColor = Color.FromArgb(0xFF, 0x00, 0x00, 0x00);
+            titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0x33, 0xF6, 0xF8, 0xFB);
+            titleBar.ButtonInactiveForegroundColor = Color.FromArgb(0xFF, 0x79, 0x79, 0x79);
         }
         else
         {
-            titleBar.ButtonBackgroundColor = "#001F1F1F".ToColor();
-            titleBar.ButtonForegroundColor = "#FFFFFF".ToColor();
-            titleBar.ButtonHoverBackgroundColor = "#2d2d2d".ToColor();
-            titleBar.ButtonHoverForegroundColor = "#FFFFFF".ToColor();
-            titleBar.ButtonInactiveBackgroundColor = "#202020".ToColor();
-            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+            titleBar.ButtonBackgroundColor = Color.FromArgb(0x00, 0x1F, 0x1F, 0x1F);
+            titleBar.ButtonForegroundColor = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
+            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(0xFF, 0x2D, 0x2D, 0x2D);
+            titleBar.ButtonHoverForegroundColor = Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF);
+            titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xFF, 0x20, 0x20, 0x20);
+            titleBar.ButtonInactiveForegroundColor = Color.FromArgb(0xFF, 0x79, 0x79, 0x79);
         }
-
     }
 
     public static Windows.UI.Xaml.ApplicationTheme GetWindowsTheme()

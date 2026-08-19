@@ -192,7 +192,8 @@
                          XYFocusDownNavigationStrategy="Projection"
                          SelectionFollowsFocus="Disabled"
                          IsPaneToggleButtonVisible="False"
-                         Background="{ThemeResource ApplicationContentBackgroundBrush}">
+                         Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                         Visibility="Collapsed">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
@@ -289,6 +290,7 @@
     </Border>
 
     <Grid x:Name="TitlebarUIContainer"
+          Visibility="Collapsed"
                            VerticalAlignment="Top"
                            Height="48">
       <UIElement.RenderTransform>
@@ -562,7 +564,8 @@
                    PrimaryButtonText="{i18Ext:Localize Key=Update}"
                    PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
                    SecondaryButtonText="{i18Ext:Localize Key=Cancel}"
-                   DefaultButton="Primary">
+                   DefaultButton="Primary"
+                   x:Load="False">
       <HyperlinkButton NavigateUri="https://tor4kichi.github.io/tsubame_viewer/updates">
         <TextBlock Text="{i18Ext:Localize Key=OpenUpdateHistoryWithBrowser}" />
       </HyperlinkButton>
@@ -570,6 +573,31 @@
     
     <VisualStateManager.VisualStateGroups>
 
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsLoadMyNavigationView, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigationView.Visibility"
+                    Value="Visible" />
+            <Setter Target="PackageUpdateDialog.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsLoadTitleBar, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="TitlebarUIContainer.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>

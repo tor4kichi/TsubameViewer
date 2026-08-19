@@ -49,6 +49,13 @@ public sealed class AlbamImageSource : IImageSource, IAlbamImageSource
         return await imageSource.GetImageStreamAsync(ct);
     }
 
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct = default)
+    {
+        var imageSource = await GetSampleImageSourceAsync(ct);
+        if (imageSource == null) { return null; }
+        return await imageSource.GetImageRandomAccessStreamAsync(ct);
+    }
+
     private IImageSource _sampleImageSource;
     public async ValueTask<IImageSource> GetSampleImageSourceAsync(CancellationToken ct)
     {

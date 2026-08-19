@@ -194,7 +194,7 @@ public sealed class ThumbnailImageManager
     class ThumbnilFolderEntry
     {
         [BsonId]
-        public ulong PathHash { get; set; } = 0;
+        public long PathHash { get; set; } = 0;
 
         public string CoverImageName { get; set; }
     }
@@ -209,15 +209,15 @@ public sealed class ThumbnailImageManager
         )
     {
         _temporaryDbOpener = temporaryDbOpener;
-        _temporaryDb = temporaryDbOpener();       
+        _temporaryDb = temporaryDbOpener();        
         _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
-        _thumbnailDb = _temporaryDb.FileStorage;
-        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);
+        _thumbnailDb = _temporaryDb.FileStorage;        
+        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(_temporaryDb);        
         _thumnailGenerationIssueCollection = _temporaryDb.GetCollection<ThumbnailGenerationIssueEntry>();
         _folderCollection = localDb.GetCollection<ThumbnilFolderEntry>();
         _folderListingSettings = folderListingSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        _canvasDevice = new CanvasDevice();
+        _canvasDevice = new CanvasDevice();        
     }
 
     private readonly CanvasDevice _canvasDevice;
@@ -241,12 +241,20 @@ public sealed class ThumbnailImageManager
         var info = new ThumbnailImageInfo()
         {
             Path = itemId,
-            PathHash = HashHelper.CalculateFNV1a64(itemId),
+            PathHash = unchecked((long)HashHelper.CalculateFNV1a64(itemId)),
             ImageWidth = width,
             ImageHeight = height,
             RatioWH = (float)width / height
         };
-        _thumbnailImageInfoRepository.UpdateItem(info);
+        try
+        {
+            _thumbnailImageInfoRepository.UpdateItem(info);
+        }
+        catch (LiteDB.LiteException liteEx)
+        {
+            ReOpenInsideDb();
+            _thumbnailImageInfoRepository.UpdateItem(info);
+        }
         //Debug.WriteLine($"{Path.GetFileName(itemId)}: thumb size: w= {width} h= {height}");
         return info;
     }
@@ -259,7 +267,7 @@ public sealed class ThumbnailImageManager
     }
 
     static AsyncLock _renderLock = new AsyncLock();
-    public async ValueTask<Stream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
         using var releaser = await _renderLock.LockAsync(ct);
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
@@ -271,31 +279,31 @@ public sealed class ThumbnailImageManager
                 return fsImageStream;
             }
 
-            var stream = await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
             if (stream != null && stream.Length != 0)
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
             }
-            return stream;
+            return stream.AsRandomAccessStream();
         }
         else if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.AlwaysGenerateCache)
         {
-            var stream = await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
             if (stream != null && stream.Length != 0)
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
             }
-            return stream;
+            return stream.AsRandomAccessStream();
         }
         else
         {
             return await GetImageStreamFromFileSystemAsync(imageSource, false, ct)
-                ?? await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+                ?? await Task.Run(async () => (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream(), ct);
         }
     }
 
 
-    public async ValueTask<Stream?> GetCachedImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream?> GetCachedImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
         if (imageSource == null) { return null; }        
         var itemId = GetId(imageSource);
@@ -306,18 +314,18 @@ public sealed class ThumbnailImageManager
                 cachedImageStream.CopyTo(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
                 cachedImageStream.Dispose();
-                return outputStream;
+                return outputStream.AsRandomAccessStream();
             }
             else
             {
-                return cachedImageStream;
+                return cachedImageStream.AsRandomAccessStream();
             }
         }
 
         return null;
     }
 
-    async ValueTask<Stream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
+    async ValueTask<IRandomAccessStream?> GetImageStreamFromFileSystemAsync(IImageSource imageSource, bool skipIfIcon = true, CancellationToken ct = default)
     {
         StorageFile? targetFile = null;
         if (imageSource.StorageItem is StorageFile file
@@ -327,8 +335,8 @@ public sealed class ThumbnailImageManager
         }
         else if (imageSource.StorageItem is StorageFolder folder)
         {
-            var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);            
-            if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry
+            long folderPathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path));            
+            if (_folderCollection.FindById(folderPathHash) is { } entry
                 && !string.IsNullOrEmpty(entry.CoverImageName))
             {
                 try
@@ -365,9 +373,8 @@ public sealed class ThumbnailImageManager
             else
             {
                 var itemId = ToId(targetFile);
-                var stream = image.AsStreamForRead();
                 SetThumbanilSize(itemId, image.OriginalWidth, image.OriginalHeight);
-                return stream;
+                return image;
             }
         }
         else { return null; }
@@ -384,8 +391,8 @@ public sealed class ThumbnailImageManager
             if (imageSource.StorageItem is StorageFolder folder)
             {
                 StorageFile? targetFile = null;
-                var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
-                if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry
+                long folderPathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path));
+                if (_folderCollection.FindById(folderPathHash) is { } entry
                     && !string.IsNullOrEmpty(entry.CoverImageName))
                 {
                     try
@@ -472,8 +479,8 @@ public sealed class ThumbnailImageManager
     {
         if (folderImageSource.StorageItem is StorageFolder folder)
         {
-            var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
-            var entry = _folderCollection.FindOne(x => x.PathHash == folderPathHash);
+            long folderPathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path));
+            var entry = _folderCollection.FindById(folderPathHash);
             if (entry != null) 
             {
                 entry.CoverImageName = "";
@@ -519,10 +526,10 @@ public sealed class ThumbnailImageManager
             {
                 imageStream.CopyTo(fs);
             }
-
+            
             _folderCollection.Upsert(new ThumbnilFolderEntry
             {
-                PathHash = HashHelper.CalculateFNV1a64(folder.Path),
+                PathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path)),
                 CoverImageName = coverFile.Name,
             });
 
@@ -588,6 +595,18 @@ public sealed class ThumbnailImageManager
             Width = item.ImageWidth,
             RatioWH = item.RatioWH,
         };
+    }
+
+    public async Task<ThumbnailImageInfo?> PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
+    {
+        try
+        {
+            var props = await file.Properties.GetImagePropertiesAsync();
+            var replacedId = ToId(file.Path);
+            using var _ = await _fileReadWriteLock.LockAsync(ct);
+            return SetThumbanilSize(replacedId, props.Width, props.Height);
+        }
+        catch { return null; }
     }
 
     #endregion
@@ -1341,10 +1360,10 @@ public sealed class ThumbnailImageManager
     public class ThumbnailImageInfo
     {
         [BsonId]
-        public string Path { get; set; } = "";
+        public long PathHash { get; set; } = 0;
 
         [BsonField]
-        public ulong PathHash { get; set; } = 0;
+        public string Path { get; set; } = "";
 
         [BsonField]
         public uint ImageWidth { get; set; }
@@ -1360,12 +1379,12 @@ public sealed class ThumbnailImageManager
     {
         public ThumbnailImageInfoRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
-            //_collection.EnsureIndex(x => x.Path);
+            _collection.EnsureIndex(x => x.Path);
             if (_collection.EnsureIndex(x => x.PathHash))
             {
                 foreach (var item in _collection.Query().ForUpdate().ToEnumerable())
                 {
-                    item.PathHash = HashHelper.CalculateFNV1a64(item.Path);
+                    item.PathHash = unchecked((long)HashHelper.CalculateFNV1a64(item.Path));
                     _collection.Update(item);
                 }
             }
@@ -1376,8 +1395,8 @@ public sealed class ThumbnailImageManager
         {
             try
             {
-                var hash = HashHelper.CalculateFNV1a64(path);
-                var thumbInfo = _collection.FindOne(x => x.PathHash == hash);
+                long hash = unchecked((long)HashHelper.CalculateFNV1a64(path));
+                var thumbInfo = _collection.FindById(hash);
                 //Debug.WriteLine(path);
                 if (thumbInfo is not null)
                 {

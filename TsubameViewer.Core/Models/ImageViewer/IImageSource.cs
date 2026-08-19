@@ -22,7 +22,8 @@ public interface IImageSource : IEquatable<IImageSource>
 
     SizeF? PreCulcuratedSize { get; }
     ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default);
-    ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default);                 
+    ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default);
+    ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct);
 }
 
 public static class ImageSourceExtensions
@@ -30,5 +31,19 @@ public static class ImageSourceExtensions
     public static bool IsStorageItemNotFound(this IImageSource imageSource)
     {
         return imageSource.StorageItem is null;
+    }
+}
+
+public sealed class IImageSourceEqualityComparer : EqualityComparer<IImageSource>
+{
+    public static readonly IImageSourceEqualityComparer Default = new IImageSourceEqualityComparer();
+    public override bool Equals(IImageSource x, IImageSource y)
+    {
+        return x?.Equals(y) ?? y == null;
+    }
+
+    public override int GetHashCode(IImageSource obj)
+    {
+        return obj.GetHashCode();
     }
 }
