@@ -335,16 +335,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 && Uri.UnescapeDataString(dirtyPath) is { } path
                 && path == _vm.DisplayCurrentPath)
             {
-                _realizedItems.ToObservable()
-                    .ForEachAsync(async (x) =>
-                    {
-                        var (elem, itemVM) = x;
-                        itemVM.RestoreThumbnailLoadingTask(ct);
-                        if (elem.FindDescendant<Image>() is { } imageControl)
-                        {
-                            await _fadeInAnim.StartAsync(imageControl, _linkedCt);
-                        }
-                    }, ct).FireAndForgetSafe();
+                //_realizedItems.ToObservable()
+                //    .ForEachAsync(async (x) =>
+                //    {
+                //        var (elem, itemVM) = x;
+                //        itemVM.RestoreThumbnailLoadingTask(ct);
+                //        if (elem.FindDescendant<Image>() is { } imageControl)
+                //        {
+                //            await _fadeInAnim.StartAsync(imageControl, _linkedCt);
+                //        }
+                //    }, ct).FireAndForgetSafe();
             }
             else
             {
@@ -358,8 +358,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             base.OnNavigatedTo(e);
             
             DisposableBuilder db = new();
-            HandleCreateFolderDialogTextChanging(ref db);
-            InitializeMoveToFolders(ct).FireAndForgetSafe();            
+            HandleCreateFolderDialogTextChanging(ref db);            
             db.Build().RegisterTo(ct);
 
             if (e.NavigationMode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
@@ -399,7 +398,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     if (_pathToLastScrollPosition.TryGetValue(HashHelper.CalculateFNV1a64(_vm.DisplayCurrentPath!), out double ratio))
                     {
-                        await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
+                        //await listView.WaitFillingValue(x => x.ContainerFromIndex(0) != null, ct);
                         bool result = sv.ChangeView(null, ratio * sv.ScrollableHeight, null, true);
                         Debug.WriteLine($"Restore ScrollPosition: {ratio * 100:F0}% {_vm.DisplayCurrentPath}");
                     }
@@ -541,34 +540,31 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     async Task InitializeMoveToFolders(CancellationToken ct)
     {
-        _vm.ObservePropertyChanged(x => x.CurrentFolderItem)
-            .Debounce(TimeSpan.FromSeconds(1))
-            .SubscribeAwait(async (folderVM, ct) => 
-            {
-                Folders = [];
-                ToggleDisplaySiblingFoldersButton.IsEnabled = false;
-                if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
-                {
-                    var folderQuery = parentFolder.CreateFolderQuery();
-                    Folders.Add(parentFolder);
-                    Folders.Add(null!);
-                    await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        if (!FolderSelectionSplitView.IsPaneOpen)
-                        {
-                            await Task.Delay(250, ct);
-                        }
-                        Folders.Add(folder);
+        if (_vm.CurrentFolderItem == null) { return; }
+        if (Folders != null && Folders.Any()) { return; }
 
-                        if (Folders.Count >= 1)
-                        {
-                            ToggleDisplaySiblingFoldersButton.IsEnabled = true;
-                        }
-                    }
+        Folders = [];
+        //ToggleDisplaySiblingFoldersButton.IsEnabled = false;
+        if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
+        {
+            var folderQuery = parentFolder.CreateFolderQuery();
+            Folders.Add(parentFolder);
+            Folders.Add(null!);
+            await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!FolderSelectionSplitView.IsPaneOpen)
+                {
+                    await Task.Delay(250, ct);
                 }
-            })
-            .RegisterTo(ct);
+                Folders.Add(folder);
+
+                if (Folders.Count >= 1)
+                {
+                    //ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                }
+            }
+        }
     }
 
     [ObservableProperty]
@@ -605,6 +601,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     void ToggleSiblingFolderPaneDisplay()
     {
         FolderSelectionSplitView.IsPaneOpen = !FolderSelectionSplitView.IsPaneOpen;
+        InitializeMoveToFolders(_navigationCt).FireAndForgetSafe();
     }
 
     private void FoldersAdaptiveGridView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)

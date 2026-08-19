@@ -150,7 +150,6 @@
                           Spacing="16">
                 <Button Content="{i18nExt:Localize Key=MoveToFolder_ToggleSiblingFoldersDisplay}"
                         x:Name="ToggleDisplaySiblingFoldersButton"
-                        IsEnabled="False"
                         Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}"
                         ctwu:FrameworkElementExtensions.Cursor="Hand" />
                 <TextBlock Text="{x:Bind _vm.SelectedCountDisplayText, Mode=OneWay}"
