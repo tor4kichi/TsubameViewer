@@ -321,6 +321,7 @@
                  Source="{x:Bind _image1Source.Source, Mode=OneWay}" />
           <Image x:Name="Image2"
                  Stretch="Uniform"          
+                 Visibility="Collapsed"
                  Source="{x:Bind _image2Source.Source, Mode=OneWay}" />
         </StackPanel>
       </Grid>
