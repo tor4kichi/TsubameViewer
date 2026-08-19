@@ -279,7 +279,7 @@ public sealed class ThumbnailImageManager
                 return fsImageStream;
             }
 
-            var stream = await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
             if (stream != null && stream.Length != 0)
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
@@ -288,7 +288,7 @@ public sealed class ThumbnailImageManager
         }
         else if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.AlwaysGenerateCache)
         {
-            var stream = await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct);
+            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
             if (stream != null && stream.Length != 0)
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
@@ -298,7 +298,7 @@ public sealed class ThumbnailImageManager
         else
         {
             return await GetImageStreamFromFileSystemAsync(imageSource, false, ct)
-                ?? (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream();
+                ?? await Task.Run(async () => (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream(), ct);
         }
     }
 
