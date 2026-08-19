@@ -60,6 +60,7 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
+using static System.Net.Mime.MediaTypeNames;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -109,6 +110,28 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         _image1Source = new CanvasVirtualImageSource(CanvasDevice.GetSharedDevice(), 1, 1, 96);
         _image2Source = new CanvasVirtualImageSource(CanvasDevice.GetSharedDevice(), 1, 1, 96);
+
+        _image1Source.RegionsInvalidated += _image1Source_RegionsInvalidated;
+        _image2Source.RegionsInvalidated += _image1Source_RegionsInvalidated;
+    }
+
+    private void _image1Source_RegionsInvalidated(CanvasVirtualImageSource sender, CanvasRegionsInvalidatedEventArgs args)
+    {
+        if (_vm.SourceImages.Length == 0) { return; }
+        IImageSource item = sender == _image1Source
+            ? _vm.SourceImages.ElementAtOrDefault(0)
+            : _vm.SourceImages.ElementAtOrDefault(1);
+        if(item == null) { return; }
+        if (TryGetCachedCanvasBitmap(item, out var bitmap) && bitmap != null)
+        {
+            foreach (var region in args.InvalidatedRegions)
+            {
+                using (var ds = sender.CreateDrawingSession(Colors.Transparent, region))
+                {
+                    ds.DrawImage(bitmap, region, region);
+                }
+            }
+        }
     }
 
     void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -599,6 +622,23 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 s.NowIgnoreDecodeToCanvasHeight = 1 < x;                
                 Debug.WriteLine($"NowIgnoreDecodeToCanvasHeight : {s.NowIgnoreDecodeToCanvasHeight}");
+                if (s.NowIgnoreDecodeToCanvasHeight)
+                {
+                    s._image1Source.RaiseRegionsInvalidatedIfAny();
+                    s._image2Source.RaiseRegionsInvalidatedIfAny();
+                }
+            })
+            .AddTo(ref db);
+
+        Observable.Merge(
+            PlayerTranslate.ObserveDependencyProperty(TranslateTransform.XProperty),
+            PlayerTranslate.ObserveDependencyProperty(TranslateTransform.YProperty)
+            )
+            .Debounce(TimeSpan.FromMilliseconds(16))
+            .Subscribe(this, (_, s) => 
+            {                
+                s._image1Source.RaiseRegionsInvalidatedIfAny();
+                s._image2Source.RaiseRegionsInvalidatedIfAny();
             })
             .AddTo(ref db);
 
@@ -648,21 +688,28 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
                     try
                     {
+                        // キャッシュ済みの場合はすぐ描画できるからサムネイル画像読み込みをスキップ
+                        bool hasCache = s._cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, src1)) != null
+                            && s._cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, src2)) != null;
+
                         CanvasBitmap? bitmap1 = null;
                         CanvasBitmap? bitmap2 = null;
-                        using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
+                        if (!hasCache)
                         {
-                            if (memoryStream != null)
+                            using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
                             {
-                                bitmap1 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);                                
+                                if (memoryStream != null)
+                                {
+                                    bitmap1 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                }
                             }
-                        }
 
-                        using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(secondImage, null, ct: ct))
-                        {
-                            if (memoryStream != null)
+                            using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(secondImage, null, ct: ct))
                             {
-                                bitmap2 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                if (memoryStream != null)
+                                {
+                                    bitmap2 = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                }
                             }
                         }
 
@@ -689,7 +736,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         DrawImage(requestHeight, bitmap2, s._image2Source);                        
                         // 画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
                         s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
-                        s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;
+                        s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;                        
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -711,26 +758,30 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     if (currentIndex != s._vm.CurrentImageIndex) { return; }
                     ct.ThrowIfCancellationRequested();
                     double? requestHeight = s._vm.TransformScale > 1 ? null : canvasHeight;
-                    bool withThumbnailImage = false;
+                    bool withThumbnailImage = false;                    
                     try
                     {
-                        using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
+                        // キャッシュ済みの場合はすぐ描画できるからサムネイル画像読み込みをスキップ
+                        if (s._cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, source1)) == null)
                         {
-                            if (memoryStream != null)
+                            using (var memoryStream = await s._vm._thumbnailManager.EnsureGetImageStreamAsync(firstImage, null, ct: ct))
                             {
-                                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
-                                DrawImage(requestHeight, bitmap, s._image1Source);
-
-                                // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
-                                s.Image1.Width = s._image1Source.Size.Width > canvasWidth
-                                    ? canvasWidth
-                                    : s._image1Source.Size.Width;
-                                try
+                                if (memoryStream != null)
                                 {
-                                    await s._messenger.Send(new ImageLoadedMessage());
+                                    using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), memoryStream, 96).AsTask(ct);
+                                    DrawImage(requestHeight, bitmap, s._image1Source);
+
+                                    // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth
+                                        ? canvasWidth
+                                        : s._image1Source.Size.Width;
+                                    try
+                                    {
+                                        await s._messenger.Send(new ImageLoadedMessage());
+                                    }
+                                    catch { }
+                                    withThumbnailImage = true;
                                 }
-                                catch { }
-                                withThumbnailImage = true;
                             }
                         }
 
