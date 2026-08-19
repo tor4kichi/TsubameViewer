@@ -65,6 +65,29 @@ public sealed class StorageItemImageSource : IImageSource
         }
     }
 
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct)
+    {
+        if (StorageItem is StorageFile file)
+        {
+            if (file.IsSupportedImageFile())
+            {
+                return await file.OpenReadAsync().AsTask(ct);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+        else if (StorageItem is StorageFolder folder)
+        {
+            throw new NotSupportedException("StorageFolder not present GetImageStreamAsync().");
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     public bool Equals(IImageSource other)
     {
         if (other == null) { return false; }

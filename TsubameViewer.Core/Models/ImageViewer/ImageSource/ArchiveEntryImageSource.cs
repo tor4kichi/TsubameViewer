@@ -84,6 +84,25 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
         }, ct);
     }
 
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct)
+    {
+        var memoryStream = new InMemoryRandomAccessStream();
+        await Task.Run(async () =>
+        {
+            using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
+            using (var entryStream = _entry.OpenEntryStream())
+            {
+                // Note: コメントアウトした書き方だと稀にコピーできないケースが発生する
+                // entryStream.CopyTo(memoryStream.AsStream());
+                ct.ThrowIfCancellationRequested();
+                await RandomAccessStream.CopyAsync(entryStream.AsInputStream(), memoryStream);
+                ct.ThrowIfCancellationRequested();
+                memoryStream.Seek(0);
+            }
+        }, ct);
+        return memoryStream;
+    }
+
 
     internal static readonly AsyncLock _archiveEntryAccessLock = new ();
 

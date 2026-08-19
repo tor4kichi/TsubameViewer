@@ -82,6 +82,21 @@ public sealed class PdfPageImageSource : IImageSource
         return memoryStream;
     }
 
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct)
+    {
+        var memoryStream = new InMemoryRandomAccessStream();
+        await Task.Run(async () =>
+        {
+            using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
+            {
+                // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
+                PDFtoImage.Conversion.SavePng(memoryStream.AsStreamForWrite(), pdfStream, page: PageIndex);
+            }
+        }, ct);
+        memoryStream.Seek(0);
+        return memoryStream;
+    }
+
     public bool Equals(IImageSource other)
     {
         if (other == null) { return false; }

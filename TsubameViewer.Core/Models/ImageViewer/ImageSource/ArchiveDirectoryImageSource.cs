@@ -56,6 +56,16 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
         return await imageSource.GetImageStreamAsync(ct);
     }
 
+    public async ValueTask<IRandomAccessStream> GetImageRandomAccessStreamAsync(CancellationToken ct = default)
+    {
+        var imageSource = GetNearestImageFromDirectory(_directoryToken);
+        if (imageSource == null) { return null; }
+
+        return await imageSource.GetImageRandomAccessStreamAsync(ct);
+    }
+
+
+
     private IImageSource GetNearestImageFromDirectory(ArchiveDirectoryToken firstToken)
     {
         Stack<ArchiveDirectoryToken> archiveDirectoryTokens = new Stack<ArchiveDirectoryToken>();

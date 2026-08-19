@@ -26,6 +26,7 @@ using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Input;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
@@ -43,6 +44,7 @@ using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.Display;
+using Windows.Storage.Streams;
 using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
@@ -313,6 +315,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    async Task<IRandomAccessStream> GetImageRandomAccessStreamAsync(IImageSource item, CancellationToken ct)
+    {
+        using (await _vm._imageLoadingLock.LockAsync(ct))
+        {
+            return await item.GetImageRandomAccessStreamAsync(ct);
+        }
+    }
+
     async ValueTask<IImageSource> GetImageSourceAsync(int requestIndex, CancellationToken ct)
     {
         if (_vm.Images[requestIndex] is not { } image) 
@@ -327,6 +337,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithSkia(IImageSource item, double? requestHeight, CancellationToken ct)
     {
+#if DEBUG
+        var time = TimeProvider.System.GetTimestamp();
+#endif
         try
         {
             using (var stream = await GetImageStreamAsync(item, ct))
@@ -345,7 +358,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     var info = SKBitmap.DecodeBounds(skData);
                     float scaledWidth = info.Width * (float)requestHeight.Value / info.Height;
-                    using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo((int)scaledWidth, (int)requestHeight.Value)))
+                    using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo((int)scaledWidth, (int)requestHeight.Value, SKColorType.Bgra8888)))
                     {
                         ct.ThrowIfCancellationRequested();
                         if (skBitmap == null) { return null; }
@@ -355,21 +368,30 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
         catch { return null; }
+#if DEBUG
+        finally
+        {
+            Debug.WriteLine($"TryCreateCanvasBitmapDecodeWithSkia: {TimeProvider.System.GetElapsedTime(time)}");
+        }
+#endif
     }
 
     async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithWin2d(IImageSource item, double? requestHeight, CancellationToken ct)
     {
+#if DEBUG
+        var time = TimeProvider.System.GetTimestamp();
+#endif
         try
         {
-            using (var stream = await GetImageStreamAsync(item, ct))
+            using (var stream = await GetImageRandomAccessStreamAsync(item, ct))
             {
                 if (requestHeight == null)
                 {
-                    return await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream.AsRandomAccessStream(), 96).AsTask(ct);
+                    return await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream, 96).AsTask(ct);
                 }
                 else 
                 {
-                    using (var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream.AsRandomAccessStream(), 96).AsTask(ct))
+                    using (var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream, 96).AsTask(ct))
                     {
                         var scale = requestHeight.Value / bitmap.Size.Height;
                         var scaledWidth = bitmap.Size.Width * scale;
@@ -395,6 +417,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
         catch { return null; }
+#if DEBUG
+        finally
+        {
+            Debug.WriteLine($"TryCreateCanvasBitmapDecodeWithWin2d: {TimeProvider.System.GetElapsedTime(time)}");
+        }
+#endif
     }
 
     bool TryGetCachedCanvasBitmap(IImageSource item, out CanvasBitmap? bitmap)
@@ -450,8 +478,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
 
-        bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+        // オリジナルサイズで読み込む
         bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
         Guard.IsNotNull(bitmap);
         if (_vm.ImageViewerSettings.IsEnablePrefetch)
         {
@@ -480,10 +509,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 {
                     continue;
                 }
-
+               
+                // 基本Win2Dの方が高速にデコードできる
                 CanvasBitmap? bitmap = null;
-                bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
                 bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
                 if (bitmap == null) 
                 {
                     Debug.WriteLine($"Failed Cache: {item.Name}");
@@ -503,7 +533,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
         }
     }
-    #endregion
+#endregion
 
     [ObservableProperty]
     int _busyRenderingCount = 0;
