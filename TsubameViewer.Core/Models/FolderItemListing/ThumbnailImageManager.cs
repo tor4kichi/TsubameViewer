@@ -194,7 +194,7 @@ public sealed class ThumbnailImageManager
     class ThumbnilFolderEntry
     {
         [BsonId]
-        public ulong PathHash { get; set; } = 0;
+        public long PathHash { get; set; } = 0;
 
         public string CoverImageName { get; set; }
     }
@@ -241,7 +241,7 @@ public sealed class ThumbnailImageManager
         var info = new ThumbnailImageInfo()
         {
             Path = itemId,
-            PathHash = HashHelper.CalculateFNV1a64(itemId),
+            PathHash = unchecked((long)HashHelper.CalculateFNV1a64(itemId)),
             ImageWidth = width,
             ImageHeight = height,
             RatioWH = (float)width / height
@@ -335,8 +335,8 @@ public sealed class ThumbnailImageManager
         }
         else if (imageSource.StorageItem is StorageFolder folder)
         {
-            var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);            
-            if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry
+            long folderPathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path));            
+            if (_folderCollection.FindById(folderPathHash) is { } entry
                 && !string.IsNullOrEmpty(entry.CoverImageName))
             {
                 try
@@ -391,8 +391,8 @@ public sealed class ThumbnailImageManager
             if (imageSource.StorageItem is StorageFolder folder)
             {
                 StorageFile? targetFile = null;
-                var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
-                if (_folderCollection.FindOne(x => x.PathHash == folderPathHash) is { } entry
+                long folderPathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path));
+                if (_folderCollection.FindById(folderPathHash) is { } entry
                     && !string.IsNullOrEmpty(entry.CoverImageName))
                 {
                     try
@@ -479,8 +479,8 @@ public sealed class ThumbnailImageManager
     {
         if (folderImageSource.StorageItem is StorageFolder folder)
         {
-            var folderPathHash = HashHelper.CalculateFNV1a64(folder.Path);
-            var entry = _folderCollection.FindOne(x => x.PathHash == folderPathHash);
+            long folderPathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path));
+            var entry = _folderCollection.FindById(folderPathHash);
             if (entry != null) 
             {
                 entry.CoverImageName = "";
@@ -526,10 +526,10 @@ public sealed class ThumbnailImageManager
             {
                 imageStream.CopyTo(fs);
             }
-
+            
             _folderCollection.Upsert(new ThumbnilFolderEntry
             {
-                PathHash = HashHelper.CalculateFNV1a64(folder.Path),
+                PathHash = unchecked((long)HashHelper.CalculateFNV1a64(folder.Path)),
                 CoverImageName = coverFile.Name,
             });
 
@@ -1360,10 +1360,10 @@ public sealed class ThumbnailImageManager
     public class ThumbnailImageInfo
     {
         [BsonId]
-        public string Path { get; set; } = "";
+        public long PathHash { get; set; } = 0;
 
         [BsonField]
-        public ulong PathHash { get; set; } = 0;
+        public string Path { get; set; } = "";
 
         [BsonField]
         public uint ImageWidth { get; set; }
@@ -1379,12 +1379,12 @@ public sealed class ThumbnailImageManager
     {
         public ThumbnailImageInfoRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
-            //_collection.EnsureIndex(x => x.Path);
+            _collection.EnsureIndex(x => x.Path);
             if (_collection.EnsureIndex(x => x.PathHash))
             {
                 foreach (var item in _collection.Query().ForUpdate().ToEnumerable())
                 {
-                    item.PathHash = HashHelper.CalculateFNV1a64(item.Path);
+                    item.PathHash = unchecked((long)HashHelper.CalculateFNV1a64(item.Path));
                     _collection.Update(item);
                 }
             }
@@ -1395,8 +1395,8 @@ public sealed class ThumbnailImageManager
         {
             try
             {
-                var hash = HashHelper.CalculateFNV1a64(path);
-                var thumbInfo = _collection.FindOne(x => x.PathHash == hash);
+                long hash = unchecked((long)HashHelper.CalculateFNV1a64(path));
+                var thumbInfo = _collection.FindById(hash);
                 //Debug.WriteLine(path);
                 if (thumbInfo is not null)
                 {
