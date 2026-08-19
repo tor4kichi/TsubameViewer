@@ -393,8 +393,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 var imageControl = fe.FindDescendant<Image>();
                 if (imageControl == null) { return; }
                 _fadeOutAnim.Start(imageControl, _navigationCt);                
-                itemVM.Image = imageControl.Source as BitmapImage;
                 await itemVM.EnsureImageSizeRatioAsync(_linkedCt);
+                itemVM.Image = imageControl.Source as BitmapImage;
                 using (itemVM.ImageAspectRatioWH != null 
                     ? Disposable.Empty
                     : await _imageGeneratingLock.LockAsync(_linkedCt))

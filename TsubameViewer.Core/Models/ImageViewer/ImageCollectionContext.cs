@@ -513,12 +513,12 @@ public sealed class FolderStructureCacheContext : IDisposable
             cached = [];
             await Task.Run(async () =>
             {
-                Task[] prepareThumbnailSizeTasks = new Task[imagesCount];
 #if DEBUG
                 PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
 #endif
                 uint oneTimeLoadCount = 1000;
                 uint currentCount = 0;
+                Task[] prepareThumbnailSizeTasks = new Task[oneTimeLoadCount];
                 Task<IReadOnlyList<StorageFile>>? loadTask = null;//= query.GetItemsAsync(currentCount, oneTimeLoadCount).AsTask(ct);
                 while (true)
                 {
@@ -529,12 +529,13 @@ public sealed class FolderStructureCacheContext : IDisposable
 
                     if (loaded.Any())
                     {                        
-                        foreach (var file in loaded)
+                        foreach (var (index, file) in loaded.AsValueEnumerable().Index())
                         {                            
-                            prepareThumbnailSizeTasks[currentCount++] = thumbnailManager.PrepareThumbnailSizeAsync(file, ct);
+                            prepareThumbnailSizeTasks[index] = thumbnailManager.PrepareThumbnailSizeAsync(file, ct);
                         }
 
-                        await Task.WhenAll(prepareThumbnailSizeTasks).ConfigureAwait(false);
+                        await Task.WhenAll(prepareThumbnailSizeTasks.Take(loaded.Count)).ConfigureAwait(false);
+                        Array.Clear(prepareThumbnailSizeTasks, 0, (int)oneTimeLoadCount);
 
                         dispatcherQueue.TryEnqueue(() =>
                         {
@@ -552,8 +553,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                         await Task.Delay((int)oneTimeLoadCount / 2, ct);
                     }
 
-                    //currentCount += (uint)loaded.Count;
-
+                    currentCount += (uint)loaded.Count;
 #if DEBUG
                     sw.ElapsedWrite(currentCount.ToString());
 #endif

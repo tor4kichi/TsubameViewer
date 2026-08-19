@@ -424,19 +424,6 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         catch { } // LiteDBの書き込みエラーへの対処
     }
 
-
-    public ValueTask PrepareImageSizeAsync(CancellationToken ct)
-    {
-        return new ValueTask();
-        //if (Item == null) { return; }
-
-        //if (ImageAspectRatioWH == null)
-        //{
-        //    var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
-        //    ImageAspectRatioWH = size.RatioWH;
-        //}
-    }
-
     public void StopImageLoading()
     {
         Status = LoadingStatus.None;

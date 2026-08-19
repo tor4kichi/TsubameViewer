@@ -597,16 +597,16 @@ public sealed class ThumbnailImageManager
         };
     }
 
-    public async Task PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
+    public async Task<ThumbnailImageInfo?> PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
     {
-        using var _ = await _fileReadWriteLock.LockAsync(ct);
         try
         {
             var props = await file.Properties.GetImagePropertiesAsync();
             var replacedId = ToId(file.Path);
-            var item = SetThumbanilSize(replacedId, props.Width, props.Height);            
+            using var _ = await _fileReadWriteLock.LockAsync(ct);
+            return SetThumbanilSize(replacedId, props.Width, props.Height);
         }
-        catch { }
+        catch { return null; }
     }
 
     #endregion
