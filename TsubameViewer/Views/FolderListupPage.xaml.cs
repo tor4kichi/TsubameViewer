@@ -204,10 +204,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     // 2並列あればキャッシュ読み込みにも生成時にも十分なスピード
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
     readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
-    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
-        async Task d(ContainerContentChangingEventArgs args)
+        //d(args).FireAndForgetSafe("FoldersAdaptiveGridView_ContainerContentChanging1");
+        //async Task d(ContainerContentChangingEventArgs args)
+        try
         {
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
 
@@ -286,6 +287,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
             }
         }
+        catch (OperationCanceledException) { }
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
@@ -323,8 +325,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         _manualCts?.Dispose();
         _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
         var ct = _navigationCt = _manualCts.Token;
-        ConnectedAnimationService.GetForCurrentView()
-                    .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
+        
         try
         {
             if (e.Parameter is INavigationParameters parameters
@@ -333,19 +334,23 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 && Uri.UnescapeDataString(dirtyPath) is { } path
                 && path == _vm.DisplayCurrentPath)
             {
-                //_realizedItems.ToObservable()
-                //    .ForEachAsync(async (x) =>
-                //    {
-                //        var (elem, itemVM) = x;
-                //        itemVM.RestoreThumbnailLoadingTask(ct);
-                //        if (elem.FindDescendant<Image>() is { } imageControl)
-                //        {
-                //            await _fadeInAnim.StartAsync(imageControl, _linkedCt);
-                //        }
-                //    }, ct).FireAndForgetSafe();
+                _realizedItems.ToObservable()
+                    .ForEachAsync(async (x) =>
+                    {
+                        var (elem, itemVM) = x;
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+                        if (elem.FindDescendant<Image>() is { } imageControl)
+                        {
+                            await _fadeInAnim.StartAsync(imageControl, ct);
+                        }
+                    }, ct).FireAndForgetSafe();
             }
             else
             {
+                foreach (var item in _realizedItems)
+                {
+                    item.Value.StopImageLoading();
+                }
                 _realizedItems.Clear();
             }
         }

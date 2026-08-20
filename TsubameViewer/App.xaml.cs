@@ -200,11 +200,11 @@ sealed partial class App : Application
 
 
         container.Register<SourceStorageItemsPageViewModel>(reuse: Reuse.Singleton);
-        //container.Register<ImageListupPageViewModel>(reuse: Reuse.Singleton);
-        //container.Register<FolderListupPageViewModel>(reuse: Reuse.Singleton);
-        //container.Register<ImageViewerPageViewModel>(reuse: Reuse.Singleton);
-        //container.Register<EBookViewerPageViewModel>(reuse: Reuse.Singleton);
-        //container.Register<SearchResultPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<ImageListupPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<FolderListupPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<ImageViewerPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<EBookViewerPageViewModel>(reuse: Reuse.Singleton);
+        container.Register<SearchResultPageViewModel>(reuse: Reuse.Singleton);
 
         // Services
         container.Register<IMessageDialogService, MessageDialogService>();

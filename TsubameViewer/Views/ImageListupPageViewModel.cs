@@ -292,7 +292,7 @@ public sealed partial class ImageListupPageViewModel
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
             if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
             return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
-        };
+        };        
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         FileDisplayMode = _folderListingSettings.FileDisplayMode;        
     }

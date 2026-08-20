@@ -141,7 +141,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        _realizedItems.Clear();
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);
@@ -208,13 +207,19 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     {
                         await _fadeInAnim.StartAsync(imageControl, _navigationCt);
                     }
-
-
                 }, ct).FireAndForgetSafe();
         }
         else
         {
+            foreach (var item in _realizedItems)
+            {
+                item.Value.StopImageLoading();
+            }
             _realizedItems.Clear();
+            using (_vm.FileItemsView.DeferRefresh())
+            {
+                _vm.ImageFileItems.Clear();
+            }
         }
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
@@ -311,9 +316,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         return _vm.FileDisplayMode switch
         {
-            FileDisplayMode.Small => FileItemsRepeater_Small,
+            //FileDisplayMode.Small => FileItemsRepeater_Small,
             FileDisplayMode.Midium => FileItemsRepeater_Midium,
-            FileDisplayMode.Large => FileItemsRepeater_Large,
+            //FileDisplayMode.Large => FileItemsRepeater_Large,
             _ => null,
         };
     }

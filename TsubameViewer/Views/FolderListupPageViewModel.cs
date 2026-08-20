@@ -301,7 +301,8 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
         _thumbnailManager.ReOpenInsideDb();
-        
+
+        _navigationCt = default;
         base.OnNavigatedFrom(parameters);
     }
 

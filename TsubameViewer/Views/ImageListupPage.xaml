@@ -28,7 +28,7 @@
       xmlns:fluentIcon="using:FluentIcons.Uwp"
       xmlns:storage="using:Windows.Storage"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
-      NavigationCacheMode="Disabled"
+      NavigationCacheMode="Enabled"
       x:Name="PageRoot">
 
   <!-- NavigaitonCacheMode = Enabled にすると
@@ -207,9 +207,9 @@
                             Tapped="ImageListToggleSelectButton_Tapped"
                             uwpControls:DockPanel.Dock="Left"
                             ctwu:FrameworkElementExtensions.Cursor="Hand">
-                <Windows10version1903:ToggleButton.Shadow>
+                <!--<Windows10version1903:ToggleButton.Shadow>
                   <Windows10version1903:ThemeShadow />
-                </Windows10version1903:ToggleButton.Shadow>
+                </Windows10version1903:ToggleButton.Shadow>-->
               </ToggleButton>
               <StackPanel HorizontalAlignment="Stretch"
                           Margin="4 0 0 0">
@@ -307,9 +307,9 @@
                           Windows10version1903:Translation="0, 0, 8"
                           Tapped="ImageListToggleSelectButton_Tapped"
                           Visibility="Collapsed">
-              <Windows10version1903:ToggleButton.Shadow>
+              <!--<Windows10version1903:ToggleButton.Shadow>
                 <Windows10version1903:ThemeShadow />
-              </Windows10version1903:ToggleButton.Shadow>
+              </Windows10version1903:ToggleButton.Shadow>-->
             </ToggleButton>
             <Border Background="{ThemeResource SystemAccentColor}"
                     Width="80"
@@ -424,9 +424,9 @@
                           Windows10version1903:Translation="0, 0, 8"
                           Tapped="ImageListToggleSelectButton_Tapped"
                           Visibility="Collapsed">
-              <Windows10version1903:ToggleButton.Shadow>
+              <!--<Windows10version1903:ToggleButton.Shadow>
                 <Windows10version1903:ThemeShadow />
-              </Windows10version1903:ToggleButton.Shadow>
+              </Windows10version1903:ToggleButton.Shadow>-->
             </ToggleButton>
             <Border Background="{ThemeResource SystemAccentColor}"
                     Width="80"

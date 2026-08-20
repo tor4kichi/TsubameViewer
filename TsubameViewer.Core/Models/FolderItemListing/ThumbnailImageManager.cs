@@ -615,7 +615,6 @@ public sealed class ThumbnailImageManager
         {
             var props = await file.Properties.GetImagePropertiesAsync();
             var replacedId = ToId(file.Path);
-            using var _ = await _fileReadWriteLock.LockAsync(ct);
             return SetThumbanilSize(replacedId, props.Width, props.Height);
         }
         catch { return null; }
