@@ -121,7 +121,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         {
             if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                _manualCts = CancellationTokenSource.CreateLinkedTokenSource(_navigationCt);
+                _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
                 _navigationCt = _manualCts.Token;
                 var ct = _navigationCt;
                 _realizedItems.ToObservable()
@@ -185,6 +185,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
         _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
         var ct = _navigationCt = _manualCts.Token;
 
