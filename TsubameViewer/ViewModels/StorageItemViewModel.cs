@@ -154,6 +154,9 @@ public sealed partial class StorageItemViewModel : ObservableObject, IStorageIte
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = null;
         IsInitialized = false;
         IsRequestImageLoading = false;
     }
@@ -166,9 +169,15 @@ public sealed partial class StorageItemViewModel : ObservableObject, IStorageIte
         ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
     }
 
+    CancellationTokenSource? _manualCts;
     public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        ct = _manualCts.Token;
+
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
         IsRequestImageLoading = true;

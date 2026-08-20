@@ -110,10 +110,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) =>
         {
-            _manualCts?.Cancel();
-            _manualCts?.Dispose();
-            _linkedCts?.Dispose();
+            var manualCts = _manualCts;
             _manualCts = null;
+            manualCts?.Cancel();
+            manualCts?.Dispose();
         });
 
 
@@ -121,10 +121,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         {
             if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                _manualCts = new CancellationTokenSource();
-                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
-                _linkedCt = _linkedCts.Token;
-                var ct = _linkedCt;
+                _manualCts = CancellationTokenSource.CreateLinkedTokenSource(_navigationCt);
+                _navigationCt = _manualCts.Token;
+                var ct = _navigationCt;
                 _realizedItems.ToObservable()
                     .ForEachAsync(async (x) =>
                     {
@@ -149,8 +148,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     CancellationTokenSource? _manualCts;
-    CancellationToken _linkedCt;
-    CancellationTokenSource? _linkedCts;
+    CancellationToken _navigationCt;
 
 
 
@@ -168,13 +166,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     #region 初期フォーカス設定
 
-    CancellationToken _navigationCt;    
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _manualCts?.Cancel();
         _manualCts?.Dispose();
-        _linkedCts?.Dispose();
-        _linkedCts = null;
         _manualCts = null;
 
         _messenger.Unregister<StartMultiSelectionMessage>(this);
@@ -190,10 +185,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
-        _manualCts = new CancellationTokenSource();
-        _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
-        _linkedCt = _linkedCts.Token;
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
+        var ct = _navigationCt = _manualCts.Token;
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
 
@@ -211,7 +204,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     itemVM.RestoreThumbnailLoadingTask(ct);
                     if (elem.FindDescendant<Image>() is { } imageControl)
                     {
-                        await _fadeInAnim.StartAsync(imageControl, _linkedCt);
+                        await _fadeInAnim.StartAsync(imageControl, _navigationCt);
                     }
 
 
@@ -393,17 +386,17 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 var imageControl = fe.FindDescendant<Image>();
                 if (imageControl == null) { return; }
                 _fadeOutAnim.Start(imageControl, _navigationCt);                
-                await itemVM.EnsureImageSizeRatioAsync(_linkedCt);
+                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
                 itemVM.Image = imageControl.Source as BitmapImage;
                 using (itemVM.ImageAspectRatioWH != null 
                     ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(_linkedCt))
+                    : await _imageGeneratingLock.LockAsync(_navigationCt))
                 {
                     // Note: ここでreturnすると読み込まれないケースが頻発する
-                    await itemVM.InitializeAsync(_linkedCt);
+                    await itemVM.InitializeAsync(_navigationCt);
                 }
 
-                _fadeInAnim.Start(imageControl, _linkedCt);                
+                _fadeInAnim.Start(imageControl, _navigationCt);                
             }
             catch (OperationCanceledException) { }
         }

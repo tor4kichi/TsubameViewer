@@ -341,7 +341,7 @@ public sealed class ThumbnailImageManager
             {
                 try
                 {
-                    targetFile = await folder.GetFileAsync(entry.CoverImageName);
+                    targetFile = await folder.GetFileAsync(entry.CoverImageName).AsTask(ct);
                 }
                 catch (FileNotFoundException) { }
             }
@@ -364,7 +364,7 @@ public sealed class ThumbnailImageManager
 
         if (targetFile != null)
         {
-            var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem);
+            var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem).AsTask(ct);
             if (skipIfIcon && image.Type == ThumbnailType.Icon)
             {
                 image.Dispose();
@@ -730,7 +730,7 @@ public sealed class ThumbnailImageManager
         if (file == null)
         {
             var query = folder.CreateFileQueryWithOptions(_allSupportedFileQueryOptions);
-            var files = await query.GetFilesAsync(0, 1);
+            var files = await query.GetFilesAsync(0, 1).AsTask(ct);
             file = files.ElementAtOrDefault(0);
         }
         return file;

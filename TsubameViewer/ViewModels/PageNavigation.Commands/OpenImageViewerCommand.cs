@@ -52,9 +52,13 @@ public sealed class OpenImageViewerCommand : CommandBase
         if (parameter is IImageSource imageSource)
         {
             await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
-            
+
             // ファイル・フォルダの差分検出処理を止める
-            _messenger.Send<PreNavigationNotifyMessage>();
+            try
+            {
+                _messenger.Send<PreNavigationNotifyMessage>();
+            }
+            catch { }
 
             if (_viewerSettings.IsViewerOpenWithSecondaryWindow)
             {

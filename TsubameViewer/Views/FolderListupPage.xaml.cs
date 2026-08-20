@@ -106,52 +106,48 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             itemVM?.UpdateLastReadPosition();
         });
 
-        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this, (r, m) => 
+        _messenger.Register(this, (MessageHandler<object, ThumbnailImageUpdateRequestMessage>)((r, m) => 
         {
             using var pooled = _realizedItems.AsValueEnumerable().ToArrayPool();
             foreach (var (elem, itemVM) in pooled.Span)
             {
-                itemVM.RestoreThumbnailLoadingTask(_linkedCt);
+                itemVM.RestoreThumbnailLoadingTask((CancellationToken)this._navigationCt);
+            }
+        }));
+
+        _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) => 
+        {            
+            // 順序大事
+            var manualCts = _manualCts;
+            _manualCts = null;
+            if (manualCts != null)
+            {
+                manualCts.Cancel();
+                manualCts.Dispose();
             }
         });
 
-        _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) => 
-        {
-            // 順序大事
-            _linkedCts?.Dispose();
-            _linkedCts = null;
-            var manualCts = _manualCts;
-            _manualCts = null;
-            manualCts?.Cancel();
-            manualCts?.Dispose();            
-        });
-
-        _messenger.Register<NavigationCompletedMessage>(this, (r, m) =>
+        _messenger.Register(this, (MessageHandler<object, NavigationCompletedMessage>)((r, m) =>
         {
             if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                _manualCts = new CancellationTokenSource();
-                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
-                _linkedCt = _linkedCts.Token;
-                var ct = _linkedCt;
+                _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
+                _navigationCt = _manualCts.Token;
+
+                var ct = this._navigationCt;
                 _realizedItems.ToObservable()
                     .ForEachAsync(async (x) =>
                     {
                         var (elem, itemVM) = x;
-                        itemVM.RestoreThumbnailLoadingTask(ct);
+                        itemVM.RestoreThumbnailLoadingTask((CancellationToken)ct);
                         if (elem.FindDescendant<Image>() is { } imageControl)
                         {
-                            await _fadeInAnim.StartAsync(imageControl, ct);
+                            await _fadeInAnim.StartAsync(imageControl, (CancellationToken)ct);
                         }
-                    }, ct).FireAndForgetSafe();                
+                    }, (CancellationToken)ct).FireAndForgetSafe();                
             }
-        });
-    }
-
-    CancellationTokenSource? _manualCts;
-    CancellationToken _linkedCt;
-    CancellationTokenSource? _linkedCts;
-
+        }));
+    }    
     private void ClearRealizedItems()
     {
         try
@@ -197,6 +193,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
 
+    CancellationTokenSource? _manualCts;
+    CancellationToken _navigationCt;
+
     readonly AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
         .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
     readonly AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
@@ -204,7 +203,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     // 2並列あればキャッシュ読み込みにも生成時にも十分なスピード
     readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
-    
     readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
     void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
@@ -213,10 +211,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         {
             if (args.Item is not IStorageItemViewModel itemVM) { return; }
 
+            var ct = _navigationCt;
             var imageControl = args.ItemContainer.FindDescendant<Image>();
             if (imageControl != null && imageControl.Source != null)
             {
-                _fadeOutAnim.Start(imageControl, _linkedCt);
+                _fadeOutAnim.Start(imageControl, ct);
             }
 
             if (!args.InRecycleQueue)
@@ -226,13 +225,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 itemVM.Image = imageControl?.Source as BitmapImage;
                 using (_vm._thumbnailManager.GetCachedThumbnailSize(itemVM.Path) != null
                     ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(_linkedCt))
+                    : await _imageGeneratingLock.LockAsync(ct))
                 {                    
-                    await itemVM.InitializeAsync(_linkedCt);
+                    await itemVM.InitializeAsync(ct);
                 }
                 if (imageControl != null)
                 {
-                    _fadeInAnim.Start(imageControl, _linkedCt);
+                    _fadeInAnim.Start(imageControl, ct);
                 }
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない                
                 if (itemVM.Item != null)
@@ -282,14 +281,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     itemVM.StopImageLoading();
                     if (imageControl != null)
                     {
-                        _fadeOutAnim.Start(imageControl, _linkedCt);
+                        _fadeOutAnim.Start(imageControl, ct);
                     }
                 }
             }
         }
     }
 
-    CancellationToken _navigationCt;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         if (_vm.DisplayCurrentPath is { } path) 
@@ -321,10 +319,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
-        _manualCts = new CancellationTokenSource();
-        _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
-        _linkedCt = _linkedCts.Token;
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
+        var ct = _navigationCt = _manualCts.Token;
         ConnectedAnimationService.GetForCurrentView()
                     .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
         try
@@ -928,7 +926,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _isItemsForceInfoLoaded = true;
             foreach (var itemVM in _vm.FolderItems)
             {
-                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_linkedCt).FireAndForgetSafe();
+                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_navigationCt).FireAndForgetSafe();
             }
         }
     }
