@@ -62,25 +62,28 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
-        _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
-        {
-            var itemVM = _vm.RecentlyItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
-            if (itemVM != null)
+        _messenger.CreateObservable<RequestConnectedAnimationMessage>()
+            .ToObservable()
+            .Subscribe(m => 
             {
-                var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
-                if (image?.FindDescendant<Image>() is UIElement target)
+                var itemVM = _vm.RecentlyItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
+                if (itemVM != null)
                 {
-                    m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                    var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
+                    if (image?.FindDescendant<Image>() is UIElement target)
                     {
-                        return (UIElement?)target;
-                    }));
+                        m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                        {
+                            return (UIElement?)target;
+                        }));
+                    }
+                    else
+                    {
+                        m.Reply(Task.FromResult<UIElement?>(null));
+                    }
                 }
-                else
-                {
-                    m.Reply(Task.FromResult<UIElement?>(null));
-                }
-            }
-        });
+            })
+            .RegisterTo(_navigationCt);        
         base.OnNavigatedTo(e);
     }
 
