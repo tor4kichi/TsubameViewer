@@ -269,7 +269,6 @@ public sealed class ThumbnailImageManager
     static AsyncLock _renderLock = new AsyncLock();
     public async ValueTask<IRandomAccessStream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
-        using var releaser = await _renderLock.LockAsync(ct);
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
         if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon)
         {
@@ -279,26 +278,39 @@ public sealed class ThumbnailImageManager
                 return fsImageStream;
             }
 
-            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
-            if (stream != null && stream.Length != 0)
+            using (var releaser = await _renderLock.LockAsync(ct))
             {
-                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+                var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
+                if (stream != null && stream.Length != 0)
+                {
+                    UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+                }
+                return stream.AsRandomAccessStream();
             }
-            return stream.AsRandomAccessStream();
         }
         else if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.AlwaysGenerateCache)
         {
-            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
-            if (stream != null && stream.Length != 0)
+            using (var releaser = await _renderLock.LockAsync(ct))
             {
-                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+                var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
+                if (stream != null && stream.Length != 0)
+                {
+                    UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+                }
+                return stream.AsRandomAccessStream();
             }
-            return stream.AsRandomAccessStream();
         }
         else
         {
-            return await GetImageStreamFromFileSystemAsync(imageSource, false, ct)
-                ?? await Task.Run(async () => (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream(), ct);
+            var stream = await GetImageStreamFromFileSystemAsync(imageSource, false, ct);
+            if (stream == null)
+            {
+                using (var releaser = await _renderLock.LockAsync(ct))
+                {
+                    stream = await Task.Run(async () => (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream(), ct);
+                }
+            }
+            return stream;
         }
     }
 
