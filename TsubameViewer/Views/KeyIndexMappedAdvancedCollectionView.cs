@@ -3,9 +3,11 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Helpers;
 using TsubameViewer.ViewModels;
 using Windows.Foundation.Collections;
 
@@ -32,13 +34,15 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
         {
             case Windows.Foundation.Collections.CollectionChange.Reset:
                 ClearKeyIndexCache();
+                Debug.WriteLine("CollectionChange.Reset");
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemInserted:
                 InsertKeyIndexCache(@event);
+                Debug.WriteLine("CollectionChange.ItemInserted");
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemRemoved:
                 {
-                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != null)
+                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != 0)
                     {
                         lock (_indexUpdateLock)
                         {
@@ -46,22 +50,24 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                         }
                     }
                 }
+                Debug.WriteLine("CollectionChange.ItemRemoved");
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemChanged:
                 {
-                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != null)
+                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != 0)
                     {
                         lock (_indexUpdateLock)
                         {
                             _keyIndexMap.Remove(old.Key);
                         }
                     }
-                    var key = _toKey((T)this[index]);
+                    var key = HashHelper.CalculateFNV1a64(_toKey((T)this[index]));
                     lock (_indexUpdateLock)
                     {
                         _keyIndexMap[key] = index;
                     }
                 }
+                Debug.WriteLine("CollectionChange.ItemChanged");
                 break;
         }
     }
@@ -84,18 +90,18 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
 
             // 挿入されたアイテムのキーを取得してマップに追加
             var insertedItem = this[insertedIndex];
-            var key = _toKey((T)insertedItem);
+            var key = HashHelper.CalculateFNV1a64(_toKey((T)insertedItem));
             _keyIndexMap[key] = insertedIndex;
         }
     }
 
     readonly Func<T, string> _toKey;
-    readonly Dictionary<string, int> _keyIndexMap = [];
+    readonly Dictionary<ulong, int> _keyIndexMap = [];
 
     public int IndexFromKey(string key)
     {
         TryBuildKeyIndexCache();
-        return _keyIndexMap.TryGetValue(key, out int index) ? index : -1;
+        return _keyIndexMap.TryGetValue(HashHelper.CalculateFNV1a64(key), out int index) ? index : -1;
     }
 
     public string KeyFromIndex(int index)
@@ -114,7 +120,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
         {
             for (int i = 0; i < Count; i++)
             {
-                var key = _toKey((T)this[i]);
+                var key = HashHelper.CalculateFNV1a64(_toKey((T)this[i]));
                 _keyIndexMap[key] = i;
             }
         }
