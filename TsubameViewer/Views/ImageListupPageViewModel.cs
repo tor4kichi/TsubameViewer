@@ -343,6 +343,8 @@ public sealed partial class ImageListupPageViewModel
         _filterQueryCts?.Cancel();
         _filterQueryCts?.Dispose();
         _filterQueryCts = null;
+        _itemsDisposable?.Dispose();
+        _itemsDisposable = null;
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
@@ -554,8 +556,17 @@ public sealed partial class ImageListupPageViewModel
                         }
                     }, AwaitOperation.Sequential)
                     .AddTo(ref db);
+                
+                //_imageCollectionContext.CreateImageFileChangedObserver()
+                //    .ObserveOnCurrentSynchronizationContext()
+                //    .SubscribeAwait(async (_, ct) =>
+                //    {
+                //        using var lockReleaser = await _navigationLock.LockAsync(ct);
+                //        await ReloadItemsAsync(_imageCollectionContext, ct);
+                //        Debug.WriteLine("Images Update required. " + _currentImageSource);
+                //    })
+                //    .AddTo(ref db);
             }
-
             db.Build().RegisterTo(ct);
         }
         catch
@@ -715,8 +726,6 @@ public sealed partial class ImageListupPageViewModel
     IDisposable? _itemsDisposable;
     async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
-        _itemsDisposable?.Dispose();
-        _itemsDisposable = null;
         HasFileItem = true;
         NowLoadingItems = true;
         if (!IsIndexAccessListingEnabled)
@@ -764,22 +773,6 @@ public sealed partial class ImageListupPageViewModel
                 NowLoadingItems = false;
             }
 
-            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
-            {
-                R3.CompositeDisposable disposable = new R3.CompositeDisposable();
-                // アプリ内部操作も含めて変更を検知する
-                var d2 = _imageCollectionContext.CreateImageFileChangedObserver()
-                    .ObserveOnCurrentSynchronizationContext()
-                    .SubscribeAwait(async (_, ct) =>
-                    {
-                        using var lockReleaser = await _navigationLock.LockAsync(ct);
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                        Debug.WriteLine("Images Update required. " + _currentImageSource);
-                    });
-                disposable.Add(d2);
-                _itemsDisposable = disposable;
-            }
-
             HasFileItem = ImageFileItems.Any();
         }
         else
@@ -787,7 +780,6 @@ public sealed partial class ImageListupPageViewModel
             var sortType = SelectedFileSortType;
             if (imageCollectionContext is FolderImageCollectionContext col)
             {
-                R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
                 Func<FolderStructureFileEntry, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry) => 
                 {
@@ -862,37 +854,6 @@ public sealed partial class ImageListupPageViewModel
                     HasFileItem = ImageFileItems.Any();
                     NowLoadingItems = false;
                 }
-
-                var d1 = imageCollectionContext.CreateImageFileChangedObserver()
-                    .ObserveOnCurrentSynchronizationContext()
-                    .SubscribeAwait((this, col, FileItemsView, cacheImageViewModelFactory, _navigationLock, sortType), static async (_, s, ct) =>
-                    {
-                        var (_this, col, items, itemFacotry, navLock, sortType) = s;
-                        if (_this.NowLoadingItems) { return; }
-                        using (await navLock.LockAsync(ct))
-                        {
-                            if (_this.NowLoadingItems) { return; }
-
-                            _this.NowLoadingItems = true;
-                            try
-                            {
-                                await col.Context.HandleDiffImages(
-                                    (RangeObservableCollection<IStorageItemViewModel>)items.Source,
-                                    sortType,
-                                    itemFacotry,
-                                    (IStorageItemViewModel itemVM) => itemVM.Path,
-                                    ct);
-                            }
-                            finally
-                            {
-                                _this.NowLoadingItems = false;
-                            }
-                        }
-                    });
-
-                disposable.Add(d1);
-                _itemsDisposable = disposable;
-
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
