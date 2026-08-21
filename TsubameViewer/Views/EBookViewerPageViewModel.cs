@@ -794,7 +794,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     {
                         // ヘッダー要素を全削除してカスタムなスタイルを表示させない
                         node.RemoveAll();
-                        continue;
                     }
 
                     var cssItems = new[] { theme == ApplicationTheme.Light ? _lightThemeCss : _darkThemeCss };
