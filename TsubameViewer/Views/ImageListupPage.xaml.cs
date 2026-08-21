@@ -446,8 +446,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 && tt.Content is TextBlock tb)
         {
             tb.Text = itemVM.Name;
-            tt.PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16);
-            ToolTipService.SetPlacementTarget(sender, image);
+            tt.PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16);            
             ToolTipService.SetPlacement(sender, PlacementMode.Bottom);
         }
         else
@@ -459,12 +458,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     Text = itemVM.Name,
                     TextWrapping = TextWrapping.Wrap
                 },
-                PlacementTarget = image,
                 PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16),
                 Placement = PlacementMode.Bottom,
             };
             ToolTipService.SetToolTip(sender, tt);
-            ToolTipService.SetPlacementTarget(sender, image);
             ToolTipService.SetPlacement(sender, PlacementMode.Bottom);
         }
     }
@@ -485,7 +482,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     private void MyButton_Tapped(object sender, TappedRoutedEventArgs e)
-    {
+    {        
         var fe = (FrameworkElement)sender;
         if (fe.DataContext is not IStorageItemViewModel itemVM) { return; }
         if (_vm.Selection.IsSelectionModeEnabled
