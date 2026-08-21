@@ -301,7 +301,8 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
         _thumbnailManager.ReOpenInsideDb();
-        
+
+        _navigationCt = default;
         base.OnNavigatedFrom(parameters);
     }
 
@@ -522,6 +523,15 @@ public sealed partial class FolderListupPageViewModel
                     }
                 }, AwaitOperation.Sequential)
                 .AddTo(ref db);
+
+            //_imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
+            //    .ObserveOnCurrentSynchronizationContext()
+            //    .SubscribeAwait(this, async (_, s, ct) =>
+            //    {
+            //        using var lockReleaser = await _navigationLock.LockAsync(ct);
+            //        await s.ReloadItemsAsync(_imageCollectionContext, ct);
+            //    })
+            //    .AddTo(ref db);
         }
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
         {
@@ -776,36 +786,19 @@ public sealed partial class FolderListupPageViewModel
                                 Selection);
                 };
 
-                var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()                    
-                    .ObserveOnCurrentSynchronizationContext()
-                    .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
-                    {
-                        using var lockObject = await _refreshLock.LockAsync(ct);
-                        var (col, items, itemFacotry) = s;                        
-                        var ignore = col.Context.HandleDiffNotImages(
-                            (RangeObservableCollection<IStorageItemViewModel>)items.Source,          
-                            sortType,
-                            itemFacotry,
-                            (IStorageItemViewModel itemVM) => itemVM.Name,
-                            ct);
-                    });
-
-                disposable.Add(d1);
-                _itemsDisposable = disposable;
-
                 using (FileItemsView.DeferRefresh())
                 {
                     FolderItems.Clear();
                     FolderItems.AddRange(col.Context.GetCacheNotImages()
-                    .Select(entry =>
-                    {
-                        return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
-                            _sourceStorageItemsRepository,
-                            _bookmarkManager,
-                            _thumbnailManager,
-                            _albamRepository,
-                            Selection);
-                    }));
+                        .Select(entry =>
+                        {
+                            return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                        }));
 
                     NowLoading = false;
                     DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>

@@ -133,6 +133,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void StopImageLoading()
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = null;
         Status = LoadingStatus.None;
         Item = null;
         Image = null;
@@ -153,10 +156,16 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         //}
     }
     public bool IsThumbanilImageCached => Item == null ? false : _thumbnailImageService.GetCachedThumbnailSize(Item) != null;
-
     public bool IsInitialized => _status == LoadingStatus.Loaded;
+
+    CancellationTokenSource? _manualCts;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        ct = _manualCts.Token;
+
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
         var lastStatus = _status;
@@ -411,6 +420,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
 
     public void StopImageLoading()
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = null;
         Status = LoadingStatus.None;        
         Item = null;
         Image = null;
@@ -431,8 +443,15 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
     }
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
+
+    CancellationTokenSource? _manualCts;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        ct = _manualCts.Token;
+
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
         var lastStatus = _status;
@@ -452,8 +471,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                 if (_status is not LoadingStatus.NowLoading) { return; }
                 if (Item == null) { return; }
 
-                using (var outputStream = new MemoryStream())
-                using (var stream = await _thumbnailImageService.EnsureGetImageStreamAsync(Item, outputStream, imageQuality: 0.5f, ct: ct))
+                using (var stream = await _thumbnailImageService.EnsureGetImageStreamAsync(Item, null, imageQuality: 0.5f, ct: ct))
                 {
                     if (stream is null || stream.Size == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -463,11 +481,8 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
                     var image = Image ?? new BitmapImage() { AutoPlay = false };
                     Image = image;
-                    using (await _imageLoadingLock.LockAsync(ct))
-                    {
-                        if (_status is not LoadingStatus.NowLoading) { return; }
-                        await image.SetSourceAsync(stream).AsTask(ct);
-                    }
+                    if (_status is not LoadingStatus.NowLoading) { return; }
+                    await image.SetSourceAsync(stream).AsTask(ct);
                 }
 
                 // Note: 20msぐらい掛かるのでInitializeで実行

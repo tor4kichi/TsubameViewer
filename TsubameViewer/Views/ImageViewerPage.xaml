@@ -740,30 +740,18 @@
                           Width="56"
                           Padding="8 0"
                           ctwu:FrameworkElementExtensions.Cursor="Hand">
-              <uwpControls:SwitchPresenter Value="{x:Bind _vm.Page1Favorite, Mode=OneWay}">
-                <uwpControls:Case>
-                  <uwpControls:Case.Value>
-                    <x:Boolean>True</x:Boolean>
-                  </uwpControls:Case.Value>
-                  <SymbolIcon Symbol="SolidStar">
-                    <!--<UIElement.RenderTransform>
-                      <TranslateTransform X="-1"
-                                          Y="-1" />
-                    </UIElement.RenderTransform>-->
-                  </SymbolIcon>
-                </uwpControls:Case>
-                <uwpControls:Case IsDefault="True">
-                  <uwpControls:Case.Value>
-                    <x:Boolean>False</x:Boolean>
-                  </uwpControls:Case.Value>
-                  <SymbolIcon Symbol="OutlineStar">
-                    <UIElement.RenderTransform>
-                      <TranslateTransform X="-1"
-                                          Y="-1" />
-                    </UIElement.RenderTransform>
-                  </SymbolIcon>
-                </uwpControls:Case>
-              </uwpControls:SwitchPresenter>
+              <Grid>
+                <SymbolIcon Symbol="SolidStar"
+                            Visibility="{x:Bind _vm.Page1Favorite, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+                </SymbolIcon>
+                <SymbolIcon Symbol="OutlineStar"
+                            Visibility="{x:Bind _vm.Page1Favorite, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+                  <UIElement.RenderTransform>
+                    <TranslateTransform X="-1"
+                                        Y="-1" />
+                  </UIElement.RenderTransform>
+                </SymbolIcon>
+              </Grid>
             </RepeatButton>
             <muxc:DropDownButton x:Name="Page1ActionButton"
                                  HorizontalAlignment="Stretch"
@@ -834,30 +822,19 @@
                           Width="56"
                           Padding="8 0"
                           ctwu:FrameworkElementExtensions.Cursor="Hand">
-              <uwpControls:SwitchPresenter Value="{x:Bind _vm.Page2Favorite, Mode=OneWay}">
-                <uwpControls:Case>
-                  <uwpControls:Case.Value>
-                    <x:Boolean>True</x:Boolean>
-                  </uwpControls:Case.Value>
-                  <SymbolIcon Symbol="SolidStar">
-                    <!--<UIElement.RenderTransform>
-                      <TranslateTransform X="-1"
-                                          Y="-1" />
-                    </UIElement.RenderTransform>-->
-                  </SymbolIcon>
-                </uwpControls:Case>
-                <uwpControls:Case IsDefault="True">
-                  <uwpControls:Case.Value>
-                    <x:Boolean>False</x:Boolean>
-                  </uwpControls:Case.Value>
-                  <SymbolIcon Symbol="OutlineStar">
-                    <UIElement.RenderTransform>
-                      <TranslateTransform X="-1"
-                                          Y="-1" />
-                    </UIElement.RenderTransform>
-                  </SymbolIcon>
-                </uwpControls:Case>
-              </uwpControls:SwitchPresenter>
+              <Grid>
+                <SymbolIcon Symbol="SolidStar"
+                            Visibility="{x:Bind _vm.Page2Favorite, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+                </SymbolIcon>
+                <SymbolIcon Symbol="OutlineStar"
+                            Visibility="{x:Bind _vm.Page2Favorite, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+                  <UIElement.RenderTransform>
+                    <TranslateTransform X="-1"
+                                        Y="-1" />
+                  </UIElement.RenderTransform>
+                </SymbolIcon>
+              </Grid>
+
             </RepeatButton>
             <muxc:DropDownButton x:Name="Page2ActionButton"
                                  HorizontalAlignment="Stretch"

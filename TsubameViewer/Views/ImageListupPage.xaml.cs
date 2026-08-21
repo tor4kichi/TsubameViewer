@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
+using DryIoc;
 using I18NPortable;
 using Microsoft.UI.Xaml.Controls;
 using R3;
@@ -76,9 +77,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<ImageListupPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-
-        Loaded += FolderListupPage_Loaded;
-        Unloaded += FolderListupPage_Unloaded;
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -110,10 +108,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<PreNavigationNotifyMessage>(this, (r, m) =>
         {
-            _manualCts?.Cancel();
-            _manualCts?.Dispose();
-            _linkedCts?.Dispose();
+            var manualCts = _manualCts;
             _manualCts = null;
+            manualCts?.Cancel();
+            manualCts?.Dispose();
         });
 
 
@@ -121,10 +119,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         {
             if (m.Value.SourcePageType == typeof(EmptyPage))
             {
-                _manualCts = new CancellationTokenSource();
-                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
-                _linkedCt = _linkedCts.Token;
-                var ct = _linkedCt;
+                _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
+                _navigationCt = _manualCts.Token;
+                var ct = _navigationCt;
                 _realizedItems.ToObservable()
                     .ForEachAsync(async (x) =>
                     {
@@ -142,15 +139,13 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        _realizedItems.Clear();
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<PreNavigationNotifyMessage>(this);
         _messenger.Unregister<NavigationCompletedMessage>(this);
     }
 
     CancellationTokenSource? _manualCts;
-    CancellationToken _linkedCt;
-    CancellationTokenSource? _linkedCts;
+    CancellationToken _navigationCt;
 
 
 
@@ -168,13 +163,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     #region 初期フォーカス設定
 
-    CancellationToken _navigationCt;    
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _manualCts?.Cancel();
         _manualCts?.Dispose();
-        _linkedCts?.Dispose();
-        _linkedCts = null;
         _manualCts = null;
 
         _messenger.Unregister<StartMultiSelectionMessage>(this);
@@ -190,37 +182,43 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        var ct = _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
-        _manualCts = new CancellationTokenSource();
-        _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_manualCts.Token, _navigationCt);
-        _linkedCt = _linkedCts.Token;
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnNavigatingFrom());
+        var ct = _navigationCt = _manualCts.Token;
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
 
-        if (e.Parameter is INavigationParameters parameters
-            && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
-            && query is string dirtyPath
-            && Uri.UnescapeDataString(dirtyPath) is { } path
-            && path == _vm.DisplayCurrentPath)
-        {
-            _realizedItems.ToObservable()
-                .ForEachAsync(async (x) => 
-                {
-                    var (elem, itemVM) = x;
-                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                    if (elem.FindDescendant<Image>() is { } imageControl)
-                    {
-                        await _fadeInAnim.StartAsync(imageControl, _linkedCt);
-                    }
-
-
-                }, ct).FireAndForgetSafe();
-        }
-        else
-        {
-            _realizedItems.Clear();
-        }
+        //if (e.Parameter is INavigationParameters parameters
+        //    && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
+        //    && query is string dirtyPath
+        //    && Uri.UnescapeDataString(dirtyPath) is { } path
+        //    && path == _vm.DisplayCurrentPath)
+        //{
+        //    _realizedItems.ToObservable()
+        //        .ForEachAsync(async (x) => 
+        //        {
+        //            var (elem, itemVM) = x;
+        //            _ = itemVM.EnsureImageSizeRatioAsync(ct);
+        //            itemVM.RestoreThumbnailLoadingTask(ct);
+        //            if (elem.FindDescendant<Image>() is { } imageControl)
+        //            {
+        //                await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+        //            }
+        //        }, ct).FireAndForgetSafe();
+        //}
+        //else
+        //{
+        //    using (_vm.FileItemsView.DeferRefresh())
+        //    {
+        //        _vm.ImageFileItems.Clear();
+        //    }
+        //    foreach (var item in _realizedItems)
+        //    {
+        //        item.Value.StopImageLoading();
+        //    }
+        //    _realizedItems.Clear();
+        //}
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
             if (_vm.Selection.IsSelectionModeEnabled)
@@ -319,7 +317,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             FileDisplayMode.Small => FileItemsRepeater_Small,
             FileDisplayMode.Midium => FileItemsRepeater_Midium,
             FileDisplayMode.Large => FileItemsRepeater_Large,
-            _ => null,
+            _ => FileItemsRepeater_Line,
         };
     }
 
@@ -381,7 +379,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         .Opacity(0, duration: TimeSpan.FromMilliseconds(1));
 
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-    {
+    {        
         if (args.Element is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM)
         {
@@ -390,20 +388,32 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             
             try
             {
-                var imageControl = fe.FindDescendant<Image>();
-                if (imageControl == null) { return; }
-                _fadeOutAnim.Start(imageControl, _navigationCt);                
-                await itemVM.EnsureImageSizeRatioAsync(_linkedCt);
-                itemVM.Image = imageControl.Source as BitmapImage;
+                var image = fe.FindDescendant<Image>();
+                if (image == null) { return; }
+
+                _fadeOutAnim.Start(image, _navigationCt);                
+                
+                fe.Height = _vm.FileDisplayMode switch
+                {
+                    FileDisplayMode.Line => 40,
+                    FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight,
+                    FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
+                    FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
+                };
+                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
+                if (itemVM.ImageAspectRatioWH != null)
+                {
+                    fe.Width = (int)(itemVM.ImageAspectRatioWH.Value * fe.Height);
+                }
+                itemVM.Image = image.Source as BitmapImage;
                 using (itemVM.ImageAspectRatioWH != null 
                     ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(_linkedCt))
+                    : await _imageGeneratingLock.LockAsync(_navigationCt))
                 {
                     // Note: ここでreturnすると読み込まれないケースが頻発する
-                    await itemVM.InitializeAsync(_linkedCt);
+                    await itemVM.InitializeAsync(_navigationCt);
                 }
-
-                _fadeInAnim.Start(imageControl, _linkedCt);                
+                _fadeInAnim.Start(image, _navigationCt);
             }
             catch (OperationCanceledException) { }
         }
@@ -418,6 +428,38 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             {
                 _fadeOutAnim.Start(imageControl, _navigationCt);
             }
+        }
+    }
+
+
+    private void ItemControl_Loading(FrameworkElement sender, object args)
+    {
+        var image = sender.FindDescendant<Image>();
+        if (image == null) { return; }
+        if (sender.DataContext is not IStorageItemViewModel itemVM) { return; }
+
+        if (ToolTipService.GetToolTip(sender) is { } tooltip
+                && tooltip is ToolTip tt
+                && tt.Content is TextBlock tb)
+        {
+            tb.Text = itemVM.Name;
+            tt.PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16);            
+            ToolTipService.SetPlacement(sender, PlacementMode.Bottom);
+        }
+        else
+        {
+            tt = new ToolTip()
+            {
+                Content = new TextBlock()
+                {
+                    Text = itemVM.Name,
+                    TextWrapping = TextWrapping.Wrap
+                },
+                PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16),
+                Placement = PlacementMode.Bottom,
+            };
+            ToolTipService.SetToolTip(sender, tt);
+            ToolTipService.SetPlacement(sender, PlacementMode.Bottom);
         }
     }
 
@@ -437,7 +479,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     private void MyButton_Tapped(object sender, TappedRoutedEventArgs e)
-    {
+    {        
         var fe = (FrameworkElement)sender;
         if (fe.DataContext is not IStorageItemViewModel itemVM) { return; }
         if (_vm.Selection.IsSelectionModeEnabled

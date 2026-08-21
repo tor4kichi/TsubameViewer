@@ -151,10 +151,17 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
     readonly static Core.AsyncLock _imageLoadingLock = new(1);
+    
+    CancellationTokenSource? _manualCts;
 
     public bool IsInitialized => _status == LoadingStatus.Loaded;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        ct = _manualCts.Token;
+
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
         var lastStatus = _status;
@@ -214,6 +221,9 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     public void StopImageLoading()
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = null;
         Status = LoadingStatus.None;
         Image = null;
         Item = null;
@@ -357,10 +367,17 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
-    readonly static Core.AsyncLock _imageLoadingLock = new(1);
+    readonly static Core.AsyncLock _imageLoadingLock = new(4);
+
+    CancellationTokenSource? _manualCts;
 
     public async ValueTask InitializeAsync(CancellationToken ct)
-    {
+    {        
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        ct = _manualCts.Token;
+
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
         var lastStatus = _status;
@@ -382,8 +399,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                 if (_status is not LoadingStatus.NowLoading) { return; }
                 if (Item == null) { return; }
 
-                using (var outputStream = new MemoryStream())
-                using (var stream = await _thumbnailImageService.EnsureGetImageStreamAsync(Item, outputStream, imageQuality: 0.5f, ct: ct))
+                using (var stream = await _thumbnailImageService.EnsureGetImageStreamAsync(Item, null, imageQuality: 0.5f, ct: ct))
                 {
                     if (stream is null || stream.Size == 0) { return; }
                     if (_status is not LoadingStatus.NowLoading) { return; }
@@ -395,7 +411,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     Image = image;
                     // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
                     using (var ras = stream)
-                    using (await _imageLoadingLock.LockAsync(ct))
+                    //using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
                         await image.SetSourceAsync(ras).AsTask(ct);
@@ -426,6 +442,9 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
     public void StopImageLoading()
     {
+        _manualCts?.Cancel();
+        _manualCts?.Dispose();
+        _manualCts = null;
         Status = LoadingStatus.None;
         Item = null;
         Image = null;
@@ -493,15 +512,18 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         (Item as IDisposable)?.Dispose();
     }
 
-    public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {        
         if (ImageAspectRatioWH == null)
         {
             IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
+            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;            
+            if (ImageAspectRatioWH == null)
+            {
+                await EnsureStorageItemAsync(ct);
+                ImageAspectRatioWH = (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item!, ct)).RatioWH;
+            }
         }
-
-        return new();
     }
     bool _disposed;
 }

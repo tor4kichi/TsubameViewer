@@ -16,6 +16,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
@@ -37,6 +38,7 @@ using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
 
@@ -51,11 +53,13 @@ public struct ThumbnailSize
     public float RatioWH { get; set; }
 }
 
+// Note: LiteDatabaseとTask.Runの組み合わせが初回起動時に書き込みlockでtimeoutする問題あり
+
 public sealed class ThumbnailImageManager 
     : ISecondaryTileThumbnailImageService
     , IThumbnailImageMaintenanceService
 {
-    private readonly Func<ILiteDatabase> _temporaryDbOpener;
+    private readonly Func<LiteDatabase> _temporaryDbOpener;
     private ILiteDatabase _temporaryDb;
     private ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
     private ILiteStorage<string> _thumbnailDb;
@@ -203,7 +207,7 @@ public sealed class ThumbnailImageManager
 
     public ThumbnailImageManager(
         ILiteDatabase localDb,
-        Func<ILiteDatabase> temporaryDbOpener,
+        Func<LiteDatabase> temporaryDbOpener,
         FolderListingSettings folderListingSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository
         )
@@ -266,39 +270,29 @@ public sealed class ThumbnailImageManager
         return imageSource.StorageItem is StorageFolder folder ? ToId(folder) : ToId(imageSource.Path);
     }
 
-    static AsyncLock _renderLock = new AsyncLock();
+    static AsyncLock _renderLock = new AsyncLock(2);
     public async ValueTask<IRandomAccessStream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
-        using var releaser = await _renderLock.LockAsync(ct);
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
-        if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon)
+        if (_folderListingSettings.ThumbnailImageCacheMode is ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon
+            or ThumbnailImageCacheMode.NeverGenerateCache)
         {
-            var fsImageStream = await GetImageStreamFromFileSystemAsync(imageSource, true, ct);
-            if (fsImageStream != null)
+            if (await GetImageStreamFromFileSystemAsync(imageSource, true, ct) is { } fsImageStream)
             {
                 return fsImageStream;
             }
+        }
 
+        // ロックしないと画像アーカイブの多重読み込みでメモリ使用量が5GBをゆうに越える
+        using (await _renderLock.LockAsync(ct))
+        {
             var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
-            if (stream != null && stream.Length != 0)
+            if (stream != null && stream.Length != 0
+                && _folderListingSettings.ThumbnailImageCacheMode is not ThumbnailImageCacheMode.NeverGenerateCache)
             {
                 UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
             }
-            return stream.AsRandomAccessStream();
-        }
-        else if (_folderListingSettings.ThumbnailImageCacheMode == ThumbnailImageCacheMode.AlwaysGenerateCache)
-        {
-            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
-            if (stream != null && stream.Length != 0)
-            {
-                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
-            }
-            return stream.AsRandomAccessStream();
-        }
-        else
-        {
-            return await GetImageStreamFromFileSystemAsync(imageSource, false, ct)
-                ?? await Task.Run(async () => (await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct))?.AsRandomAccessStream(), ct);
+            return stream?.AsRandomAccessStream();
         }
     }
 
@@ -341,7 +335,7 @@ public sealed class ThumbnailImageManager
             {
                 try
                 {
-                    targetFile = await folder.GetFileAsync(entry.CoverImageName);
+                    targetFile = await folder.GetFileAsync(entry.CoverImageName).AsTask(ct);
                 }
                 catch (FileNotFoundException) { }
             }
@@ -364,7 +358,7 @@ public sealed class ThumbnailImageManager
 
         if (targetFile != null)
         {
-            var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem);
+            var image = await targetFile.GetThumbnailAsync(ThumbnailMode.SingleItem).AsTask(ct);
             if (skipIfIcon && image.Type == ThumbnailType.Icon)
             {
                 image.Dispose();
@@ -556,22 +550,19 @@ public sealed class ThumbnailImageManager
             return SetThumbnailSize(imageSource, (uint)size.Width, (uint)size.Height);
         }
 
-        return await Task.Run(async () =>
-        {            
-            using (var imageStream = await imageSource.GetImageStreamAsync(ct))
+        using (var imageStream = await Task.Run(async () => await imageSource.GetImageStreamAsync(ct), ct))
+        {
+            var imageInfo = SKBitmap.DecodeBounds(imageStream);
+            if (imageInfo != SKImageInfo.Empty)
             {
-                var imageInfo = SKBitmap.DecodeBounds(imageStream);                
-                if (imageInfo != SKImageInfo.Empty)
-                {
-                    return SetThumbnailSize(imageSource, (uint)imageInfo.Width, (uint)imageInfo.Height);
-                }
+                return SetThumbnailSize(imageSource, (uint)imageInfo.Width, (uint)imageInfo.Height);
             }
-            using (var imageStream = await imageSource.GetImageStreamAsync(ct))
-            {
-                var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream()).AsTask(ct).ConfigureAwait(false);
-                return SetThumbnailSize(imageSource, (uint)decoder.PixelWidth, (uint)decoder.PixelHeight);
-            }
-        });
+        }
+        using (var imageStream = await Task.Run(async () => await imageSource.GetImageStreamAsync(ct), ct))
+        {
+            var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream()).AsTask(ct).ConfigureAwait(false);
+            return SetThumbnailSize(imageSource, (uint)decoder.PixelWidth, (uint)decoder.PixelHeight);
+        }        
     }
 
 
@@ -597,14 +588,28 @@ public sealed class ThumbnailImageManager
         };
     }
 
-    public async Task<ThumbnailImageInfo?> PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
+    public async ValueTask<ThumbnailSize?> PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
     {
         try
         {
+            using(var handle = file.CreateSafeFileHandle(FileAccess.Read))
+            using (var fileStream = new FileStream(handle, FileAccess.Read))
+            {
+                var imageInfo = SKBitmap.DecodeBounds(fileStream);
+                if (imageInfo != SKImageInfo.Empty)
+                {
+                    return SetThumbnailSize(file.Path, imageInfo);
+                }
+            }
             var props = await file.Properties.GetImagePropertiesAsync();
             var replacedId = ToId(file.Path);
-            using var _ = await _fileReadWriteLock.LockAsync(ct);
-            return SetThumbanilSize(replacedId, props.Width, props.Height);
+            var size=  SetThumbanilSize(replacedId, props.Width, props.Height);
+            return new ThumbnailSize()
+            {
+                Width = props.Width,
+                Height = props.Height,
+                RatioWH = (float)props.Width / props.Height
+            };
         }
         catch { return null; }
     }
@@ -730,7 +735,7 @@ public sealed class ThumbnailImageManager
         if (file == null)
         {
             var query = folder.CreateFileQueryWithOptions(_allSupportedFileQueryOptions);
-            var files = await query.GetFilesAsync(0, 1);
+            var files = await query.GetFilesAsync(0, 1).AsTask(ct);
             file = files.ElementAtOrDefault(0);
         }
         return file;
