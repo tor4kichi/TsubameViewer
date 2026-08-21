@@ -202,7 +202,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         .Opacity(0, duration: TimeSpan.FromMilliseconds(1));
 
     // 2並列あればキャッシュ読み込みにも生成時にも十分なスピード
-    readonly AsyncLock _imageGeneratingLock = new AsyncLock(Math.Max(1, Environment.ProcessorCount / 4));
     readonly Dictionary<UIElement, IStorageItemViewModel> _realizedItems = [];
     async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
@@ -221,15 +220,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
             if (!args.InRecycleQueue)
             {
-                _realizedItems.Add(args.ItemContainer, itemVM);
-                
-                itemVM.Image = imageControl?.Source as BitmapImage;
-                using (_vm._thumbnailManager.GetCachedThumbnailSize(itemVM.Path) != null
-                    ? Disposable.Empty
-                    : await _imageGeneratingLock.LockAsync(ct))
-                {                    
-                    await itemVM.InitializeAsync(ct);
-                }
+                _realizedItems.Add(args.ItemContainer, itemVM);                
+                itemVM.Image = imageControl?.Source as BitmapImage;                
+                if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
+                await itemVM.InitializeAsync(ct);
+                if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
                 if (imageControl != null)
                 {
                     _fadeInAnim.Start(imageControl, ct);

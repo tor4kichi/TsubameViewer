@@ -266,7 +266,7 @@ public sealed class ThumbnailImageManager
         return imageSource.StorageItem is StorageFolder folder ? ToId(folder) : ToId(imageSource.Path);
     }
 
-    static AsyncLock _renderLock = new AsyncLock();
+    static AsyncLock _renderLock = new AsyncLock(2);
     public async ValueTask<IRandomAccessStream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
         if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
@@ -279,13 +279,17 @@ public sealed class ThumbnailImageManager
             }
         }
 
-        var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
-        if (stream != null && stream.Length != 0
-            && _folderListingSettings.ThumbnailImageCacheMode is not ThumbnailImageCacheMode.NeverGenerateCache)
+        // ロックしないと画像アーカイブの多重読み込みでメモリ使用量が5GBをゆうに越える
+        using (await _renderLock.LockAsync(ct))
         {
-            UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
+            if (stream != null && stream.Length != 0
+                && _folderListingSettings.ThumbnailImageCacheMode is not ThumbnailImageCacheMode.NeverGenerateCache)
+            {
+                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+            }
+            return stream?.AsRandomAccessStream();
         }
-        return stream?.AsRandomAccessStream();
     }
 
 
