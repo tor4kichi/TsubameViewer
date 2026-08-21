@@ -628,7 +628,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                 items.AddRange(tempItems.Take(loaded.Count));
 
                 if (loaded.Count < oneTimeLoadCount) { break; }
-                //await Task.Delay((int)oneTimeLoadCount / 4, ct);
+                await Task.Delay(16, ct);
                 currentCount += (uint)loaded.Count;
 #if DEBUG
                 sw.ElapsedWrite(currentCount.ToString());
