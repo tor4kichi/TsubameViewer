@@ -29,7 +29,9 @@
       xmlns:storage="using:Windows.Storage"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
       NavigationCacheMode="Disabled"
-      x:Name="PageRoot">
+      x:Name="PageRoot"
+      Loaded="FolderListupPage_Loaded"
+      Unloaded="FolderListupPage_Unloaded">
 
   <!-- NavigaitonCacheMode = Enabled にすると
     ItemsRepeaterの中身が残る？ためキャッシュは利用していない

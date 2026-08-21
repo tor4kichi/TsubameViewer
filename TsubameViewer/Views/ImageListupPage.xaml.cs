@@ -77,9 +77,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<ImageListupPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
-
-        Loaded += FolderListupPage_Loaded;
-        Unloaded += FolderListupPage_Unloaded;
     }
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
