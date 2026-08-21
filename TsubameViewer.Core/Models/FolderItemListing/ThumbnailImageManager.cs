@@ -53,11 +53,13 @@ public struct ThumbnailSize
     public float RatioWH { get; set; }
 }
 
+// Note: LiteDatabaseとTask.Runの組み合わせが初回起動時に書き込みlockでtimeoutする問題あり
+
 public sealed class ThumbnailImageManager 
     : ISecondaryTileThumbnailImageService
     , IThumbnailImageMaintenanceService
 {
-    private readonly Func<ILiteDatabase> _temporaryDbOpener;
+    private readonly Func<LiteDatabase> _temporaryDbOpener;
     private ILiteDatabase _temporaryDb;
     private ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
     private ILiteStorage<string> _thumbnailDb;
@@ -205,7 +207,7 @@ public sealed class ThumbnailImageManager
 
     public ThumbnailImageManager(
         ILiteDatabase localDb,
-        Func<ILiteDatabase> temporaryDbOpener,
+        Func<LiteDatabase> temporaryDbOpener,
         FolderListingSettings folderListingSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository
         )
@@ -548,22 +550,19 @@ public sealed class ThumbnailImageManager
             return SetThumbnailSize(imageSource, (uint)size.Width, (uint)size.Height);
         }
 
-        return await Task.Run(async () =>
-        {            
-            using (var imageStream = await imageSource.GetImageStreamAsync(ct))
+        using (var imageStream = await Task.Run(async () => await imageSource.GetImageStreamAsync(ct), ct))
+        {
+            var imageInfo = SKBitmap.DecodeBounds(imageStream);
+            if (imageInfo != SKImageInfo.Empty)
             {
-                var imageInfo = SKBitmap.DecodeBounds(imageStream);                
-                if (imageInfo != SKImageInfo.Empty)
-                {
-                    return SetThumbnailSize(imageSource, (uint)imageInfo.Width, (uint)imageInfo.Height);
-                }
+                return SetThumbnailSize(imageSource, (uint)imageInfo.Width, (uint)imageInfo.Height);
             }
-            using (var imageStream = await imageSource.GetImageStreamAsync(ct))
-            {
-                var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream()).AsTask(ct).ConfigureAwait(false);
-                return SetThumbnailSize(imageSource, (uint)decoder.PixelWidth, (uint)decoder.PixelHeight);
-            }
-        });
+        }
+        using (var imageStream = await Task.Run(async () => await imageSource.GetImageStreamAsync(ct), ct))
+        {
+            var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream()).AsTask(ct).ConfigureAwait(false);
+            return SetThumbnailSize(imageSource, (uint)decoder.PixelWidth, (uint)decoder.PixelHeight);
+        }        
     }
 
 

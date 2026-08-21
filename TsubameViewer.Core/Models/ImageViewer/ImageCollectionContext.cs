@@ -519,39 +519,32 @@ public sealed class FolderStructureCacheContext : IDisposable
 #if DEBUG
             PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffImages initial");
 #endif
+            // Note: 初回起動時のみTask.Runで実行するとILiteDatabaseのlockが継続してtimeoutして失敗する
             uint oneTimeLoadCount = 100;
-            uint currentCount = 0;            
-            await Task.Run(async () => 
+            uint currentCount = 0;
+            Task<IReadOnlyList<StorageFile>> loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+            currentCount += oneTimeLoadCount;
+            int index = 0;
+            T[] itemVMList = new T[oneTimeLoadCount];
+            while (true)
             {
-                Task<IReadOnlyList<StorageFile>> loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                currentCount += oneTimeLoadCount;
-                int index = 0;
-                T[] itemVMList = new T[oneTimeLoadCount];
-                while (true)
+                var lastLoadTask = loadTask;
+                loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<StorageFile>>([]));
+                if (loaded.Count == 0) { break; }
+
+                for (int i = 0; i < loaded.Count; i++)
                 {
-                    var lastLoadTask = loadTask;
-                    loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                    var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<StorageFile>>([]));
-                    if (loaded.Count == 0) { break; }
-                    
-                    for (int i = 0; i < loaded.Count; i++)
-                    {
-                        var file = loaded[i];
-                        itemVMList[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
-                    }
-
-                    currentCount += (uint)loaded.Count;
-                    dispatcherQueue.TryEnqueue(() => 
-                    {
-                        items.AddRange(itemVMList.Take(loaded.Count));
-                    });                    
-#if DEBUG
-                    sw.ElapsedWrite(currentCount.ToString());
-#endif
+                    var file = loaded[i];
+                    itemVMList[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
                 }
-                return itemVMList;
-            }, ct);
 
+                currentCount += (uint)loaded.Count;
+                items.AddRange(itemVMList.Take(loaded.Count));
+#if DEBUG
+                sw.ElapsedWrite(currentCount.ToString());
+#endif
+            }
 
 #if DEBUG
             sw.ElapsedWrite("Complete");
@@ -875,6 +868,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
     
     public FolderStructureFilesRepository(ILiteDatabase tempLiteDatabase)
     {
+        tempLiteDatabase.Timeout = TimeSpan.FromSeconds(1);
         _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();        
 //        _collection.EnsureIndex(x => x.Name);
         _collection.EnsureIndex(x => x.DateCreated);
@@ -911,7 +905,14 @@ public sealed class FolderStructureFilesRepository : IDisposable
             IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false,
             ParentFolderPathHash = HashHelper.CalculateFNV1a64(Path.GetDirectoryName(file.Path))
         };
-        _collection.Upsert(entry);
+        try
+        {
+            _collection.Upsert(entry);
+        }
+        catch
+        {
+            _collection.Upsert(entry);
+        }
         ClearCache();
         return entry;
     }

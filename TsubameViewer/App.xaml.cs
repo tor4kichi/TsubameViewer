@@ -23,6 +23,7 @@ using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Maintenance;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Migrate;
 using TsubameViewer.Core.Models.Navigation;
@@ -134,7 +135,7 @@ sealed partial class App : Application
     void RegisterRequiredTypes(Container container)
     {
         container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
-        container.RegisterInstance<Func<ILiteDatabase>>(() => new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
+        container.RegisterInstance<Func<LiteDatabase>>(() => new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
 
         container.RegisterInstance<IStorageHelper>(new BytesApplicationDataStorageHelper(ApplicationData.Current, new BinaryJsonObjectSerializer()));
         container.Register<IViewLocator, ViewLocator>();
@@ -145,7 +146,7 @@ sealed partial class App : Application
         container.Register<RecentlyAccessRepository>(reuse: Reuse.Singleton);
         container.Register<ThumbnailImageManager>(
             reuse: Reuse.Singleton,
-            made: Parameters.Of.Type<Func<ILiteDatabase>>(serviceKey: "TemporaryDb")
+            made: Parameters.Of.Type<Func<LiteDatabase>>(serviceKey: "TemporaryDb")
         );
         container.Register<SecondaryWindowService>(reuse: Reuse.Singleton);
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
@@ -437,6 +438,20 @@ sealed partial class App : Application
         {
             // 初回だけサムネイル画像ローカルDBのwrite lockが閉じられない問題があるため再オープン
             Container.Resolve<ThumbnailImageManager>().ReOpenInsideDb();
+            try
+            {
+                using var db = new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") });
+                var collection = db.GetCollection<FolderStructureFileEntry>();
+                collection.EnsureIndex(x => x.DateCreated);
+                var dummy = new FolderStructureFileEntry()
+                {
+                    Path = "0"
+                };
+                collection.Insert(dummy);
+                collection.Delete(dummy.Path);
+                db.Checkpoint();
+            }
+            catch { }
         }
 
         await UpdateMigrationAsync();
