@@ -567,7 +567,7 @@ public sealed class FolderStructureCacheContext : IDisposable
             //await Observable.NextFrame().ObserveOnCurrentSynchronizationContext().WaitAsync().ConfigureAwait(false);
 
             if (cached.Count == 0) { return; }
-
+            if (ct.IsCancellationRequested) { return; }
             // cachedにあってfilesに無い → 減分
             foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
             {
@@ -648,6 +648,7 @@ public sealed class FolderStructureCacheContext : IDisposable
                 }
             }
 
+            if (ct.IsCancellationRequested) { return; }
             // cachedにあってfilesに無い → 減分
             foreach (var (hash, entry) in cached)
             {

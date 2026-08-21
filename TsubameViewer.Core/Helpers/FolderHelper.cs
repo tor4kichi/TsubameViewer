@@ -51,7 +51,7 @@ public static class FolderHelper
         {
             for (int i = 0; i < items.Count; i++)
             {
-                if (ct.IsCancellationRequested) { yield break; }
+                ct.ThrowIfCancellationRequested();
                 yield return items[i];
             }
 
@@ -68,11 +68,11 @@ public static class FolderHelper
         {
             for (int i = 0; i < items.Count; i++)
             {
-                if (ct.IsCancellationRequested) { yield break; }
+                ct.ThrowIfCancellationRequested();
                 yield return items[i];
             }
 
-            if (ct.IsCancellationRequested) { yield break; }
+            ct.ThrowIfCancellationRequested();
 
             currentCount += (uint)items.Count;
         }
@@ -132,7 +132,7 @@ public static class FolderHelper
         {
             for (int i = 0; i < items.Count; i++)
             {
-                if (ct.IsCancellationRequested) { yield break; }
+                ct.ThrowIfCancellationRequested();
                 yield return items[i];
             }
 

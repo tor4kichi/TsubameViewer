@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Animations;
+using DryIoc;
 using I18NPortable;
 using Microsoft.UI.Xaml.Controls;
 using R3;
@@ -211,15 +212,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
         else
         {
+            using (_vm.FileItemsView.DeferRefresh())
+            {
+                _vm.ImageFileItems.Clear();
+            }
             foreach (var item in _realizedItems)
             {
                 item.Value.StopImageLoading();
             }
             _realizedItems.Clear();
-            using (_vm.FileItemsView.DeferRefresh())
-            {
-                _vm.ImageFileItems.Clear();
-            }
         }
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
@@ -316,10 +317,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         return _vm.FileDisplayMode switch
         {
-            //FileDisplayMode.Small => FileItemsRepeater_Small,
+            FileDisplayMode.Small => FileItemsRepeater_Small,
             FileDisplayMode.Midium => FileItemsRepeater_Midium,
-            //FileDisplayMode.Large => FileItemsRepeater_Large,
-            _ => null,
+            FileDisplayMode.Large => FileItemsRepeater_Large,
+            _ => FileItemsRepeater_Line,
         };
     }
 
@@ -381,7 +382,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         .Opacity(0, duration: TimeSpan.FromMilliseconds(1));
 
     async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-    {
+    {        
         if (args.Element is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM)
         {
@@ -390,11 +391,23 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             
             try
             {
-                var imageControl = fe.FindDescendant<Image>();
-                if (imageControl == null) { return; }
-                _fadeOutAnim.Start(imageControl, _navigationCt);                
+                var image = fe.FindDescendant<Image>();
+                if (image == null) { return; }
+
+                _fadeOutAnim.Start(image, _navigationCt);                
                 await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
-                itemVM.Image = imageControl.Source as BitmapImage;
+                fe.Height = _vm.FileDisplayMode switch
+                {
+                    FileDisplayMode.Line => 40,
+                    FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight,
+                    FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
+                    FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
+                };
+                if (itemVM.ImageAspectRatioWH is { } ratio)
+                {
+                    fe.Width = (int)(ratio * fe.Height);
+                }
+                itemVM.Image = image.Source as BitmapImage;
                 using (itemVM.ImageAspectRatioWH != null 
                     ? Disposable.Empty
                     : await _imageGeneratingLock.LockAsync(_navigationCt))
@@ -403,7 +416,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     await itemVM.InitializeAsync(_navigationCt);
                 }
 
-                _fadeInAnim.Start(imageControl, _navigationCt);                
+                _fadeInAnim.Start(image, _navigationCt);
             }
             catch (OperationCanceledException) { }
         }
@@ -418,6 +431,41 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             {
                 _fadeOutAnim.Start(imageControl, _navigationCt);
             }
+        }
+    }
+
+
+    private void ItemControl_Loading(FrameworkElement sender, object args)
+    {
+        var image = sender.FindDescendant<Image>();
+        if (image == null) { return; }
+        if (sender.DataContext is not IStorageItemViewModel itemVM) { return; }
+
+        if (ToolTipService.GetToolTip(sender) is { } tooltip
+                && tooltip is ToolTip tt
+                && tt.Content is TextBlock tb)
+        {
+            tb.Text = itemVM.Name;
+            tt.PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16);
+            ToolTipService.SetPlacementTarget(sender, image);
+            ToolTipService.SetPlacement(sender, PlacementMode.Bottom);
+        }
+        else
+        {
+            tt = new ToolTip()
+            {
+                Content = new TextBlock()
+                {
+                    Text = itemVM.Name,
+                    TextWrapping = TextWrapping.Wrap
+                },
+                PlacementTarget = image,
+                PlacementRect = new Windows.Foundation.Rect(0, 0, sender.Width, sender.Height - 16),
+                Placement = PlacementMode.Bottom,
+            };
+            ToolTipService.SetToolTip(sender, tt);
+            ToolTipService.SetPlacementTarget(sender, image);
+            ToolTipService.SetPlacement(sender, PlacementMode.Bottom);
         }
     }
 

@@ -229,7 +229,7 @@ public sealed partial class ImageListupPageViewModel
 
     partial void OnFileDisplayModeChanged(FileDisplayMode value)
     {
-        _folderListingSettings.FileDisplayMode = value;
+        _folderListingSettings.FileDisplayMode = value;        
     }
 
     public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
