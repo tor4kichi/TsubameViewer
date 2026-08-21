@@ -57,8 +57,14 @@ public interface IImageCollectionContext
 
 
 
-public sealed class FolderImageCollectionContext : IImageCollectionContext
+public sealed class FolderImageCollectionContext : IImageCollectionContext, IDisposable
 {
+    public void Dispose()
+    {
+        Context.Dispose();
+    }
+
+
     public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
     public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None);
 
@@ -75,7 +81,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         Folder = storageFolder;
         _cacheRepo ??= new(new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") }));
         Context = new FolderStructureCacheContext(Folder, _cacheRepo);                
-    }
+    }    
 
     public StorageFolder Folder { get; }
 
@@ -405,7 +411,6 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         })
             .ThrottleLast(TimeSpan.FromSeconds(1));
     }
-
 }
 
 
@@ -928,7 +933,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
     }
     PooledArray<FolderStructureFileEntry>? _folderImagesCache;
     ulong? _cachedImagesfolderPathHash;
-    public IEnumerable<FolderStructureFileEntry> FindFolderImages(string folderPath)
+    public ArraySegment<FolderStructureFileEntry> FindFolderImages(string folderPath)
     {
         var hash = HashHelper.CalculateFNV1a64(folderPath);
         if (_folderImagesCache == null || _cachedImagesfolderPathHash == null || _cachedImagesfolderPathHash != hash)
@@ -944,7 +949,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
 
     PooledArray<FolderStructureFileEntry>? _folderNotImagesCache;
     ulong? _cachedNotImagesfolderPathHash;
-    public IEnumerable<FolderStructureFileEntry> FindFolderNotImages(string folderPath)
+    public ArraySegment<FolderStructureFileEntry> FindFolderNotImages(string folderPath)
     {
         var hash = HashHelper.CalculateFNV1a64(folderPath);
         if (_folderNotImagesCache == null || _cachedNotImagesfolderPathHash == null || _cachedNotImagesfolderPathHash != hash)
@@ -990,7 +995,6 @@ public sealed class FolderStructureFilesRepository : IDisposable
     public void Dispose()
     {
         ClearCache();
-        _tempLiteDatabase.Dispose();
     }
 
 
