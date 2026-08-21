@@ -509,6 +509,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         int imagesCount = (int)await query.GetItemCountAsync().AsTask(ct);
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
         Dictionary<ulong, FolderStructureFileEntry> cached;
+        DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         bool isInitial = !_repo.HasFolderImages(Folder);
         var thumbnailManager = CommunityToolkit.Mvvm.DependencyInjection.Ioc.Default.GetRequiredService<ThumbnailImageManager>();
         // filesにあるアイテムがcachedに無い → 増分        
@@ -516,37 +517,42 @@ public sealed class FolderStructureCacheContext : IDisposable
         {
             cached = [];
 #if DEBUG
-            PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffNotImages initial");
+            PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("HandleDiffImages initial");
 #endif
             uint oneTimeLoadCount = 100;
-            uint currentCount = 0;
-            Task[] prepareThumbnailSizeTasks = new Task[oneTimeLoadCount];
-            T[] itemVMList = new T[oneTimeLoadCount];
-            Task<IReadOnlyList<StorageFile>> loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-            currentCount += oneTimeLoadCount;
-            await Task.Delay(100);
-            while (true)
+            uint currentCount = 0;            
+            await Task.Run(async () => 
             {
-                var lastLoadTask = loadTask;
-                loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
-                var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<StorageFile>>([]));
-                if (loaded.Count == 0) { break; }
-
-                for (int i = 0; i < loaded.Count; i++)
+                Task<IReadOnlyList<StorageFile>> loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                currentCount += oneTimeLoadCount;
+                int index = 0;
+                T[] itemVMList = new T[oneTimeLoadCount];
+                while (true)
                 {
-                    var file = loaded[i];
-                    prepareThumbnailSizeTasks[i] = thumbnailManager.PrepareThumbnailSizeAsync(file, ct);
-                    itemVMList[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
-                }
+                    var lastLoadTask = loadTask;
+                    loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                    var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<StorageFile>>([]));
+                    if (loaded.Count == 0) { break; }
+                    
+                    for (int i = 0; i < loaded.Count; i++)
+                    {
+                        var file = loaded[i];
+                        itemVMList[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
+                    }
 
-                items.AddRange(itemVMList.Take(loaded.Count));
-                await Task.WhenAll(prepareThumbnailSizeTasks.Take(loaded.Count));
-
-                currentCount += (uint)loaded.Count;
+                    currentCount += (uint)loaded.Count;
+                    dispatcherQueue.TryEnqueue(() => 
+                    {
+                        items.AddRange(itemVMList.Take(loaded.Count));
+                    });                    
 #if DEBUG
-                sw.ElapsedWrite(currentCount.ToString());
+                    sw.ElapsedWrite(currentCount.ToString());
 #endif
-            }
+                }
+                return itemVMList;
+            }, ct);
+
+
 #if DEBUG
             sw.ElapsedWrite("Complete");
 #endif
@@ -621,15 +627,15 @@ public sealed class FolderStructureCacheContext : IDisposable
                 var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<IStorageItem>>([]));
                 if (loaded.Count == 0) { break; }
 
-                    for (int i = 0; i < loaded.Count; i++)
-                    {
-                        var file = loaded[i];
-                        tempItems[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
-                    }
-                    items.AddRange(tempItems.Take(loaded.Count));
+                for (int i = 0; i < loaded.Count; i++)
+                {
+                    var file = loaded[i];
+                    tempItems[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
+                }
+                items.AddRange(tempItems.Take(loaded.Count));
 
-                    if (loaded.Count < oneTimeLoadCount) { break; }
-                    await Task.Delay((int)oneTimeLoadCount / 4, ct);
+                if (loaded.Count < oneTimeLoadCount) { break; }
+                //await Task.Delay((int)oneTimeLoadCount / 4, ct);
                 currentCount += (uint)loaded.Count;
 #if DEBUG
                 sw.ElapsedWrite(currentCount.ToString());

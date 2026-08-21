@@ -912,7 +912,7 @@
     <winUI:ProgressBar x:Name="LoadingProgressRing"
                        IsEnabled="{x:Bind _vm.NowProcessing, Mode=OneWay}"
                        Visibility="Collapsed"
-                       VerticalAlignment="Bottom"
+                       VerticalAlignment="Top"
                        IsIndeterminate="True"
                        IsHitTestVisible="False"/>
 

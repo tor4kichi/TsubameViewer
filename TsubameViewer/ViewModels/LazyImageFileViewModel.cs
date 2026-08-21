@@ -512,15 +512,18 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         (Item as IDisposable)?.Dispose();
     }
 
-    public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {        
         if (ImageAspectRatioWH == null)
         {
             IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
-            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;
+            ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(_cacheEntry.Path)?.RatioWH;            
+            if (ImageAspectRatioWH == null)
+            {
+                await EnsureStorageItemAsync(ct);
+                ImageAspectRatioWH = (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item!, ct)).RatioWH;
+            }
         }
-
-        return new();
     }
     bool _disposed;
 }

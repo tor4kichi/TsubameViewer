@@ -16,6 +16,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.RegularExpressions;
@@ -37,6 +38,7 @@ using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
 
@@ -587,13 +589,28 @@ public sealed class ThumbnailImageManager
         };
     }
 
-    public async Task<ThumbnailImageInfo?> PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
+    public async ValueTask<ThumbnailSize?> PrepareThumbnailSizeAsync(StorageFile file, CancellationToken ct)
     {
         try
         {
+            using(var handle = file.CreateSafeFileHandle(FileAccess.Read))
+            using (var fileStream = new FileStream(handle, FileAccess.Read))
+            {
+                var imageInfo = SKBitmap.DecodeBounds(fileStream);
+                if (imageInfo != SKImageInfo.Empty)
+                {
+                    return SetThumbnailSize(file.Path, imageInfo);
+                }
+            }
             var props = await file.Properties.GetImagePropertiesAsync();
             var replacedId = ToId(file.Path);
-            return SetThumbanilSize(replacedId, props.Width, props.Height);
+            var size=  SetThumbanilSize(replacedId, props.Width, props.Height);
+            return new ThumbnailSize()
+            {
+                Width = props.Width,
+                Height = props.Height,
+                RatioWH = (float)props.Width / props.Height
+            };
         }
         catch { return null; }
     }

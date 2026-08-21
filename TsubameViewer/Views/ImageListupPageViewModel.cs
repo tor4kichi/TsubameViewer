@@ -849,6 +849,11 @@ public sealed partial class ImageListupPageViewModel
                             cacheImageViewModelFactory,
                             (IStorageItemViewModel itemVM) => itemVM.Name,
                             ct);
+
+                        //foreach (var item in FileItemsView.Take(50))
+                        //{
+                        //    await (item as IStorageItemViewModel)!.EnsureImageSizeRatioAsync(ct);
+                        //}
                     }
 
                     HasFileItem = ImageFileItems.Any();

@@ -392,7 +392,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 if (image == null) { return; }
 
                 _fadeOutAnim.Start(image, _navigationCt);                
-                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
+                
                 fe.Height = _vm.FileDisplayMode switch
                 {
                     FileDisplayMode.Line => 40,
@@ -400,9 +400,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
                     FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
                 };
-                if (itemVM.ImageAspectRatioWH is { } ratio)
+                await itemVM.EnsureImageSizeRatioAsync(_navigationCt);
+                if (itemVM.ImageAspectRatioWH != null)
                 {
-                    fe.Width = (int)(ratio * fe.Height);
+                    fe.Width = (int)(itemVM.ImageAspectRatioWH.Value * fe.Height);
                 }
                 itemVM.Image = image.Source as BitmapImage;
                 using (itemVM.ImageAspectRatioWH != null 
@@ -412,7 +413,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     // Note: ここでreturnすると読み込まれないケースが頻発する
                     await itemVM.InitializeAsync(_navigationCt);
                 }
-
                 _fadeInAnim.Start(image, _navigationCt);
             }
             catch (OperationCanceledException) { }

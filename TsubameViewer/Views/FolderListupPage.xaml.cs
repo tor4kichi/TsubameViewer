@@ -220,8 +220,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
             if (!args.InRecycleQueue)
             {
-                _realizedItems.Add(args.ItemContainer, itemVM);                
-                itemVM.Image = imageControl?.Source as BitmapImage;                
+                _realizedItems.Add(args.ItemContainer, itemVM);
+                
+                itemVM.Image = imageControl?.Source as BitmapImage;
                 if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
                 await itemVM.InitializeAsync(ct);
                 if (!_realizedItems.ContainsKey(args.ItemContainer)) { return; }
