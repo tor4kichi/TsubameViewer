@@ -367,7 +367,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
 
     readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
-    readonly static Core.AsyncLock _imageLoadingLock = new(1);
+    readonly static Core.AsyncLock _imageLoadingLock = new(4);
 
     CancellationTokenSource? _manualCts;
 
@@ -411,7 +411,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
                     Image = image;
                     // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
                     using (var ras = stream)
-                    using (await _imageLoadingLock.LockAsync(ct))
+                    //using (await _imageLoadingLock.LockAsync(ct))
                     {
                         if (_status is not LoadingStatus.NowLoading) { return; }
                         await image.SetSourceAsync(ras).AsTask(ct);

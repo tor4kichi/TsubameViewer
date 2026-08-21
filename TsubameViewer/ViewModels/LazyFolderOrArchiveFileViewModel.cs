@@ -481,11 +481,8 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     // BitmapImageを使い回すため、並列処理のワーストケースでは同一BtmapImageに対して同時操作が発生しうる
                     var image = Image ?? new BitmapImage() { AutoPlay = false };
                     Image = image;
-                    using (await _imageLoadingLock.LockAsync(ct))
-                    {
-                        if (_status is not LoadingStatus.NowLoading) { return; }
-                        await image.SetSourceAsync(stream).AsTask(ct);
-                    }
+                    if (_status is not LoadingStatus.NowLoading) { return; }
+                    await image.SetSourceAsync(stream).AsTask(ct);
                 }
 
                 // Note: 20msぐらい掛かるのでInitializeで実行
