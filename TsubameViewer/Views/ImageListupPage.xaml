@@ -28,7 +28,7 @@
       xmlns:fluentIcon="using:FluentIcons.Uwp"
       xmlns:storage="using:Windows.Storage"
       xmlns:ctwu="using:CommunityToolkit.WinUI"
-      NavigationCacheMode="Enabled"
+      NavigationCacheMode="Disabled"
       x:Name="PageRoot">
 
   <!-- NavigaitonCacheMode = Enabled にすると

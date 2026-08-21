@@ -192,36 +192,36 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         d().FireAndForgetSafe("ImageListupPage.OnNavigatedTo");
 
-        if (e.Parameter is INavigationParameters parameters
-            && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
-            && query is string dirtyPath
-            && Uri.UnescapeDataString(dirtyPath) is { } path
-            && path == _vm.DisplayCurrentPath)
-        {
-            _realizedItems.ToObservable()
-                .ForEachAsync(async (x) => 
-                {
-                    var (elem, itemVM) = x;
-                    _ = itemVM.EnsureImageSizeRatioAsync(ct);
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                    if (elem.FindDescendant<Image>() is { } imageControl)
-                    {
-                        await _fadeInAnim.StartAsync(imageControl, _navigationCt);
-                    }
-                }, ct).FireAndForgetSafe();
-        }
-        else
-        {
-            using (_vm.FileItemsView.DeferRefresh())
-            {
-                _vm.ImageFileItems.Clear();
-            }
-            foreach (var item in _realizedItems)
-            {
-                item.Value.StopImageLoading();
-            }
-            _realizedItems.Clear();
-        }
+        //if (e.Parameter is INavigationParameters parameters
+        //    && parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out var query)
+        //    && query is string dirtyPath
+        //    && Uri.UnescapeDataString(dirtyPath) is { } path
+        //    && path == _vm.DisplayCurrentPath)
+        //{
+        //    _realizedItems.ToObservable()
+        //        .ForEachAsync(async (x) => 
+        //        {
+        //            var (elem, itemVM) = x;
+        //            _ = itemVM.EnsureImageSizeRatioAsync(ct);
+        //            itemVM.RestoreThumbnailLoadingTask(ct);
+        //            if (elem.FindDescendant<Image>() is { } imageControl)
+        //            {
+        //                await _fadeInAnim.StartAsync(imageControl, _navigationCt);
+        //            }
+        //        }, ct).FireAndForgetSafe();
+        //}
+        //else
+        //{
+        //    using (_vm.FileItemsView.DeferRefresh())
+        //    {
+        //        _vm.ImageFileItems.Clear();
+        //    }
+        //    foreach (var item in _realizedItems)
+        //    {
+        //        item.Value.StopImageLoading();
+        //    }
+        //    _realizedItems.Clear();
+        //}
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
             if (_vm.Selection.IsSelectionModeEnabled)
