@@ -821,7 +821,7 @@ public sealed partial class ImageListupPageViewModel
 
                         NowLoadingItems = false;
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
-                        {
+                        {                            
                             using var lockReleaser = await _navigationLock.LockAsync(ct);
                             NowLoadingItems = true;
                             try

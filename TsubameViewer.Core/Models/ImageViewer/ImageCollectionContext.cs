@@ -519,6 +519,7 @@ public sealed class FolderStructureCacheContext : IDisposable
             T[] itemVMList = new T[oneTimeLoadCount];
             Task<IReadOnlyList<StorageFile>> loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
             currentCount += oneTimeLoadCount;
+            await Task.Delay(100);
             while (true)
             {
                 var lastLoadTask = loadTask;

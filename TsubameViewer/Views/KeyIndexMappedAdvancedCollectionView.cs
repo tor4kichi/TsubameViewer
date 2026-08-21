@@ -116,7 +116,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
     {
         if (_keyIndexMap.Count != 0) { return; }
 
-        lock (_indexUpdateLock)
+        //lock (_indexUpdateLock)
         {
             for (int i = 0; i < Count; i++)
             {
@@ -128,7 +128,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
 
     void ClearKeyIndexCache()
     {
-        lock (_indexUpdateLock)
+        //lock (_indexUpdateLock)
         {
             _keyIndexMap.Clear();
         }
