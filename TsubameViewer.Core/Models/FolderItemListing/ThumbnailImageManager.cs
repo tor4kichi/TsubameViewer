@@ -273,27 +273,44 @@ public sealed class ThumbnailImageManager
     static AsyncLock _renderLock = new AsyncLock(2);
     public async ValueTask<IRandomAccessStream?> EnsureGetImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, float imageQuality = 1f, CancellationToken ct = default)
     {
-        if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
+        try
+        {
+            if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
+        }
+        catch
+        {
+
+        }        
         if (_folderListingSettings.ThumbnailImageCacheMode is ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon
             or ThumbnailImageCacheMode.NeverGenerateCache)
         {
-            if (await GetImageStreamFromFileSystemAsync(imageSource, true, ct) is { } fsImageStream)
+            try
             {
-                return fsImageStream;
+                if (await GetImageStreamFromFileSystemAsync(imageSource, true, ct) is { } fsImageStream)
+                {
+                    return fsImageStream;
+                }
             }
+            catch { }
         }
 
         // ロックしないと画像アーカイブの多重読み込みでメモリ使用量が5GBをゆうに越える
-        using (await _renderLock.LockAsync(ct))
+        try
         {
-            var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
-            if (stream != null && stream.Length != 0
-                && _folderListingSettings.ThumbnailImageCacheMode is not ThumbnailImageCacheMode.NeverGenerateCache)
+            using (await _renderLock.LockAsync(ct))
             {
-                UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+                var stream = await Task.Run(async () => await GetImageStreamAsync(imageSource, outputStream, imageQuality, ct), ct);
+                if (stream != null && stream.Length != 0
+                    && _folderListingSettings.ThumbnailImageCacheMode is not ThumbnailImageCacheMode.NeverGenerateCache)
+                {
+                    UploadWithRetry(GetId(imageSource), imageSource.Name, stream);
+                }
+                return stream?.AsRandomAccessStream();
             }
-            return stream?.AsRandomAccessStream();
         }
+        catch { }
+
+        return null;
     }
 
 
