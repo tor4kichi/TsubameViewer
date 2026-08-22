@@ -275,12 +275,18 @@ public sealed class ThumbnailImageManager
     {
         try
         {
+            if (imageSource.Path.EndsWith(SupportedFileTypesHelper.GifFileType, StringComparison.OrdinalIgnoreCase))
+            {
+                return await imageSource.GetImageRandomAccessStreamAsync(ct);
+            }
+        }
+        catch { }
+
+        try
+        {
             if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
         }
-        catch
-        {
-
-        }        
+        catch { }    
         if (_folderListingSettings.ThumbnailImageCacheMode is ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon
             or ThumbnailImageCacheMode.NeverGenerateCache)
         {
