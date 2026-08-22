@@ -240,7 +240,7 @@ public sealed class ThumbnailImageManager
         stream.Seek(0, SeekOrigin.Begin);
     }
 
-    ThumbnailImageInfo SetThumbanilSize(string itemId, uint width, uint height)
+    ThumbnailImageInfo SetThumbnailSize_Internal(string itemId, uint width, uint height)
     {
         var info = new ThumbnailImageInfo()
         {
@@ -367,7 +367,7 @@ public sealed class ThumbnailImageManager
             else
             {
                 var itemId = ToId(targetFile);
-                SetThumbanilSize(itemId, image.OriginalWidth, image.OriginalHeight);
+                SetThumbnailSize_Internal(itemId, image.OriginalWidth, image.OriginalHeight);
                 return image;
             }
         }
@@ -443,7 +443,7 @@ public sealed class ThumbnailImageManager
                 if (await imageSource.TryGetSizedImageStreamAsync(200, stream, ct) is { } size)
                 {
                     // サムネイルサイズ情報を記録                                
-                    SetThumbanilSize(itemId, (uint)size.Width, (uint)size.Height);
+                    SetThumbnailSize_Internal(itemId, (uint)size.Width, (uint)size.Height);
                     return outputStream;
                 }
                 else
@@ -579,7 +579,19 @@ public sealed class ThumbnailImageManager
     public ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight)
     {
         var replacedId = ToId(imageSource.Path);
-        var item = SetThumbanilSize(replacedId, pixelWidth, pixelHeight);
+        var item = SetThumbnailSize_Internal(replacedId, pixelWidth, pixelHeight);
+        return new ThumbnailSize()
+        {
+            Height = item.ImageHeight,
+            Width = item.ImageWidth,
+            RatioWH = item.RatioWH,
+        };
+    }
+
+    public ThumbnailSize SetThumbnailSize(string path, uint pixelWidth, uint pixelHeight)
+    {
+        var replacedId = ToId(path);
+        var item = SetThumbnailSize_Internal(replacedId, pixelWidth, pixelHeight);
         return new ThumbnailSize()
         {
             Height = item.ImageHeight,
@@ -603,7 +615,7 @@ public sealed class ThumbnailImageManager
             }
             var props = await file.Properties.GetImagePropertiesAsync();
             var replacedId = ToId(file.Path);
-            var size=  SetThumbanilSize(replacedId, props.Width, props.Height);
+            var size=  SetThumbnailSize_Internal(replacedId, props.Width, props.Height);
             return new ThumbnailSize()
             {
                 Width = props.Width,
@@ -1065,7 +1077,7 @@ public sealed class ThumbnailImageManager
 
         // サムネイルサイズ情報を記録
         var replacedId = ToId(path);
-        SetThumbanilSize(replacedId, (uint)resizedBitmap.Width, (uint)resizedBitmap.Height);        
+        SetThumbnailSize_Internal(replacedId, (uint)resizedBitmap.Width, (uint)resizedBitmap.Height);        
         Debug.WriteLine($"thumb out <{path}> size: w= {scaledSize.Width} h= {scaledSize.Height}");
 
         // SKBitmap → SKImage → SKData (エンコード)
@@ -1089,7 +1101,7 @@ public sealed class ThumbnailImageManager
             var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(ct).ConfigureAwait(false);
             // サムネイルサイズ情報を記録                
             var replacedId = ToId(path);
-            SetThumbanilSize(replacedId, decoder.PixelWidth, decoder.PixelHeight);
+            SetThumbnailSize_Internal(replacedId, decoder.PixelWidth, decoder.PixelHeight);
             var pixelData = await decoder.GetPixelDataAsync().AsTask(ct).ConfigureAwait(false);
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
@@ -1130,7 +1142,7 @@ public sealed class ThumbnailImageManager
 
             // サムネイルサイズ情報を記録                
             var replacedId = ToId(path);
-            SetThumbanilSize(replacedId, (uint)scaledSize.Width, (uint)scaledSize.Height);
+            SetThumbnailSize_Internal(replacedId, (uint)scaledSize.Width, (uint)scaledSize.Height);
             outputStream.SetLength(0);
             await canvas.SaveAsync(outputStream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg, imageQuality).AsTask(ct);
             outputStream.Seek(0, SeekOrigin.Begin);
@@ -1227,7 +1239,7 @@ public sealed class ThumbnailImageManager
         });
 
         var replacedId = ToId(file.Path);
-        SetThumbanilSize(replacedId, (uint)image.Width, (uint)image.Height);
+        SetThumbnailSize_Internal(replacedId, (uint)image.Width, (uint)image.Height);
         image.Encode(outputStream, SKEncodedImageFormat.Png, 100);
         return true;
     }
@@ -1340,7 +1352,7 @@ public sealed class ThumbnailImageManager
     public ThumbnailSize SetThumbnailSize(string path, BitmapImage image)
     {
         var replacedId = ToId(path);
-        var item = SetThumbanilSize(replacedId, (uint)image.PixelWidth, (uint)image.PixelHeight);
+        var item = SetThumbnailSize_Internal(replacedId, (uint)image.PixelWidth, (uint)image.PixelHeight);
         return new ThumbnailSize()
         {
             Height = item.ImageHeight,
@@ -1352,7 +1364,7 @@ public sealed class ThumbnailImageManager
     private ThumbnailSize SetThumbnailSize(string path, SKImageInfo imageInfo)
     {
         var replacedId = ToId(path);
-        var item = SetThumbanilSize(replacedId, (uint)imageInfo.Width, (uint)imageInfo.Height);
+        var item = SetThumbnailSize_Internal(replacedId, (uint)imageInfo.Width, (uint)imageInfo.Height);
         return new ThumbnailSize()
         {
             Height = item.ImageHeight,
