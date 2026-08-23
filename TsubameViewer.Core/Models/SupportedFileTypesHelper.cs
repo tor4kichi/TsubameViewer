@@ -25,7 +25,7 @@ public static class SupportedFileTypesHelper
             TarFileType,                
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
-        .ToHashSet();
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         SupportedImageFileExtensions = new string[]
         {
@@ -43,14 +43,14 @@ public static class SupportedFileTypesHelper
             JpegXRFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
-        .ToHashSet();
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         SupportedEBookFileExtensions = new string[]
         {
             EPubFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
-        .ToHashSet();
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         SupportedMovieFileExtensions = new string[]
         {
@@ -67,7 +67,7 @@ public static class SupportedFileTypesHelper
             Movie_FlvFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
-        .ToHashSet();
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public const string ZipFileType = ".zip";

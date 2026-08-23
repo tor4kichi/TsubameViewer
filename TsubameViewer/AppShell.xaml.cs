@@ -67,46 +67,7 @@ public interface ITitlebarContentAware
 [ObservableObject]
 public sealed partial class AppShell : UserControl
 {
-    #region Purchase Cheer Addon
-
-    [RelayCommand(CanExecute = nameof(IsStoreAvairable))]
-    async Task PurchaseAddonAsync()
-    {
-        var service = Ioc.Default.GetService<PurchaseAddonService>();
-        if (service == null) { return; }
-        var result = await service.PurchaseCheerAsync();        
-        Debug.WriteLine(result);
-
-        if (result is Windows.Services.Store.StorePurchaseStatus.Succeeded or Windows.Services.Store.StorePurchaseStatus.AlreadyPurchased)
-        {
-            PurchaseThanksMassageFlyout.ShowAt(FeedbackButton);
-        }
-    }
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(PurchaseAddonCommand))]
-    bool _isStoreAvairable;
-
-    async Task InitialziePurchase()
-    {
-        var service = Ioc.Default.GetService<PurchaseAddonService>();
-        if (service == null) { return; }
-
-        if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
-        {
-            var info = await service.GetCheerAddonInfoAsync();
-            if (info == null) { return; }
-            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description ?? "";
-            IsStoreAvairable = info != null;
-        }
-    }
-
-    void ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
-    {
-        PurchaseConfirmFlyout.ShowAt(FeedbackButton);
-    }
-
-    #endregion
+    
 
     readonly AppShellViewModel _vm;
     readonly IMessenger _messenger;
@@ -166,7 +127,6 @@ public sealed partial class AppShell : UserControl
 
         Loaded += AppShell_Loaded;
 
-        InitialziePurchase().FireAndForgetSafe();
 
         string startMultiSelectionText = "StartMultiSelection".Translate();
         string addNewFolderText = "AddNewFolder".Translate();
@@ -222,14 +182,38 @@ public sealed partial class AppShell : UserControl
             },
             new MenuItemInvokeActionViewModel()
             {
+                Title = "SendFeedbackForMsFormAsShort".Translate(),
+                Invoked = () => OpenMsFormFeedbackPage(),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Comment },
+            },
+            new MenuItemInvokeActionViewModel()
+            {
                 Title = settingsText,
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
-
-        ApplicationInfomationText.Text = GetAppInfoText().ToString();
     }
+
+    StringBuilder GetAppInfoText()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationName)
+            .Append(" v").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationVersion.ToFormattedString())
+            .Append(" ");
+        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystem).Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemArchitecture)
+            .Append("(").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemVersion).Append(")")
+            .Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily);
+        return sb;
+    }
+
+    void OpenMsFormFeedbackPage()
+    {
+        var appInfoText = GetAppInfoText().ToString();
+        var uri = new Uri($"https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZAAObntfNUNVdWMThSTjFGMDhFWjI4TDJLSjUxTTM4SC4u&r8cc009228bff4265bf1eb48b0c408716={appInfoText}");
+        _ = Launcher.LaunchUriAsync(uri);
+    }
+
 
     void AppShell_Loaded(object sender, RoutedEventArgs e)
     {
@@ -2013,46 +1997,6 @@ public sealed partial class AppShell : UserControl
     void PackageUpdateDialogBGWall_Tapped(object sender, TappedRoutedEventArgs e)
     {
         PackageUpdateDialog.Hide();
-    }
-
-    #endregion
-
-
-    #region Feedback
-
-    [RelayCommand]
-    void OpenStoreRatingPage()
-    {
-        _ = Microsoft.Toolkit.Uwp.Helpers.SystemInformation.LaunchStoreForReviewAsync();
-    }
-
-    [RelayCommand]
-    void OpenMsFormFeedbackPage()
-    {
-        var appInfoText = ApplicationInfomationText.Text;
-        var uri = new Uri($"https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZAAObntfNUNVdWMThSTjFGMDhFWjI4TDJLSjUxTTM4SC4u&r8cc009228bff4265bf1eb48b0c408716={appInfoText}");
-        _ = Launcher.LaunchUriAsync(uri);
-    }
-
-    [RelayCommand]
-    void AppInformationCopyToClipboard()
-    {
-        var data = new DataPackage();
-        data.SetText(ApplicationInfomationText.Text.ToString());
-        Clipboard.SetContent(data);
-        _messenger.SendShowTextNotificationMessage($"✅{"Copy".Translate()}");
-    }
-
-    StringBuilder GetAppInfoText()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationName)
-            .Append(" v").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationVersion.ToFormattedString())
-            .Append(" ");
-        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystem).Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemArchitecture)
-            .Append("(").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemVersion).Append(")")
-            .Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily);
-        return sb;
     }
 
     #endregion

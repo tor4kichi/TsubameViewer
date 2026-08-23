@@ -21,7 +21,7 @@ ApplicationTheme.Dark = 暗いテーマ
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = 開発支援アドオンを購入
+PurchaseAddon_ButtonTitle = アドオン購入でアプリを応援
 PurchaseAddon_ShowPurchaseUI = 購入画面へ
 PurchaseAddon_ShowPurchaseHistory = 購入履歴の確認
 PurchaseAddon_PurchasedThanksMessage = ご支援頂きありがとうございます！
@@ -32,12 +32,10 @@ AddNewFolder = フォルダを追加
 Import = インポート
 RefreshLatest = ページを更新
 Settings = 設定
-SendFeedbackForMsForm = 目安箱にフィードバックを送る
-SendFeedbackWithStoreReview = ストアレビューを送る
-CopyAppInfoToClipboard = アプリ情報をコピー
 SourceStorageItemsPage = Myフォルダ
 CollectionPage = コレクション
 OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
+
 
 
 #### Image Codec support
@@ -94,7 +92,7 @@ ImageViewerSettings = 画像ビューアの設定
 IsReverseImageFliping_MouseWheel = スクロールのページ送りを逆にする
 IsReverseImageFliping_Button = 左右のページ送りを逆にする
 IsReversePageFliping_Swipe = スワイプのページ送りを逆にする
-GeneralUISettings = 操作設定
+GeneralUISettings = 全般設定
 IsForceEnableXYNavigation = ページを開いた時にコンテンツを自動フォーカス\n（方向キー/ゲームパッド向け）
 ForceXboxAppearanceModeEnabled = ウィンドウ周囲に余白を追加（大きい画面向け）
 OtherSettings = その他の設定
@@ -110,6 +108,16 @@ PdfImageThresholdHeight = 代替縦幅のしきい値
 PdfImageAlternateHeight = 代替縦幅の値
 IsInPageSearchWithMigemo = ローマ字で日本語絞り込み検索
 IsInPageSearchWithMigemo_Desc = ページ内の絞り込み時が対象です。ファイル名に含まれる日本語の読み方をローマ字入力して検索できます。例えば 「桜」は「saku」と入力しても絞り込めます。この機能には migemo （及び csmigemo）を利用しています。
+AppInformation = アプリ情報
+AppVersion = アプリバージョン
+OpenAppStorePage = ツバメビューアのストアページを開く
+OpenAppUpdateHistory = 更新履歴を表示
+SendFeedbackForMsForm = 目安箱にフィードバックを送る
+SendFeedbackForMsFormAsShort = フィードバック
+SendFeedbackWithStoreReview = ストアレビューを送る
+CopyAppInfoToClipboard = アプリ情報をコピー
+
+
 
 #### SourceStorageItemsPage
 Folders = フォルダ

@@ -526,10 +526,11 @@ public sealed class FolderStructureCacheContext : IDisposable
             currentCount += oneTimeLoadCount;
             int index = 0;
             T[] itemVMList = new T[oneTimeLoadCount];
+            await Task.Delay(100);
             while (true)
             {
                 var lastLoadTask = loadTask;
-                loadTask = query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct);
+                loadTask = Task.Run(async () => await query.GetFilesAsync(currentCount, oneTimeLoadCount).AsTask(ct), ct);
                 var loaded = await (lastLoadTask ?? Task.FromResult<IReadOnlyList<StorageFile>>([]));
                 if (loaded.Count == 0) { break; }
 
@@ -537,14 +538,28 @@ public sealed class FolderStructureCacheContext : IDisposable
                 {
                     var file = loaded[i];
                     itemVMList[i] = cacheImageViewModelFactory(_repo.AddOrUpdateItem(file));
+                    _ = file.Properties.GetImagePropertiesAsync().AsTask(ct)
+                        .ContinueWith(static async (task, s) =>
+                        {
+                            if (s is (ThumbnailImageManager imageMan, StorageFile file))
+                            {
+                                var props = await task;
+                                imageMan.SetThumbnailSize(file.Path, props.Width, props.Height);
+                            }
+                        }, (thumbnailManager, file));
                 }
 
                 currentCount += (uint)loaded.Count;
                 items.AddRange(itemVMList.Take(loaded.Count));
+                await Task.Delay(25);
 #if DEBUG
                 sw.ElapsedWrite(currentCount.ToString());
 #endif
             }
+
+#if DEBUG
+            sw.ElapsedWrite("GetItmes");
+#endif
 
 #if DEBUG
             sw.ElapsedWrite("Complete");
