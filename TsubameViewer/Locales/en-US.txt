@@ -21,7 +21,7 @@ ApplicationTheme.Dark = Dark theme
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = Purchase development support add-ons
+PurchaseAddon_ButtonTitle = Support the app by purchasing add-ons.
 PurchaseAddon_ShowPurchaseUI = Proceed to purchase screen
 PurchaseAddon_ShowPurchaseHistory = Check your purchase history
 PurchaseAddon_PurchasedThanksMessage = Thank you for your support!
@@ -32,12 +32,10 @@ AddNewFolder = Add Folder
 Import = Import
 RefreshLatest = Refresh page
 Settings = Setting
-SendFeedbackForMsForm = Send feedback to the suggestion box
-SendFeedbackWithStoreReview = Send a store review
-CopyAppInfoToClipboard = Copy app information
 SourceStorageItemsPage = My folder
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
+
 
 
 #### Image Codec support
@@ -94,7 +92,7 @@ ImageViewerSettings = Image viewer settings
 IsReverseImageFliping_MouseWheel = Reverse scrolling pagination
 IsReverseImageFliping_Button = Reverse left/right page feed
 IsReversePageFliping_Swipe = Reverse the swipe direction for page navigation
-GeneralUISettings = Operation settings
+GeneralUISettings = General settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
 ForceXboxAppearanceModeEnabled = Added margin around the window (for large screens)
 OtherSettings = Other settings
@@ -110,6 +108,15 @@ PdfImageThresholdHeight = Alternate height threshold
 PdfImageAlternateHeight = Alternate height value
 IsInPageSearchWithMigemo = Search for Japanese using Roman letters
 IsInPageSearchWithMigemo_Desc = This feature applies when filtering within a page. You can search by entering the Romanized pronunciation of Japanese words contained in file names. For example, you can filter for “桜” by entering “saku.” This feature uses migemo (and csmigemo).
+AppInformation = App information
+AppVersion = App version
+OpenAppStorePage = Open the tsubame viewer store page
+OpenAppUpdateHistory = Show update history
+SendFeedbackForMsForm = Send feedback to the suggestion box
+SendFeedbackWithStoreReview = Send a store review
+CopyAppInfoToClipboard = Copy app information
+
+
 
 #### SourceStorageItemsPage
 Folders = Folder

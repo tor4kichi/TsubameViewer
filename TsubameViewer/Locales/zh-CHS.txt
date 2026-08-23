@@ -21,7 +21,7 @@ ApplicationTheme.Dark = 深色主题
 
 
 #### Purchase Addon
-PurchaseAddon_ButtonTitle = 购买开发支持附加组件
+PurchaseAddon_ButtonTitle = 通过购买附加组件来支持该应用。
 PurchaseAddon_ShowPurchaseUI = 继续购买屏幕
 PurchaseAddon_ShowPurchaseHistory = 查看您的购买记录
 PurchaseAddon_PurchasedThanksMessage = 感谢您的支持！
@@ -32,12 +32,10 @@ AddNewFolder = 新增文件夹
 Import = 导入
 RefreshLatest = 刷新页面
 Settings = 设置
-SendFeedbackForMsForm = 请将反馈意见发送至意见箱。
-SendFeedbackWithStoreReview = 评价此应用
-CopyAppInfoToClipboard = 复制应用信息
 SourceStorageItemsPage = 我的文件夹
 CollectionPage = 库
 OpenImageCodecExtensionStorePageWithFileType = {0} 需要安装扩展以显示图像格式。打开应用商店？
+
 
 
 #### Image Codec support
@@ -94,7 +92,7 @@ ImageViewerSettings = 图像查看器设置
 IsReverseImageFliping_MouseWheel = 反向滚动分页
 IsReverseImageFliping_Button = 反向左/右翻页
 IsReversePageFliping_Swipe = 将滑动翻页的方向反转
-GeneralUISettings = 操作设定
+GeneralUISettings = 常规设置
 IsForceEnableXYNavigation = 在页面打开时自动聚焦内容\ n（箭头键/游戏板）
 ForceXboxAppearanceModeEnabled = 在窗口周围添加边距（对于大屏幕）
 OtherSettings = 其他设置
@@ -110,6 +108,15 @@ PdfImageThresholdHeight = 自定义高度阈值
 PdfImageAlternateHeight = 自定义高度值
 IsInPageSearchWithMigemo = 使用罗马字母搜索日语
 IsInPageSearchWithMigemo_Desc = 该功能适用于页面内的筛选操作。您可以使用罗马字输入文件名中日语词汇的读音进行搜索。例如，输入“saku”即可筛选出包含“桜”的文件。该功能使用了 migemo（及 csmigemo）。
+AppInformation = 应用信息
+AppVersion = 应用版本
+OpenAppStorePage = 打开 tsubame viewer 商店页面
+OpenAppUpdateHistory = 显示更新历史记录
+SendFeedbackForMsForm = 请将反馈意见发送至意见箱。
+SendFeedbackWithStoreReview = 评价此应用
+CopyAppInfoToClipboard = 复制应用信息
+
+
 
 #### SourceStorageItemsPage
 Folders = 夹

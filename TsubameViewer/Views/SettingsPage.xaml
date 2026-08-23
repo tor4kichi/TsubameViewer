@@ -231,7 +231,39 @@
         </ItemsControl>
       </StackPanel>
     </DataTemplate>
-    
+
+    <Flyout x:Name="PurchaseThanksMassageFlyout">
+      <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_PurchasedThanksMessage}"
+                 TextWrapping="Wrap"
+                 MaxWidth="320" />
+    </Flyout>
+
+    <Flyout x:Name="PurchaseConfirmFlyout">
+      <StackPanel Spacing="16"
+                  MaxWidth="300">
+
+        <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
+                   Style="{StaticResource SubtitleTextBlockStyle}" />
+
+        <TextBlock x:Name="PurchaseConfirmFlyout_DescTextBlock"
+                   Text=""
+                   TextWrapping="Wrap"
+                   MinHeight="60"
+                   Margin="0 0 0 0" />
+
+        <Button Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseUI}"
+                Command="{x:Bind PurchaseAddonCommand}"
+                HorizontalAlignment="Stretch"
+                Style="{StaticResource AccentButtonStyle}"
+                ctwu:FrameworkElementExtensions.Cursor="Hand" />
+
+        <HyperlinkButton Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseHistory}"
+                         NavigateUri="https://account.microsoft.com/billing/orders"
+                         HorizontalAlignment="Stretch"
+                         ctwu:FrameworkElementExtensions.Cursor="Hand" />
+      </StackPanel>
+    </Flyout>
+
   </Page.Resources>
 
   <Grid Background="{ThemeResource SystemControlAcrylicElementBrush}"
@@ -268,37 +300,23 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                     Margin="0 0 0 8">
-          <StackPanel Orientation="Horizontal"
-                      Spacing="8"
-                      HorizontalAlignment="Right">
-            <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyToClipboard}"
-                    Command="{x:Bind _vm.AppInfoCopyToClipboard}"
-                    Style="{StaticResource TitlebarButton}"
-                    ctwu:FrameworkElementExtensions.Cursor="Hand">
-              <SymbolIcon Symbol="Copy" />
-            </Button>
-            <TextBlock Text="{x:Bind _vm.ReportUserEnvString}"
-                       IsTextSelectionEnabled="True"
-                       HorizontalAlignment="Right"
-                       TextAlignment="Right"
-                       Opacity="0.7">
-              <TextBlock.ContextFlyout>
-                <MenuFlyout>
-                  <MenuFlyoutItem Text="{i18Ext:Localize Key=CopyToClipboard}"
-                                  Command="{x:Bind _vm.AppInfoCopyToClipboard}" />
-                </MenuFlyout>
-              </TextBlock.ContextFlyout>
-            </TextBlock>
 
-          </StackPanel>
+          <Button Click="ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  x:Name="PurchaseAddonButton">
+            <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
+                       TextWrapping="Wrap" />
+          </Button>
         </StackPanel>
       </Grid>
       
       <ScrollViewer>
-        <StackPanel x:Name="ScrollViewerRootPanel" Padding="0 0 0 64">
+        <StackPanel x:Name="ScrollViewerRootPanel" Padding="48 0 48 64">
+          
           <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
-                        Margin="48 16"
+                        Margin="0 16"
                         IsTabStop="False"
                         HorizontalAlignment="Stretch"
                         MaxWidth="600"
@@ -311,27 +329,63 @@
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
-          <StackPanel Spacing="4"
-                      Margin="48 16 48 16"
-                      x:Name="SettingsBottomControl">
-            <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy"
-                             HorizontalAlignment="Right"
-                             FontWeight="SemiBold"                             
-                             />
-            <HyperlinkButton Content="{Binding Source=ThirdPartyLibraryNotice, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Third-Party-Library-Notice" 
-                             HorizontalAlignment="Right"
-                             FontWeight="SemiBold"
-                             />
+          <TextBlock Text="{i18Ext:Localize Key=AppInformation}"
+                     Style="{StaticResource SubtitleTextBlockStyle}" />
+          <uwpControls:SettingsCard MaxWidth="600"
+                                    Header="{i18Ext:Localize Key=AppVersion}">
+            
+            <uwpControls:SettingsCard.Description>
+              <TextBlock IsTextSelectionEnabled="True"
+                         x:Name="ApplicationInfomationText"
+                         TextWrapping="Wrap"
+                         >
+              </TextBlock>
+            </uwpControls:SettingsCard.Description>
+            <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyAppInfoToClipboard}"
+                    Command="{x:Bind AppInformationCopyToClipboardCommand}"
+                    uwpControls:DockPanel.Dock="Right"
+                    MinWidth="60">
+              <SymbolIcon Symbol="Copy" />
+            </Button>
 
-            <HyperlinkButton Content="{Binding Source=AskQuestionWithMashmarrow, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://marshmallow-qa.com/tor4kichi" 
-                             HorizontalAlignment="Right"
-                             FontWeight="SemiBold"
-                             />
-          </StackPanel>
+          </uwpControls:SettingsCard>
           
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=OpenAppStorePage}"
+                             NavigateUri="https://apps.microsoft.com/detail/9ndxxqrg4pl8"
+                             HorizontalAlignment="Right" />
+          </uwpControls:SettingsCard>
+
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=OpenAppUpdateHistory}"
+                             NavigateUri="https://tor4kichi.github.io/tsubame_viewer/updates"
+                             HorizontalAlignment="Right" />
+          </uwpControls:SettingsCard>
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=PrivacyPolicy}"
+                             NavigateUri="https://tor4kichi.github.io/tsubame_viewer/privacy-policy"
+                             HorizontalAlignment="Right" />
+          </uwpControls:SettingsCard>
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=ThirdPartyLibraryNotice}"
+                             NavigateUri="https://tor4kichi.github.io/tsubame_viewer/Third-Party-Library-Notice"
+                             HorizontalAlignment="Right" />
+          </uwpControls:SettingsCard>
+
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=SendFeedbackWithStoreReview}"
+                             Command="{x:Bind OpenStoreRatingPageCommand}" />
+          </uwpControls:SettingsCard>
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=SendFeedbackForMsForm}"
+                             Command="{x:Bind OpenMsFormFeedbackPageCommand}" />
+          </uwpControls:SettingsCard>
+          <uwpControls:SettingsCard>
+            <HyperlinkButton Content="{i18Ext:Localize Key=AskQuestionWithMashmarrow}"
+                             NavigateUri="https://marshmallow-qa.com/tor4kichi"
+                             HorizontalAlignment="Right" />
+
+          </uwpControls:SettingsCard>
 
           <!-- AdvancedSetting -->
           <!--<uwpControls:Expander Margin="32 64 32 32" Visibility="Collapsed">
@@ -365,16 +419,6 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
-            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ScrollViewerRootPanel.Padding" Value="80 0 80 27" />
-          </VisualState.Setters>
-        </VisualState>
-
-        <VisualState>
-          <VisualState.StateTriggers>
             <AdaptiveTrigger MinWindowWidth="1220" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -392,10 +436,8 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SettingsItemsControl.Margin"
-                    Value="16 16" />
-            <Setter Target="SettingsBottomControl.Margin"
-                    Value="16 16" />
+            <Setter Target="ScrollViewerRootPanel.Padding"
+                    Value="16 0 16 64" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
