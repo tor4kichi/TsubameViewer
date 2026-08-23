@@ -113,6 +113,7 @@ AppVersion = アプリバージョン
 OpenAppStorePage = ツバメビューアのストアページを開く
 OpenAppUpdateHistory = 更新履歴を表示
 SendFeedbackForMsForm = 目安箱にフィードバックを送る
+SendFeedbackForMsFormAsShort = フィードバック
 SendFeedbackWithStoreReview = ストアレビューを送る
 CopyAppInfoToClipboard = アプリ情報をコピー
 

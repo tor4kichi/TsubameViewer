@@ -113,6 +113,7 @@ AppVersion = Version de l'application
 OpenAppStorePage = Ouvrir la page du magasin tsubame viewer
 OpenAppUpdateHistory = Afficher l'historique des mises à jour
 SendFeedbackForMsForm = Envoyez vos commentaires via la boîte à suggestions
+SendFeedbackForMsFormAsShort = Retour
 SendFeedbackWithStoreReview = Soumettre un avis sur le store
 CopyAppInfoToClipboard = Copier les informations de l'application
 

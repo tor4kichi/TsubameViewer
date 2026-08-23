@@ -113,6 +113,7 @@ AppVersion = 应用版本
 OpenAppStorePage = 打开 tsubame viewer 商店页面
 OpenAppUpdateHistory = 显示更新历史记录
 SendFeedbackForMsForm = 请将反馈意见发送至意见箱。
+SendFeedbackForMsFormAsShort = 反馈
 SendFeedbackWithStoreReview = 评价此应用
 CopyAppInfoToClipboard = 复制应用信息
 

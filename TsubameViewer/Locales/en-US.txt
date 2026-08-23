@@ -113,6 +113,7 @@ AppVersion = App version
 OpenAppStorePage = Open the tsubame viewer store page
 OpenAppUpdateHistory = Show update history
 SendFeedbackForMsForm = Send feedback to the suggestion box
+SendFeedbackForMsFormAsShort = Feedback
 SendFeedbackWithStoreReview = Send a store review
 CopyAppInfoToClipboard = Copy app information
 

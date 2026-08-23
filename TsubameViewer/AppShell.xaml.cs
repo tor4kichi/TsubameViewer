@@ -182,12 +182,38 @@ public sealed partial class AppShell : UserControl
             },
             new MenuItemInvokeActionViewModel()
             {
+                Title = "SendFeedbackForMsFormAsShort".Translate(),
+                Invoked = () => OpenMsFormFeedbackPage(),
+                Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Comment },
+            },
+            new MenuItemInvokeActionViewModel()
+            {
                 Title = settingsText,
                 Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
     }
+
+    StringBuilder GetAppInfoText()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationName)
+            .Append(" v").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.ApplicationVersion.ToFormattedString())
+            .Append(" ");
+        sb.Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystem).Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemArchitecture)
+            .Append("(").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.OperatingSystemVersion).Append(")")
+            .Append(" ").Append(Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily);
+        return sb;
+    }
+
+    void OpenMsFormFeedbackPage()
+    {
+        var appInfoText = GetAppInfoText().ToString();
+        var uri = new Uri($"https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZAAObntfNUNVdWMThSTjFGMDhFWjI4TDJLSjUxTTM4SC4u&r8cc009228bff4265bf1eb48b0c408716={appInfoText}");
+        _ = Launcher.LaunchUriAsync(uri);
+    }
+
 
     void AppShell_Loaded(object sender, RoutedEventArgs e)
     {

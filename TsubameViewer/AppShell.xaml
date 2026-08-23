@@ -639,7 +639,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <AdaptiveTrigger MinWindowWidth="610" />
+            <AdaptiveTrigger MinWindowWidth="810" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
           </VisualState.Setters>

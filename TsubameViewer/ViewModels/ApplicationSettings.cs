@@ -15,7 +15,7 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
         _isFullScreenOnAppLaunch = Read(false, nameof(IsFullScreenOnAppLaunch));
         _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
         _IsUINavigationFocusAssistanceEnabled = Read(false, nameof(IsUINavigationFocusAssistanceEnabled));
-        _isAppMenuShowWithLeft = Read(false, nameof(IsAppMenuShowWithLeft));
+        _isAppMenuShowWithLeft = Read(true, nameof(IsAppMenuShowWithLeft));
     }
 
     public static string GetDefaultLocale()
