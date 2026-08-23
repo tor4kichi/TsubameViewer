@@ -131,7 +131,7 @@ public sealed class OpenFolderItemCommand : CommandBase
             {
                 var folder = (StorageFolder)((StorageItemImageSource)imageSource.FlattenAlbamItemInnerImageSource()).StorageItem;
                 var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(folder.Path);
-                var openMode = parentSettings?.ChildImagesFolderOpenMode;
+                var openMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
                 if (openMode == DefaultFolderOrArchiveOpenMode.Viewer
                     && await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableImagesAsync(folder, ct), CancellationToken.None))
                 {
