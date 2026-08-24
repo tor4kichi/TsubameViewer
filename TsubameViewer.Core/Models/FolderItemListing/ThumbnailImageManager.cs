@@ -38,6 +38,7 @@ using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
+using Windows.System;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
@@ -250,15 +251,19 @@ public sealed class ThumbnailImageManager
             ImageHeight = height,
             RatioWH = (float)width / height
         };
-        try
+
+        Observable.YieldFrame().Subscribe(_ =>
         {
-            _thumbnailImageInfoRepository.UpdateItem(info);
-        }
-        catch (LiteDB.LiteException liteEx)
-        {
-            ReOpenInsideDb();
-            _thumbnailImageInfoRepository.UpdateItem(info);
-        }
+            try
+            {
+                _thumbnailImageInfoRepository.UpdateItem(info);
+            }
+            catch (LiteDB.LiteException liteEx)
+            {
+                ReOpenInsideDb();
+                _thumbnailImageInfoRepository.UpdateItem(info);
+            }
+        });
         //Debug.WriteLine($"{Path.GetFileName(itemId)}: thumb size: w= {width} h= {height}");
         return info;
     }
@@ -534,7 +539,7 @@ public sealed class ThumbnailImageManager
             var folderStorageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
             if (folderStorageItem is not StorageFolder folder) { throw new InvalidOperationException(); }
 
-            var imageStream = await GetImageStreamAsync(childImageSource, null, imageQuality, ct);
+            var imageStream = await Task.Run(async () => await GetImageStreamAsync(childImageSource, null, imageQuality, ct), ct);
             if (imageStream == null) { throw new InvalidOperationException(); }
             imageStream.Seek(0, SeekOrigin.Begin);
             var coverFile = await folder.CreateFileAsync("cover.jpg", CreationCollisionOption.ReplaceExisting);
@@ -1323,8 +1328,8 @@ public sealed class ThumbnailImageManager
             var linkedCt = linkedCts.Token;
             try
             {
-                using var fileStream = await file.OpenReadAsync().AsTask(ct);
-                using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);                
+                using var fileStream = await file.OpenReadAsync().AsTask(ct).ConfigureAwait(false);
+                using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct).ConfigureAwait(false);                
                 var video = fg.CurrentVideoStream;
                 if (video.DisplayAspectRatio > 1)
                 {
@@ -1336,12 +1341,12 @@ public sealed class ThumbnailImageManager
                     fg.DecodePixelHeight = (int)(requestedSize * (1 / video.DisplayAspectRatio) * _folderListingSettings.FolderItemThumbnailQuality);
                     fg.DecodePixelWidth = (int)(requestedSize * _folderListingSettings.FolderItemThumbnailQuality);
                 }
-                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(10)).AsTask(linkedCt);
+                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(10)).AsTask(linkedCt).ConfigureAwait(false);
                 if (frame.Timestamp > fg.Duration)
                 {
                     throw new InvalidOperationException();
                 }
-                await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(linkedCt);
+                await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(linkedCt).ConfigureAwait(false);
             }
             catch
             {

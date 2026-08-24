@@ -94,6 +94,7 @@ public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
                 }
 
                 await _thumbnailManager.PrepareToParentFolderThumbnailImageAsync(imageSource);
+
                 _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
                 _messenger.Send(new ThumbnailImageUpdateRequestMessage(Path.GetDirectoryName(imageSource.Path)));
             }
