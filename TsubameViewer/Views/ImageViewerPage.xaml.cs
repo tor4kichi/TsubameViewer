@@ -671,7 +671,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
                 if (firstImage == null) { return; }
 
-                s.BusyRenderingCount++;
+                // ページ到達直後はビジー表示しない
+                if (s.IsReadyToImageDisplay)
+                {
+                    s.BusyRenderingCount++;
+                }
                 using var _ = await s._cacheBitmapLock.LockAsync(ct);
 #if DEBUG
                 long time = TimeProvider.System.GetTimestamp();
