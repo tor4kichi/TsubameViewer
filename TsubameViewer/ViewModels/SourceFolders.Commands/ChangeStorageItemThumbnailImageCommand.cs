@@ -85,15 +85,16 @@ public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
                         "Overwrite".Translate(),
                         "Cancel".Translate(),
                         title:"SetThumbnailImage".Translate()) is false) { return; }
+                }
 
-                    try
+                using (var imageStream = await _thumbnailManager.GetImageStreamAsync(imageSource))
+                {
+                    if (existFile != null)
                     {
                         await existFile.DeleteAsync(StorageDeleteOption.Default);
                     }
-                    catch { }
+                    await _thumbnailManager.OverwriteParentFolderThumbnailImageAsync(imageSource, imageStream, folder);
                 }
-
-                await _thumbnailManager.PrepareToParentFolderThumbnailImageAsync(imageSource);
 
                 _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
                 _messenger.Send(new ThumbnailImageUpdateRequestMessage(Path.GetDirectoryName(imageSource.Path)));
