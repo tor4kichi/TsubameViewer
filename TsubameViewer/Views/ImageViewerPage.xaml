@@ -1137,7 +1137,27 @@
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
-              <DoubleAnimation Duration="0:0:0.05"                               
+              <DoubleAnimation Duration="0:0:0.125"
+                               To="0.25"
+                               Storyboard.TargetName="ImageLoadingBarrier"
+                               Storyboard.TargetProperty="Opacity" />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <ctwu:CompareStateTrigger Value="{x:Bind BusyRenderingCount, Mode=OneWay}"
+                                      Comparison="GreaterThanOrEqual">
+              <ctwu:CompareStateTrigger.To>
+                <!--ThrottleFirstLastを使っているため3  -->
+                <x:Int32>1</x:Int32>
+              </ctwu:CompareStateTrigger.To>
+            </ctwu:CompareStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.125"                               
+                               BeginTime="0:0:0.20"
                                To="0.25"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity" />

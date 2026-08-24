@@ -849,10 +849,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         if (imageCollectionContext is ArchiveImageCollectionContext archiveContext)
         {
             long time = TimeProvider.System.GetTimestamp();
-            int index = 0;
-            await foreach (var item in archiveContext.GetAllImageFilesAsync(ct))
+            for (int i = 0; i < await imageCollectionContext.GetImageFileCountAsync(ct); i++)
             {
-                Images[index++] = item;
+                Images[i] = await imageCollectionContext.GetImageFileAtAsync(i, SelectedFileSortType, ct);
             }
             Debug.WriteLine(TimeProvider.System.GetElapsedTime(time));
         }
@@ -1501,6 +1500,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 DisplaySortTypeInheritancePath = null;
                 SelectedFileSortType = DefaultFileSortType;
             }
+        }
+
+        // アーカイブは全件アイテムを取得しておく
+        if (_imageCollectionContext is ArchiveImageCollectionContext archiveContext)
+        {
+            _ = ReloadItemsAsync(_imageCollectionContext, _navigationCt);
         }
     }
 

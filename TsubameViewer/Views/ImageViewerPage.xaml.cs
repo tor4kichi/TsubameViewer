@@ -527,9 +527,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
     async Task PrefetchBitmapAsync( int currentIndex, double? requestHeight, CancellationToken ct)
-    {
-        using var _ = await _cacheBitmapLock.LockAsync(ct);
-
+    {        
         int[] prefetchTargets = [currentIndex + 1, currentIndex + 2, currentIndex + 3, currentIndex - 1, currentIndex - 2];
         HashSet<IImageSource> liveImages = new([.. _vm.SourceImages], IImageSourceEqualityComparer.Default);
         try
@@ -539,7 +537,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 if (index < 0) { continue; }
                 if (index > _vm.ImageCount - 1) { return; }
 
-                var item = await GetImageSourceAsync(index, ct);
+                var item = await Task.Run(async () => await GetImageSourceAsync(index, ct), ct);
                 liveImages.Add(item);
                 if (_cachedBitmap.FirstOrDefault(x => IImageSourceEqualityComparer.Default.Equals(x.Item, item)) is { } cached)
                 {
@@ -561,6 +559,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
         finally
         {
+            using var _ = await _cacheBitmapLock.LockAsync(ct);
             foreach (var item in _cachedBitmap.Where(x => !liveImages.Contains(x.Item, IImageSourceEqualityComparer.Default)).ToList())
             {
                 _cachedBitmap.Remove(item);
@@ -656,7 +655,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource)
                 {
                     double scale = canvasHeight != null ? canvasHeight.Value / bitmap.Size.Height : 1;
-                    var scaledSize = new Size(Math.Round(bitmap.Size.Width * scale), Math.Round(bitmap.Size.Height * scale));
+                    var scaledSize = new Size(Math.Floor(bitmap.Size.Width * scale), Math.Floor(bitmap.Size.Height * scale));
                     imageSource.Resize(scaledSize);
                     using (var ds = imageSource.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
                     {
@@ -827,18 +826,19 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 #if DEBUG
                 Debug.WriteLine($"Render time: {TimeProvider.System.GetElapsedTime(time)}");
 #endif
-                // 描画結果を画面に反映させるために待ち
-                await Task.Delay(1, ct);
-
                 // 先読み処理の前にビジー表示を解除
                 s.BusyRenderingCount = 0;
+
+                // 描画結果を画面に反映させるために待ち
+                await Task.Delay(250, ct);
+
                 if (!s._vm.ImageViewerSettings.IsEnablePrefetch) { return; }
 
                 // 先読みを実行
                 // SubscribeAwait + AwaitOperation.Switch によって
                 // 次の画像読み込みがリクエストされると ct がキャンセルされる
                 // ここで await するとリピート入力詰まりが生じるため FireAndForget で実行している
-                s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct).FireAndForgetSafe();
+                var n = s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct);
                 
             }, AwaitOperation.Switch)
             .AddTo(ref db);
