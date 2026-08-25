@@ -378,17 +378,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     .WaitAsync(ct);
 
                 var (listView, items) = (FoldersAdaptiveGridView, _vm.FolderItems);
-                if (e.NavigationMode is NavigationMode.Back
-                    && _vm.GetLastIntractIndexAndItem() is { } lastItem)
-                {
-                    int index = lastItem.Index;
-                    await listView.WaitFillingValue(x => x.ContainerFromIndex(index) != null, ct);
-                    if (listView.ContainerFromIndex(index) is Control itemContainer)
-                    {
-                        itemContainer.Focus(FocusState.Keyboard);
-                        lastItem.Item?.ThumbnailChanged();
-                    }
-                }
 
                 await Task.Delay(5);
                 await FoldersAdaptiveGridView.WaitFillingValue(x => x.IsLoaded, ct);
@@ -417,6 +406,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     sv.ChangeView(null, 0, null, true);
                 }
+
+                if (e.NavigationMode is NavigationMode.Back
+                    && _vm.GetLastIntractIndexAndItem() is { } lastItem)
+                {
+                    int index = lastItem.Index;
+                    if (listView.ContainerFromIndex(index) is Control itemContainer)
+                    {                       
+                        itemContainer.Focus(FocusState.Keyboard);                        
+                    }
+                }
+
             }
             else 
             {
