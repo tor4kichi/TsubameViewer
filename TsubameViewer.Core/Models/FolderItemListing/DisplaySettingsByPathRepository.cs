@@ -42,6 +42,8 @@ public record FolderAndArchiveChildFileDisplaySettingEntry
     public FileSortType? ChildItemDefaultSort { get; set; }
 
     public DefaultFolderOrArchiveOpenMode? ChildImagesFolderOpenMode { get; set; }
+
+    public DefaultFolderListupMode? LastSelectedListupMode { get; set; } = null;
 }
 
 public record AlbamDisplaySettingEntry
@@ -223,6 +225,14 @@ public sealed class DisplaySettingsByPathRepository
         var entry = _internalChildFileRepository.FindById(path)
             ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
         entry.ChildImagesFolderOpenMode = openMode;
+        _internalChildFileRepository.UpdateItem(entry);
+    }
+
+    public void SetParentFolderLastListupMode(string path, DefaultFolderListupMode listupMode)
+    {
+        var entry = _internalChildFileRepository.FindById(path)
+            ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
+        entry.LastSelectedListupMode = listupMode;
         _internalChildFileRepository.UpdateItem(entry);
     }
 

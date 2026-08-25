@@ -440,7 +440,7 @@ public sealed partial class FolderListupPageViewModel
                 if (lastIntractItemVM != null)
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
-                    lastIntractItemVM.ThumbnailChanged();
+                    //lastIntractItemVM.ThumbnailChanged();
                     FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else
@@ -1048,6 +1048,7 @@ public sealed partial class FolderListupPageViewModel
         if (_currentImageSource != null)
         {
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.Images);
+            _displaySettingsByPathRepository.SetParentFolderLastListupMode(Path.GetDirectoryName(_currentImageSource.Path), DefaultFolderListupMode.Images);
         }
     }
 }

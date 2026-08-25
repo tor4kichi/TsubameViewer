@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
+using DryIoc;
 using System;
 using System.IO;
 using System.Linq;
@@ -148,17 +149,51 @@ public sealed class OpenSecondaryListupCommand : CommandBase
             {
                 var folder = (StorageFolder)((StorageItemImageSource)imageSource.FlattenAlbamItemInnerImageSource()).StorageItem;
                 var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(folder.Path);
-                var imagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
-                if (imagesFolderOpenMode == DefaultFolderOrArchiveOpenMode.Listup
-                    || await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableImagesAsync(folder, ct), CancellationToken.None))
+                var setting = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(folder.Path);
+                DefaultFolderListupMode currentListupMode = DefaultFolderListupMode.Images;
+                if (setting?.ListupMode is { } listupMode)
+                {
+                    currentListupMode = listupMode;
+                }
+                else if (parentSettings?.LastSelectedListupMode is { } lastListupMode)
+                {
+                    // 兄弟フォルダで選択された状態を一旦優先してアイテムの確認を行う
+                    // もしフォルダアイテムがあればフォルダ一覧を、無ければ画像一覧を暫定のデフォルト表示方法として設定し
+                    // 次回以降は兄弟フォルダ設定ではなく各フォルダ設定から直接表示先が選択されるように
+                    if (lastListupMode == DefaultFolderListupMode.FolderOrContents
+                        && await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
+                    {
+                        currentListupMode = DefaultFolderListupMode.FolderOrContents;
+                    }
+                    else
+                    {
+                        currentListupMode = DefaultFolderListupMode.Images;
+                    }
+                }
+                else if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
+                {
+                    currentListupMode = DefaultFolderListupMode.FolderOrContents;
+
+                }
+                else
+                {
+                    currentListupMode = DefaultFolderListupMode.Images;
+                }
+
+                if (currentListupMode == DefaultFolderListupMode.FolderOrContents)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                 }
                 else
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                }
+
+                if (setting?.ListupMode == null)
+                {
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(folder.Path, currentListupMode);
                 }
             }
             else if (type == StorageItemTypes.ArchiveFolder)
