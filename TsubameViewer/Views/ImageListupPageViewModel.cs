@@ -646,10 +646,10 @@ public sealed partial class ImageListupPageViewModel
         }        
 
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentImageSource.Path);
-        if (settings != null)
+        if (settings?.Sort != null)
         {
             DisplaySortTypeInheritancePath = null;
-            SelectedFileSortType = settings.Sort;
+            SelectedFileSortType = settings.Sort.Value;
         }
         else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
             && parentSort.ChildItemDefaultSort != null

@@ -27,7 +27,7 @@ public record FolderAndArchiveDisplaySettingEntry
     [BsonId]
     public string Path { get; init; } = "";
 
-    public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
+    public FileSortType? Sort { get; set; } = null;
 
     public DefaultFolderListupMode? ListupMode { get; set; } = null;
 }
