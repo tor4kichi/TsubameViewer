@@ -443,9 +443,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     DisplaySortTypeInheritancePath = null;
 
                     var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
-                    if (settings != null)
+                    if (settings?.Sort != null)
                     {
-                        SelectedFileSortType = settings.Sort;
+                        SelectedFileSortType = settings.Sort.Value;
                     }
                     else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
                     {

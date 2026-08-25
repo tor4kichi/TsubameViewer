@@ -619,10 +619,10 @@ public sealed partial class FolderListupPageViewModel
 
         var settingPath = path;
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
-        if (settings != null)
+        if (settings?.Sort != null)
         {
             DisplaySortTypeInheritancePath = null;
-            SelectedFileSortType = settings.Sort;            
+            SelectedFileSortType = settings.Sort.Value;            
             SetSortAsyncUnsafe(SelectedFileSortType, path);
         }
         else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
