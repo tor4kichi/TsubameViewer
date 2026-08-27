@@ -291,14 +291,14 @@ public sealed class ThumbnailImageManager
         {
             if (await GetCachedImageStreamAsync(imageSource, outputStream, ct) is { } cachedImage) { return cachedImage; }
         }
-        catch { }    
+        catch { }
 
         try
-        {            
+        {
             if (imageSource.StorageItem is StorageFolder folder
                 && await GetFolderCoverFileAsync(folder, ct) is { } coverImageFile)
             {
-                return await coverImageFile.OpenReadAsync();
+                return await EnsureGetImageStreamAsync(new StorageItemImageSource(coverImageFile), outputStream, imageQuality, ct);
             }
         }
         catch { }
@@ -333,6 +333,7 @@ public sealed class ThumbnailImageManager
         catch { }
 
         return null;
+        
     }
 
 

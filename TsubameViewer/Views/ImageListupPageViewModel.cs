@@ -1020,6 +1020,7 @@ public sealed partial class ImageListupPageViewModel
         if (_currentImageSource != null)
         {
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.FolderOrContents);
+            _displaySettingsByPathRepository.SetParentFolderLastListupMode(Path.GetDirectoryName(_currentImageSource.Path), DefaultFolderListupMode.FolderOrContents);
         }
     }
 }
