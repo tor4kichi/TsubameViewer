@@ -802,13 +802,19 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
 
                     // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
-                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth
-                        ? canvasWidth
-                        : s._image1Source.Size.Width;
+                    if (s._image1Source.Size.Width > canvasWidth)
+                    {
+                        s.Image1.Width = canvasWidth;
 
                     // 幅いっぱいに伸長した表示を強制するために必要
                     s.Image1.Stretch = Stretch.None;
                     s.Image1.Stretch = Stretch.Uniform;
+                    }
+                    else
+                    {
+                        var scale = canvasHeight / s._image1Source.Size.Height;
+                        s.Image1.Width = s._image1Source.Size.Width * scale;
+                    }
 
                     if (!withThumbnailImage)
                     {
