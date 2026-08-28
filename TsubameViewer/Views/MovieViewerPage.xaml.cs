@@ -1982,7 +1982,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (_mediaPlayer == null) { return; }
         _mediaPlayer.Pause();
-        _mediaPlayer.StepBackwardOneFrame();
+        // Step~OneFrame()を利用すると再生再開した時により手前のキーフレーム？から早回しで再生される問題が起きていた
+        // _mediaPlayer.StepBackwardOneFrame(); 
+        _mediaPlayer.PlaybackSession.Position -= _oneFrameTime;        
         _audioPlayer.Pause();
         _audioPlayer.PlaybackSession.Position = _mediaPlayer.PlaybackSession.Position;
         // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
@@ -1993,7 +1995,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (_mediaPlayer == null) { return; }
         _mediaPlayer.Pause();
-        _mediaPlayer.StepForwardOneFrame();
+        _mediaPlayer.PlaybackSession.Position += _oneFrameTime;
         _audioPlayer.Pause();
         _audioPlayer.PlaybackSession.Position = _mediaPlayer.PlaybackSession.Position;
     }

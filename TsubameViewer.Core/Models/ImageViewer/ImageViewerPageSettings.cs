@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Microsoft.Graphics.Canvas;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -21,7 +22,17 @@ public sealed class ImageViewerSettings : FlagsRepositoryBase
         _PdfImageThresholdWidth = Read(1200u, nameof(PdfImageThresholdWidth));
         _PdfImageAlternateWidth = Read(1600u, nameof(PdfImageAlternateWidth));
         _PdfImageThresholdHeight = Read(1200u, nameof(PdfImageThresholdHeight));
-        _PdfImageAlternateHeight = Read(2400u, nameof(PdfImageAlternateHeight));            
+        _PdfImageAlternateHeight = Read(2400u, nameof(PdfImageAlternateHeight));
+        _isScaleEffectEnabled = Read(true, nameof(IsScaleEffectEnabled));
+        _scaleEffectSharpness = Read(1f, nameof(ScaleEffectSharpness));
+        try
+        {
+            _scaleEffectInterpolation = (CanvasImageInterpolation)Read((int)CanvasImageInterpolation.MultiSampleLinear, nameof(ScaleEffectInterpolation));
+        }
+        catch
+        {
+            _scaleEffectInterpolation = CanvasImageInterpolation.MultiSampleLinear;
+        }
     }
 
     private bool _IsReverseImageFliping_MouseWheel;
@@ -148,5 +159,27 @@ public sealed class ImageViewerSettings : FlagsRepositoryBase
         {
             return _collection.FindById(path);
         }
+    }
+
+
+    bool _isScaleEffectEnabled;
+    public bool IsScaleEffectEnabled
+    {
+        get => _isScaleEffectEnabled;
+        set => SetProperty(ref _isScaleEffectEnabled, value);
+    }
+
+    float _scaleEffectSharpness;
+    public float ScaleEffectSharpness
+    {
+        get => _scaleEffectSharpness;
+        set => SetProperty(ref _scaleEffectSharpness, Math.Clamp(value, 0, 1));
+    }
+
+    CanvasImageInterpolation _scaleEffectInterpolation;
+    public CanvasImageInterpolation ScaleEffectInterpolation
+    {
+        get => _scaleEffectInterpolation;
+        set => SetProperty((int)_scaleEffectInterpolation, (int)value, this, (m, v) => m._scaleEffectInterpolation = (CanvasImageInterpolation)v, nameof(ScaleEffectInterpolation));
     }
 }

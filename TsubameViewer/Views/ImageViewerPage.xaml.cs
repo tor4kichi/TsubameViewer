@@ -59,8 +59,10 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using Windows.Media.Effects;
 using ZLinq;
 using static System.Net.Mime.MediaTypeNames;
+using Microsoft.Graphics.Canvas.Effects;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -124,10 +126,20 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         if(item == null) { return; }
         if (TryGetCachedCanvasBitmap(item, out var bitmap) && bitmap != null)
         {
+            double? requestHeight = _vm.TransformScale > 1 ? null : ImagesContainer.ActualHeight;
+            double scale = requestHeight != null && requestHeight.Value > bitmap.Size.Height
+                        ? requestHeight.Value / bitmap.Size.Height
+                        : 1;
             foreach (var region in args.InvalidatedRegions)
             {
                 using (var ds = sender.CreateDrawingSession(Colors.Transparent, region))
                 {
+                    ds.Blend = CanvasBlend.Copy;
+                    ds.Antialiasing = CanvasAntialiasing.Antialiased;
+                    if (scale != 1)
+                    {
+                        ds.Transform = Matrix3x2.CreateScale((float)scale);
+                    }
                     ds.DrawImage(bitmap, region, region);
                 }
             }
@@ -359,7 +371,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return image;
     }
 
-    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithSkia(IImageSource item, double? requestHeight, CancellationToken ct)
+    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithSkia(IImageSource item, double? requestHeight, ScaleEffect? scaleEffect, CancellationToken ct)
     {
 #if DEBUG
         var time = TimeProvider.System.GetTimestamp();
@@ -381,12 +393,35 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 else
                 {
                     var info = SKBitmap.DecodeBounds(skData);
-                    float scaledWidth = info.Width * (float)requestHeight.Value / info.Height;
-                    using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo((int)scaledWidth, (int)requestHeight.Value, SKColorType.Bgra8888)))
+                    float scale = (float)requestHeight.Value / info.Height;
+                    float scaledWidth = info.Width * scale;
+                    if (scaleEffect == null)
                     {
-                        ct.ThrowIfCancellationRequested();
-                        if (skBitmap == null) { return null; }
-                        else return ToCanvasBitmap(skBitmap);
+                        using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo((int)scaledWidth, (int)requestHeight.Value, SKColorType.Bgra8888)))
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            if (skBitmap == null) { return null; }
+                            else return ToCanvasBitmap(skBitmap);
+                        }
+                    }
+                    else
+                    {
+                        using (var skBitmap = SKBitmap.Decode(skData, new SKImageInfo(info.Width, info.Height, SKColorType.Bgra8888)))
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            if (skBitmap == null) { return null; }
+                            using var canvas = ToCanvasBitmap(skBitmap);
+                            var scaledCanvas = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (int)scaledWidth, (int)requestHeight.Value, 96);
+                            using (var ds = scaledCanvas.CreateDrawingSession())
+                            {
+                                ds.Blend = CanvasBlend.Copy;
+                                ds.Antialiasing = CanvasAntialiasing.Aliased;
+                                scaleEffect.Source = canvas;
+                                scaleEffect.Scale = new(scale);
+                                ds.DrawImage(scaleEffect);
+                            }                                
+                            return scaledCanvas;
+                        }
                     }
                 }
             }
@@ -400,7 +435,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 #endif
     }
 
-    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithWin2d(IImageSource item, double? requestHeight, CancellationToken ct)
+    async Task<CanvasBitmap?> TryCreateCanvasBitmapDecodeWithWin2d(IImageSource item, double? requestHeight, ScaleEffect? scaleEffect, CancellationToken ct)
     {
 #if DEBUG
         var time = TimeProvider.System.GetTimestamp();
@@ -438,8 +473,17 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                             {
                                 ds.Blend = CanvasBlend.Copy;
                                 ds.Antialiasing = CanvasAntialiasing.Aliased;
-                                ds.Transform = Matrix3x2.CreateScale((float)scale);
-                                ds.DrawImage(bitmap);
+                                if (scaleEffect != null)
+                                {
+                                    scaleEffect.Source = bitmap;
+                                    scaleEffect.Scale = new Vector2((float)scale);
+                                    ds.DrawImage(scaleEffect);
+                                }
+                                else
+                                {
+                                    ds.Transform = Matrix3x2.CreateScale((float)scale);
+                                    ds.DrawImage(bitmap);
+                                }
                             }
                             return rtb;
                         }
@@ -492,7 +536,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    async ValueTask<CanvasBitmap> EnsureGetBitmapWithCacheAsync(IImageSource item, double? requestHeight, CancellationToken ct)
+    async ValueTask<CanvasBitmap> EnsureGetBitmapWithCacheAsync(IImageSource item, double? requestHeight, ScaleEffect? scaleEffect, CancellationToken ct)
     {
         CanvasBitmap? bitmap = null;
 
@@ -515,8 +559,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
 
         // オリジナルサイズで読み込む
-        bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
-        bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, scaleEffect, ct);
+        bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, scaleEffect, ct);
         Guard.IsNotNull(bitmap);
         if (_vm.ImageViewerSettings.IsEnablePrefetch)
         {
@@ -526,7 +570,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return bitmap;
     }
 
-    async Task PrefetchBitmapAsync( int currentIndex, double? requestHeight, CancellationToken ct)
+    async Task PrefetchBitmapAsync( int currentIndex, double? requestHeight, ScaleEffect? scaleEffect, CancellationToken ct)
     {        
         int[] prefetchTargets = [currentIndex + 1, currentIndex + 2, currentIndex + 3, currentIndex - 1, currentIndex - 2];
         HashSet<IImageSource> liveImages = new([.. _vm.SourceImages], IImageSourceEqualityComparer.Default);
@@ -546,8 +590,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                
                 // 基本Win2Dの方が高速にデコードできる
                 CanvasBitmap? bitmap = null;
-                bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, ct);
-                bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, ct);
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithWin2d(item, requestHeight, scaleEffect, ct);
+                bitmap ??= await TryCreateCanvasBitmapDecodeWithSkia(item, requestHeight, scaleEffect, ct);
                 if (bitmap == null) 
                 {
                     Debug.WriteLine($"Failed Cache: {item.Name}");
@@ -575,6 +619,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     readonly CanvasVirtualImageSource _image1Source;
     readonly CanvasVirtualImageSource _image2Source;
+    ScaleEffect? _scaleEffect_internal;
+    ScaleEffect _scaleEffect => _scaleEffect_internal ??= new();
     CancellationToken _navigationCt;
     
     [ObservableProperty]
@@ -640,6 +686,15 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 s._image2Source.RaiseRegionsInvalidatedIfAny();
             })
             .AddTo(ref db);
+        Observable.Merge(
+            _vm.ImageViewerSettings.ObservePropertyChanged(x => x.IsScaleEffectEnabled, false).AsUnitObservable(),
+            _vm.ImageViewerSettings.ObservePropertyChanged(x => x.ScaleEffectSharpness, false).AsUnitObservable(),
+            _vm.ImageViewerSettings.ObservePropertyChanged(x => x.ScaleEffectInterpolation, false).AsUnitObservable())
+            .Subscribe(this, (_, e) => 
+            {
+                ClearCachedCanvasBitmap();
+            })
+            .AddTo(ref db);
 
         Observable.Merge(
             _vm.ObservePropertyChanged(x => x.DisplayCurrentImageIndex, false).AsUnitObservable(),
@@ -647,21 +702,29 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             this.ObserveSizeChanged().Skip(1).AsUnitObservable().ThrottleLast(TimeSpan.FromMilliseconds(120)),
             _vm.ObservePropertyChanged(x => x.IsDoubleViewEnabled, false).AsUnitObservable(),
             _vm.ObservePropertyChanged(x => x.IsLeftBindingEnabled, false).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight, false).AsUnitObservable() // 拡大時にオリジナルサイズ読み込み＋リセット時にコンパクトサイズ読み込み（と表示崩れを直すため再読み込み）
+            this.ObservePropertyChanged(x => x.NowIgnoreDecodeToCanvasHeight, false).AsUnitObservable(), // 拡大時にオリジナルサイズ読み込み＋リセット時にコンパクトサイズ読み込み（と表示崩れを直すため再読み込み）
+            _vm.ImageViewerSettings.ObservePropertyChanged(x => x.IsScaleEffectEnabled, false).AsUnitObservable(),
+            _vm.ImageViewerSettings.ObservePropertyChanged(x => x.ScaleEffectSharpness, false).AsUnitObservable(),
+            _vm.ImageViewerSettings.ObservePropertyChanged(x => x.ScaleEffectInterpolation, false).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(32))
             .SubscribeAwait(this, static async (u, s, ct) =>
             {
                 static void  DrawImage(double? canvasHeight, CanvasBitmap bitmap, CanvasVirtualImageSource imageSource)
                 {
-                    double scale = canvasHeight != null ? canvasHeight.Value / bitmap.Size.Height : 1;
+                    double scale = canvasHeight != null && canvasHeight.Value > bitmap.Size.Height 
+                        ? canvasHeight.Value / bitmap.Size.Height 
+                        : 1;
                     var scaledSize = new Size(Math.Floor(bitmap.Size.Width * scale), Math.Floor(bitmap.Size.Height * scale));
                     imageSource.Resize(scaledSize);
                     using (var ds = imageSource.CreateDrawingSession(Colors.Transparent, scaledSize.ToRect()))
                     {
                         ds.Blend = CanvasBlend.Copy;
                         ds.Antialiasing = CanvasAntialiasing.Antialiased;
-                        ds.Transform = Matrix3x2.CreateScale((float)scale);
+                        if (scale != 1)
+                        {
+                            ds.Transform = Matrix3x2.CreateScale((float)scale);
+                        }
                         ds.DrawImage(bitmap);
                     }                    
                 }
@@ -682,7 +745,14 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 #endif
                 int currentIndex = s._vm.CurrentImageIndex;
                 var canvasHeight = s.ImagesContainer.ActualHeight;
-                var canvasWidth = s.ImagesContainer.ActualWidth;                                
+                var canvasWidth = s.ImagesContainer.ActualWidth;
+                ScaleEffect? scaleEffect = null;
+                if (s._vm.ImageViewerSettings.IsScaleEffectEnabled)
+                {
+                    scaleEffect = s._scaleEffect;
+                    scaleEffect.Sharpness = s._vm.ImageViewerSettings.ScaleEffectSharpness;
+                    scaleEffect.InterpolationMode = s._vm.ImageViewerSettings.ScaleEffectInterpolation;
+                }
                 if (firstImage is IImageSource src1
                    && secondImage is IImageSource src2)
                 {
@@ -733,13 +803,26 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                             bitmap2?.Dispose();
                         }
 
-                        bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, ct);
-                        bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, ct);
+                        bitmap1 = await s.EnsureGetBitmapWithCacheAsync(src1, requestHeight, scaleEffect, ct);
+                        bitmap2 = await s.EnsureGetBitmapWithCacheAsync(src2, requestHeight, scaleEffect, ct);
                         DrawImage(requestHeight, bitmap1, s._image1Source);
-                        DrawImage(requestHeight, bitmap2, s._image2Source);                        
+                        DrawImage(requestHeight, bitmap2, s._image2Source);
                         // 画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
-                        s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
-                        s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;                        
+                        if (s._vm.TransformScale == 1)
+                        {
+                            double scaledHeight = canvasHeight * s._vm.TransformScale;
+                            s.Image1.Width = scaledHeight / s._image1Source.Size.Height * s._image1Source.Size.Width;
+                            s.Image2.Width = scaledHeight / s._image2Source.Size.Height * s._image2Source.Size.Width;
+                        }
+                        else
+                        {
+                            s.Image1.Stretch = Stretch.None;
+                            s.Image1.Stretch = Stretch.Uniform;
+                            s.Image2.Stretch = Stretch.None;
+                            s.Image2.Stretch = Stretch.Uniform;
+                            s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
+                            s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;
+                        }
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
@@ -791,7 +874,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         // ここで切り替えないと描画フレームを跨いだ更新になってしまう
                         // 見開き表示時からシングル表示の切り替えがスムーズにするためにもタイミング調整が必要。
                         s.Image2.Visibility = Visibility.Collapsed;
-                        var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, ct);
+                        var bitmap1 = await s.EnsureGetBitmapWithCacheAsync(source1, requestHeight, scaleEffect, ct);
                         DrawImage(requestHeight, bitmap1, s._image1Source);
                     }
                     catch (OperationCanceledException) { return; }
@@ -802,13 +885,19 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
 
                     // ウィンドウ横幅以下に抑える＋画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
-                    s.Image1.Width = s._image1Source.Size.Width > canvasWidth
-                        ? canvasWidth
-                        : s._image1Source.Size.Width;
+                    if (s._image1Source.Size.Width > canvasWidth)
+                    {
+                        s.Image1.Width = canvasWidth;
 
-                    // 幅いっぱいに伸長した表示を強制するために必要
-                    s.Image1.Stretch = Stretch.None;
-                    s.Image1.Stretch = Stretch.Uniform;
+                        // 幅いっぱいに伸長した表示を強制するために必要
+                        s.Image1.Stretch = Stretch.None;
+                        s.Image1.Stretch = Stretch.Uniform;
+                    }
+                    else
+                    {
+                        var scale = canvasHeight / s._image1Source.Size.Height;
+                        s.Image1.Width = s._image1Source.Size.Width * scale;
+                    }
 
                     if (!withThumbnailImage)
                     {
@@ -842,7 +931,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 // SubscribeAwait + AwaitOperation.Switch によって
                 // 次の画像読み込みがリクエストされると ct がキャンセルされる
                 // ここで await するとリピート入力詰まりが生じるため FireAndForget で実行している
-                var n = s.PrefetchBitmapAsync(currentIndex, canvasHeight, ct);
+                var n = s.PrefetchBitmapAsync(currentIndex, canvasHeight, scaleEffect, ct);
                 
             }, AwaitOperation.Switch)
             .AddTo(ref db);
@@ -941,7 +1030,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
         KeyDown -= ImageViewerPage_KeyDown;
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
-        
+        _scaleEffect_internal?.Dispose();
+        _scaleEffect_internal = null;
         if (_windowContext.IsPrimary)
         {
             d().FireAndForgetSafe();

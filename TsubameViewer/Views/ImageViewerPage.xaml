@@ -457,7 +457,7 @@
                 CornerRadius="8"
                 Padding="4 4"
                 Margin="0 48 0 0"
-                Width="420"
+                Width="440"
                 Windows10version1903:Translation="0, 0, 16"
                 >
       <Windows10version1903:UIElement.Shadow>
@@ -571,7 +571,7 @@
             </fluentIcon:SymbolIcon>
           </ToggleButton.Content>
         </ToggleButton>
-
+        
         <Button x:Name="ImagesSortButton"
                 AccessKey="P"
                 Padding="4 0"
@@ -621,6 +621,12 @@
             </MenuFlyout>
           </Button.Flyout>
         </Button>
+
+        <ToggleButton x:Name="ScaleEffectSettingButton"
+                      ToolTipService.ToolTip="{i18nExt:Localize Key=ImageViewerSettings.IsScaleEffectEnabled}"
+                      IsChecked="{x:Bind _vm.ImageViewerSettings.IsScaleEffectEnabled, Mode=TwoWay}">
+          <SymbolIcon Symbol="Filter" />
+        </ToggleButton>
 
         <Button x:Name="OthersSettingsButton"
                 Flyout="{StaticResource OtherSettingsFlyout}"

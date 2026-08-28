@@ -237,6 +237,17 @@ DoubleViewCorrectPaging = 纠正传播的页面偏移
 IsKeepSingleViewOnFirstPage = 不要展开第一页
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = 如果您将文件夹 D&D 到应用程序，将显示所有内容
 ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
+ImageViewerSettings.IsScaleEffectEnabled = 缩减过程中的插值
+ImageViewerSettings.ScaleEffectSharpness = 清晰度
+ImageViewerSettings.ScaleEffectSharpness_Desc = 可以指定边缘（颜色边界部分）的显示清晰度。设置为0%时不会进行处理，显示效果会比较模糊；设置为100%时，边界会显示得更加清晰。
+ImageViewerSettings.ScaleEffectInterpolation = 插值类型
+ImageViewerSettings.ScaleEffectInterpolation_Desc = 当以缩小尺寸显示图像时，多个像素会被压缩成一个像素，您可以选择压缩方式。“高品质立方”压缩方式可提供更平滑的视觉效果。“多采样线性”压缩方式则在足够的平滑度和保留原始图像特征之间取得了良好的平衡。
+CanvasImageInterpolation.HighQualityCubic = 高品质立方
+CanvasImageInterpolation.Anisotropic = 各向异性
+CanvasImageInterpolation.MultiSampleLinear = 多采样线性
+CanvasImageInterpolation.Cubic = 立方
+CanvasImageInterpolation.Linear = 线性
+CanvasImageInterpolation.NearestNeighbor = 最近邻
 
 
 #### EBookReaderPage
