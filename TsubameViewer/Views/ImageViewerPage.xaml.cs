@@ -738,8 +738,21 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                         DrawImage(requestHeight, bitmap1, s._image1Source);
                         DrawImage(requestHeight, bitmap2, s._image2Source);                        
                         // 画像Sourceの更新がImageのActualSizeに影響しないことがあるので強制的に横幅を指定
+                        if (s._vm.TransformScale == 1)
+                        {
+                            double scaledHeight = canvasHeight * s._vm.TransformScale;
+                            s.Image1.Width = scaledHeight / s._image1Source.Size.Height * s._image1Source.Size.Width;
+                            s.Image2.Width = scaledHeight / s._image2Source.Size.Height * s._image2Source.Size.Width;
+                        }
+                        else
+                        {
+                            s.Image1.Stretch = Stretch.None;
+                            s.Image1.Stretch = Stretch.Uniform;
+                            s.Image2.Stretch = Stretch.None;
+                            s.Image2.Stretch = Stretch.Uniform;
                         s.Image1.Width = requestHeight != null ? s._image1Source.Size.Width : double.NaN;
                         s.Image2.Width = requestHeight != null ? s._image2Source.Size.Width : double.NaN;                        
+                    }
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
