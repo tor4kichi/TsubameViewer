@@ -237,6 +237,17 @@ DoubleViewCorrectPaging = Correct the page shift of the spread
 IsKeepSingleViewOnFirstPage = Do not spread the first page
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = If you D&D the folder to the app, all will be displayed
 ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
+ImageViewerSettings.IsScaleEffectEnabled = Interpolation during reduction
+ImageViewerSettings.ScaleEffectSharpness = Sharpness
+ImageViewerSettings.ScaleEffectSharpness_Desc = You can specify how sharply edges (color boundaries) are displayed. Setting this to 0% disables the processing, resulting in a blurry display, while setting it to 100% makes the edges appear sharper.
+ImageViewerSettings.ScaleEffectInterpolation = Types of interpolation
+ImageViewerSettings.ScaleEffectInterpolation_Desc = When scaling down an image, multiple pixels are compressed into a single pixel; you can choose the method used for this process. “HighQualityCubic” produces a smoother appearance. “MultiSampleLinear” provides a well-balanced result that offers sufficient smoothness while retaining the look and feel of the original image.
+CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
+CanvasImageInterpolation.Anisotropic = Anisotropic
+CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
+CanvasImageInterpolation.Cubic = Cubic
+CanvasImageInterpolation.Linear = Linear
+CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
 
 
 #### EBookReaderPage

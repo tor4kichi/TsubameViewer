@@ -237,6 +237,17 @@ DoubleViewCorrectPaging = Corriger le désalignement des doubles pages
 IsKeepSingleViewOnFirstPage = Ne pas afficher la première page côte à côte avec une autre page
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = Si vous faites glisser le dossier vers l'application, tout sera affiché
 ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
+ImageViewerSettings.IsScaleEffectEnabled = Interpolation lors de la réduction
+ImageViewerSettings.ScaleEffectSharpness = Acuité
+ImageViewerSettings.ScaleEffectSharpness_Desc = Vous pouvez définir le niveau de netteté des contours (zones de transition entre les couleurs). Si vous réglez ce paramètre sur 0 %, aucun traitement n'est appliqué et l'image apparaît floue ; si vous le réglez sur 100 %, les contours sont affichés de manière plus nette.
+ImageViewerSettings.ScaleEffectInterpolation = Types d'interpolation
+ImageViewerSettings.ScaleEffectInterpolation_Desc = Lors de la réduction d’une image, plusieurs pixels sont compressés en un seul pixel ; vous pouvez choisir la méthode de traitement. « HighQualityCubic » offre un rendu plus lisse. « MultiSampleLinear » offre un résultat équilibré, alliant une fluidité suffisante à la conservation de l’aspect de l’image d’origine.
+CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
+CanvasImageInterpolation.Anisotropic = Anisotrope
+CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
+CanvasImageInterpolation.Cubic = Cubique
+CanvasImageInterpolation.Linear = Linéaire
+CanvasImageInterpolation.NearestNeighbor = Voisin le plus proche
 
 
 #### EBookReaderPage

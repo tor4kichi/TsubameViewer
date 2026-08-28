@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
+using Microsoft.Graphics.Canvas;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using R3;
@@ -127,6 +128,27 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnableDoubleView".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsEnableDoubleView, (x, v) => x.IsEnableDoubleView = v),
                     new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsKeepSingleViewOnFirstPage".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsKeepSingleViewOnFirstPage, (x, v) => x.IsKeepSingleViewOnFirstPage = v),
                     new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsLeftBindingView".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsLeftBindingView, (x, v) => x.IsLeftBindingView = v),
+                    new SelectorSettingsItemViewModel<CanvasImageInterpolation>(
+                        "ImageViewerSettings.ScaleEffectInterpolation".Translate(),
+                        "ImageViewerSettings.ScaleEffectInterpolation_Desc".Translate(),
+                        [
+                            CanvasImageInterpolation.HighQualityCubic,
+                            //CanvasImageInterpolation.Anisotropic,
+                            CanvasImageInterpolation.MultiSampleLinear,
+                            //CanvasImageInterpolation.Cubic,
+                            CanvasImageInterpolation.Linear,
+                            //CanvasImageInterpolation.NearestNeighbor,
+                        ],
+                        _imageViewerPageSettings.ScaleEffectInterpolation,
+                        type => _imageViewerPageSettings.ScaleEffectInterpolation = type),
+                    new SliderSettingItemViewModel(
+                        "ImageViewerSettings.ScaleEffectSharpness".Translate(),
+                        "ImageViewerSettings.ScaleEffectSharpness_Desc".Translate(),
+                        _imageViewerPageSettings.ScaleEffectSharpness,
+                        0.00,
+                        1.00,
+                        0.01,
+                        f => _imageViewerPageSettings.ScaleEffectSharpness = (float) f),
                 }
             },
             new SettingsGroupViewModel

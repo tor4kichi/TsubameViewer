@@ -237,6 +237,17 @@ DoubleViewCorrectPaging = 見開きのページズレを補正する
 IsKeepSingleViewOnFirstPage = 最初のページは見開き表示しない
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = フォルダをアプリにD&Dすると全部表示されます
 ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
+ImageViewerSettings.IsScaleEffectEnabled = 縮小処理時の補間処理
+ImageViewerSettings.ScaleEffectSharpness = シャープネス
+ImageViewerSettings.ScaleEffectSharpness_Desc = エッジ（色の境界部分）の鮮明に表示する度合いを指定できます。 0%は何も処理せずボカした表示になり、100%にすると境界がより鮮明に表示されます。
+ImageViewerSettings.ScaleEffectInterpolation = 補間処理の種類
+ImageViewerSettings.ScaleEffectInterpolation_Desc = 画像を縮小表示する際、複数ピクセルを１ピクセルに圧縮しますが、その処理方法を選べます。HighQualityCubicはより滑らかに見えます。MultiSampleLinearは十分な滑らかさと元の画像の印象が残るバランスがよいです。
+CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
+CanvasImageInterpolation.Anisotropic = Anisotropic
+CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
+CanvasImageInterpolation.Cubic = Cubic
+CanvasImageInterpolation.Linear = Linear
+CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
 
 
 #### EBookReaderPage
