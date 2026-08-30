@@ -253,6 +253,8 @@ public interface IWindowManagementAware : INotifyPropertyChanged
     bool NowDisplayTitleBar { get; }
 
     Task ShowAsync();
+
+    Observable<bool> CreateVisibilityObserver();
 }
 
 
@@ -297,6 +299,11 @@ public sealed partial class PrimaryWindowFacade : ObservableObject, IWindowManag
     public async Task ShowAsync()
     {
         await ApplicationViewSwitcher.TryShowAsStandaloneAsync(_appView.Id);
+    }
+
+    public Observable<bool> CreateVisibilityObserver()
+    {
+        return Window.Current.ObserveVisibilityChanged().Select(x => x.Visible);
     }
 }
 
@@ -394,5 +401,12 @@ public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManag
     public async Task ShowAsync()
     {
         await AppWindow.TryShowAsync();
+    }
+
+    public Observable<bool> CreateVisibilityObserver()
+    {
+        return AppWindow.ObserveChanged()
+            .Where(x => x.EventArgs.DidVisibilityChange)
+            .Select(x => x.Sender.IsVisible);
     }
 }

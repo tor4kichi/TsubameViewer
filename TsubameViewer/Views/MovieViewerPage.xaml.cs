@@ -426,7 +426,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _playPauseToggleAnimationCts.Cancel();
             _playPauseToggleAnimationCts.Dispose();
             _playPauseToggleAnimationCts = null;
-        }
+        }        
 
         _mediaPlayer.Pause();
         _audioPlayer.Pause();
@@ -552,7 +552,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             NeighborsContentButtonsContainer.Opacity = 1;
             ImageSelectorContainer.Opacity = 1;
         }
-
+        
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
         PlayerContainer.Opacity = 0.0001;　// FFmpeg利用時にゼロ位置の映像フレームが表示されないように        
@@ -566,7 +566,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _mediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
-        _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;        
+        _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
 
         var insideWindowRp = Observable.Merge(
                 this.ObservePointerEntered().Select(x => x.Pointer.PointerDeviceType == PointerDeviceType.Mouse), 
@@ -879,10 +879,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         {
                             _this._oneFrameTime = TimeSpan.Zero;
                         }
-                    });
+                    });                   
             })
             .AddTo(ref db);
-        
+               
+
         _vm.PageSettings.ObservePropertyChanged(x => x.IsFFmpegUseFirstToMediaSourceFactory, false)
             .Subscribe(this, static (x, s) => 
             {
@@ -1036,7 +1037,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
-
     private void CloseButton_VideoEffectUIContainerUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
     {
         ToggleVideoEffectEditUI();
@@ -1153,7 +1153,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Add(mediaSource);
         
         var playbackItem = new MediaPlaybackItem(mediaSource);
-        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
         // 字幕の追加        
         foreach (var subsFile in await LoadSameNameSubtitleFilesAsync(x))
         {
@@ -1218,7 +1217,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task OpenMediaWithFFmpegAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
     {
         var fileStream = await x.OpenReadAsync();
-        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream, new MediaSourceConfig());
         // Note: PlaybackSession 設定するとむしろ壊れる
         //ms.PlaybackSession = MediaPlayer.PlaybackSession;
         db.Add(ms);
@@ -1235,10 +1234,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             catch { }
         }
-        var playbackItem = ms.CreateMediaPlaybackItem();
-        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
-        await ms.OpenWithMediaPlayerAsync(_mediaPlayer);
         
+        var playbackItem = ms.CreateMediaPlaybackItem();
+        await ms.OpenWithMediaPlayerAsync(_mediaPlayer);
+            
         var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
         if (ms.AudioStreams.Count == 0 && ms.Duration != TimeSpan.Zero && ms.Duration != TimeSpan.MaxValue)
         {
@@ -1249,6 +1248,38 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         else
         {
             _audioPlayer.Source = null;
+        }
+
+        // ウィンドウが表示されない状況（最小化や仮想デスクトップの切替など）で
+        // バッファ再読み込みのタイミングで再生レートが1.0になってしまう問題を解消
+        // （このワークアラウンド無しでも、ウィンドウが再表示されると設定済みの再生レートに戻る）
+        var timer = _dispatcherQueue.CreateTimer();
+        timer.Tick += Timer_Tick;
+        timer.Interval = TimeSpan.FromSeconds(.5);
+        timer.IsRepeating = true;        
+        _windowContext.CreateVisibilityObserver()
+            .Subscribe((timer), (visible, s) =>
+            {
+                if (visible)
+                {
+                    timer.Stop();
+                }
+                else
+                {
+                    timer.Start();
+                }
+            })
+            .AddTo(db);
+
+        Disposable.Create(timer, (timer) => timer.Tick -= Timer_Tick)
+            .AddTo(db);
+
+        void Timer_Tick(DispatcherQueueTimer sender, object args)
+        {
+            if (_mediaPlayer?.PlaybackSession.PlaybackRate != _vm.PageSettings.PlaybackRate)
+            {
+                _mediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+            }
         }
     }
 
@@ -2970,14 +3001,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         return !string.IsNullOrEmpty(subtitle.Language) ? subtitle.Language : subtitle.Id;
     }
-
-    private void PlaybackItem_TimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
-    {
-        if (sender.TimedMetadataTracks.Count > 0)
-        {
-        }
-    }
-
+  
     [RelayCommand]
     async Task OpenSubstitleSettingsAsync()
     {

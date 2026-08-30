@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.UI.Core;
+using Windows.UI.WindowManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -97,6 +98,23 @@ public static class ObservableEventExtensions
             h => window.SizeChanged += h,
             h => window.SizeChanged -= h);
     }
+
+    public static Observable<VisibilityChangedEventArgs> ObserveVisibilityChanged(this Window window)
+    {
+        return Observable.FromEvent<WindowVisibilityChangedEventHandler, VisibilityChangedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => window.VisibilityChanged += h,
+            h => window.VisibilityChanged -= h);
+    }
+
+    public static Observable<EventPattern<AppWindow, AppWindowChangedEventArgs>> ObserveChanged(this AppWindow appWindow)
+    {
+        return ObservableEventExtensions.FromTypedEvent<AppWindow, AppWindowChangedEventArgs>(
+            h => appWindow.Changed += h,
+            h => appWindow.Changed -= h
+            );
+    }
+
 
     public static Observable<PointerRoutedEventArgs> ObservePointerPressed(this FrameworkElement control, bool withCapture = true)
     {
