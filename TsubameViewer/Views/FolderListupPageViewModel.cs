@@ -653,7 +653,7 @@ public sealed partial class FolderListupPageViewModel
         SelectedChildFileSortType = parentSettings?.ChildItemDefaultSort;
 
         var upStreamSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(path);
-        FolderItemDisplayWithLandscape = upStreamSettings?.FolderItemDisplayWithLandscape ?? parentSettings?.FolderItemDisplayWithLandscape ?? false;
+        FolderItemDisplayWithLandscape = parentSettings?.FolderItemDisplayWithLandscape ?? upStreamSettings?.FolderItemDisplayWithLandscape ?? false;
 
         try
         {
