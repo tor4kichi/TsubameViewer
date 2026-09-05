@@ -184,7 +184,7 @@ ThumbnailImageCacheMode.AlwaysGenerateCache = Always Generate
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Prioritize File System Thumbnails
 ThumbnailImageCacheMode.NeverGenerateCache = Do Not Cache
 SetToParentFolderThumbnailImage = Is it okay to overwrite the cover.jpg file in the folder? the old cover.jpg will be sent to the trash.
-
+OpenImageViewer_Failed = No content is available to display.
 
 
 

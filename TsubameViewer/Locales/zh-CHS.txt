@@ -184,7 +184,7 @@ ThumbnailImageCacheMode.AlwaysGenerateCache = 始终生成
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = 优先生成文件系统中的缩略图
 ThumbnailImageCacheMode.NeverGenerateCache = 不缓存
 SetToParentFolderThumbnailImage = 可以覆盖文件夹中的 cover.jpg 文件吗？旧的 cover.jpg 文件将被删除。
-
+OpenImageViewer_Failed = 暂无内容可供显示。
 
 
 

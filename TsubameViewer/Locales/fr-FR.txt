@@ -184,7 +184,7 @@ ThumbnailImageCacheMode.AlwaysGenerateCache = Générer en permanence
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Privilégier les vignettes du système de fichiers
 ThumbnailImageCacheMode.NeverGenerateCache = Ne pas mettre en cache
 SetToParentFolderThumbnailImage = Est-il possible d'écraser le fichier cover.jpg dans le dossier ? l'ancien fichier cover.jpg sera supprimé.
-
+OpenImageViewer_Failed = Aucun contenu n'est disponible pour affichage.
 
 
 

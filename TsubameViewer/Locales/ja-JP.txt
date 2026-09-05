@@ -184,7 +184,7 @@ ThumbnailImageCacheMode.AlwaysGenerateCache = 常に生成
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = ファイルシステムのサムネイル生成を優先
 ThumbnailImageCacheMode.NeverGenerateCache = キャッシュしない
 SetToParentFolderThumbnailImage = フォルダ内の cover.jpg を上書きしてもいいですか？ 古いcover.jpg はゴミ箱へ送られます
-
+OpenImageViewer_Failed = 表示可能なコンテンツがありません
 
 
 
