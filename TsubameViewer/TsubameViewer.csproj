@@ -252,6 +252,9 @@
     <Compile Include="ViewModels\SourceFolders.Commands\RegisterItemRemoveFromAccessListCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
+    <Compile Include="Views\ShortcutKeyGuideControl.xaml.cs">
+      <DependentUpon>ShortcutKeyGuideControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="ViewModels\StorageItemViewModel.cs" />
     <Compile Include="ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
@@ -590,6 +593,10 @@
     <Page Include="Views\SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ShortcutKeyGuideControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SourceStorageItemsPage.xaml">
       <Generator>MSBuild:Compile</Generator>

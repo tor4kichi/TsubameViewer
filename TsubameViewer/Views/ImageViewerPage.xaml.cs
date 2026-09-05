@@ -306,7 +306,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void ClosePage()
     {
-        if (_windowContext.IsPrimary)
+        if (ShortcutKeyGuideUIContainer.Visibility == Visibility.Visible)
+        {
+            ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+        }
+        else if (_windowContext.IsPrimary)
         {
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             (_vm.BackNavigationCommand as ICommand).Execute(null);
@@ -1455,6 +1459,40 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     #endregion
 
+
+
+    #region ShortcutKey
+
+    [ObservableProperty]
+    ShortcutKeyInfo[]? _shortcutKeys;
+
+    [RelayCommand]
+    void ToggleDisplayShortcutKeyGuideUI()
+    {
+        if (ShortcutKeys == null)
+        {
+            var shortcuts = ShortcutKeyButtonsContainer.Children
+                .AsValueEnumerable()
+                .Cast<Button>()
+                .Where(x => x.Tag is string s && !string.IsNullOrEmpty(s))
+                .Select(static x => new ShortcutKeyInfo
+                {
+                    Label = (string)x.Tag,
+                    Key = x.KeyboardAccelerators[0].Key,
+                    Modifier = x.KeyboardAccelerators[0].Modifiers
+                })
+                .ToArray();
+            ShortcutKeys = shortcuts;
+        }
+        ShortcutKeyGuideUIContainer.Visibility = (ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed).TrueToVisible();
+    }
+
+    void CloseButton_ShortcutKeyGuideUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+    }
+
+    #endregion
 
 
     void Page1MenuFlyout_Opening(object sender, object e)

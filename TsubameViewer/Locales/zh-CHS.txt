@@ -248,7 +248,8 @@ CanvasImageInterpolation.MultiSampleLinear = 多采样线性
 CanvasImageInterpolation.Cubic = 立方
 CanvasImageInterpolation.Linear = 线性
 CanvasImageInterpolation.NearestNeighbor = 最近邻
-
+ImageViewer_GoNextPage = 转到下一页
+ImageViewer_GoPrevPage = 转到上一页
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = 强制清除样式

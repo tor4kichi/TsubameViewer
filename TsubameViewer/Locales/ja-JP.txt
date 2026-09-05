@@ -248,7 +248,8 @@ CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
 CanvasImageInterpolation.Cubic = Cubic
 CanvasImageInterpolation.Linear = Linear
 CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
-
+ImageViewer_GoNextPage = 次ページへ移動
+ImageViewer_GoPrevPage = 前ページへ移動
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = スタイルを強制的にクリア

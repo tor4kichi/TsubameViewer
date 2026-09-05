@@ -1443,8 +1443,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     }
 
     [RelayCommand]
-    async Task DoubleViewCorrect()
+    void DoubleViewCorrect()
     {
+        if (!NowDoubleImageView) { return; }
         _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
     }
 

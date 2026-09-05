@@ -78,113 +78,6 @@
 
     
     
-
-    <!--<MenuFlyout x:Key="DesktopViewManagementFlyout">
-      <MenuFlyoutItem Command="{x:Bind _vm.ToggleFullScreenCommand}"
-                      x:Name="SwitchFullScreeMenuItem"
-                      Visibility="Collapsed"
-                      >
-        
-      </MenuFlyoutItem>
-    </MenuFlyout>-->
-
-    <!-- 動画ビューアでXキーが使えない問題が生じるため使わない -->
-    <!--<XamlUICommand x:Key="ZoomResetUICommand" Command="{x:Bind ZoomResetCommand}"
-                   Label="{i18nExt:Localize Key=ZoomReset}"   
-                   Description="{i18nExt:Localize Key=ZoomReset}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="Zoom" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="X" />
-        <KeyboardAccelerator Key="R" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>-->
-    
-    <!--<XamlUICommand x:Key="ZoomInUICommand" Command="{x:Bind ZoomUpWithControllerCommand}"
-                   Label="{i18nExt:Localize Key=ZoomIn}"   
-                   Description="{i18nExt:Localize Key=ZoomIn}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="ZoomIn" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="Add" />
-        <KeyboardAccelerator Key="W" />
-        <KeyboardAccelerator Key="T" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-
-    <XamlUICommand x:Key="ZoomOutUICommand" Command="{x:Bind ZoomDownWithControllerCommand}"
-                   Label="{i18nExt:Localize Key=ZoomOut}"   
-                   Description="{i18nExt:Localize Key=ZoomOut}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="ZoomOut" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="Subtract" />
-        <KeyboardAccelerator Key="S" />
-        <KeyboardAccelerator Key="Y" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>-->
-
-    <XamlUICommand x:Key="LeftBindingToggleUICommand" Command="{x:Bind _vm.ToggleLeftBindingCommand}"
-                   Label="{i18nExt:Localize Key=IsLeftBindingView}"
-                   Description="{i18nExt:Localize Key=IsLeftBindingView}"
-                   >
-      <XamlUICommand.IconSource>
-        <fluentIcon:FluentIconSource Icon="ArrowSort" />
-      </XamlUICommand.IconSource>
-
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="O" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-    
-    <XamlUICommand x:Key="DoubleViewToggleUICommand" Command="{x:Bind _vm.ToggleDoubleViewCommand}"
-                   Label="{i18nExt:Localize Key=IsEnableDoubleView}"
-                   Description="{i18nExt:Localize Key=IsEnableDoubleView}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="TwoPage" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="I" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-
-
-    <XamlUICommand x:Key="DoubleViewCorrectUICommand" Command="{x:Bind _vm.DoubleViewCorrectCommand}"
-                   Label="{i18nExt:Localize Key=DoubleViewCorrectPaging}"
-                   Description="{i18nExt:Localize Key=DoubleViewCorrectPaging}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="Page2" />
-      </XamlUICommand.IconSource>
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="U" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-
-    <XamlUICommand x:Key="GoNextImageUICommand" Command="{x:Bind ReversableGoNextCommand}" 
-                   Label="{i18nExt:Localize Key=GoNextPage}"
-                   Description="{i18nExt:Localize Key=GoNextPage}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="Forward" />
-      </XamlUICommand.IconSource>
-    </XamlUICommand>
-
-    <XamlUICommand x:Key="GoPrevImageUICommand" Command="{x:Bind ReversableGoPrevCommand}"
-                   Label="{i18nExt:Localize Key=GoNextPage}"
-                   Description="{i18nExt:Localize Key=GoNextPage}"
-                   >
-      <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="Back" />
-      </XamlUICommand.IconSource>
-    </XamlUICommand>
   </Page.Resources>
 
   
@@ -232,10 +125,10 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <i:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
+        <i:InvokeCommandAction Command="{x:Bind ReversableGoNextCommand}"  />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <i:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
+        <i:InvokeCommandAction Command="{x:Bind ReversableGoPrevCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <!--<uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
@@ -275,11 +168,59 @@
         <TranslateTransform X="1"
                             Y="1" />
       </Grid.RenderTransform>
+      <Grid.Resources>
+        <Style TargetType="Button">
+          <Setter Property="KeyboardAcceleratorPlacementMode"
+                  Value="Hidden" />
+        </Style>
+      </Grid.Resources>
+      <Button Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F1" />
+        </Button.KeyboardAccelerators>
+      </Button>
       <Button Command="{x:Bind ToggleEditTransformModeCommand}"
-              Tag="{i18nExt:Localize Key=EditViewerTransform}"
-              KeyboardAcceleratorPlacementMode="Hidden">
+              Tag="{i18nExt:Localize Key=EditViewerTransform}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Z" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind _vm.ToggleFullScreenCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ReversableGoNextCommand}"
+              Tag="{i18nExt:Localize Key=ImageViewer_GoNextPage}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="A" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ReversableGoPrevCommand}"
+              Tag="{i18nExt:Localize Key=ImageViewer_GoPrevPage}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="D" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind _vm.DoubleViewCorrectCommand}"
+              Tag="{i18nExt:Localize Key=DoubleViewCorrectPaging}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Q" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind _vm.ToggleDoubleViewCommand}"
+              Tag="{i18nExt:Localize Key=IsEnableDoubleView}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="T" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind _vm.ToggleLeftBindingCommand}"
+              Tag="{i18nExt:Localize Key=IsLeftBindingView}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="B" />
         </Button.KeyboardAccelerators>
       </Button>
     </Grid>
@@ -289,8 +230,7 @@
             Background="Transparent"
             IsTapEnabled="True"
             Margin="0 0 0 4"
-            RenderTransformOrigin="0.5, 0.5"
-            >
+            RenderTransformOrigin="0.5, 0.5">
         <UIElement.RenderTransform>
           <TransformGroup>
             <TranslateTransform x:Name="PlayerTranslate" />
@@ -340,7 +280,7 @@
         <ColumnDefinition Width="1.5*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
-        Command="{StaticResource GoNextImageUICommand}" 
+        Command="{x:Bind ReversableGoNextCommand}" 
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -352,7 +292,6 @@
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
           <KeyboardAccelerator Key="LeftButton" />
-          <KeyboardAccelerator Key="A" />
         </Button.KeyboardAccelerators>
 
         <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
@@ -373,7 +312,7 @@
               />
 
       <Button x:Name="RightPageMoveButton"
-        Command="{StaticResource GoPrevImageUICommand}"
+        Command="{x:Bind ReversableGoPrevCommand}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -385,42 +324,11 @@
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
           <KeyboardAccelerator Key="RightButton" />
-          <KeyboardAccelerator Key="D" />
         </Button.KeyboardAccelerators>
 
         <SymbolIcon Symbol="Forward" />
       </Button>
 
-      <Button x:Name="Hidden_GoNextButton" 
-              Command="{StaticResource GoNextImageUICommand}"
-              Height="0" Width="0"
-              KeyboardAcceleratorPlacementMode="Hidden"
-              />
-      <Button x:Name="Hidden_GoPrevButton" 
-              Command="{StaticResource GoPrevImageUICommand}"
-              Height="0" Width="0"
-              KeyboardAcceleratorPlacementMode="Hidden"
-              />
-      <!--<Button x:Name="Hidden_ZoomInButton" 
-              Command="{StaticResource ZoomInUICommand}"
-              Height="0" Width="0"
-              KeyboardAcceleratorPlacementMode="Hidden"
-              />
-      <Button x:Name="Hidden_ZoomOutButton" 
-              Command="{StaticResource ZoomOutUICommand}"
-              Height="0" Width="0"
-              KeyboardAcceleratorPlacementMode="Hidden"
-              />
-      <Button x:Name="Hidden_ZoomResetButton"
-              Command="{x:Bind ZoomResetCommand}"
-              Height="0" Width="0"
-              KeyboardAcceleratorPlacementMode="Hidden"
-              />-->
-      <Button x:Name="Hidden_DoubleViewCorrectButton" 
-              Command="{StaticResource DoubleViewCorrectUICommand}"
-              Height="0" Width="0"
-              KeyboardAcceleratorPlacementMode="Hidden"
-              />
     </Grid>
 
     <Grid x:Name="IntaractionWall"
@@ -508,28 +416,24 @@
 
       <Button x:Name="BottomUIBackNavigationButton" 
               Click="ForceClosePage"
-              AccessKey="Q"
               HorizontalAlignment="Left">
         <SymbolIcon Symbol="Clear" />
-
-        <Button.KeyboardAccelerators>
-          <KeyboardAccelerator Key="Escape" Modifiers="Shift" />
-        </Button.KeyboardAccelerators>
       </Button>
 
       <StackPanel Orientation="Horizontal" Spacing="4"
                   HorizontalAlignment="Right">
 
         <ToggleButton x:Name="TransformEditModeButton"
-                      IsChecked="{x:Bind _vm.NowEditTransformMode, Mode=TwoWay}">
+                      IsChecked="{x:Bind _vm.NowEditTransformMode, Mode=TwoWay}"
+                      AccessKey="Z">
           <fluentIcon:SymbolIcon Symbol="ZoomIn" />
         </ToggleButton>
 
         <Button x:Name="DoubleViewCorrectButton"
-                Command="{StaticResource DoubleViewCorrectUICommand}"
+                Command="{x:Bind _vm.DoubleViewCorrectCommand}"
                 IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
                 Foreground="{ThemeResource ButtonDisabledForegroundThemeBrush}"
-                AccessKey="U">
+                AccessKey="Q">
           <Button.Content>
             <Grid>
               <fluentIcon:SymbolIcon Symbol="BookPulse">
@@ -545,8 +449,8 @@
 
         <ToggleButton x:Name="DoubleViewToggleButton"
                       IsChecked="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
-                      Command="{StaticResource DoubleViewToggleUICommand}"
-                      AccessKey="I">
+                      Command="{x:Bind _vm.ToggleDoubleViewCommand}"
+                      AccessKey="T">
           <ToggleButton.Content>
             <fluentIcon:SymbolIcon Symbol="BookOpen"
                                          Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
@@ -560,8 +464,8 @@
 
         <ToggleButton x:Name="LeftBindingToggleButton"
                       IsChecked="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}"
-                      Command="{StaticResource LeftBindingToggleUICommand}"
-                      AccessKey="O">
+                      Command="{x:Bind _vm.ToggleLeftBindingCommand}"
+                      AccessKey="B">
           <ToggleButton.Content>
             <fluentIcon:SymbolIcon Symbol="ArrowImport" >
               <fluentIcon:SymbolIcon.RenderTransform>
@@ -593,27 +497,32 @@
             <MenuFlyout Placement="RightEdgeAlignedTop">
               <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
                               Command="{x:Bind _vm.ChangeFileSortCommand}"
-                              CommandParameter="{x:Null}" />
+                              CommandParameter="{x:Null}"
+                              AccessKey="P, 0"/>
               <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}"
-                              Command="{x:Bind _vm.ChangeFileSortCommand}">
+                              Command="{x:Bind _vm.ChangeFileSortCommand}"
+                              AccessKey="1">
                 <MenuFlyoutItem.CommandParameter>
                   <models:FileSortType>UpdateTimeDecending</models:FileSortType>
                 </MenuFlyoutItem.CommandParameter>
               </MenuFlyoutItem>
               <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}"
-                              Command="{x:Bind _vm.ChangeFileSortCommand}">
+                              Command="{x:Bind _vm.ChangeFileSortCommand}"
+                              AccessKey="2">
                 <MenuFlyoutItem.CommandParameter>
                   <models:FileSortType>UpdateTimeAscending</models:FileSortType>
                 </MenuFlyoutItem.CommandParameter>
               </MenuFlyoutItem>
               <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}"
-                              Command="{x:Bind _vm.ChangeFileSortCommand}">
+                              Command="{x:Bind _vm.ChangeFileSortCommand}"
+                              AccessKey="3">
                 <MenuFlyoutItem.CommandParameter>
                   <models:FileSortType>TitleAscending</models:FileSortType>
                 </MenuFlyoutItem.CommandParameter>
               </MenuFlyoutItem>
               <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}"
-                              Command="{x:Bind _vm.ChangeFileSortCommand}">
+                              Command="{x:Bind _vm.ChangeFileSortCommand}"
+                              AccessKey="4">
                 <MenuFlyoutItem.CommandParameter>
                   <models:FileSortType>TitleDecending</models:FileSortType>
                 </MenuFlyoutItem.CommandParameter>
@@ -1083,7 +992,7 @@
               Background="{ThemeResource SystemAccentColor}"
               x:Name="Page2FavoriteBorder"/>
     </Grid>
-
+    
     <Grid x:Name="PageSelectorTooltipContainer"
           Visibility="Collapsed"
           IsHitTestVisible="False"
@@ -1125,6 +1034,30 @@
         <TextBlock x:Name="PageSelectorTooltipText"
                    FontSize="18" />
       </Border>
+    </Grid>
+
+    <Grid x:Name="ShortcutKeyGuideUIContainer"
+          Visibility="Collapsed"
+          Margin="16"
+          IsHitTestVisible="True"
+          Background="{ThemeResource SystemControlAcrylicElementBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource SystemBaseLowColor}"
+          CornerRadius="6"
+          Width="420"
+          HorizontalAlignment="Right">
+
+      <local:ShortcutKeyGuideControl ShortcutKeys="{x:Bind ShortcutKeys, Mode=OneWay}" />
+      <Button x:Name="CloseButton_ShortcutKeyGuideUIContainer"
+              Tapped="CloseButton_ShortcutKeyGuideUIContainer_Tapped"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Top"
+              Height="48"
+              Width="48"
+              Margin="16"
+              ctwu:FrameworkElementExtensions.Cursor="Hand">
+        <SymbolIcon Symbol="Clear" />
+      </Button>
     </Grid>
 
     <VisualStateManager.VisualStateGroups>

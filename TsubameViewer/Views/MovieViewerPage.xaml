@@ -1029,8 +1029,8 @@
 
       </StackPanel>
     </Grid>
-    
 
+    <!-- ShortcutKey Guide -->
     <Grid x:Name="ShortcutKeyGuideUIContainer"
           Visibility="Collapsed"
           Margin="16"
@@ -1039,60 +1039,10 @@
           BorderThickness="1"
           BorderBrush="{ThemeResource SystemBaseLowColor}"
           CornerRadius="6"
-          Width="320"
+          Width="420"
           HorizontalAlignment="Right">
-      <uwpControls:DockPanel>
-        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SC}"
-                   Style="{StaticResource SubtitleTextBlockStyle}"
-                   Margin="32 32 32 16"
-                   VerticalAlignment="Bottom"
-                   uwpControls:DockPanel.Dock="Top" />
 
-        <Border Height="1"
-                Background="{ThemeResource SystemBaseLowColor}" 
-                uwpControls:DockPanel.Dock="Top"/>
-        <ScrollViewer>
-
-          <ItemsControl x:Name="ShortcutKeyItemsControl"
-                        ItemsSource="{x:Bind ShortcutKeys, Mode=OneWay}"
-                        DataContext="{x:Null}"
-                        Margin="32 24 32 48"
-                        >
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="8"
-                                       Orientation="Vertical" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:ShortcutKeyInfo">
-                <Grid MinHeight="32">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="{Binding Label}"
-                             Grid.Column="0"
-                             TextWrapping="Wrap"
-                             MaxWidth="320"
-                             VerticalAlignment="Center"/>
-
-                  <Border Background="{ThemeResource SystemBaseLowColor}"
-                          Height="1"
-                          Grid.Column="1"
-                          Margin="8" />
-
-                  <TextBlock Text="{x:Bind ToText(Key, Modifier)}"
-                             HorizontalAlignment="Right"
-                             VerticalAlignment="Center"
-                             Grid.Column="2" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </uwpControls:DockPanel>
+      <local:ShortcutKeyGuideControl ShortcutKeys="{x:Bind ShortcutKeys, Mode=OneWay}" />
       <Button x:Name="CloseButton_ShortcutKeyGuideUIContainer"
               Tapped="CloseButton_ShortcutKeyGuideUIContainer_Tapped"
               HorizontalAlignment="Right"

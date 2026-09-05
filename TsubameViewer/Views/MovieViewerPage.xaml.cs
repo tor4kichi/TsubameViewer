@@ -1531,7 +1531,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     #region ShortcutKey
 
     [ObservableProperty]
-    ArraySegment<ShortcutKeyInfo>? _shortcutKeys;
+    ShortcutKeyInfo[]? _shortcutKeys;
 
     [RelayCommand]
     void ToggleDisplayShortcutKeyGuideUI()
@@ -1548,10 +1548,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     Key = x.KeyboardAccelerators[0].Key,
                     Modifier = x.KeyboardAccelerators[0].Modifiers
                 })
-                .ToArrayPool();
-            shortcuts
-                .RegisterTo(this.GetCancellationTokenOnUnloaded());
-            ShortcutKeys = shortcuts.ArraySegment;
+                .ToArray();
+            ShortcutKeys = shortcuts;
         }
         ShortcutKeyGuideUIContainer.Visibility = (ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed).TrueToVisible();
     }
