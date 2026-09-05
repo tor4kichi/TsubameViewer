@@ -852,6 +852,7 @@ public sealed partial class AppShell : UserControl
 
         if (!IsLoadTitleBar)
         {
+            frame.Navigated -= VisibleTitlebarWhen_Frame_Navigated;
             frame.Navigated += VisibleTitlebarWhen_Frame_Navigated;
         }
 
@@ -878,7 +879,18 @@ public sealed partial class AppShell : UserControl
         var page = frame.Content;
         var currentPage = page as Page;        
         var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters, ct);
-        sw.ElapsedWrite("After HandleViewModelNavigation");        
+        sw.ElapsedWrite("After HandleViewModelNavigation");           
+        if (handleResult.IsSuccess == false)
+        {
+            if (frame == ContentFrame)
+            {
+                frame.Navigate(HomePageType, null);
+            }
+            else
+            {
+                frame.Navigate(typeof(EmptyPage), null);
+            }
+        }
         return handleResult;
     }
 
@@ -923,16 +935,31 @@ public sealed partial class AppShell : UserControl
     {
         if (fromPageVM != null)
         {
-            fromPageVM.OnNavigatedFrom(parameters);
+            try
+            {
+                fromPageVM.OnNavigatedFrom(parameters);
+            }
+            catch (Exception ex)
+            {
+                App.Current.HandleException(ex);
+            }
         }
 
         if (toPageVM != null)
         {
-            toPageVM.OnNavigatedTo(parameters);
-            await toPageVM.OnNavigatedToAsync(parameters, ct);
+            try
+            {
+                toPageVM.OnNavigatedTo(parameters);
+                await toPageVM.OnNavigatedToAsync(parameters, ct);
+            }
+            catch (Exception ex)
+            {
+                App.Current.HandleException(ex);
+                return NavigationResult.Failed(ex);
+            }
         }
 
-        return new NavigationResult() { IsSuccess = true };
+        return NavigationResult.Success;
     }
 
     [RelayCommand]

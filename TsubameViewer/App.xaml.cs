@@ -560,7 +560,7 @@ sealed partial class App : Application
             }
         }
 
-        return new NavigationResult() { IsSuccess = false };
+        return NavigationResult.Failed();
     }
 
     static async Task<INavigationResult> NavigateAsync(IStorageItem storageItem, IMessenger? messenger = null)
@@ -601,7 +601,7 @@ sealed partial class App : Application
             }
         }
 
-        return new NavigationResult() { IsSuccess = false };
+        return NavigationResult.Failed();
     }
 
     static async Task<INavigationResult> SecondatyTileArgumentNavigationAsync(SecondaryTileArguments args)
@@ -639,7 +639,7 @@ sealed partial class App : Application
         }
         else
         {
-            return new NavigationResult() { IsSuccess = true };
+            return NavigationResult.Failed();
         }
     }
 }

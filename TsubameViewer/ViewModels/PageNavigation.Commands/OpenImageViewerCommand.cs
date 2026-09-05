@@ -1,12 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.Views;
 using Windows.UI.Xaml.Media.Animation;
 #nullable enable
@@ -62,10 +65,18 @@ public sealed class OpenImageViewerCommand : CommandBase
 
             if (_viewerSettings.IsViewerOpenWithSecondaryWindow)
             {
-                await _secondaryWindowService.OpenViewerAsync(imageSource, false);
+                try
+                {
+                    await _secondaryWindowService.OpenViewerAsync(imageSource, false);
+                }
+                catch
+                {
+                    _messenger.SendShowTextNotificationMessage("OpenImageViewer_Failed".Translate());                    
+                }
             }
             else
             {
+                INavigationResult? result = null;
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Image
                     or Core.Models.StorageItemTypes.EBook
@@ -75,17 +86,22 @@ public sealed class OpenImageViewerCommand : CommandBase
                     or StorageItemTypes.AlbamImage)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                    result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (type == StorageItemTypes.EBook)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                    result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (type == StorageItemTypes.Movie)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                    result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                }
+
+                if (result?.IsSuccess is false)
+                {
+                    _messenger.SendShowTextNotificationMessage("OpenImageViewer_Failed".Translate());
                 }
             }
         }

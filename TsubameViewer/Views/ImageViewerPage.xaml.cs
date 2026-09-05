@@ -984,6 +984,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     //return;
                 }
 
+                if (s.PageSelectorCandidateImageIndex == -1) { return; }
+
                 long ts = TimeProvider.System.GetTimestamp();
 
                 var imageSource = await s.GetImageSourceAsync(s.PageSelectorCandidateImageIndex, ct);

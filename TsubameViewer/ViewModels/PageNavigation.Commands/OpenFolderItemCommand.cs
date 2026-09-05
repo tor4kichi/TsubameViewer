@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.Xaml.Interactivity;
 using System;
 using System.Collections.Generic;
@@ -6,12 +7,14 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Input;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
@@ -99,6 +102,7 @@ public sealed class OpenFolderItemCommand : CommandBase
             }
             catch { }
 
+            INavigationResult? viewerResult = null;
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
             if (type is StorageItemTypes.Image or StorageItemTypes.AlbamImage
                 or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)
@@ -110,7 +114,7 @@ public sealed class OpenFolderItemCommand : CommandBase
                 else
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                    viewerResult = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
             }
             else if (type is StorageItemTypes.Albam)
@@ -119,12 +123,12 @@ public sealed class OpenFolderItemCommand : CommandBase
                 if (await albamImageSource.IsExistFolderOrArchiveFileAsync())
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                    await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                 }
                 else
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                    viewerResult = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
             }
             else if (type == StorageItemTypes.Folder)
@@ -142,7 +146,7 @@ public sealed class OpenFolderItemCommand : CommandBase
                     else
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                        viewerResult = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                     }
                 }
                 else
@@ -181,12 +185,12 @@ public sealed class OpenFolderItemCommand : CommandBase
                     if (currentListupMode == DefaultFolderListupMode.FolderOrContents)
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                        await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     }
                     else
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                        await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
 
                     if (setting?.ListupMode == null)
@@ -204,7 +208,7 @@ public sealed class OpenFolderItemCommand : CommandBase
                 else
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+                    viewerResult = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
                 }
             }
             else if (type == StorageItemTypes.Movie)
@@ -216,7 +220,7 @@ public sealed class OpenFolderItemCommand : CommandBase
                 else
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                    viewerResult = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
                 }
             }
             else if (type == StorageItemTypes.AddFolder)
@@ -226,6 +230,11 @@ public sealed class OpenFolderItemCommand : CommandBase
             else if (type == StorageItemTypes.AddAlbam)
             {
                 ((ICommand)_albamCreateCommand).Execute(null);
+            }
+
+            if (viewerResult?.IsSuccess == false)
+            {
+                _messenger.SendShowTextNotificationMessage("OpenImageViewer_Failed".Translate());
             }
         }
     }

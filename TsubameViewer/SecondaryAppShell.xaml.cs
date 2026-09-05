@@ -134,7 +134,7 @@ public sealed partial class SecondaryAppShell : UserControl
             await toPageVM.OnNavigatedToAsync(parameters, ct);
         }
 
-        return new NavigationResult() { IsSuccess = true };
+        return NavigationResult.Success;
     }
 
     public async Task ClearNavigationAsync()
