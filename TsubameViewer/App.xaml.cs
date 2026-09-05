@@ -13,9 +13,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Navigation;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Contracts.Models;
@@ -88,9 +90,9 @@ sealed partial class App : Application
 
         EnsureFavoriteAlbam.FavoriteAlbamTitle = "FavoriteAlbam".Translate();
         RecentlyAccessRepository.MaxRecordCount = 100;
-
-        
     }
+
+    readonly StringBuilder _errorTextSb = new();
 
     void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
     {
@@ -111,8 +113,14 @@ sealed partial class App : Application
         if (exception is OperationCanceledException) { return; }
 
         Debug.WriteLine(exception);
+        _errorTextSb.Clear();
+        _errorTextSb.AppendLine(exception.ToString());
+#if DEBUG
+        Container.Resolve<IMessenger>().SendShowTextNotificationMessage(_errorTextSb.ToString());
+#endif
     }
 
+    public string GetLastErrorText() => _errorTextSb.ToString();
 
     Container ConfigureService()
     {

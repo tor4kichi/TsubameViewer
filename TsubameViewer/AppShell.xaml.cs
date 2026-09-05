@@ -210,8 +210,9 @@ public sealed partial class AppShell : UserControl
     void OpenMsFormFeedbackPage()
     {
         var appInfoText = GetAppInfoText().ToString();
-        var uri = new Uri($"https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZAAObntfNUNVdWMThSTjFGMDhFWjI4TDJLSjUxTTM4SC4u&r8cc009228bff4265bf1eb48b0c408716={appInfoText}");
-        _ = Launcher.LaunchUriAsync(uri);
+        var errorText = App.Current.GetLastErrorText() ?? "";
+        var url = $"https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZAAObntfNUNVdWMThSTjFGMDhFWjI4TDJLSjUxTTM4SC4u&r8cc009228bff4265bf1eb48b0c408716={appInfoText}&ra63903b1873a45239069389cb4b7e316={errorText}";
+        _ = Launcher.LaunchUriAsync(new(url));
     }
 
 
