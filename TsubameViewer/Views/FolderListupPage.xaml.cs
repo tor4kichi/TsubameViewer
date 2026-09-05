@@ -37,6 +37,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
+using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI.Xaml;
@@ -956,5 +957,20 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     {
         
     }
+
+
+    #region ShortcutKeys
+
+
+
+    [RelayCommand]
+    void SetScrollPositionWithPercent(double posWithPercent)
+    {
+        var sv = FoldersAdaptiveGridView.FindDescendant<ScrollViewer>();
+        if (sv == null) { return; }
+        sv.ChangeView(null, sv.ScrollableHeight * posWithPercent, null, true);        
+    }
+
+    #endregion
 
 }
