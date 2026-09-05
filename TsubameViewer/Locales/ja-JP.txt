@@ -214,6 +214,10 @@ IsAutoMoveToNextEnabled = 完了時に次のコンテンツへ自動的に移動
 AutoMoveToNext_Notice = 次の「{0}」を表示中
 NextContent = 次
 PreviousContent = 前
+Viewer_OpenNextContent = 次のコンテンツを開く
+Viewer_OpenPrevContent = 前のコンテンツを開く
+
+
 
 EditViewerTransform = ビューアの変形
 EditViewerTransform_Done = 完了

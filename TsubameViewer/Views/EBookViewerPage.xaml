@@ -341,6 +341,21 @@
           <KeyboardAccelerator Key="F" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button Command="{x:Bind _vm.OpenEpubFileCommand}"
+              CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+              Tag="{i18nExt:Localize Key=Viewer_OpenNextContent}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="End" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind _vm.OpenEpubFileCommand}"
+              CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+              Tag="{i18nExt:Localize Key=Viewer_OpenPrevContent}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Home" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
     </Grid>
     
     <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない

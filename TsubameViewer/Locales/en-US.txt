@@ -214,6 +214,10 @@ IsAutoMoveToNextEnabled = Automatically Move to the Next Content Upon Completion
 AutoMoveToNext_Notice = Displaying the next “{0}”
 NextContent = Next
 PreviousContent = Previous
+Viewer_OpenNextContent = Open the next content
+Viewer_OpenPrevContent = Open previous content
+
+
 
 EditViewerTransform = Viewer transformation
 EditViewerTransform_Done = Completion

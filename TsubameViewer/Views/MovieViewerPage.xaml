@@ -374,6 +374,20 @@
           <KeyboardAccelerator Key="Right" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button Command="{x:Bind _vm.OpenMovieFileCommand}"
+              CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+              Tag="{i18nExt:Localize Key=Viewer_OpenNextContent}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="End" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind _vm.OpenMovieFileCommand}"
+              CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+              Tag="{i18nExt:Localize Key=Viewer_OpenPrevContent}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Home" />
+        </Button.KeyboardAccelerators>
+      </Button>
       <Button Command="{x:Bind SaveCurrentFrameCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_SaveCurrentFrame}"
               KeyboardAcceleratorPlacementMode="Hidden">

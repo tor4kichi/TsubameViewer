@@ -214,6 +214,10 @@ IsAutoMoveToNextEnabled = 完成后自动跳转至下一内容
 AutoMoveToNext_Notice = 正在显示下一个“{0}”
 NextContent = 下一页
 PreviousContent = 上一页
+Viewer_OpenNextContent = 打开下一部分内容
+Viewer_OpenPrevContent = 打开上一节内容
+
+
 
 EditViewerTransform = 观察者转换
 EditViewerTransform_Done = 完成
