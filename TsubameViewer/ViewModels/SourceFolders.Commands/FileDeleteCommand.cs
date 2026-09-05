@@ -23,17 +23,14 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
 {
     readonly IMessenger _messenger;
     readonly IFileControlDialogService _fileControlDialogService;
-    readonly FileControlSettings _fileControlSettings;
 
     public FileDeleteCommand(
         IMessenger messenger,
-        IFileControlDialogService fileControlDialogService,
-        FileControlSettings fileControlSettings
+        IFileControlDialogService fileControlDialogService
         )
     {
         _messenger = messenger;
-        _fileControlDialogService = fileControlDialogService;
-        _fileControlSettings = fileControlSettings;
+        _fileControlDialogService = fileControlDialogService;        
     }
 
     protected override bool CanExecute(IImageSource imageSource)
@@ -50,25 +47,12 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
     {
         if (imageSource.StorageItem is IStorageItem item)
         {
-            bool isDelete;
-            if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
-            {
-                isDelete = true;
-            }
-            else
-            {
-                (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
-                if (doNotAskTwice)
-                {
-                    _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
-                }
-            }
-
+            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
             if (isDelete)
             {
                 try
                 {
-                    await item.DeleteAsync(StorageDeleteOption.Default);
+                    await item.DeleteAsync(isDeletePermanent ? StorageDeleteOption.PermanentDelete : StorageDeleteOption.Default);
                     _messenger.Send(new StorageItemNotFoundMessage(item.Path));
                     _messenger.Send(new StroageItemAccessRemovedMessage(item.Path));                    
                 }
@@ -100,25 +84,12 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
         if (imageSources.Any(x => x.StorageItem != null))
         {
             var item = imageSources.First(x => x.StorageItem != null).StorageItem;
-            bool isDelete;
-            if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
-            {
-                isDelete = true;
-            }
-            else
-            {
-                (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
-                if (doNotAskTwice)
-                {
-                    _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
-                }
-            }
-
+            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
             if (isDelete)
             {
                 try
                 {
-                    await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(StorageDeleteOption.Default).AsTask()));
+                    await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(isDeletePermanent ? StorageDeleteOption.PermanentDelete : StorageDeleteOption.Default).AsTask()));
                     foreach (var deleted in imageSources)
                     {
                         _messenger.Send(new StorageItemNotFoundMessage(deleted.Path));

@@ -179,7 +179,6 @@ sealed partial class App : Application
         container.Register<Core.Models.ImageViewer.ImageViewerSettings>(reuse: Reuse.Singleton);
         container.Register<ViewerSettings>(reuse: Reuse.Singleton);
         container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: Reuse.Singleton);
-        container.Register<FileControlSettings>(reuse: Reuse.Singleton);
         container.Register<ApplicationSettings>(reuse: Reuse.Singleton);
         container.Register<StorageItemSettings>(reuse: Reuse.Singleton);
 

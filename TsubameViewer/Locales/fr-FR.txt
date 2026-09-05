@@ -49,8 +49,8 @@ ThumbnailImageChanged = Changer la miniature
 Notification_SourceStorageItemNotFound = Le chemin spécifié a été désenregistré
 
 
-#### Dialog
-DoNotDisplayFromNextTime = Ne plus afficher la prochaine fois
+#### Delete Storage Item Dialog
+StorageItemDeleteConfirm_IsDeletePermanent = Supprimer complètement les fichiers et les dossiers.
 StorageItemDeleteConfirmTitleWithName = Voulez-vous supprimer les éléments suivants ? \ n {0}
 
 
@@ -235,7 +235,7 @@ IsLeftBindingView = Afficher à gauche
 SwitchFullScreen = Passage en plein écran
 DoubleViewCorrectPaging = Corriger le désalignement des doubles pages
 IsKeepSingleViewOnFirstPage = Ne pas afficher la première page côte à côte avec une autre page
-IfAllFilesWannaWatchThenRegistrationFolderAtApp = Si vous faites glisser le dossier vers l'application, tout sera affiché
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = Glissez-déposez le dossier dans l'application pour afficher tous les fichiers.
 ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
 ImageViewerSettings.IsScaleEffectEnabled = Interpolation lors de la réduction
 ImageViewerSettings.ScaleEffectSharpness = Acuité

@@ -10,7 +10,7 @@ namespace TsubameViewer.Services;
 
 public interface IStorageItemDeleteConfirmation
 {
-    Task<(bool IsDeleteRequested, bool IsDoNotDisplayNextTimeRequested)> DeleteConfirmAsync(string itemName);
+    Task<(bool IsDeleteRequested, bool IsDeletePermanet)> DeleteConfirmAsync(string itemName);
 }
 
 public sealed class FileControlDialogService : IFileControlDialogService
@@ -22,7 +22,7 @@ public sealed class FileControlDialogService : IFileControlDialogService
         _lazyStorageItemDeleteConfirmDialog = lazyStorageItemDeleteConfirmDialog;
     }
 
-    public async Task<(bool IsConfirm, bool IsAskTwiceDenied)> ConfirmFileDeletionAsync(IStorageItem storageItem)
+    public async Task<(bool IsConfirm, bool IsDeletePermanet)> ConfirmFileDeletionAsync(IStorageItem storageItem)
     {
         var dialog = _lazyStorageItemDeleteConfirmDialog.Value;
         return await dialog.DeleteConfirmAsync("StorageItemDeleteConfirmTitleWithName".Translate(storageItem.Name));

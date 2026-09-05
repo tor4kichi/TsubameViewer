@@ -172,7 +172,6 @@
     <Compile Include="Models\Navigation\PageNavigationConstants.cs" />
     <Compile Include="Models\Navigation\NavigationStackRepository.cs" />
     <Compile Include="Models\FolderItemListing\LocalBookmarkRepository.cs" />
-    <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="Models\SourceFolders\SourceOriginConstants.cs" />
     <Compile Include="Models\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />

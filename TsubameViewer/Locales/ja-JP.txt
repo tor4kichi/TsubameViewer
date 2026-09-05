@@ -49,8 +49,8 @@ ThumbnailImageChanged = サムネイル画像を変更
 Notification_SourceStorageItemNotFound = 指定されたパスは登録解除済みです
 
 
-#### Dialog
-DoNotDisplayFromNextTime = 次回から表示しない
+#### Delete Storage Item Dialog
+StorageItemDeleteConfirm_IsDeletePermanent = ファイル・フォルダを完全に削除する
 StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
 
 
@@ -235,7 +235,7 @@ IsLeftBindingView = 左開き表示
 SwitchFullScreen = 全画面切替
 DoubleViewCorrectPaging = 見開きのページズレを補正する
 IsKeepSingleViewOnFirstPage = 最初のページは見開き表示しない
-IfAllFilesWannaWatchThenRegistrationFolderAtApp = フォルダをアプリにD&Dすると全部表示されます
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = フォルダをアプリにドラッグ＆ドロップすると全部表示されます
 ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
 ImageViewerSettings.IsScaleEffectEnabled = 縮小処理時の補間処理
 ImageViewerSettings.ScaleEffectSharpness = シャープネス

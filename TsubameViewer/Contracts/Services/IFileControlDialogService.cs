@@ -5,5 +5,5 @@ namespace TsubameViewer.Contracts.Services;
 
 public interface IFileControlDialogService
 {
-    Task<(bool IsConfirm, bool IsAskTwiceDenied)> ConfirmFileDeletionAsync(IStorageItem storageItem);
+    Task<(bool IsConfirm, bool IsDeletePermanet)> ConfirmFileDeletionAsync(IStorageItem storageItem);
 }

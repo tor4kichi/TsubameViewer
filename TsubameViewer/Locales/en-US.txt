@@ -49,8 +49,8 @@ ThumbnailImageChanged = Change thumbnail image
 Notification_SourceStorageItemNotFound = The specified path has been unregistered
 
 
-#### Dialog
-DoNotDisplayFromNextTime = Do not display from next time
+#### Delete Storage Item Dialog
+StorageItemDeleteConfirm_IsDeletePermanent = Completely delete files and folders.
 StorageItemDeleteConfirmTitleWithName = Do you want to delete the following items? \ n {0}
 
 
@@ -235,7 +235,7 @@ IsLeftBindingView = Left open display
 SwitchFullScreen = Full screen switching
 DoubleViewCorrectPaging = Correct the page shift of the spread
 IsKeepSingleViewOnFirstPage = Do not spread the first page
-IfAllFilesWannaWatchThenRegistrationFolderAtApp = If you D&D the folder to the app, all will be displayed
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = Drag and drop the folder into the app to display all of them.
 ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
 ImageViewerSettings.IsScaleEffectEnabled = Interpolation during reduction
 ImageViewerSettings.ScaleEffectSharpness = Sharpness

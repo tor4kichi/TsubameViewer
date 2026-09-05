@@ -49,8 +49,8 @@ ThumbnailImageChanged = 更改封面
 Notification_SourceStorageItemNotFound = 指定路径已注销
 
 
-#### Dialog
-DoNotDisplayFromNextTime = 下次不再显示
+#### Delete Storage Item Dialog
+StorageItemDeleteConfirm_IsDeletePermanent = 彻底删除文件和文件夹。
 StorageItemDeleteConfirmTitleWithName = 您要删除以下项目吗？ \n{0}
 
 
@@ -235,7 +235,7 @@ IsLeftBindingView = 左开显示
 SwitchFullScreen = 全屏切换
 DoubleViewCorrectPaging = 纠正传播的页面偏移
 IsKeepSingleViewOnFirstPage = 不要展开第一页
-IfAllFilesWannaWatchThenRegistrationFolderAtApp = 如果您将文件夹 D&D 到应用程序，将显示所有内容
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = 将文件夹拖放到应用程序中即可显示所有文件夹。
 ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
 ImageViewerSettings.IsScaleEffectEnabled = 缩减过程中的插值
 ImageViewerSettings.ScaleEffectSharpness = 清晰度
