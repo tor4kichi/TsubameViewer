@@ -1078,7 +1078,28 @@
         <SymbolIcon Symbol="Clear" />
       </Button>
     </Grid>
+    
+    <muxc:TeachingTip x:Name="ReadingOrderTeachingTip"
+                      Closed="ReadingOrderTeachingTip_Closed"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Target="{x:Bind RootGrid}">
+      <StackPanel Padding="0 32 0 8"
+                  Spacing="16">
+        <TextBlock Text="{i18nExt:Localize Key=IsLeftBindingView_Desc}"
+                   MaxWidth="320"
+                   TextWrapping="Wrap" />
+        <uwpControls:Segmented ItemsSource="{x:Bind ReadingOrderItems}"
+                               SelectedIndex="0"
+                               ItemTemplate="{StaticResource LocalizeTextTemplate}"
+                               HorizontalAlignment="Center"
+                               SelectionChanged="Segmented_SelectionChanged"
+                               >
 
+        </uwpControls:Segmented>
+      </StackPanel>
+    </muxc:TeachingTip>
+    
     <VisualStateManager.VisualStateGroups>
 
       <!-- 画像読み込み中の画面演出 -->

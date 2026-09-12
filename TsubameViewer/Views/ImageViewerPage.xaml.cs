@@ -1027,6 +1027,13 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
             .Start(Image1);
 
+
+        //if (!_vm.ImageViewerSettings.IsLeftBindingView_AnswerOnFirstShow)
+        {
+            ReadingOrderTeachingTip.IsOpen = true;
+            ShowBottomUI();
+        }
+
         base.OnNavigatedTo(e);
     }
 
@@ -1167,6 +1174,31 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
 #endregion Navigation
+
+
+    public PageReadingOrder[] ReadingOrderItems { get; } = [PageReadingOrder.Left, PageReadingOrder.Right];
+    public PageReadingOrder SelectedReadingOrder
+    {
+        get { return (PageReadingOrder)GetValue(SelectedReadingOrderProperty); }
+        set { SetValue(SelectedReadingOrderProperty, value); }
+    }
+
+    public static readonly DependencyProperty SelectedReadingOrderProperty =
+        DependencyProperty.Register(nameof(SelectedReadingOrder), typeof(PageReadingOrder), typeof(ImageViewerPage), new PropertyMetadata(PageReadingOrder.Left));
+
+    private void ReadingOrderTeachingTip_Closed(Microsoft.UI.Xaml.Controls.TeachingTip sender, Microsoft.UI.Xaml.Controls.TeachingTipClosedEventArgs args)
+    {
+        _vm.ImageViewerSettings.IsLeftBindingView_AnswerOnFirstShow = true;        
+    }
+
+    private void Segmented_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.ElementAtOrDefault(0) is PageReadingOrder order)
+        {
+            _vm.ImageViewerSettings.IsLeftBindingView = order == PageReadingOrder.Right;
+            _vm.IsLeftBindingEnabled = _vm.ImageViewerSettings.IsLeftBindingView;
+        }
+    }
 
 
     #region Page Next/Prev

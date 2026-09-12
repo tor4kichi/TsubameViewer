@@ -7,6 +7,12 @@ using TsubameViewer.Core.Infrastructure;
 
 namespace TsubameViewer.Core.Models.ImageViewer;
 
+public enum PageReadingOrder
+{
+    Left,
+    Right,
+}
+
 public sealed class ImageViewerSettings : FlagsRepositoryBase
 {
     private readonly SettingsPerPathRepository _settingsPerPathRepository;
@@ -16,6 +22,7 @@ public sealed class ImageViewerSettings : FlagsRepositoryBase
 
         _IsReverseImageFliping_MouseWheel = Read(false, nameof(IsReverseImageFliping_MouseWheel));
         _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
+        _isLeftBindingView_AnswerOnFirstShow = Read(false, nameof(IsLeftBindingView_AnswerOnFirstShow));
         _IsEnableDoubleView = Read(true, nameof(IsEnableDoubleView));
         _IsKeepSingleViewOnFirstPage = Read(true, nameof(IsKeepSingleViewOnFirstPage));
         _IsEnablePrefetch = Read(true, nameof(IsEnablePrefetch));
@@ -48,6 +55,13 @@ public sealed class ImageViewerSettings : FlagsRepositoryBase
     {
         get => _IsLeftBindingView;
         set => SetProperty(ref _IsLeftBindingView, value);
+    }
+
+    private bool _isLeftBindingView_AnswerOnFirstShow;
+    public bool IsLeftBindingView_AnswerOnFirstShow
+    {
+        get => _isLeftBindingView_AnswerOnFirstShow;
+        set => SetProperty(ref _isLeftBindingView_AnswerOnFirstShow, value);
     }
 
     // 見開き表示
