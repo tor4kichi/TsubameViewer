@@ -142,8 +142,8 @@ sealed partial class App : Application
 
     void RegisterRequiredTypes(Container container)
     {
-        container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
-        container.RegisterInstance<Func<LiteDatabase>>(() => new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
+        container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;") { Timeout = TimeSpan.FromSeconds(10) });
+        container.RegisterInstance<Func<LiteDatabase>>(() => new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;") { Timeout = TimeSpan.FromSeconds(10) }, serviceKey: "TemporaryDb");
 
         container.RegisterInstance<IStorageHelper>(new BytesApplicationDataStorageHelper(ApplicationData.Current, new BinaryJsonObjectSerializer()));
         container.Register<IViewLocator, ViewLocator>();
@@ -447,7 +447,7 @@ sealed partial class App : Application
             Container.Resolve<ThumbnailImageManager>().ReOpenInsideDb();
             try
             {
-                using var db = new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") });
+                using var db = new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb")}) { Timeout = TimeSpan.FromSeconds(1) };
                 var collection = db.GetCollection<FolderStructureFileEntry>();
                 collection.EnsureIndex(x => x.DateCreated);
                 var dummy = new FolderStructureFileEntry()
@@ -455,6 +455,7 @@ sealed partial class App : Application
                     Path = "0"
                 };
                 collection.Insert(dummy);
+                db.Checkpoint();
                 collection.Delete(dummy.Path);
                 db.Checkpoint();
             }
