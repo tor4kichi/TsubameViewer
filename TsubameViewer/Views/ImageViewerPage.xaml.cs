@@ -1028,7 +1028,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             .Start(Image1);
 
 
-        //if (!_vm.ImageViewerSettings.IsLeftBindingView_AnswerOnFirstShow)
+        if (!_vm.ImageViewerSettings.IsLeftBindingView_AnswerOnFirstShow)
         {
             ReadingOrderTeachingTip.IsOpen = true;
             ShowBottomUI();
