@@ -11,9 +11,10 @@ public sealed partial class StorageItemDeleteConfirmDialog : ContentDialog, ISto
         this.InitializeComponent();
     }
 
-    public async Task<(bool IsDeleteRequested, bool IsDeletePermanet)> DeleteConfirmAsync(string title)
+    public async Task<(bool IsDeleteRequested, bool IsDeletePermanet)> DeleteConfirmAsync(string title, bool isCheckedDeletePermanentAsDefault)
     {
         this.Title = title;
+        DeleteWithPermanentToggleButton.IsChecked = isCheckedDeletePermanentAsDefault;
         var result = await this.ShowAsync();
         return (result is ContentDialogResult.Primary, this.DeleteWithPermanentToggleButton.IsChecked is true);
     }

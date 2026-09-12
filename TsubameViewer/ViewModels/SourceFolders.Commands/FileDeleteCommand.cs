@@ -15,6 +15,9 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
+using Windows.System;
+using Windows.UI.Core;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 #nullable enable
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
@@ -47,7 +50,9 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
     {
         if (imageSource.StorageItem is IStorageItem item)
         {
-            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
+            var shiftPressing = Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)
+                || Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item, shiftPressing);
             if (isDelete)
             {
                 try
@@ -84,7 +89,9 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
         if (imageSources.Any(x => x.StorageItem != null))
         {
             var item = imageSources.First(x => x.StorageItem != null).StorageItem;
-            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
+            var shiftPressing = Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)
+                || Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item, shiftPressing);
             if (isDelete)
             {
                 try
