@@ -2701,134 +2701,160 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     string? _initializeForFilePath;
 
+    private void MovieSettingsFlyout_Opening(object sender, object e)
+    {
+        if (_mediaPlayer == null) { return; }
+        IsRepeat_MenuItem.IsChecked = _mediaPlayer.IsLoopingEnabled;
+    }
+    ToggleMenuFlyoutItem? _setNonSubtitleMenuItem;
     private void TracksAndSubtitleSelectFlyout_Opening(object sender, object e)
     {
+        if (_mediaPlayer == null) { return; }
         if (_vm.MovieFile == null) { return; }
         if (_mediaPlayer.Source is not MediaPlaybackItem playbackItem) { return; }
         if (_initializeForFilePath != null && _initializeForFilePath == _vm.MovieFile.Path) 
         {
-            foreach (var (index, menuItem) in VideoTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            foreach (var (index, menuItem) in SubtitleSettingsFlyout.Items.AsValueEnumerable().Where(x => x.DataContext is VideoTrack).Index())
             {
                 (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.VideoTracks.SelectedIndex == index;
             }
 
-            foreach (var (index, menuItem) in AudioTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            foreach (var (index, menuItem) in SubtitleSettingsFlyout.Items.AsValueEnumerable().Where(x => x.DataContext is AudioTrack).Index())
             {
                 (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.AudioTracks.SelectedIndex == index 
                     ||  _audioPlayer.Source == menuItem.DataContext;
             }
 
             bool anySubstitleDisplay = false;
-            foreach (var (index, menuItem) in SubtitlesMenuSubItem.Items.Skip(1).SkipLast(2).AsValueEnumerable().Index())
+            foreach (var (index, menuItem) in SubtitleSettingsFlyout.Items.AsValueEnumerable().Where(x => x.DataContext is TimedMetadataTrack).Index())
             {
                 var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
                 (menuItem as ToggleMenuFlyoutItem)?.IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
                 anySubstitleDisplay |= mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
             }
 
+            _setNonSubtitleMenuItem?.IsChecked = !anySubstitleDisplay;
             return; 
         }
 
         _initializeForFilePath = _vm.MovieFile.Path;
-        VideoTracksMenuSubItem.Items.Clear();
-        AudioTracksMenuSubItem.Items.Clear();
-        SubtitlesMenuSubItem.Items.Clear();
 
-        // 動画ファイル内の映像
-        foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
+        SubtitleSettingsFlyout.Items.Clear();
+
+        int headerFontSize = 13;
+        // 動画ファイル内の映像        
+        var nextContentInsertPos = 0;
+        if (playbackItem.VideoTracks.Count >= 2)
         {
-            var menuItem = new ToggleMenuFlyoutItem()
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
             {
-                Text = !string.IsNullOrWhiteSpace(videoTrack.Language) ? $"{videoTrack.Id}. {videoTrack.Name} ({videoTrack.Language})" : $"{videoTrack.Id}. {videoTrack.Name}",
-                DataContext = videoTrack,
-                IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
-                Command = SetVideoTrackCommand,
-                CommandParameter = videoTrack,
-            };
+                Text = "MovieViewer_VideoTrack".Translate(playbackItem.VideoTracks.Count),
+                FontSize = headerFontSize,
+                IsEnabled = false
+            });
+            nextContentInsertPos++;
+            foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
+            {
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = !string.IsNullOrWhiteSpace(videoTrack.Language) ? $"{videoTrack.Id}. {videoTrack.Name} ({videoTrack.Language})" : $"{videoTrack.Id}. {videoTrack.Name}",
+                    DataContext = videoTrack,
+                    IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
+                    Command = SetVideoTrackCommand,
+                    CommandParameter = videoTrack,
+                };
 
-            VideoTracksMenuSubItem.Items.Add(menuItem);
-        }
-
-        VideoTracksMenuSubItem.Text = "MovieViewer_VideoTrack".Translate(VideoTracksMenuSubItem.Items.Count);
-
-        bool isVideoTracksChangeEnabled = VideoTracksMenuSubItem.Items.Count >= 2;
-        foreach (var menuItem in VideoTracksMenuSubItem.Items)
-        {
-            menuItem.IsEnabled = isVideoTracksChangeEnabled;
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
         }
         
         // 動画ファイル内の音声
-        foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
+        if (playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count >= 2)
         {
-            var menuItem = new ToggleMenuFlyoutItem()
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
             {
-                Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{audioTrack.Id}. {audioTrack.Name} ({audioTrack.Language})" : $"{audioTrack.Id}. {audioTrack.Name}",
-                DataContext = audioTrack,
-                IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
-                Command = SetAudioTrackCommand,
-                CommandParameter = audioTrack,
-            };
+                Text = "MovieViewer_AudioTrack".Translate(playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count),
+                FontSize = headerFontSize,
+                IsEnabled = false
+            });
+            nextContentInsertPos++;
+            foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
+            {
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{audioTrack.Id}. {audioTrack.Name} ({audioTrack.Language})" : $"{audioTrack.Id}. {audioTrack.Name}",
+                    DataContext = audioTrack,
+                    IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
+                    Command = SetAudioTrackCommand,
+                    CommandParameter = audioTrack,
+                };
 
-            AudioTracksMenuSubItem.Items.Add(menuItem);
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
+
+            // 外部音声
+            foreach (var (audioItem, file) in _externalAudioTrackFiles)
+            {
+                var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = $"{file.Name}",
+                    DataContext = audioItem,
+                    IsChecked = _audioPlayer.Source == audioItem,
+                    Command = SetExternalAudioTrackCommand,
+                    CommandParameter = audioItem,
+                };
+
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
         }
 
-        // 外部音声
-        foreach (var (audioItem, file) in _externalAudioTrackFiles)
+        if (playbackItem.TimedMetadataTracks.Count >= 1)
         {
-            var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
-            var menuItem = new ToggleMenuFlyoutItem()
+            // 字幕
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
             {
-                Text = $"{file.Name}",
-                DataContext = audioItem,
-                IsChecked = _audioPlayer.Source == audioItem,
-                Command = SetExternalAudioTrackCommand,
-                CommandParameter = audioItem,
-            };
-
-            AudioTracksMenuSubItem.Items.Add(menuItem);
-        }
-
-        bool isAudioTracksChangeEnabled = AudioTracksMenuSubItem.Items.Count >= 2;
-        foreach (var menuItem in AudioTracksMenuSubItem.Items)
-        {
-            menuItem.IsEnabled = isAudioTracksChangeEnabled;
-        }
-
-        AudioTracksMenuSubItem.Text = "MovieViewer_AudioTrack".Translate(playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count);
-
-        // 字幕
-        var noSubtitlesMenuItem = new MenuFlyoutItem()
-        {
-            Text = "MovieViewer_Subtitles_HideAll".Translate(),          
-            Command = SetTimedMetadataTrackCommand,
-            CommandParameter = null,
-        };
-        SubtitlesMenuSubItem.Items.Add(noSubtitlesMenuItem);
-        foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
-        {            
-            var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
-            var menuItem = new ToggleMenuFlyoutItem()
+                Text = "MovieViewer_SubtitlesMenuTitleWithCount".Translate(playbackItem.TimedMetadataTracks.Count),
+                FontSize = headerFontSize,
+                IsEnabled = false
+            });
+            nextContentInsertPos++;            
+            SubtitleSettingsFlyout.Items.Add(_setNonSubtitleMenuItem = new ToggleMenuFlyoutItem()
             {
-                Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
-                DataContext = subtitle,
-                IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented,
+                Text = "MovieViewer_Subtitles_HideAll".Translate(),
+                DataContext = null,
                 Command = SetTimedMetadataTrackCommand,
-                CommandParameter = subtitle,
-            };
+                CommandParameter = null,
+            });
+            nextContentInsertPos++;
 
-            SubtitlesMenuSubItem.Items.Add(menuItem);
+            bool anyChecked = false;
+            foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+            {
+                if (subtitle.Id.StartsWith("ReferenceTrack", StringComparison.Ordinal)) { continue; }
+
+                var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
+                    DataContext = subtitle,
+                    IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented,
+                    Command = SetTimedMetadataTrackCommand,
+                    CommandParameter = subtitle,
+                };
+                anyChecked |= menuItem.IsChecked;
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
+            _setNonSubtitleMenuItem.IsChecked = !anyChecked;
+
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutSeparator());
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
+            {
+                Text = "MovieViewer_Subtitles_OpenSettings".Translate(playbackItem.TimedMetadataTracks.Count),
+                Command = OpenSubstitleSettingsCommand,
+                CommandParameter = null,
+            });
         }
-        
-        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutSeparator());
-        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutItem()
-        {
-            Text = "MovieViewer_Subtitles_OpenSettings".Translate(),
-            Command = OpenSubstitleSettingsCommand,
-        });
-
-        SubtitlesMenuSubItem.Text = "MovieViewer_SubtitlesMenuTitleWithCount".Translate(playbackItem.TimedMetadataTracks.Count);
-
-        IsRepeat_MenuItem.IsChecked = _mediaPlayer.IsLoopingEnabled;
     }
 
     [RelayCommand]
@@ -2903,7 +2929,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void SetTimedMetadataTrack(TimedMetadataTrack? subtitle)
     {
-        if (_mediaPlayer.Source is MediaPlaybackItem playbackItem)
+        if (_mediaPlayer?.Source is MediaPlaybackItem playbackItem)
         {
             bool isDisplay = _vm.PageSettings.IsSubtitleDisplayEnabled;
             if (subtitle == null)
@@ -2952,7 +2978,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
                     {
-                        if (timed.Id != subtitle.Id)
+                        if (timed.Id != subtitle.Id
+                            && timed.Language.Equals(subtitle.Language, StringComparison.Ordinal))
                         {
                             playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
                         }
