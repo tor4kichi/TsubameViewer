@@ -415,7 +415,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;                
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();        
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        _soundVolumeChangingTimer = _dispatcherQueue.CreateTimer();
     }
 
     DirectConnectedAnimationConfiguration _animConfig = new();
@@ -839,6 +840,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                             _this._nowRequestPlayStart = false;
                             _this._mediaPlayer.Play();
                             _this._audioPlayer.Play();
+                            _this.StartSmoothSoundVolumeChanging();
                         }
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
@@ -2227,34 +2229,43 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     AnimationBuilder _fadeOutAnimation = AnimationBuilder.Create()
         .Opacity(0, delay: TimeSpan.FromMilliseconds(2000), duration: TimeSpan.FromMilliseconds(75));
 
+
+    void StartSmoothSoundVolumeChanging()
+    {       
+        Debug.WriteLine($"volume change start: {_mediaPlayer.Volume * 100:F0}%");
+        _soundVolumeChangingTimer.Start();
+    }
+
+    DispatcherQueueTimer _soundVolumeChangingTimer;
+    double _soundIncrementUnit = 1 / 45d;
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
-        SetSoundVolume(_vm.PageSettings.SoundVolume);
+        SetSoundVolumeDisplay(_vm.PageSettings.SoundVolume);
         _mediaPlayer.IsMuted = _vm.PageSettings.IsMuted;
         _audioPlayer.IsMuted = _vm.PageSettings.IsMuted;
         _mediaPlayer.Volume = 0;
         _audioPlayer.Volume = 0;
-        float increaseVolumeUnit = (float)_vm.PageSettings.SoundVolume / 30f; // 0.5秒
-        var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        var timer = _soundVolumeChangingTimer;
         timer.Interval = TimeSpan.FromMilliseconds(16);
-        timer.Tick += (s, e) => 
+        timer.Tick += (s, e) =>
         {
-            var nextVolume = _mediaPlayer.Volume + increaseVolumeUnit;
-            if (nextVolume > _vm.PageSettings.SoundVolume)
+            var delta = _vm.PageSettings.SoundVolume - _mediaPlayer.Volume;            
+            if (_vm.PageSettings.SoundVolume == 0 || Math.Abs(delta) <= _soundIncrementUnit)
             {
+                s.Stop();
                 _mediaPlayer.Volume = _vm.PageSettings.SoundVolume;
                 _audioPlayer.Volume = _vm.PageSettings.SoundVolume;
-                s.Stop();                
+                Debug.WriteLine($"volume change Done: {_mediaPlayer.Volume * 100:F0}%");
             }
             else
-            {                
-                _mediaPlayer.Volume += increaseVolumeUnit;
-                _audioPlayer.Volume = _mediaPlayer.Volume;
+            {
+                var nextVolume = Math.Clamp(_mediaPlayer.Volume + (delta > 0 ? _soundIncrementUnit : -_soundIncrementUnit), 0, 1);
+                _mediaPlayer.Volume = nextVolume;
+                _audioPlayer.Volume = nextVolume;
+                Debug.WriteLine($"volume : {_mediaPlayer.Volume * 100:F0}%");
             }
-
-            //Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
         };
-        timer.Start();
+        
         Disposable.Create(timer, s => s.Stop())
             .AddTo(ref db);
         ControlUI_SoundVolumeSlider.ValueChanged -= ControlUI_SoundVolumeSlider_ValueChanged;
@@ -2265,8 +2276,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         this.ObservePropertyChanged(x => x.SoundVolume_Display, false)
             .Subscribe((this), (x, s) =>
             {
-                s._mediaPlayer.Volume = x;
-                s._audioPlayer.Volume = x;
                 s.StartLiteNotification($"{"MovieViewer_SoundVolume".Translate()}: {x * 100:F0}%");
             })
             .AddTo(ref db);
@@ -2276,7 +2285,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe(this, (pair, s) => 
             {
 
-                s.SetSoundVolume(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1));
+                s.SetSoundVolumeDisplay(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1));
             })
             .AddTo(ref db);
 
@@ -2306,7 +2315,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
 
-    void SetSoundVolume(double vol)
+    void SetSoundVolumeDisplay(double vol)
     {
         _nowSoundVolumeChanging = true;
         try
@@ -2328,12 +2337,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (_nowSoundVolumeChanging) { return; }
 
         double volume = Math.Clamp((double)e.NewValue, 0.0, 1.0);
+        _vm.PageSettings.SoundVolume = volume;
         SetSoundVolumeFromCode(volume);
-        if (SoundVolume_Display != 0)
-        {
-            _vm.PageSettings.SoundVolume = SoundVolume_Display;
-        }
-
     }
 
     void SetSoundVolumeFromCode(double volume)
@@ -2342,8 +2347,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         try
         {
             SoundVolume_Display = volume;            
-            _mediaPlayer.Volume = volume;
-            _audioPlayer.Volume = volume;
+            //_mediaPlayer.Volume = volume;
+            //_audioPlayer.Volume = volume;
+            StartSmoothSoundVolumeChanging();
         }
         finally
         {
@@ -2353,21 +2359,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void ControlUI_SoundVolumeSlider_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        if (SoundVolume_Display != 0)
-        {
-            _vm.PageSettings.SoundVolume = SoundVolume_Display;
-        }
+        _vm.PageSettings.SoundVolume = SoundVolume_Display;
     }
 
     [RelayCommand]
     void VolumeChange(double normalizedRelativeValue)
     {
-        double vol = Math.Clamp(SoundVolume_Display == 0 ? _vm.PageSettings.SoundVolume : SoundVolume_Display + normalizedRelativeValue, 0.0, 1.0);        
+        double vol = Math.Clamp(SoundVolume_Display + normalizedRelativeValue, 0.0, 1.0);
+        _vm.PageSettings.SoundVolume = vol;
         SetSoundVolumeFromCode(vol);
-        if (vol != 0)
-        {
-            _vm.PageSettings.SoundVolume = vol;
-        }
     }
 
 
@@ -2847,10 +2847,22 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (_mediaPlayer.Source is MediaPlaybackItem playbackItem)
         {
+            // 1倍速以上の再生速度と音声トラック変更が重なると音声が乱れるため
+            // 速度の再指定と音量がぶつ切りになる不快さ軽減の音量スムーズに変更している
+            double rate = _mediaPlayer.PlaybackSession.PlaybackRate;
+            _mediaPlayer.PlaybackSession.PlaybackRate = 1;
+            _mediaPlayer.Volume = 0;
             _audioPlayer.Source = null;
             var index = playbackItem.AudioTracks.AsValueEnumerable().Index().FirstOrDefault(x => x.Item.Id == audioTrack.Id).Index;
             playbackItem.AudioTracks.SelectedIndex = index;
             _messenger.SendShowTextNotificationMessage("MovieViewer_AudioTrackChanged".Translate($"{index+1}. {audioTrack.Name}"));
+            Observable.TimerFrame(10)
+                .Take(1)
+                .Subscribe(_ =>
+                {
+                    _mediaPlayer.PlaybackSession.PlaybackRate = rate;
+                    StartSmoothSoundVolumeChanging();
+                });
         }
     }
 
