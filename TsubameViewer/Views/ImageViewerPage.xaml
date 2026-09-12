@@ -439,7 +439,8 @@
 
         <ToggleButton x:Name="TransformEditModeButton"
                       IsChecked="{x:Bind _vm.NowEditTransformMode, Mode=TwoWay}"
-                      AccessKey="Z">
+                      AccessKey="Z"
+                      ToolTipService.ToolTip="{i18nExt:Localize Key=ZoomIn}">
           <fluentIcon:SymbolIcon Symbol="ZoomIn" />
         </ToggleButton>
 
@@ -447,7 +448,8 @@
                 Command="{x:Bind _vm.DoubleViewCorrectCommand}"
                 IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
                 Foreground="{ThemeResource ButtonDisabledForegroundThemeBrush}"
-                AccessKey="Q">
+                AccessKey="Q"
+                ToolTipService.ToolTip="{i18nExt:Localize Key=DoubleViewCorrectPaging}">
           <Button.Content>
             <Grid>
               <fluentIcon:SymbolIcon Symbol="BookPulse">
@@ -464,7 +466,8 @@
         <ToggleButton x:Name="DoubleViewToggleButton"
                       IsChecked="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
                       Command="{x:Bind _vm.ToggleDoubleViewCommand}"
-                      AccessKey="T">
+                      AccessKey="T"
+                      ToolTipService.ToolTip="{i18nExt:Localize Key=IsEnableDoubleView}">
           <ToggleButton.Content>
             <fluentIcon:SymbolIcon Symbol="BookOpen"
                                          Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
@@ -479,7 +482,8 @@
         <ToggleButton x:Name="LeftBindingToggleButton"
                       IsChecked="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}"
                       Command="{x:Bind _vm.ToggleLeftBindingCommand}"
-                      AccessKey="B">
+                      AccessKey="B"
+                      ToolTipService.ToolTip="{i18nExt:Localize Key=IsLeftBindingView}">
           <ToggleButton.Content>
             <fluentIcon:SymbolIcon Symbol="ArrowImport" >
               <fluentIcon:SymbolIcon.RenderTransform>
@@ -494,7 +498,8 @@
                 AccessKey="P"
                 Padding="4 0"
                 Width="NaN"
-                MaxWidth="120">
+                MaxWidth="120"
+                ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}">
           <Button.Content>
             <uwpControls:DockPanel >
               <fluentIcon:SymbolIcon Symbol="TextSortAscending"

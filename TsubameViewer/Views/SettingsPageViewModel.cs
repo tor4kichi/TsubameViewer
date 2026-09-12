@@ -127,7 +127,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsReverseImageFliping_MouseWheel, (x, v) => x.IsReverseImageFliping_MouseWheel = v),
                     new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnableDoubleView".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsEnableDoubleView, (x, v) => x.IsEnableDoubleView = v),
                     new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsKeepSingleViewOnFirstPage".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsKeepSingleViewOnFirstPage, (x, v) => x.IsKeepSingleViewOnFirstPage = v),
-                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsLeftBindingView".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsLeftBindingView, (x, v) => x.IsLeftBindingView = v),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsLeftBindingView".Translate(),"IsLeftBindingView_Desc".Translate(),  _imageViewerPageSettings, _imageViewerPageSettings.IsLeftBindingView, (x, v) => x.IsLeftBindingView = v),
                     new SelectorSettingsItemViewModel<CanvasImageInterpolation>(
                         "ImageViewerSettings.ScaleEffectInterpolation".Translate(),
                         "ImageViewerSettings.ScaleEffectInterpolation_Desc".Translate(),
