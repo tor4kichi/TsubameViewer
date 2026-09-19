@@ -75,6 +75,7 @@ public sealed partial class AppShell : UserControl
     private readonly ViewerSettings _viewerSettings;
     readonly DispatcherQueue _dispatcherQueue;
     readonly IViewLocator _viewLocator;
+    private readonly SelectionContext _selectionContext;
     readonly DispatcherQueueTimer _animationCancelTimer;
     readonly TimeSpan _busyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
     readonly List<object> _footerItemsForTop;
@@ -102,6 +103,7 @@ public sealed partial class AppShell : UserControl
         _viewerSettings = viewerSettings;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _viewLocator = Ioc.Default.GetRequiredService<IViewLocator>();
+        _selectionContext = Ioc.Default.GetRequiredService<SelectionContext>();
         InitializeNavigation();
         InitializeViewerFrameNavigation();
         InitializeThemeChangeRequest();
@@ -193,6 +195,9 @@ public sealed partial class AppShell : UserControl
                 Icon = new FluentIcons.Uwp.SymbolIcon() {Symbol = FluentIcons.Common.Symbol.Settings },
             }
         };
+
+
+        
     }
 
     StringBuilder GetAppInfoText()
@@ -1695,15 +1700,42 @@ public sealed partial class AppShell : UserControl
 
     #region Selection
 
-
+    object? _lastSelectedMenuItem = null;
     void InitializeSelection()
     {
         //_messenger.Register<MenuDisplayMessage>(this, (r, m) => 
         //{
         //    MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
         //});
+
+        //_selectionContext.ObservePropertyChanged(x => x.IsSelectionModeEnabled).Where(x => !x)
+        //    .SubscribeAwait(async (isEnabled, ct) =>
+        //    {
+        //        await Task.Delay(150);
+        //        MyNavigationView.SelectedItem = _lastSelectedMenuItem;
+        //    })
+        //    .RegisterTo(this.GetCancellationTokenOnUnloaded());
+
+        MyNavigationView.SelectionChanged += MyNavigationView_SelectionChanged;
     }
 
+    bool IsMultiSelectionMenuItem(object menuItem)
+    {
+        return _footerItemsForLeft.IndexOf(menuItem) == 0;
+    }
+
+    private async void MyNavigationView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
+    {
+        if (_footerItemsForLeft.Contains(args.SelectedItem))
+        {
+            await Task.Delay(50);
+            MyNavigationView.SelectedItem = _lastSelectedMenuItem;
+        }
+        else
+        {
+            _lastSelectedMenuItem = MyNavigationView.SelectedItem;
+        }
+    }
 
     private void NavigationViewItem_DragEnter(object sender, DragEventArgs e)
     {
