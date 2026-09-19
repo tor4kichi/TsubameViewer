@@ -79,7 +79,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext, IDis
     public FolderImageCollectionContext(StorageFolder storageFolder)
     {
         Folder = storageFolder;
-        _cacheRepo ??= new(new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") }));
+        _cacheRepo ??= new(new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") }) { Timeout = TimeSpan.FromSeconds(10) });
         Context = new FolderStructureCacheContext(Folder, _cacheRepo);                
     }    
 

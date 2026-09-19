@@ -15,6 +15,9 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
+using Windows.System;
+using Windows.UI.Core;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 #nullable enable
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
@@ -23,17 +26,14 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
 {
     readonly IMessenger _messenger;
     readonly IFileControlDialogService _fileControlDialogService;
-    readonly FileControlSettings _fileControlSettings;
 
     public FileDeleteCommand(
         IMessenger messenger,
-        IFileControlDialogService fileControlDialogService,
-        FileControlSettings fileControlSettings
+        IFileControlDialogService fileControlDialogService
         )
     {
         _messenger = messenger;
-        _fileControlDialogService = fileControlDialogService;
-        _fileControlSettings = fileControlSettings;
+        _fileControlDialogService = fileControlDialogService;        
     }
 
     protected override bool CanExecute(IImageSource imageSource)
@@ -50,25 +50,14 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
     {
         if (imageSource.StorageItem is IStorageItem item)
         {
-            bool isDelete;
-            if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
-            {
-                isDelete = true;
-            }
-            else
-            {
-                (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
-                if (doNotAskTwice)
-                {
-                    _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
-                }
-            }
-
+            var shiftPressing = Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)
+                || Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item, shiftPressing);
             if (isDelete)
             {
                 try
                 {
-                    await item.DeleteAsync(StorageDeleteOption.Default);
+                    await item.DeleteAsync(isDeletePermanent ? StorageDeleteOption.PermanentDelete : StorageDeleteOption.Default);
                     _messenger.Send(new StorageItemNotFoundMessage(item.Path));
                     _messenger.Send(new StroageItemAccessRemovedMessage(item.Path));                    
                 }
@@ -100,25 +89,14 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
         if (imageSources.Any(x => x.StorageItem != null))
         {
             var item = imageSources.First(x => x.StorageItem != null).StorageItem;
-            bool isDelete;
-            if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
-            {
-                isDelete = true;
-            }
-            else
-            {
-                (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
-                if (doNotAskTwice)
-                {
-                    _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
-                }
-            }
-
+            var shiftPressing = Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)
+                || Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+            var (isDelete, isDeletePermanent) = await _fileControlDialogService.ConfirmFileDeletionAsync(item, shiftPressing);
             if (isDelete)
             {
                 try
                 {
-                    await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(StorageDeleteOption.Default).AsTask()));
+                    await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(isDeletePermanent ? StorageDeleteOption.PermanentDelete : StorageDeleteOption.Default).AsTask()));
                     foreach (var deleted in imageSources)
                     {
                         _messenger.Send(new StorageItemNotFoundMessage(deleted.Path));

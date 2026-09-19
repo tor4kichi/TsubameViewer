@@ -8,18 +8,22 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity"
   mc:Ignorable="d"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
-  Title="TITLE"
   PrimaryButtonText="{i18nExt:Localize Key=Delete}"
   SecondaryButtonText="{i18nExt:Localize Key=Cancel}"
   >
   <Grid>
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <ToggleButton x:Name="DoNotDisplayFromNextTimeToggleButton" Width="24" Height="24"                    
-      />
-      <TextBlock Text="{i18nExt:Localize Key=DoNotDisplayFromNextTime}" VerticalAlignment="Center">
+      <ToggleButton x:Name="DeleteWithPermanentToggleButton"
+                    Width="24"
+                    Height="24">
+        
+      </ToggleButton>
+      <TextBlock Text="{i18nExt:Localize Key=StorageItemDeleteConfirm_IsDeletePermanent}" VerticalAlignment="Center">
         <i:Interaction.Behaviors>
           <i:EventTriggerBehavior EventName="Tapped">
-            <i:ChangePropertyAction TargetObject="{x:Bind DoNotDisplayFromNextTimeToggleButton}" PropertyName="IsChecked" Value="{x:Bind DoNotDisplayFromNextTimeToggleButton.IsChecked, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+            <i:ChangePropertyAction TargetObject="{x:Bind DeleteWithPermanentToggleButton}"
+                                    PropertyName="IsChecked"
+                                    Value="{x:Bind DeleteWithPermanentToggleButton.IsChecked, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
           </i:EventTriggerBehavior>
                                      
         </i:Interaction.Behaviors>

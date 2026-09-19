@@ -41,6 +41,7 @@ public static class SupportedFileTypesHelper
             WebpFileType,
             AvifFileType,
             JpegXRFileType,
+            JpegXLFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -91,6 +92,7 @@ public static class SupportedFileTypesHelper
     public const string WebpFileType = ".webp";
     public const string AvifFileType = ".avif";
     public const string JpegXRFileType = ".jxr";
+    public const string JpegXLFileType = ".jxl";
 
     public const string EPubFileType = ".epub";
 

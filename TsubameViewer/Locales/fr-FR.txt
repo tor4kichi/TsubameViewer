@@ -49,8 +49,8 @@ ThumbnailImageChanged = Changer la miniature
 Notification_SourceStorageItemNotFound = Le chemin spécifié a été désenregistré
 
 
-#### Dialog
-DoNotDisplayFromNextTime = Ne plus afficher la prochaine fois
+#### Delete Storage Item Dialog
+StorageItemDeleteConfirm_IsDeletePermanent = Supprimer complètement les fichiers et les dossiers.
 StorageItemDeleteConfirmTitleWithName = Voulez-vous supprimer les éléments suivants ? \ n {0}
 
 
@@ -184,7 +184,7 @@ ThumbnailImageCacheMode.AlwaysGenerateCache = Générer en permanence
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = Privilégier les vignettes du système de fichiers
 ThumbnailImageCacheMode.NeverGenerateCache = Ne pas mettre en cache
 SetToParentFolderThumbnailImage = Est-il possible d'écraser le fichier cover.jpg dans le dossier ? l'ancien fichier cover.jpg sera supprimé.
-
+OpenImageViewer_Failed = Aucun contenu n'est disponible pour affichage.
 
 
 
@@ -214,6 +214,10 @@ IsAutoMoveToNextEnabled = Passer automatiquement au contenu suivant une fois l'a
 AutoMoveToNext_Notice = Affichage du « {0} » suivant
 NextContent = Suivant
 PreviousContent = Précédent
+Viewer_OpenNextContent = Ouvrir le contenu suivant
+Viewer_OpenPrevContent = Ouvrir le contenu précédent
+
+
 
 EditViewerTransform = Transformation du spectateur
 EditViewerTransform_Done = Achèvement
@@ -231,11 +235,15 @@ ZoomReset = Réinitialiser le zoom
 ZoomIn = Agrandir
 ZoomOut = Réduire
 IsEnableDoubleView = Affichage sur double page
-IsLeftBindingView = Afficher à gauche
+IsLeftBindingView = Tourner la page de droite
+IsLeftBindingView_Desc = Veuillez choisir le sens de lecture. Dans les mangas japonais, on tourne la page vers la gauche. 
+PageReadingOrder = Sens de lecture
+PageReadingOrder.Left = Tourner la page vers la gauche
+PageReadingOrder.Right = Tourner la page vers la droite
 SwitchFullScreen = Passage en plein écran
 DoubleViewCorrectPaging = Corriger le désalignement des doubles pages
 IsKeepSingleViewOnFirstPage = Ne pas afficher la première page côte à côte avec une autre page
-IfAllFilesWannaWatchThenRegistrationFolderAtApp = Si vous faites glisser le dossier vers l'application, tout sera affiché
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = Glissez-déposez le dossier dans l'application pour afficher tous les fichiers.
 ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
 ImageViewerSettings.IsScaleEffectEnabled = Interpolation lors de la réduction
 ImageViewerSettings.ScaleEffectSharpness = Acuité
@@ -248,7 +256,8 @@ CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
 CanvasImageInterpolation.Cubic = Cubique
 CanvasImageInterpolation.Linear = Linéaire
 CanvasImageInterpolation.NearestNeighbor = Voisin le plus proche
-
+ImageViewer_GoNextPage = Aller à la page suivante
+ImageViewer_GoPrevPage = Aller à la page précédente
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = Effacer le style par la force

@@ -511,7 +511,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine(ex.ToString());
+                        App.Current.HandleException(ex);
                     }
                 }, ct);
             }
@@ -567,6 +567,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         Debug.WriteLine($"RefreshItems: {TimeProvider.System.GetElapsedTime(time)}");
         time = TimeProvider.System.GetTimestamp();
 #endif
+        if (ImageCount == 0)
+        {
+            throw new InvalidOperationException("No images exist in this Folder or Archive.");
+        }
 
         var bkmk = _bookmarkManager.GetBookmarkFacade(_pathForSettings);
         // 以下の場合に表示内容を更新する
@@ -843,6 +847,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
 
         await ReloadItemsAsync(imageCollectionContext, ct);
+
 
         // ページ切替の最適化のため事前にArchiveEntryImageSourceを生成しておく
         // 500ページ程度で80ms掛からない程度のコスト
@@ -1443,8 +1448,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     }
 
     [RelayCommand]
-    async Task DoubleViewCorrect()
+    void DoubleViewCorrect()
     {
+        if (!NowDoubleImageView) { return; }
         _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
     }
 

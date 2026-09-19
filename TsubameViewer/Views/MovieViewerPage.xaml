@@ -374,6 +374,20 @@
           <KeyboardAccelerator Key="Right" />
         </Button.KeyboardAccelerators>
       </Button>
+      <Button Command="{x:Bind _vm.OpenMovieFileCommand}"
+              CommandParameter="{x:Bind _vm.NextImageSource, Mode=OneWay}"
+              Tag="{i18nExt:Localize Key=Viewer_OpenNextContent}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="End" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind _vm.OpenMovieFileCommand}"
+              CommandParameter="{x:Bind _vm.PrevImageSource, Mode=OneWay}"
+              Tag="{i18nExt:Localize Key=Viewer_OpenPrevContent}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Home" />
+        </Button.KeyboardAccelerators>
+      </Button>
       <Button Command="{x:Bind SaveCurrentFrameCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_SaveCurrentFrame}"
               KeyboardAcceleratorPlacementMode="Hidden">
@@ -713,18 +727,24 @@
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Right"
                       Spacing="8">
-            <ToggleButton ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_Subtitles}"
-                          IsChecked="{x:Bind _vm.PageSettings.IsSubtitleDisplayEnabled, Mode=TwoWay}"
-                          MinWidth="60"
-                          Height="40"
-                          ctwu:FrameworkElementExtensions.Cursor="Hand">
+            <Button ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_Subtitles}"
+                    MinWidth="60"
+                    Height="40"
+                    ctwu:FrameworkElementExtensions.Cursor="Hand">
               <SymbolIcon Symbol="ClosedCaption"
                           RenderTransformOrigin="0.5, 0.5">
                 <SymbolIcon.RenderTransform>
                   <ScaleTransform ScaleX="1.25" ScaleY="1.25" />
                 </SymbolIcon.RenderTransform>
               </SymbolIcon>
-            </ToggleButton>
+              <Button.Flyout>
+                <MenuFlyout x:Name="SubtitleSettingsFlyout"
+                            Opened="MenuFlyout_Opened"
+                            Closed="MenuFlyout_Closed"
+                            Opening="TracksAndSubtitleSelectFlyout_Opening">
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
             
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60"
@@ -838,7 +858,7 @@
               <Button.Flyout>
                 <MenuFlyout Opened="MenuFlyout_Opened"
                             Closed="MenuFlyout_Closed"
-                            Opening="TracksAndSubtitleSelectFlyout_Opening"
+                            Opening="MovieSettingsFlyout_Opening"
                             Placement="TopEdgeAlignedRight"
                             AreOpenCloseAnimationsEnabled="False">
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_NotSupportedCodec_OnceClear}"
@@ -890,14 +910,6 @@
                                   Text="{i18nExt:Localize Key=MovieViewer_VideoEffect_Edit}"
                                   Click="ShowVideoEffectEditButton_Click">
                   </MenuFlyoutItem>
-                  <MenuFlyoutSeparator />
-                  <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
-                                     Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />
-                  <MenuFlyoutSubItem x:Name="AudioTracksMenuSubItem"
-                                     Text="{i18nExt:Localize Key=MovieViewer_AudioTrack}" />
-                  <MenuFlyoutSubItem x:Name="SubtitlesMenuSubItem"
-                                     Text="{i18nExt:Localize Key=MovieViewer_Subtitles}" />
-
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
@@ -1029,8 +1041,8 @@
 
       </StackPanel>
     </Grid>
-    
 
+    <!-- ShortcutKey Guide -->
     <Grid x:Name="ShortcutKeyGuideUIContainer"
           Visibility="Collapsed"
           Margin="16"
@@ -1039,60 +1051,10 @@
           BorderThickness="1"
           BorderBrush="{ThemeResource SystemBaseLowColor}"
           CornerRadius="6"
-          Width="320"
+          Width="420"
           HorizontalAlignment="Right">
-      <uwpControls:DockPanel>
-        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SC}"
-                   Style="{StaticResource SubtitleTextBlockStyle}"
-                   Margin="32 32 32 16"
-                   VerticalAlignment="Bottom"
-                   uwpControls:DockPanel.Dock="Top" />
 
-        <Border Height="1"
-                Background="{ThemeResource SystemBaseLowColor}" 
-                uwpControls:DockPanel.Dock="Top"/>
-        <ScrollViewer>
-
-          <ItemsControl x:Name="ShortcutKeyItemsControl"
-                        ItemsSource="{x:Bind ShortcutKeys, Mode=OneWay}"
-                        DataContext="{x:Null}"
-                        Margin="32 24 32 48"
-                        >
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="8"
-                                       Orientation="Vertical" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:ShortcutKeyInfo">
-                <Grid MinHeight="32">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="{Binding Label}"
-                             Grid.Column="0"
-                             TextWrapping="Wrap"
-                             MaxWidth="320"
-                             VerticalAlignment="Center"/>
-
-                  <Border Background="{ThemeResource SystemBaseLowColor}"
-                          Height="1"
-                          Grid.Column="1"
-                          Margin="8" />
-
-                  <TextBlock Text="{x:Bind ToText(Key, Modifier)}"
-                             HorizontalAlignment="Right"
-                             VerticalAlignment="Center"
-                             Grid.Column="2" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </uwpControls:DockPanel>
+      <local:ShortcutKeyGuideControl ShortcutKeys="{x:Bind ShortcutKeys, Mode=OneWay}" />
       <Button x:Name="CloseButton_ShortcutKeyGuideUIContainer"
               Tapped="CloseButton_ShortcutKeyGuideUIContainer_Tapped"
               HorizontalAlignment="Right"

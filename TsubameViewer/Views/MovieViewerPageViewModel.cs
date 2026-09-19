@@ -366,6 +366,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
+        PrevImageSource = null;
         NextImageSource = null;
         if (MovieFile?.Path is { } path)
         {
@@ -379,6 +380,19 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     public async Task OpenMovieFileAsync(IImageSource? imageSource)
     {
         if (imageSource == null) { return; }
+
+        // 繰り返し同じシリーズを視聴する場合を想定して
+        // 次回開いたら先頭から再生されるようにしたい        
+        
+        // 前後の動画ファイルを開こうとしたことをもって
+        // 今見ている動画の視聴を完了したとして
+        if (MovieFile != null
+            && BookmarkManager.GetBookmarkFacade(MovieFile.Path) is { } targetBkmk
+            && targetBkmk.IsFinishedReading)
+        {
+            targetBkmk.ReadPosition = default;
+        }
+
         if (_windowContext.IsPrimary)
         {
             var parameters = PageTransitionHelper.CreatePageParameter(imageSource);

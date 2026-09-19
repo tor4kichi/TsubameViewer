@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -18,6 +19,7 @@ using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.EBookControls;
+using TsubameViewer.Views.Helpers;
 using VersOne.Epub;
 using Windows.ApplicationModel.Core;
 using Windows.UI;
@@ -32,10 +34,12 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
+using ZLinq;
 
 #nullable enable
 namespace TsubameViewer.Views;
 
+[ObservableObject]
 public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetContent()
@@ -89,7 +93,12 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
         {
-            if (TocContainer.Visibility == Visibility.Visible)
+            if (ShortcutKeyGuideUIContainer.Visibility == Visibility.Visible)
+            {
+                ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+                m.Value.IsHandled = true;
+            }
+            else if (TocContainer.Visibility == Visibility.Visible)
             {
                 m.Value.IsHandled = true;
                 CloseTocPaneCommand.Execute(null);
@@ -571,6 +580,41 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     {
         _vm.EBookReaderSettings.ForegroundColor = ForegroundColorPicker.Color;
     }
+
+
+
+    #region ShortcutKey
+
+    [ObservableProperty]
+    ShortcutKeyInfo[]? _shortcutKeys;
+
+    [RelayCommand]
+    void ToggleDisplayShortcutKeyGuideUI()
+    {
+        if (ShortcutKeys == null)
+        {
+            var shortcuts = ShortcutKeyButtonsContainer.Children
+                .AsValueEnumerable()
+                .Cast<Button>()
+                .Where(x => x.Tag is string s && !string.IsNullOrEmpty(s))
+                .Select(static x => new ShortcutKeyInfo
+                {
+                    Label = (string)x.Tag,
+                    Key = x.KeyboardAccelerators[0].Key,
+                    Modifier = x.KeyboardAccelerators[0].Modifiers
+                })
+                .ToArray();
+            ShortcutKeys = shortcuts;
+        }
+        ShortcutKeyGuideUIContainer.Visibility = (ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed).TrueToVisible();
+    }
+
+    void CloseButton_ShortcutKeyGuideUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+    }
+
+    #endregion
 }
 
 public sealed class FilePathToFileNameConverter : IValueConverter

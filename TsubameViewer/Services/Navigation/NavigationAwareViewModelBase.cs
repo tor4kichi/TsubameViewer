@@ -16,8 +16,15 @@ public interface INavigationResult
 
 public class NavigationResult : INavigationResult
 {
+    private NavigationResult() { }
+    public static NavigationResult Success { get; } = new NavigationResult() { IsSuccess = true };
+    static NavigationResult _failed { get; } = new NavigationResult() { IsSuccess = false };
+    public static NavigationResult Failed() => _failed;
+    public static NavigationResult Failed(Exception ex)
+    {
+        return new NavigationResult() { IsSuccess = false, Exception = ex };
+    }
     public bool IsSuccess { get; init; }
-
     public Exception Exception { get; init; }
 }
 

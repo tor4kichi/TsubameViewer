@@ -306,7 +306,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void ClosePage()
     {
-        if (_windowContext.IsPrimary)
+        if (ShortcutKeyGuideUIContainer.Visibility == Visibility.Visible)
+        {
+            ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+        }
+        else if (_windowContext.IsPrimary)
         {
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             (_vm.BackNavigationCommand as ICommand).Execute(null);
@@ -980,6 +984,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     //return;
                 }
 
+                if (s.PageSelectorCandidateImageIndex == -1) { return; }
+
                 long ts = TimeProvider.System.GetTimestamp();
 
                 var imageSource = await s.GetImageSourceAsync(s.PageSelectorCandidateImageIndex, ct);
@@ -1020,6 +1026,13 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         AnimationBuilder.Create()
             .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
             .Start(Image1);
+
+
+        if (!_vm.ImageViewerSettings.IsLeftBindingView_AnswerOnFirstShow)
+        {
+            ReadingOrderTeachingTip.IsOpen = true;
+            ShowBottomUI();
+        }
 
         base.OnNavigatedTo(e);
     }
@@ -1161,6 +1174,31 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
 #endregion Navigation
+
+
+    public PageReadingOrder[] ReadingOrderItems { get; } = [PageReadingOrder.Left, PageReadingOrder.Right];
+    public PageReadingOrder SelectedReadingOrder
+    {
+        get { return (PageReadingOrder)GetValue(SelectedReadingOrderProperty); }
+        set { SetValue(SelectedReadingOrderProperty, value); }
+    }
+
+    public static readonly DependencyProperty SelectedReadingOrderProperty =
+        DependencyProperty.Register(nameof(SelectedReadingOrder), typeof(PageReadingOrder), typeof(ImageViewerPage), new PropertyMetadata(PageReadingOrder.Left));
+
+    private void ReadingOrderTeachingTip_Closed(Microsoft.UI.Xaml.Controls.TeachingTip sender, Microsoft.UI.Xaml.Controls.TeachingTipClosedEventArgs args)
+    {
+        _vm.ImageViewerSettings.IsLeftBindingView_AnswerOnFirstShow = true;        
+    }
+
+    private void Segmented_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.ElementAtOrDefault(0) is PageReadingOrder order)
+        {
+            _vm.ImageViewerSettings.IsLeftBindingView = order == PageReadingOrder.Right;
+            _vm.IsLeftBindingEnabled = _vm.ImageViewerSettings.IsLeftBindingView;
+        }
+    }
 
 
     #region Page Next/Prev
@@ -1455,6 +1493,40 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     #endregion
 
+
+
+    #region ShortcutKey
+
+    [ObservableProperty]
+    ShortcutKeyInfo[]? _shortcutKeys;
+
+    [RelayCommand]
+    void ToggleDisplayShortcutKeyGuideUI()
+    {
+        if (ShortcutKeys == null)
+        {
+            var shortcuts = ShortcutKeyButtonsContainer.Children
+                .AsValueEnumerable()
+                .Cast<Button>()
+                .Where(x => x.Tag is string s && !string.IsNullOrEmpty(s))
+                .Select(static x => new ShortcutKeyInfo
+                {
+                    Label = (string)x.Tag,
+                    Key = x.KeyboardAccelerators[0].Key,
+                    Modifier = x.KeyboardAccelerators[0].Modifiers
+                })
+                .ToArray();
+            ShortcutKeys = shortcuts;
+        }
+        ShortcutKeyGuideUIContainer.Visibility = (ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed).TrueToVisible();
+    }
+
+    void CloseButton_ShortcutKeyGuideUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+    }
+
+    #endregion
 
 
     void Page1MenuFlyout_Opening(object sender, object e)

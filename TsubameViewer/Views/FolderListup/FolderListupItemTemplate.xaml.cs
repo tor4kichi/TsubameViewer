@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Helpers;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -120,7 +121,7 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
         }
     }
 
-    private void Grid_PointerEntered(object sender, PointerRoutedEventArgs e)
+    private async void Grid_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
         if (sender is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM
@@ -128,7 +129,13 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
             )
         {
             itemVM.StopImageLoading();
-            _ = itemVM.InitializeAsync(default);
+            await itemVM.InitializeAsync(default);
+            if (!itemVM.IsInitialized && itemVM.Item != null)
+            {
+                var thumbnailManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
+                await thumbnailManager.ResetFolderThumbnailImageAsync(itemVM.Item);
+                await itemVM.InitializeAsync(default);
+            }
         }
     }
 }

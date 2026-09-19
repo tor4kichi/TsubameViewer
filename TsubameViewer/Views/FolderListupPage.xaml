@@ -36,14 +36,14 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal"
                     uwpControls:DockPanel.Dock="Left">
-          
+
         </StackPanel>
         <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
                         QueryIcon="Find"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         x:Name="AutoSuggestBox"
-                        Padding="0"                        
+                        Padding="0"
                         Width="196"
                         TextMemberPath="Title"
                         Text="{x:Bind FilterText, Mode=TwoWay}"
@@ -59,8 +59,7 @@
                         FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                         AccessKey="F"
                         AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
-                        QuerySubmitted="AutoSuggestBox_QuerySubmitted"
-                        >
+                        QuerySubmitted="AutoSuggestBox_QuerySubmitted">
           <AutoSuggestBox.TextBoxStyle>
             <Style TargetType="TextBox">
               <Setter Property="IsSpellCheckEnabled"
@@ -74,7 +73,7 @@
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
                                                       IsRequireFocus="True">
               <i:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
-                                     MethodName="RemoveFocusEngagement" />
+                                  MethodName="RemoveFocusEngagement" />
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
 
@@ -98,6 +97,141 @@
   </Page.Resources>
   <Grid >
 
+    <!-- KeyboardAccelarator用のダミー -->
+    <Grid Opacity="0"
+          x:Name="ShortcutKeyButtonsContainer"
+          Height="1"
+          Width="1"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom">
+      <Grid.RenderTransform>
+        <TranslateTransform X="1"
+                            Y="1" />
+      </Grid.RenderTransform>
+      <Grid.Resources>
+        <Style TargetType="Button">
+          <Setter Property="KeyboardAcceleratorPlacementMode"
+                  Value="Hidden" />
+        </Style>
+      </Grid.Resources>
+      <!--<Button Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F1" />
+        </Button.KeyboardAccelerators>
+      </Button>-->
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='0', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number0" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='10', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.1</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number1" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='20', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.2</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number2" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='30', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.3</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number3" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='40', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.4</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number4" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='50', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.5</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number5" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='60', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.6</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number6" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='70', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.7</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number7" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='80', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.8</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number8" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='90', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>0.9</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number9" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetScrollPositionWithPercentCommand}"
+              Tag="{Binding Source='100', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}"
+              KeyboardAcceleratorPlacementMode="Hidden">
+        <Button.CommandParameter>
+          <x:Double>1.0</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number0" Modifiers="Shift" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
+
+    
     <SplitView DisplayMode="Overlay"
                PanePlacement="Left"
                x:Name="FolderSelectionSplitView"

@@ -49,8 +49,8 @@ ThumbnailImageChanged = サムネイル画像を変更
 Notification_SourceStorageItemNotFound = 指定されたパスは登録解除済みです
 
 
-#### Dialog
-DoNotDisplayFromNextTime = 次回から表示しない
+#### Delete Storage Item Dialog
+StorageItemDeleteConfirm_IsDeletePermanent = ファイル・フォルダを完全に削除する
 StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
 
 
@@ -184,7 +184,7 @@ ThumbnailImageCacheMode.AlwaysGenerateCache = 常に生成
 ThumbnailImageCacheMode.OnlyGenerateCacheIfFsThumbnailImageAsIcon = ファイルシステムのサムネイル生成を優先
 ThumbnailImageCacheMode.NeverGenerateCache = キャッシュしない
 SetToParentFolderThumbnailImage = フォルダ内の cover.jpg を上書きしてもいいですか？ 古いcover.jpg はゴミ箱へ送られます
-
+OpenImageViewer_Failed = 表示可能なコンテンツがありません
 
 
 
@@ -214,6 +214,10 @@ IsAutoMoveToNextEnabled = 完了時に次のコンテンツへ自動的に移動
 AutoMoveToNext_Notice = 次の「{0}」を表示中
 NextContent = 次
 PreviousContent = 前
+Viewer_OpenNextContent = 次のコンテンツを開く
+Viewer_OpenPrevContent = 前のコンテンツを開く
+
+
 
 EditViewerTransform = ビューアの変形
 EditViewerTransform_Done = 完了
@@ -231,11 +235,15 @@ ZoomReset = 拡大・縮小表示をリセット
 ZoomIn = 拡大表示
 ZoomOut = 縮小表示
 IsEnableDoubleView = 見開き表示
-IsLeftBindingView = 左開き表示
+IsLeftBindingView = 右側のページをめくる
+IsLeftBindingView_Desc = ページの進行方向を選択してください。日本語の漫画は左ページをめくります。
+PageReadingOrder = ページの進行方向
+PageReadingOrder.Left = 左ページをめくる
+PageReadingOrder.Right = 右ページをめくる
 SwitchFullScreen = 全画面切替
 DoubleViewCorrectPaging = 見開きのページズレを補正する
 IsKeepSingleViewOnFirstPage = 最初のページは見開き表示しない
-IfAllFilesWannaWatchThenRegistrationFolderAtApp = フォルダをアプリにD&Dすると全部表示されます
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = フォルダをアプリにドラッグ＆ドロップすると全部表示されます
 ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
 ImageViewerSettings.IsScaleEffectEnabled = 縮小処理時の補間処理
 ImageViewerSettings.ScaleEffectSharpness = シャープネス
@@ -248,7 +256,8 @@ CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
 CanvasImageInterpolation.Cubic = Cubic
 CanvasImageInterpolation.Linear = Linear
 CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
-
+ImageViewer_GoNextPage = 次ページへ移動
+ImageViewer_GoPrevPage = 前ページへ移動
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = スタイルを強制的にクリア

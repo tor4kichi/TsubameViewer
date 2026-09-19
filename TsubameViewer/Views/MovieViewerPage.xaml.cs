@@ -415,7 +415,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
         _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;                
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();        
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        _soundVolumeChangingTimer = _dispatcherQueue.CreateTimer();
     }
 
     DirectConnectedAnimationConfiguration _animConfig = new();
@@ -426,7 +427,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _playPauseToggleAnimationCts.Cancel();
             _playPauseToggleAnimationCts.Dispose();
             _playPauseToggleAnimationCts = null;
-        }
+        }        
 
         _mediaPlayer.Pause();
         _audioPlayer.Pause();
@@ -552,7 +553,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             NeighborsContentButtonsContainer.Opacity = 1;
             ImageSelectorContainer.Opacity = 1;
         }
-
+        
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
         PlayerContainer.Opacity = 0.0001;　// FFmpeg利用時にゼロ位置の映像フレームが表示されないように        
@@ -566,7 +567,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _mediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         _mediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
         _mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
-        _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;        
+        _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
 
         var insideWindowRp = Observable.Merge(
                 this.ObservePointerEntered().Select(x => x.Pointer.PointerDeviceType == PointerDeviceType.Mouse), 
@@ -839,6 +840,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                             _this._nowRequestPlayStart = false;
                             _this._mediaPlayer.Play();
                             _this._audioPlayer.Play();
+                            _this.StartSmoothSoundVolumeChanging();
                         }
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
@@ -879,10 +881,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         {
                             _this._oneFrameTime = TimeSpan.Zero;
                         }
-                    });
+                    });                   
             })
             .AddTo(ref db);
-        
+               
+
         _vm.PageSettings.ObservePropertyChanged(x => x.IsFFmpegUseFirstToMediaSourceFactory, false)
             .Subscribe(this, static (x, s) => 
             {
@@ -1036,7 +1039,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
-
     private void CloseButton_VideoEffectUIContainerUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
     {
         ToggleVideoEffectEditUI();
@@ -1153,7 +1155,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Add(mediaSource);
         
         var playbackItem = new MediaPlaybackItem(mediaSource);
-        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
         // 字幕の追加        
         foreach (var subsFile in await LoadSameNameSubtitleFilesAsync(x))
         {
@@ -1218,7 +1219,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task OpenMediaWithFFmpegAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
     {
         var fileStream = await x.OpenReadAsync();
-        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream, new MediaSourceConfig());
         // Note: PlaybackSession 設定するとむしろ壊れる
         //ms.PlaybackSession = MediaPlayer.PlaybackSession;
         db.Add(ms);
@@ -1235,10 +1236,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             catch { }
         }
-        var playbackItem = ms.CreateMediaPlaybackItem();
-        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
-        await ms.OpenWithMediaPlayerAsync(_mediaPlayer);
         
+        var playbackItem = ms.CreateMediaPlaybackItem();
+        await ms.OpenWithMediaPlayerAsync(_mediaPlayer);
+            
         var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
         if (ms.AudioStreams.Count == 0 && ms.Duration != TimeSpan.Zero && ms.Duration != TimeSpan.MaxValue)
         {
@@ -1249,6 +1250,38 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         else
         {
             _audioPlayer.Source = null;
+        }
+
+        // ウィンドウが表示されない状況（最小化や仮想デスクトップの切替など）で
+        // バッファ再読み込みのタイミングで再生レートが1.0になってしまう問題を解消
+        // （このワークアラウンド無しでも、ウィンドウが再表示されると設定済みの再生レートに戻る）
+        var timer = _dispatcherQueue.CreateTimer();
+        timer.Tick += Timer_Tick;
+        timer.Interval = TimeSpan.FromSeconds(.5);
+        timer.IsRepeating = true;        
+        _windowContext.CreateVisibilityObserver()
+            .Subscribe((timer), (visible, s) =>
+            {
+                if (visible)
+                {
+                    timer.Stop();
+                }
+                else
+                {
+                    timer.Start();
+                }
+            })
+            .AddTo(db);
+
+        Disposable.Create(timer, (timer) => timer.Tick -= Timer_Tick)
+            .AddTo(db);
+
+        void Timer_Tick(DispatcherQueueTimer sender, object args)
+        {
+            if (_mediaPlayer?.PlaybackSession.PlaybackRate != _vm.PageSettings.PlaybackRate)
+            {
+                _mediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+            }
         }
     }
 
@@ -1500,7 +1533,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     #region ShortcutKey
 
     [ObservableProperty]
-    ArraySegment<ShortcutKeyInfo>? _shortcutKeys;
+    ShortcutKeyInfo[]? _shortcutKeys;
 
     [RelayCommand]
     void ToggleDisplayShortcutKeyGuideUI()
@@ -1517,10 +1550,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     Key = x.KeyboardAccelerators[0].Key,
                     Modifier = x.KeyboardAccelerators[0].Modifiers
                 })
-                .ToArrayPool();
-            shortcuts
-                .RegisterTo(this.GetCancellationTokenOnUnloaded());
-            ShortcutKeys = shortcuts.ArraySegment;
+                .ToArray();
+            ShortcutKeys = shortcuts;
         }
         ShortcutKeyGuideUIContainer.Visibility = (ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed).TrueToVisible();
     }
@@ -2198,34 +2229,43 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     AnimationBuilder _fadeOutAnimation = AnimationBuilder.Create()
         .Opacity(0, delay: TimeSpan.FromMilliseconds(2000), duration: TimeSpan.FromMilliseconds(75));
 
+
+    void StartSmoothSoundVolumeChanging()
+    {       
+        Debug.WriteLine($"volume change start: {_mediaPlayer.Volume * 100:F0}%");
+        _soundVolumeChangingTimer.Start();
+    }
+
+    DispatcherQueueTimer _soundVolumeChangingTimer;
+    double _soundIncrementUnit = 1 / 45d;
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
-        SetSoundVolume(_vm.PageSettings.SoundVolume);
+        SetSoundVolumeDisplay(_vm.PageSettings.SoundVolume);
         _mediaPlayer.IsMuted = _vm.PageSettings.IsMuted;
         _audioPlayer.IsMuted = _vm.PageSettings.IsMuted;
         _mediaPlayer.Volume = 0;
         _audioPlayer.Volume = 0;
-        float increaseVolumeUnit = (float)_vm.PageSettings.SoundVolume / 30f; // 0.5秒
-        var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        var timer = _soundVolumeChangingTimer;
         timer.Interval = TimeSpan.FromMilliseconds(16);
-        timer.Tick += (s, e) => 
+        timer.Tick += (s, e) =>
         {
-            var nextVolume = _mediaPlayer.Volume + increaseVolumeUnit;
-            if (nextVolume > _vm.PageSettings.SoundVolume)
+            var delta = _vm.PageSettings.SoundVolume - _mediaPlayer.Volume;            
+            if (_vm.PageSettings.SoundVolume == 0 || Math.Abs(delta) <= _soundIncrementUnit)
             {
+                s.Stop();
                 _mediaPlayer.Volume = _vm.PageSettings.SoundVolume;
                 _audioPlayer.Volume = _vm.PageSettings.SoundVolume;
-                s.Stop();                
+                Debug.WriteLine($"volume change Done: {_mediaPlayer.Volume * 100:F0}%");
             }
             else
-            {                
-                _mediaPlayer.Volume += increaseVolumeUnit;
-                _audioPlayer.Volume = _mediaPlayer.Volume;
+            {
+                var nextVolume = Math.Clamp(_mediaPlayer.Volume + (delta > 0 ? _soundIncrementUnit : -_soundIncrementUnit), 0, 1);
+                _mediaPlayer.Volume = nextVolume;
+                _audioPlayer.Volume = nextVolume;
+                Debug.WriteLine($"volume : {_mediaPlayer.Volume * 100:F0}%");
             }
-
-            //Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
         };
-        timer.Start();
+        
         Disposable.Create(timer, s => s.Stop())
             .AddTo(ref db);
         ControlUI_SoundVolumeSlider.ValueChanged -= ControlUI_SoundVolumeSlider_ValueChanged;
@@ -2236,8 +2276,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         this.ObservePropertyChanged(x => x.SoundVolume_Display, false)
             .Subscribe((this), (x, s) =>
             {
-                s._mediaPlayer.Volume = x;
-                s._audioPlayer.Volume = x;
                 s.StartLiteNotification($"{"MovieViewer_SoundVolume".Translate()}: {x * 100:F0}%");
             })
             .AddTo(ref db);
@@ -2247,7 +2285,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe(this, (pair, s) => 
             {
 
-                s.SetSoundVolume(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1));
+                s.SetSoundVolumeDisplay(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1));
             })
             .AddTo(ref db);
 
@@ -2277,7 +2315,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
 
-    void SetSoundVolume(double vol)
+    void SetSoundVolumeDisplay(double vol)
     {
         _nowSoundVolumeChanging = true;
         try
@@ -2299,12 +2337,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (_nowSoundVolumeChanging) { return; }
 
         double volume = Math.Clamp((double)e.NewValue, 0.0, 1.0);
+        _vm.PageSettings.SoundVolume = volume;
         SetSoundVolumeFromCode(volume);
-        if (SoundVolume_Display != 0)
-        {
-            _vm.PageSettings.SoundVolume = SoundVolume_Display;
-        }
-
     }
 
     void SetSoundVolumeFromCode(double volume)
@@ -2313,8 +2347,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         try
         {
             SoundVolume_Display = volume;            
-            _mediaPlayer.Volume = volume;
-            _audioPlayer.Volume = volume;
+            //_mediaPlayer.Volume = volume;
+            //_audioPlayer.Volume = volume;
+            StartSmoothSoundVolumeChanging();
         }
         finally
         {
@@ -2324,21 +2359,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void ControlUI_SoundVolumeSlider_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        if (SoundVolume_Display != 0)
-        {
-            _vm.PageSettings.SoundVolume = SoundVolume_Display;
-        }
+        _vm.PageSettings.SoundVolume = SoundVolume_Display;
     }
 
     [RelayCommand]
     void VolumeChange(double normalizedRelativeValue)
     {
-        double vol = Math.Clamp(SoundVolume_Display == 0 ? _vm.PageSettings.SoundVolume : SoundVolume_Display + normalizedRelativeValue, 0.0, 1.0);        
+        double vol = Math.Clamp(SoundVolume_Display + normalizedRelativeValue, 0.0, 1.0);
+        _vm.PageSettings.SoundVolume = vol;
         SetSoundVolumeFromCode(vol);
-        if (vol != 0)
-        {
-            _vm.PageSettings.SoundVolume = vol;
-        }
     }
 
 
@@ -2672,134 +2701,160 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     string? _initializeForFilePath;
 
+    private void MovieSettingsFlyout_Opening(object sender, object e)
+    {
+        if (_mediaPlayer == null) { return; }
+        IsRepeat_MenuItem.IsChecked = _mediaPlayer.IsLoopingEnabled;
+    }
+    ToggleMenuFlyoutItem? _setNonSubtitleMenuItem;
     private void TracksAndSubtitleSelectFlyout_Opening(object sender, object e)
     {
+        if (_mediaPlayer == null) { return; }
         if (_vm.MovieFile == null) { return; }
         if (_mediaPlayer.Source is not MediaPlaybackItem playbackItem) { return; }
         if (_initializeForFilePath != null && _initializeForFilePath == _vm.MovieFile.Path) 
         {
-            foreach (var (index, menuItem) in VideoTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            foreach (var (index, menuItem) in SubtitleSettingsFlyout.Items.AsValueEnumerable().Where(x => x.DataContext is VideoTrack).Index())
             {
                 (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.VideoTracks.SelectedIndex == index;
             }
 
-            foreach (var (index, menuItem) in AudioTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            foreach (var (index, menuItem) in SubtitleSettingsFlyout.Items.AsValueEnumerable().Where(x => x.DataContext is AudioTrack).Index())
             {
                 (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.AudioTracks.SelectedIndex == index 
                     ||  _audioPlayer.Source == menuItem.DataContext;
             }
 
             bool anySubstitleDisplay = false;
-            foreach (var (index, menuItem) in SubtitlesMenuSubItem.Items.Skip(1).SkipLast(2).AsValueEnumerable().Index())
+            foreach (var (index, menuItem) in SubtitleSettingsFlyout.Items.AsValueEnumerable().Where(x => x.DataContext is TimedMetadataTrack).Index())
             {
                 var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
                 (menuItem as ToggleMenuFlyoutItem)?.IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
                 anySubstitleDisplay |= mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented;
             }
 
+            _setNonSubtitleMenuItem?.IsChecked = !anySubstitleDisplay;
             return; 
         }
 
         _initializeForFilePath = _vm.MovieFile.Path;
-        VideoTracksMenuSubItem.Items.Clear();
-        AudioTracksMenuSubItem.Items.Clear();
-        SubtitlesMenuSubItem.Items.Clear();
 
-        // 動画ファイル内の映像
-        foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
+        SubtitleSettingsFlyout.Items.Clear();
+
+        int headerFontSize = 13;
+        // 動画ファイル内の映像        
+        var nextContentInsertPos = 0;
+        if (playbackItem.VideoTracks.Count >= 2)
         {
-            var menuItem = new ToggleMenuFlyoutItem()
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
             {
-                Text = !string.IsNullOrWhiteSpace(videoTrack.Language) ? $"{videoTrack.Id}. {videoTrack.Name} ({videoTrack.Language})" : $"{videoTrack.Id}. {videoTrack.Name}",
-                DataContext = videoTrack,
-                IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
-                Command = SetVideoTrackCommand,
-                CommandParameter = videoTrack,
-            };
+                Text = "MovieViewer_VideoTrack".Translate(playbackItem.VideoTracks.Count),
+                FontSize = headerFontSize,
+                IsEnabled = false
+            });
+            nextContentInsertPos++;
+            foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
+            {
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = !string.IsNullOrWhiteSpace(videoTrack.Language) ? $"{videoTrack.Id}. {videoTrack.Name} ({videoTrack.Language})" : $"{videoTrack.Id}. {videoTrack.Name}",
+                    DataContext = videoTrack,
+                    IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
+                    Command = SetVideoTrackCommand,
+                    CommandParameter = videoTrack,
+                };
 
-            VideoTracksMenuSubItem.Items.Add(menuItem);
-        }
-
-        VideoTracksMenuSubItem.Text = "MovieViewer_VideoTrack".Translate(VideoTracksMenuSubItem.Items.Count);
-
-        bool isVideoTracksChangeEnabled = VideoTracksMenuSubItem.Items.Count >= 2;
-        foreach (var menuItem in VideoTracksMenuSubItem.Items)
-        {
-            menuItem.IsEnabled = isVideoTracksChangeEnabled;
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
         }
         
         // 動画ファイル内の音声
-        foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
+        if (playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count >= 2)
         {
-            var menuItem = new ToggleMenuFlyoutItem()
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
             {
-                Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{audioTrack.Id}. {audioTrack.Name} ({audioTrack.Language})" : $"{audioTrack.Id}. {audioTrack.Name}",
-                DataContext = audioTrack,
-                IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
-                Command = SetAudioTrackCommand,
-                CommandParameter = audioTrack,
-            };
+                Text = "MovieViewer_AudioTrack".Translate(playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count),
+                FontSize = headerFontSize,
+                IsEnabled = false
+            });
+            nextContentInsertPos++;
+            foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
+            {
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{audioTrack.Id}. {audioTrack.Name} ({audioTrack.Language})" : $"{audioTrack.Id}. {audioTrack.Name}",
+                    DataContext = audioTrack,
+                    IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
+                    Command = SetAudioTrackCommand,
+                    CommandParameter = audioTrack,
+                };
 
-            AudioTracksMenuSubItem.Items.Add(menuItem);
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
+
+            // 外部音声
+            foreach (var (audioItem, file) in _externalAudioTrackFiles)
+            {
+                var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = $"{file.Name}",
+                    DataContext = audioItem,
+                    IsChecked = _audioPlayer.Source == audioItem,
+                    Command = SetExternalAudioTrackCommand,
+                    CommandParameter = audioItem,
+                };
+
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
         }
 
-        // 外部音声
-        foreach (var (audioItem, file) in _externalAudioTrackFiles)
+        if (playbackItem.TimedMetadataTracks.Count >= 1)
         {
-            var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
-            var menuItem = new ToggleMenuFlyoutItem()
+            // 字幕
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
             {
-                Text = $"{file.Name}",
-                DataContext = audioItem,
-                IsChecked = _audioPlayer.Source == audioItem,
-                Command = SetExternalAudioTrackCommand,
-                CommandParameter = audioItem,
-            };
-
-            AudioTracksMenuSubItem.Items.Add(menuItem);
-        }
-
-        bool isAudioTracksChangeEnabled = AudioTracksMenuSubItem.Items.Count >= 2;
-        foreach (var menuItem in AudioTracksMenuSubItem.Items)
-        {
-            menuItem.IsEnabled = isAudioTracksChangeEnabled;
-        }
-
-        AudioTracksMenuSubItem.Text = "MovieViewer_AudioTrack".Translate(playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count);
-
-        // 字幕
-        var noSubtitlesMenuItem = new MenuFlyoutItem()
-        {
-            Text = "MovieViewer_Subtitles_HideAll".Translate(),          
-            Command = SetTimedMetadataTrackCommand,
-            CommandParameter = null,
-        };
-        SubtitlesMenuSubItem.Items.Add(noSubtitlesMenuItem);
-        foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
-        {            
-            var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
-            var menuItem = new ToggleMenuFlyoutItem()
+                Text = "MovieViewer_SubtitlesMenuTitleWithCount".Translate(playbackItem.TimedMetadataTracks.Count),
+                FontSize = headerFontSize,
+                IsEnabled = false
+            });
+            nextContentInsertPos++;            
+            SubtitleSettingsFlyout.Items.Add(_setNonSubtitleMenuItem = new ToggleMenuFlyoutItem()
             {
-                Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
-                DataContext = subtitle,
-                IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented,
+                Text = "MovieViewer_Subtitles_HideAll".Translate(),
+                DataContext = null,
                 Command = SetTimedMetadataTrackCommand,
-                CommandParameter = subtitle,
-            };
+                CommandParameter = null,
+            });
+            nextContentInsertPos++;
 
-            SubtitlesMenuSubItem.Items.Add(menuItem);
+            bool anyChecked = false;
+            foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+            {
+                if (subtitle.Id.StartsWith("ReferenceTrack", StringComparison.Ordinal)) { continue; }
+
+                var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                var menuItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
+                    DataContext = subtitle,
+                    IsChecked = mode is TimedMetadataTrackPresentationMode.PlatformPresented or TimedMetadataTrackPresentationMode.ApplicationPresented,
+                    Command = SetTimedMetadataTrackCommand,
+                    CommandParameter = subtitle,
+                };
+                anyChecked |= menuItem.IsChecked;
+                SubtitleSettingsFlyout.Items.Insert(nextContentInsertPos++, menuItem);
+            }
+            _setNonSubtitleMenuItem.IsChecked = !anyChecked;
+
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutSeparator());
+            SubtitleSettingsFlyout.Items.Add(new MenuFlyoutItem()
+            {
+                Text = "MovieViewer_Subtitles_OpenSettings".Translate(playbackItem.TimedMetadataTracks.Count),
+                Command = OpenSubstitleSettingsCommand,
+                CommandParameter = null,
+            });
         }
-        
-        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutSeparator());
-        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutItem()
-        {
-            Text = "MovieViewer_Subtitles_OpenSettings".Translate(),
-            Command = OpenSubstitleSettingsCommand,
-        });
-
-        SubtitlesMenuSubItem.Text = "MovieViewer_SubtitlesMenuTitleWithCount".Translate(playbackItem.TimedMetadataTracks.Count);
-
-        IsRepeat_MenuItem.IsChecked = _mediaPlayer.IsLoopingEnabled;
     }
 
     [RelayCommand]
@@ -2818,10 +2873,22 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (_mediaPlayer.Source is MediaPlaybackItem playbackItem)
         {
+            // 1倍速以上の再生速度と音声トラック変更が重なると音声が乱れるため
+            // 速度の再指定と音量がぶつ切りになる不快さ軽減の音量スムーズに変更している
+            double rate = _mediaPlayer.PlaybackSession.PlaybackRate;
+            _mediaPlayer.PlaybackSession.PlaybackRate = 1;
+            _mediaPlayer.Volume = 0;
             _audioPlayer.Source = null;
             var index = playbackItem.AudioTracks.AsValueEnumerable().Index().FirstOrDefault(x => x.Item.Id == audioTrack.Id).Index;
             playbackItem.AudioTracks.SelectedIndex = index;
             _messenger.SendShowTextNotificationMessage("MovieViewer_AudioTrackChanged".Translate($"{index+1}. {audioTrack.Name}"));
+            Observable.TimerFrame(10)
+                .Take(1)
+                .Subscribe(_ =>
+                {
+                    _mediaPlayer.PlaybackSession.PlaybackRate = rate;
+                    StartSmoothSoundVolumeChanging();
+                });
         }
     }
 
@@ -2862,7 +2929,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void SetTimedMetadataTrack(TimedMetadataTrack? subtitle)
     {
-        if (_mediaPlayer.Source is MediaPlaybackItem playbackItem)
+        if (_mediaPlayer?.Source is MediaPlaybackItem playbackItem)
         {
             bool isDisplay = _vm.PageSettings.IsSubtitleDisplayEnabled;
             if (subtitle == null)
@@ -2911,7 +2978,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
                     {
-                        if (timed.Id != subtitle.Id)
+                        if (timed.Id != subtitle.Id
+                            && timed.Language.Equals(subtitle.Language, StringComparison.Ordinal))
                         {
                             playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
                         }
@@ -2970,14 +3038,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         return !string.IsNullOrEmpty(subtitle.Language) ? subtitle.Language : subtitle.Id;
     }
-
-    private void PlaybackItem_TimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
-    {
-        if (sender.TimedMetadataTracks.Count > 0)
-        {
-        }
-    }
-
+  
     [RelayCommand]
     async Task OpenSubstitleSettingsAsync()
     {

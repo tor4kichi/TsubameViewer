@@ -1089,6 +1089,21 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     #endregion
 
+
+    #region ShortcutKeys
+
+
+
+    [RelayCommand]
+    void SetScrollPositionWithPercent(double posWithPercent)
+    {
+        var sv = ItemsScrollViewer;
+        if (sv == null) { return; }
+        sv.ChangeView(null, sv.ScrollableHeight * posWithPercent, null, true);
+    }
+
+    #endregion
+
     private void ItemControl_DragStarting(UIElement sender, DragStartingEventArgs args)
     {
         args.AllowedOperations = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
