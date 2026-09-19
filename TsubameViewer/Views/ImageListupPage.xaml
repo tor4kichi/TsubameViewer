@@ -635,7 +635,7 @@
                         IsEnabled="False"
                         Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}"
                         ctwu:FrameworkElementExtensions.Cursor="Hand" />
-                <TextBlock Text="{x:Bind SelectedCountDisplayText, Mode=OneWay}"
+                <TextBlock Text="{x:Bind _vm.Selection.SelectedItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='ImageSelection_SelectedCount'}"
                            VerticalAlignment="Center"
                            Margin="48 0" />
                 <TextBlock Text="{i18nExt:Localize Key=ImageListupPage_DragAndDrop_Unsupported}"

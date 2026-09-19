@@ -227,7 +227,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             else
             {
-                _vm.Selection.StartSelection();
+                _vm.Selection.StartSelection();                
             }
 
             _vm.FileDeleteCommand.NotifyCanExecuteChanged();
@@ -583,11 +583,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     int _lastSelectedItemIndex = -1;
     
-
-    [ObservableProperty]
-    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();
-
-
     void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
     {
         e.Handled = true;
@@ -601,7 +596,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     void ItemSelectedProcess(IStorageItemViewModel itemVM)
     {
         var prevSelectedItemIndex = _lastSelectedItemIndex;
-        var lastSelectedItemsCount = SelectedItemsCount;
+        var lastSelectedItemsCount = _vm.Selection.SelectedItems.Count;
         //if (prevSelectedItemIndex >= 0 
         //    && Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Shift) != CoreVirtualKeyStates.None
         //    )
@@ -613,49 +608,28 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             if (itemVM.IsSelected)
             {
                 _vm.Selection.SelectedItems.Add(itemVM);
-                _selectedItems = _vm.Selection.SelectedItems;
             }
             else
             {
                 _vm.Selection.SelectedItems.Remove(itemVM);
-                _selectedItems = _vm.Selection.SelectedItems;
             }
-            SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
             _vm.Selection.ForceNotifySelectedItems();
 
             _vm.FileDeleteCommand.NotifyCanExecuteChanged();
         }
 
         _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
-
-        var selectedItemsCount = SelectedItemsCount;
-        if (selectedItemsCount > 0)
-        {
-            SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(selectedItemsCount);
-        }
-
-        if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
+        if (lastSelectedItemsCount == 0 && _vm.Selection.SelectedItems.Count > 0)
         {
             StartSelection();
         }        
     }
-
-    public int SelectedItemsCount
-    {
-        get { return (int)GetValue(SelectedItemsCountProperty); }
-        set { SetValue(SelectedItemsCountProperty, value); }
-    }
-
-    public static readonly DependencyProperty SelectedItemsCountProperty =
-        DependencyProperty.Register("SelectedItemsCount", typeof(int), typeof(ImageListupPage), new PropertyMetadata(0));
-
 
 
 
 
     public void StartSelection()
     {
-        _selectedItems = _vm.Selection.SelectedItems;
         _vm.Selection.StartSelection();
         _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
         if (_messenger.IsRegistered<BackNavigationRequestingMessage>(this) is false)
@@ -695,15 +669,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     public void ClearSelection()
-    {
-        foreach (var itemVM in _selectedItems ?? [])
-        {
-            itemVM.IsSelected = false;
-        }
-
-        _selectedItems = null;
-        SelectedCountDisplayText = String.Empty;
-        SelectedItemsCount = 0;
+    {        
         _vm.Selection.EndSelection();
         _lastSelectedItemIndex = -1;
         _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
@@ -720,16 +686,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         itemVM.IsSelected = !itemVM.IsSelected;
         ItemSelectedProcess(itemVM);
     }
-
-    public string SelectedCountDisplayText
-    {
-        get { return (string)GetValue(SelectedCountDisplayTextProperty); }
-        set { SetValue(SelectedCountDisplayTextProperty, value); }
-    }
-
-    public static readonly DependencyProperty SelectedCountDisplayTextProperty =
-        DependencyProperty.Register("SelectedCountDisplayText", typeof(string), typeof(ImageListupPage), new PropertyMetadata(string.Empty));
-
+    
     bool CanMoveToFolderSelectedItems(StorageFolder? folder)
     {
         return folder != null;

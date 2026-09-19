@@ -88,6 +88,7 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
     {
         if (imageSources.Any(x => x.StorageItem != null))
         {
+            var fixedImages = imageSources.ToArray();
             var item = imageSources.First(x => x.StorageItem != null).StorageItem;
             var shiftPressing = Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)
                 || Window.Current.CoreWindow.GetKeyState(VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
@@ -97,7 +98,7 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
                 try
                 {
                     await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(isDeletePermanent ? StorageDeleteOption.PermanentDelete : StorageDeleteOption.Default).AsTask()));
-                    foreach (var deleted in imageSources)
+                    foreach (var deleted in fixedImages)
                     {
                         _messenger.Send(new StorageItemNotFoundMessage(deleted.Path));
                         _messenger.Send(new StroageItemAccessRemovedMessage(deleted.Path));

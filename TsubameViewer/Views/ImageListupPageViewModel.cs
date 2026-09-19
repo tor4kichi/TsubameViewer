@@ -73,7 +73,11 @@ public sealed class SelectionContext : ObservableObject
     public void EndSelection()
     {
         IsSelectionModeEnabled = false;
-        SelectedItems.Clear();
+        foreach (var itemVM in SelectedItems)
+        {
+            itemVM.IsSelected = false;
+        }
+        SelectedItems.Clear();        
     }
 }
 
@@ -130,8 +134,14 @@ public sealed partial class ImageListupPageViewModel
         var item = ImageFileItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
         if (item != null)
         {
-            ImageFileItems.Remove(item);            
-        }
+            ImageFileItems.Remove(item);
+            Selection.SelectedItems.Remove(item);            
+            FileItemsView.Refresh();
+            if (_imageCollectionContext is FolderImageCollectionContext imageCollection)
+            {
+                imageCollection.Context.DecrementImagesCountOnRemovedOuter();
+            }
+        }        
     }
 
     public void Receive(ImageSourceFavoriteChanged message)

@@ -411,6 +411,11 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext, IDis
         })
             .ThrottleLast(TimeSpan.FromSeconds(1));
     }
+
+    public void DecrementImagesCountOnRemovedOuter()
+    {
+        
+    }
 }
 
 
@@ -679,6 +684,14 @@ public sealed class FolderStructureCacheContext : IDisposable
         _updateMap[Folder.Path].CachedNotImagesCount = imagesCount;
     }
 
+    public void DecrementImagesCountOnRemovedOuter()
+    {
+        var cacheInfo = _updateMap[Folder.Path];
+        if (cacheInfo.CachedImagesCount.HasValue)
+        {
+            cacheInfo.CachedImagesCount = Math.Max(0, cacheInfo.CachedImagesCount.Value - 1);
+        }
+    }
 
     public int GetCachedImagesCount()
     {
