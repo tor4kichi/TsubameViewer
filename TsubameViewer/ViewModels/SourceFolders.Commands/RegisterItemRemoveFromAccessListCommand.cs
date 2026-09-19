@@ -27,9 +27,9 @@ internal class RegisterItemRemoveFromAccessListCommand : IRelayCommand<IStorageI
         _messageDialogService = messageDialogService;
     }
 
-    public event EventHandler CanExecuteChanged;
+    public event EventHandler? CanExecuteChanged;
 
-    public bool CanExecute(IStorageItemViewModel parameter)
+    public bool CanExecute(IStorageItemViewModel? parameter)
     {
         return parameter?.IsSourceStorageItem ?? false;
     }
@@ -39,21 +39,27 @@ internal class RegisterItemRemoveFromAccessListCommand : IRelayCommand<IStorageI
         return CanExecute(parameter as IStorageItemViewModel);
     }
 
-    public async void Execute(IStorageItemViewModel parameter)
+    public async void Execute(IStorageItemViewModel? parameter)
     {
+        if (parameter == null) { return; }
         if (!parameter.IsSourceStorageItem) { return; }
-        var messenger = Ioc.Default.GetService<IMessenger>();
-        if (!await _messageDialogService.ShowMessageDialogAsync(
-            "ConfirmRemoveSourceFolderFromAppDescription".Translate(),
-            "Delete".Translate(),
-            "Cancel".Translate(),
-            false,
-            "ConfirmRemoveSourceFolderFromAppWithFolderName".Translate(parameter.Name)
-            ))
-        {
-            return;
-        }
+        var messenger = Ioc.Default.GetRequiredService<IMessenger>();
         var (token, item) = await _sourceStorageItemsRepository.GetSourceStorageItem(parameter.Path);
+        if (token == null || item == null) { return; }
+        if (token.TokenListType == SourceStorageItemsRepository.TokenListType.FutureAccessList)
+        {
+            if (!await _messageDialogService.ShowMessageDialogAsync(
+                "ConfirmRemoveSourceFolderFromAppDescription".Translate(),
+                "Delete".Translate(),
+                "Cancel".Translate(),
+                false,
+                "ConfirmRemoveSourceFolderFromAppWithFolderName".Translate(parameter.Name)
+                ))
+            {
+                return;
+            }
+        }
+
         if (item.Path is { } path)
         {
             var deleteResult = await messenger.WorkWithBusyWallAsync(

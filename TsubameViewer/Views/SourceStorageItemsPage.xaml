@@ -78,13 +78,18 @@
         </AutoSuggestBox>
       </uwpControls:DockPanel>
     </DataTemplate>
+
+    <CollectionViewSource x:Key="GroupedRegisteredItemsViewSource"
+                          Source="{x:Bind _vm.Groups}"
+                          IsSourceGrouped="True"
+                          ItemsPath="Items" />
   </Page.Resources>
   <Grid Margin="0 32 0 0">
 
     <uwpControls1:AdaptiveGridView x:Name="FoldersAdaptiveGridView"
                                   StretchContentForSingleRow="False"
                                   OneRowModeEnabled="False"
-                                  ItemsSource="{x:Bind _vm.Folders}"
+                                   ItemsSource="{Binding Source={StaticResource GroupedRegisteredItemsViewSource}}"
                                   ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
                                   ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
                                   DesiredWidth="{StaticResource FolderGridViewItemWidth}"
@@ -103,6 +108,15 @@
       <GridView.ItemContainerTransitions>
         <TransitionCollection />
       </GridView.ItemContainerTransitions>
+      <uwpControls1:AdaptiveGridView.GroupStyle>
+        <GroupStyle HidesIfEmpty="True">
+          <GroupStyle.HeaderTemplate>
+            <DataTemplate x:DataType="vm:GroupedStorageItemViewModel">
+              <TextBlock Text="{x:Bind Name}" />
+            </DataTemplate>
+          </GroupStyle.HeaderTemplate>
+        </GroupStyle>
+      </uwpControls1:AdaptiveGridView.GroupStyle>
     </uwpControls1:AdaptiveGridView>
 
     <VisualStateManager.VisualStateGroups>

@@ -33,6 +33,8 @@ Import = インポート
 RefreshLatest = ページを更新
 Settings = 設定
 SourceStorageItemsPage = Myフォルダ
+TokenListType.FutureAccessList = 登録フォルダ
+TokenListType.MostRecentlyUsedList = アクセス履歴
 CollectionPage = コレクション
 OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
 

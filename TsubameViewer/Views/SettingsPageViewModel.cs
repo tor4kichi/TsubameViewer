@@ -264,14 +264,14 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         (x, v) => x.IsInPageSearchWithMigemo = v),                    
                 }
             },
-            new SettingsGroupViewModel
-            {
-                Label = "SourceFoldersSettings".Translate(),
-                Items =
-                {
-                    new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
-                }
-            },
+            //new SettingsGroupViewModel
+            //{
+            //    Label = "SourceFoldersSettings".Translate(),
+            //    Items =
+            //    {
+            //        new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
+            //    }
+            //},
             //new SettingsGroupViewModel
             //{
             //    Label = "OtherSettings".Translate(),

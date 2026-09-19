@@ -243,10 +243,10 @@ public sealed class SourceStorageItemsRepository
         return _tokenToPathRepository.IsExistPath(path);
     }
 
-    public async Task<(string Token, IStorageItem? Item)> GetSourceStorageItem(string path)
+    public async Task<(TokenToPathEntry Entry, IStorageItem? Item)> GetSourceStorageItem(string path)
     {
         var token = _tokenToPathRepository.GetTokenFromPathExact(path);
-        return (token.Token, await GetItemAsync(token.Token));
+        return (token, await GetItemAsync(token.Token));
     }
 
     public async Task<IStorageItem?> GetSourceStorageItemAsync(TokenToPathEntry entry)
@@ -257,6 +257,11 @@ public sealed class SourceStorageItemsRepository
     public bool PathIsAccessAvailable(string path)
     {
         return _tokenToPathRepository.IsAvairableAccessPath(path);
+    }
+
+    public bool PathIsMostRecentlyAccessItem(string path)
+    {
+        return _tokenToPathRepository.GetTokenFromPathExact(path)?.TokenListType == TokenListType.MostRecentlyUsedList;
     }
 
     public void UpdateOrder(IEnumerable<string> sortedTokens)
@@ -510,6 +515,11 @@ public sealed class SourceStorageItemsRepository
     public void RemoveFolder(string token)
     {
         var entry = _tokenToPathRepository.GetPathFromToken(token);
+        RemoveFolder(entry);
+    }
+    public void RemoveFolder(TokenToPathEntry entry)
+    {
+        var token = entry.Token;
         bool isRemoved = false;
 #if WINDOWS_UWP
         if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))

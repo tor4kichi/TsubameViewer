@@ -33,6 +33,8 @@ Import = Importer
 RefreshLatest = Actualiser la page
 Settings = Paramètres
 SourceStorageItemsPage = Mon dossier
+TokenListType.FutureAccessList = Dossiers enregistrés
+TokenListType.MostRecentlyUsedList = Historique d'accès
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} Une extension est nécessaire pour afficher ce format d'image. Voulez-vous ouvrir le store ?
 
@@ -236,7 +238,7 @@ ZoomIn = Agrandir
 ZoomOut = Réduire
 IsEnableDoubleView = Affichage sur double page
 IsLeftBindingView = Tourner la page de droite
-IsLeftBindingView_Desc = Veuillez choisir le sens de lecture. Dans les mangas japonais, on tourne la page vers la gauche. 
+IsLeftBindingView_Desc = Veuillez choisir le sens de lecture. Dans les mangas japonais, on tourne la page vers la gauche.
 PageReadingOrder = Sens de lecture
 PageReadingOrder.Left = Tourner la page vers la gauche
 PageReadingOrder.Right = Tourner la page vers la droite

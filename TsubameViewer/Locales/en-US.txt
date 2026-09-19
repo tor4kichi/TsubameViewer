@@ -33,6 +33,8 @@ Import = Import
 RefreshLatest = Refresh page
 Settings = Setting
 SourceStorageItemsPage = My folder
+TokenListType.FutureAccessList = Registered folders
+TokenListType.MostRecentlyUsedList = Access history
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
 

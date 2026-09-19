@@ -33,6 +33,8 @@ Import = 导入
 RefreshLatest = 刷新页面
 Settings = 设置
 SourceStorageItemsPage = 我的文件夹
+TokenListType.FutureAccessList = 已注册文件夹
+TokenListType.MostRecentlyUsedList = 访问历史记录
 CollectionPage = 库
 OpenImageCodecExtensionStorePageWithFileType = {0} 需要安装扩展以显示图像格式。打开应用商店？
 

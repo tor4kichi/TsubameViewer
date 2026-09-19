@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -33,6 +34,7 @@ using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
 
 
 #nullable enable
@@ -63,6 +65,19 @@ public static class ObservableCollectionExtensions
     }
 }
 
+
+public class GroupedStorageItemViewModel
+{
+    public GroupedStorageItemViewModel(string name, ObservableCollection<StorageItemViewModel> items)
+    {
+        Name = name;
+        Items = items;
+    }
+
+    public string Name { get; }
+    public ObservableCollection<StorageItemViewModel> Items { get; }
+}
+
 public sealed partial class SourceStorageItemsPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<RemoveSourceStorageItemFromAppMessage>
@@ -73,6 +88,7 @@ public sealed partial class SourceStorageItemsPageViewModel
         if (message.Value is StorageItemViewModel itemVM)
         {
             Folders.Remove(itemVM);
+            TempItems.Remove(itemVM);
         }
     }
 
@@ -88,8 +104,10 @@ public sealed partial class SourceStorageItemsPageViewModel
         }
     }
 
-    public AdvancedCollectionView ItemsView { get; }
+    public GroupedStorageItemViewModel[] Groups { get; }
     public ObservableCollection<StorageItemViewModel> Folders { get; }
+    public ObservableCollection<StorageItemViewModel> TempItems { get; }
+
 
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly AlbamRepository _albamRepository;
@@ -119,7 +137,9 @@ public sealed partial class SourceStorageItemsPageViewModel
         )
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
-        ItemsView = new (Folders);
+        TempItems = [];
+        Groups = [new GroupedStorageItemViewModel("TokenListType.FutureAccessList".Translate(), Folders),
+            new GroupedStorageItemViewModel("TokenListType.MostRecentlyUsedList".Translate(), TempItems)];
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _folderLastIntractItemManager = folderLastIntractItemManager;        
         _sourceChoiceCommand = sourceChoiceCommand;
@@ -151,7 +171,7 @@ public sealed partial class SourceStorageItemsPageViewModel
             }
             else
             {
-                //                    RecentlyItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                TempItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
             }
         });
 
@@ -266,17 +286,38 @@ public sealed partial class SourceStorageItemsPageViewModel
                 _messenger.Send<SourceStorageItemReorderedMessage>();
             })
             .RegisterTo(ct);
+        try
+        {
+            TempItems.Clear();
+            var items = await _sourceStorageItemsRepository.GetTemporaryItems(ct)
+                .Select(x => new StorageItemViewModel(new StorageItemImageSource(x.item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository))
+                .ToListAsync(ct);
+            items.Sort(_comparison);
+            foreach (var item in items)
+            {
+                TempItems.Add(item);
+            }
+        }
+        catch (AggregateException ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
 
-        
         await base.OnNavigatedToAsync(parameters, ct);
     }
 
     void RemoveItem(string path)
     {
-        var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == path);
+        var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
         if (existInFolders != null)
         {
             Folders.Remove(existInFolders);
+        }
+
+        var existInTempItems = TempItems.FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
+        if (existInTempItems != null)
+        {
+            TempItems.Remove(existInTempItems);
         }
     }
 
