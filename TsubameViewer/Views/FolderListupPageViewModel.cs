@@ -93,7 +93,7 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
-    Regex? _migemoQueryRegex;
+    readonly List<Regex> _migemoQueryRegexItems = [];
 
     public Visibility NotEmptyToVisible(string s)
     {
@@ -260,7 +260,7 @@ public sealed partial class FolderListupPageViewModel
             if (s is not IStorageItemViewModel itemVM) { return true; }
             if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
-            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            if (_migemoQueryRegexItems.All(x => x.IsMatch(itemVM.Name) == true)) { return true; }
             return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
         };
     }
@@ -462,33 +462,32 @@ public sealed partial class FolderListupPageViewModel
 
         this.ObservePropertyChanged(x => x.FilterText, false)
             .ThrottleLast(TimeSpan.FromSeconds(0.5))
-            .SubscribeAwait(async (s, ct) =>
+            .SubscribeAwait(this, static async (x, s, ct) =>
             {
-                if (NowLoading) { return; }
-                using (FileItemsView.DeferRefresh())
+                if (s.NowLoading) { return; }
+                using (s.FileItemsView.DeferRefresh())
                 {
-                    if (_filterQueryCts != null)
+                    if (s._filterQueryCts != null)
                     {
-                        _filterQueryCts.Cancel();
-                        _filterQueryCts.Dispose();
+                        s._filterQueryCts.Cancel();
+                        s._filterQueryCts.Dispose();
                     }
-                    _filterQueryCts = new CancellationTokenSource();
-                    var lastQueryCt = _filterQueryCts.Token;
-                    if (FolderListingSettings.IsInPageSearchWithMigemo)
+                    s._filterQueryCts = new CancellationTokenSource();
+                    var lastQueryCt = s._filterQueryCts.Token;
+                    s._migemoQueryRegexItems.Clear();
+                    if (s.FolderListingSettings.IsInPageSearchWithMigemo)
                     {
                         try
                         {
-                            _migemoQueryRegex = MigemoService.Query(s);
+                            s._migemoQueryRegexItems.AddRange(
+                                x.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(MigemoService.Query));
                         }
-                        catch
-                        {
-                            _migemoQueryRegex = null;
-                        }
+                        catch { }
                     }
-                    else { _migemoQueryRegex = null; }
 
-                    if (NowLoading) { return; }
-                    FileItemsView.RefreshFilter(lastQueryCt);
+                    if (s.NowLoading) { return; }
+                    s.FileItemsView.RefreshFilter(lastQueryCt);
                 }
             }, AwaitOperation.Switch)
             .AddTo(ref db);

@@ -127,7 +127,7 @@ public sealed partial class ImageListupPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
-    Regex? _migemoQueryRegex;
+    readonly List<Regex> _migemoQueryRegexItems = [];
 
     public void Receive(StorageItemNotFoundMessage message)
     {
@@ -300,7 +300,7 @@ public sealed partial class ImageListupPageViewModel
             if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }
             if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
-            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            if (_migemoQueryRegexItems.All(x => x.IsMatch(itemVM.Name) == true)) { return true; }
             return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
         };        
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
@@ -527,18 +527,17 @@ public sealed partial class ImageListupPageViewModel
                         }
                         s._filterQueryCts = new CancellationTokenSource();
                         var lastQueryCt = s._filterQueryCts.Token;
+                        s._migemoQueryRegexItems.Clear();
                         if (s._folderListingSettings.IsInPageSearchWithMigemo)
                         {
                             try
                             {
-                                s._migemoQueryRegex = MigemoService.Query(x);
+                                s._migemoQueryRegexItems.AddRange(
+                                    x.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(MigemoService.Query));
                             }
-                            catch
-                            {
-                                s._migemoQueryRegex = null;
-                            }
+                            catch { }
                         }
-                        else { s._migemoQueryRegex = null; }
 
                         if (s.NowLoadingItems) { return; }
                         s.FileItemsView.RefreshFilter(lastQueryCt);

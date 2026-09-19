@@ -25,6 +25,7 @@ using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Views;
 using ZLinq;
 
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
 public sealed partial class HistoryPageViewModel 
@@ -34,7 +35,7 @@ public sealed partial class HistoryPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
-    Regex? _migemoQueryRegex;
+    readonly List<Regex> _migemoQueryRegexItems = [];
 
     public void Receive(ImageSourceFavoriteChanged message)
     {
@@ -91,7 +92,7 @@ public sealed partial class HistoryPageViewModel
             if (s is not IStorageItemViewModel itemVM) { return true; }            
             if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
-            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            if (_migemoQueryRegexItems.All(x => x.IsMatch(itemVM.Name) == true)) { return true; }
             return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
         };
     }
@@ -156,22 +157,21 @@ public sealed partial class HistoryPageViewModel
 
             DisposableBuilder db = new();
             this.ObservePropertyChanged(x => x.FilterText, false)
-                .Debounce(TimeSpan.FromSeconds(0.25))
-                .SubscribeAwait(async (s, ct) =>
+                .ThrottleLast(TimeSpan.FromSeconds(0.5))
+                .SubscribeAwait(this, static async (x, s, ct) =>
                 {
-                    if (_folderListingSettings.IsInPageSearchWithMigemo)
+                    s._migemoQueryRegexItems.Clear();
+                    if (s._folderListingSettings.IsInPageSearchWithMigemo)
                     {
                         try
                         {
-                            _migemoQueryRegex = MigemoService.Query(s);
+                            s._migemoQueryRegexItems.AddRange(
+                                x.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(MigemoService.Query));
                         }
-                        catch
-                        {
-                            _migemoQueryRegex = null;
-                        }
+                        catch { }
                     }
-                    else { _migemoQueryRegex = null; }
-                    FilteredItems.RefreshFilter(ct);
+                    s.FilteredItems.RefreshFilter(ct);
                 }, AwaitOperation.Switch)
                 .AddTo(ref db);
 
