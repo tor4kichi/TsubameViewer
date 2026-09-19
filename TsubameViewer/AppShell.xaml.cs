@@ -301,15 +301,18 @@ public sealed partial class AppShell : UserControl
     readonly Queue<object> _notificationRequestedItems = new Queue<object>();
     void ShowNotification(object content)
     {
-        if (NotificationContentControl.Content == null
-            && string.IsNullOrEmpty(NotificationTextBlock.Text))
+        _dispatcherQueue.TryEnqueue(() => 
         {
-            PushShowingNotificationContent(content);
-        }
-        else
-        {
-            _notificationRequestedItems.Enqueue(content);
-        }
+            if (NotificationContentControl.Content == null
+                && string.IsNullOrEmpty(NotificationTextBlock.Text))
+            {
+                PushShowingNotificationContent(content);
+            }
+            else
+            {
+                _notificationRequestedItems.Enqueue(content);
+            }
+        });
     }
 
     
