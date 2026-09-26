@@ -580,7 +580,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         var insideControlUIRp = Observable.Merge(
                 ImageSelectorContainer.ObservePointerEntered().Select(x => true),
-                ImageSelectorContainer.ObservePointerExited().Select(x => false))
+                ImageSelectorContainer.ObservePointerExited().Select(x => false),
+                OpenPrevFileButton.ObservePointerEntered().Select(x => true),
+                OpenPrevFileButton.ObservePointerExited().Select(x => false),
+                OpenNextFileButton.ObservePointerEntered().Select(x => true),
+                OpenNextFileButton.ObservePointerExited().Select(x => false))
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside ControlUI: {x}"))
 #endif

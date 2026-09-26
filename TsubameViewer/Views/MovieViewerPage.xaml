@@ -575,7 +575,8 @@
                     HorizontalAlignment="Left"
                     VerticalAlignment="Stretch"
                     Visibility="{x:Bind _vm.PrevImageSource, Mode=OneWay, Converter={StaticResource NotNullToVisibleConverter}}"
-                    ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind _vm.PrevImageSource.Name, Mode=OneWay}"
+                    x:Name="OpenPrevFileButton">
           <Border Background="{ThemeResource SystemChromeMediumColor}"
                   CornerRadius="0 6 6 0">
             <Button HorizontalAlignment="Stretch"
@@ -591,7 +592,8 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Stretch"
                     Visibility="{x:Bind _vm.NextImageSource, Mode=OneWay, Converter={StaticResource NotNullToVisibleConverter}}"
-                    ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}">
+                    ToolTipService.ToolTip="{x:Bind _vm.NextImageSource.Name, Mode=OneWay}"
+                    x:Name="OpenNextFileButton">
           <Border Background="{ThemeResource SystemChromeMediumColor}"
                   CornerRadius="6 0 0 6">
             <Button HorizontalAlignment="Stretch"
