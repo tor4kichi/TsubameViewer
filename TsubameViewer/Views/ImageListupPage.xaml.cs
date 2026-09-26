@@ -998,7 +998,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
                     Folders?.Insert(0, newfodler);
                     ToggleDisplaySiblingFoldersButton.IsEnabled = true;
-                    FolderSelectionSplitView.IsPaneOpen = true;
                     _vm.HasFolderOrBookItem = true;
                     return;
                 }
