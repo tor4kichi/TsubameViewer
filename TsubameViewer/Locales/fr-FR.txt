@@ -1,4 +1,6 @@
-﻿#### General
+﻿お気に入りのアプリの中から AI を直接お試しください。 … Gemini を使用して下書きを生成したり、コンテンツの質を高めたりすることができます。さらに、Gemini Pro では Google の次世代 AI にアクセスできます。3 か月間、￥2,900 ￥720
+100%
+#### General
 Copy = Copier
 CopyToClipboard = Copié dans le presse-papier
 Cancel = Annuler
@@ -252,6 +254,7 @@ ImageViewerSettings.ScaleEffectSharpness = Acuité
 ImageViewerSettings.ScaleEffectSharpness_Desc = Vous pouvez définir le niveau de netteté des contours (zones de transition entre les couleurs). Si vous réglez ce paramètre sur 0 %, aucun traitement n'est appliqué et l'image apparaît floue ; si vous le réglez sur 100 %, les contours sont affichés de manière plus nette.
 ImageViewerSettings.ScaleEffectInterpolation = Types d'interpolation
 ImageViewerSettings.ScaleEffectInterpolation_Desc = Lors de la réduction d’une image, plusieurs pixels sont compressés en un seul pixel ; vous pouvez choisir la méthode de traitement. « HighQualityCubic » offre un rendu plus lisse. « MultiSampleLinear » offre un résultat équilibré, alliant une fluidité suffisante à la conservation de l’aspect de l’image d’origine.
+ImageViewerSettings.IsPlaySoundWhenReachingTheEnd = Il émet un son lorsqu'il franchit les points de départ et d'arrivée.
 CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
 CanvasImageInterpolation.Anisotropic = Anisotrope
 CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear

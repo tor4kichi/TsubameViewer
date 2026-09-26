@@ -1,3 +1,5 @@
+お気に入りのアプリの中から AI を直接お試しください。 … Gemini を使用して下書きを生成したり、コンテンツの質を高めたりすることができます。さらに、Gemini Pro では Google の次世代 AI にアクセスできます。3 か月間、￥2,900 ￥720
+100%
 #### General
 Copy = コピー
 CopyToClipboard = クリップボードにコピー
@@ -252,6 +254,7 @@ ImageViewerSettings.ScaleEffectSharpness = シャープネス
 ImageViewerSettings.ScaleEffectSharpness_Desc = エッジ（色の境界部分）の鮮明に表示する度合いを指定できます。 0%は何も処理せずボカした表示になり、100%にすると境界がより鮮明に表示されます。
 ImageViewerSettings.ScaleEffectInterpolation = 補間処理の種類
 ImageViewerSettings.ScaleEffectInterpolation_Desc = 画像を縮小表示する際、複数ピクセルを１ピクセルに圧縮しますが、その処理方法を選べます。HighQualityCubicはより滑らかに見えます。MultiSampleLinearは十分な滑らかさと元の画像の印象が残るバランスがよいです。
+ImageViewerSettings.IsPlaySoundWhenReachingTheEnd = 始端と終端を跨いだ時に音を鳴らす
 CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
 CanvasImageInterpolation.Anisotropic = Anisotropic
 CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear

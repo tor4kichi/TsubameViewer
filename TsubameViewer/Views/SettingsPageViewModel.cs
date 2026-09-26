@@ -158,6 +158,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         1.00,
                         0.01,
                         f => _imageViewerPageSettings.ScaleEffectSharpness = (float) f),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("ImageViewerSettings.IsPlaySoundWhenReachingTheEnd".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsPlaySoundWhenReachingTheEnd, (x, v) => x.IsPlaySoundWhenReachingTheEnd = v),
+
                 }
             },
             new SettingsGroupViewModel

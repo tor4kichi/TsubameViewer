@@ -1009,20 +1009,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
 
                 // 最後尾から先頭にジャンプした場合に音を鳴らす
-                if (isJumpHeadTail)
+                if (isJumpHeadTail && ImageViewerSettings.IsPlaySoundWhenReachingTheEnd)
                 {
                     ElementSoundPlayer.State = ElementSoundPlayerState.On;
-                    ElementSoundPlayer.Volume = 1.0;
+                    ElementSoundPlayer.Volume = 1;
                     ElementSoundPlayer.Play(ElementSoundKind.Invoke);
 
                     DispatcherQueue.GetForCurrentThread().TryEnqueue(async () =>
                     {
-                        await Task.Delay(500);
                         using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                         {
+                            await Task.Delay(250);
                             ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
                         }
-
                     });
                 }
 
