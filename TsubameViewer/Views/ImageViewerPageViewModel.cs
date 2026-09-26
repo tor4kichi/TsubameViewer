@@ -734,20 +734,20 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         requireRefresh = false;
                         var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType, ct)).Path;
-                            await ReloadItemsAsync(_imageCollectionContext, ct);
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
 
-                            try
-                            {
+                        try
+                        {
                             var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
-                                await ResetImageIndex(index >= 0 ? index : 0);
-                            }
-                            catch
+                            await ResetImageIndex(index >= 0 ? index : 0);
+                        }
+                        catch
+                        {
+                            if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
                             {
-                                if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
-                                {
-                                    await ResetImageIndex(0);
-                                }
+                                await ResetImageIndex(0);
                             }
+                        }
 
 
                         Debug.WriteLine("Images Updated. " + _currentImageSource.Path);
@@ -854,7 +854,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         if (imageCollectionContext is ArchiveImageCollectionContext archiveContext)
         {
             long time = TimeProvider.System.GetTimestamp();
-            for (int i = 0; i < await imageCollectionContext.GetImageFileCountAsync(ct); i++)
+            var imagesCount = await imageCollectionContext.GetImageFileCountAsync(ct);
+            for (int i = 0; i < imagesCount; i++)
             {
                 Images[i] = await imageCollectionContext.GetImageFileAtAsync(i, SelectedFileSortType, ct);
             }
