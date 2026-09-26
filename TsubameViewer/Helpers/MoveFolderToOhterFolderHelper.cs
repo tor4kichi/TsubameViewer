@@ -28,9 +28,9 @@ internal static class MoveFolderToOhterFolderHelper
                 await destFolder.CreateFolderAsync(sourceFolder.Name, CreationCollisionOption.OpenIfExists);
             else
             {
-                await destFolder.CreateFolderAsync(sourceFolder.Name, repDirOpt);
+                var copiedFolder = await destFolder.CreateFolderAsync(sourceFolder.Name, repDirOpt);
                 foreach (var file in files)
-                    copies.Add(file.CopyAsync(destFolder, file.Name, repFilesOpt).AsTask());
+                    copies.Add(file.MoveAsync(copiedFolder, file.Name, repFilesOpt).AsTask());
             }
 
             await Task.WhenAll(copies);
