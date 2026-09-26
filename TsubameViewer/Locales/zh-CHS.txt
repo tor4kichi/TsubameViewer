@@ -1,5 +1,3 @@
-お気に入りのアプリの中から AI を直接お試しください。 … Gemini を使用して下書きを生成したり、コンテンツの質を高めたりすることができます。さらに、Gemini Pro では Google の次世代 AI にアクセスできます。3 か月間、￥2,900 ￥720
-100%
 #### General
 Copy = 复制
 CopyToClipboard = 复制到剪贴板
@@ -37,6 +35,7 @@ Settings = 设置
 SourceStorageItemsPage = 我的文件夹
 TokenListType.FutureAccessList = 已注册文件夹
 TokenListType.MostRecentlyUsedList = 访问历史记录
+IsDisplayMostRecentlyUsedList = 可视化访问历史记录
 CollectionPage = 库
 OpenImageCodecExtensionStorePageWithFileType = {0} 需要安装扩展以显示图像格式。打开应用商店？
 

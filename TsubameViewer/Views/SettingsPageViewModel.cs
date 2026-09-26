@@ -116,6 +116,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, _applicationSettings.ForceXboxAppearanceModeEnabled, (x, v) => x.ForceXboxAppearanceModeEnabled = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #endif
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsFullScreenOnAppLaunch".Translate(), _applicationSettings, _applicationSettings.IsFullScreenOnAppLaunch, (x, v) => x.IsFullScreenOnAppLaunch = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsDisplayMostRecentlyUsedList".Translate(), _applicationSettings, _applicationSettings.IsDisplayMostRecentlyUsedList, (x, v) => x.IsDisplayMostRecentlyUsedList = v),
                 }
             },
             new SettingsGroupViewModel

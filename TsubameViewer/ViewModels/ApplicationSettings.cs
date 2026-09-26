@@ -16,6 +16,7 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
         _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
         _IsUINavigationFocusAssistanceEnabled = Read(false, nameof(IsUINavigationFocusAssistanceEnabled));
         _isAppMenuShowWithLeft = Read(true, nameof(IsAppMenuShowWithLeft));
+        _isDisplayMostRecentlyUsedList = Read(true, nameof(IsDisplayMostRecentlyUsedList));
     }
 
     public static string GetDefaultLocale()
@@ -68,6 +69,13 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
     {
         get => _isAppMenuShowWithLeft;
         set => SetProperty(ref _isAppMenuShowWithLeft, value);
+    }
+
+    private bool _isDisplayMostRecentlyUsedList;
+    public bool IsDisplayMostRecentlyUsedList
+    {
+        get => _isDisplayMostRecentlyUsedList;
+        set => SetProperty(ref _isDisplayMostRecentlyUsedList, value);
     }
 }
 
