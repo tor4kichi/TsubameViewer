@@ -266,7 +266,7 @@ public sealed partial class AppShell : UserControl
     void InitializeInAppNotification()
     {
         _messenger.Register<InAppNotificationRequestMessage>(this, (r, m) => 
-        {
+        {            
             ShowNotification(m.Value);
         });
 

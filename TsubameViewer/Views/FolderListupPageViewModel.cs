@@ -516,8 +516,7 @@ public sealed partial class FolderListupPageViewModel
                         if (s._imageCollectionContext is FolderImageCollectionContext folderContext
                             && await folderContext.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
-                            s.RequireRefresh = true;
-                            s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
+                            s.RequireRefresh = true;                            
                         }
                     }
                 }, AwaitOperation.Sequential)

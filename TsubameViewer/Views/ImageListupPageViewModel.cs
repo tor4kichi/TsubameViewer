@@ -560,7 +560,6 @@ public sealed partial class ImageListupPageViewModel
                                 && await folderContext.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
                             {
                                 s.RequireRefresh = true;
-                                s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
                             }
                         }
                     }, AwaitOperation.Sequential)
