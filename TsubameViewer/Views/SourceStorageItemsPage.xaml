@@ -84,7 +84,8 @@
     <!--GridViewのグループ表示を使うと並び替えが出来ないのでリストを個別に表示-->
     <Pivot HorizontalAlignment="Center" IsHeaderItemsCarouselEnabled="False"
            MaxWidth="1280"
-           x:Name="MyPivot">
+           x:Name="MyPivot"
+           SelectionChanged="MyPivot_SelectionChanged">
       <PivotItem Header="{i18nExt:Localize Key=TokenListType.FutureAccessList}"
                  Margin="0">
         <uwpControls1:AdaptiveGridView x:Name="FoldersAdaptiveGridView_Folders"

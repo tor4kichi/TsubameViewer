@@ -222,4 +222,14 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+    bool _isInitializeTempItems = false;
+    private void MyPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MyPivot.SelectedIndex == 1 && !_isInitializeTempItems)
+        {
+            _isInitializeTempItems = true;
+            _vm.OpenTempItems();
+        }
+    }
 }
