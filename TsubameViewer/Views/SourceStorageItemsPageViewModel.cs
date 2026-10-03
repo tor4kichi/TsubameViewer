@@ -104,7 +104,6 @@ public sealed partial class SourceStorageItemsPageViewModel
         }
     }
 
-    public GroupedStorageItemViewModel[] Groups { get; }
     public ObservableCollection<StorageItemViewModel> Folders { get; }
     public ObservableCollection<StorageItemViewModel> TempItems { get; }
 
@@ -140,8 +139,6 @@ public sealed partial class SourceStorageItemsPageViewModel
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
         TempItems = [];
-        Groups = [new GroupedStorageItemViewModel("TokenListType.FutureAccessList".Translate(), Folders),
-            new GroupedStorageItemViewModel("TokenListType.MostRecentlyUsedList".Translate(), TempItems)];
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _folderLastIntractItemManager = folderLastIntractItemManager;        
         _sourceChoiceCommand = sourceChoiceCommand;

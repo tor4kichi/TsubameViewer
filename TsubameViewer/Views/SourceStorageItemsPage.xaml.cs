@@ -50,7 +50,8 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     {
         this.InitializeComponent();
 
-        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+        this.FoldersAdaptiveGridView_Folders.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+        this.FoldersAdaptiveGridView_TempItems.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
         DataContext = _vm = Ioc.Default.GetRequiredService<SourceStorageItemsPageViewModel>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
