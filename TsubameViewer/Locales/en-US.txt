@@ -33,6 +33,9 @@ Import = Import
 RefreshLatest = Refresh page
 Settings = Setting
 SourceStorageItemsPage = My folder
+TokenListType.FutureAccessList = Registered folders
+TokenListType.MostRecentlyUsedList = Access history
+IsDisplayMostRecentlyUsedList = Show access history
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
 
@@ -53,6 +56,8 @@ Notification_SourceStorageItemNotFound = The specified path has been unregistere
 StorageItemDeleteConfirm_IsDeletePermanent = Completely delete files and folders.
 StorageItemDeleteConfirmTitleWithName = Do you want to delete the following items? \ n {0}
 
+#### SaveImagesDialog
+SaveImagesToArchive = Save to Archive
 
 #### App Update
 StorePackageUpdateState = Package update status
@@ -250,6 +255,7 @@ ImageViewerSettings.ScaleEffectSharpness = Sharpness
 ImageViewerSettings.ScaleEffectSharpness_Desc = You can specify how sharply edges (color boundaries) are displayed. Setting this to 0% disables the processing, resulting in a blurry display, while setting it to 100% makes the edges appear sharper.
 ImageViewerSettings.ScaleEffectInterpolation = Types of interpolation
 ImageViewerSettings.ScaleEffectInterpolation_Desc = When scaling down an image, multiple pixels are compressed into a single pixel; you can choose the method used for this process. “HighQualityCubic” produces a smoother appearance. “MultiSampleLinear” provides a well-balanced result that offers sufficient smoothness while retaining the look and feel of the original image.
+ImageViewerSettings.IsPlaySoundWhenReachingTheEnd = It makes a sound when it crosses the start and end points.
 CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
 CanvasImageInterpolation.Anisotropic = Anisotropic
 CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
@@ -258,6 +264,7 @@ CanvasImageInterpolation.Linear = Linear
 CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
 ImageViewer_GoNextPage = Go to the next page
 ImageViewer_GoPrevPage = Go to the previous page
+SaveImage = Save As
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = Clear the style by force

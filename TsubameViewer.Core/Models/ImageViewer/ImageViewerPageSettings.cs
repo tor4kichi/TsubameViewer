@@ -40,6 +40,7 @@ public sealed class ImageViewerSettings : FlagsRepositoryBase
         {
             _scaleEffectInterpolation = CanvasImageInterpolation.MultiSampleLinear;
         }
+        _isPlaySoundWhenReachingTheEnd = Read(true, nameof(IsPlaySoundWhenReachingTheEnd));
     }
 
     private bool _IsReverseImageFliping_MouseWheel;
@@ -195,5 +196,14 @@ public sealed class ImageViewerSettings : FlagsRepositoryBase
     {
         get => _scaleEffectInterpolation;
         set => SetProperty((int)_scaleEffectInterpolation, (int)value, this, (m, v) => m._scaleEffectInterpolation = (CanvasImageInterpolation)v, nameof(ScaleEffectInterpolation));
+    }
+
+
+
+    bool _isPlaySoundWhenReachingTheEnd;
+    public bool IsPlaySoundWhenReachingTheEnd
+    {
+        get => _isPlaySoundWhenReachingTheEnd;
+        set => SetProperty(ref _isPlaySoundWhenReachingTheEnd, value);
     }
 }

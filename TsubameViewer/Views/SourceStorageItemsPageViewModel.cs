@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -33,6 +34,7 @@ using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
 
 
 #nullable enable
@@ -63,6 +65,19 @@ public static class ObservableCollectionExtensions
     }
 }
 
+
+public class GroupedStorageItemViewModel
+{
+    public GroupedStorageItemViewModel(string name, ObservableCollection<StorageItemViewModel> items)
+    {
+        Name = name;
+        Items = items;
+    }
+
+    public string Name { get; }
+    public ObservableCollection<StorageItemViewModel> Items { get; }
+}
+
 public sealed partial class SourceStorageItemsPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<RemoveSourceStorageItemFromAppMessage>
@@ -73,6 +88,7 @@ public sealed partial class SourceStorageItemsPageViewModel
         if (message.Value is StorageItemViewModel itemVM)
         {
             Folders.Remove(itemVM);
+            TempItems.Remove(itemVM);
         }
     }
 
@@ -88,8 +104,9 @@ public sealed partial class SourceStorageItemsPageViewModel
         }
     }
 
-    public AdvancedCollectionView ItemsView { get; }
     public ObservableCollection<StorageItemViewModel> Folders { get; }
+    public ObservableCollection<StorageItemViewModel> TempItems { get; }
+
 
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly AlbamRepository _albamRepository;
@@ -101,6 +118,7 @@ public sealed partial class SourceStorageItemsPageViewModel
     private readonly AlbamCreateCommand _albamCreateCommand;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    public ApplicationSettings ApplicationSettings { get; }
     [ObservableProperty]
     bool _foldersInitialized = false;
 
@@ -115,17 +133,19 @@ public sealed partial class SourceStorageItemsPageViewModel
         SourceChoiceCommand sourceChoiceCommand,
         AlbamCreateCommand albamCreateCommand,
         FolderContainerTypeManager folderContainerTypeManager,
-        DisplaySettingsByPathRepository displaySettingsByPathRepository
+        DisplaySettingsByPathRepository displaySettingsByPathRepository,
+        ApplicationSettings applicationSettings
         )
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
-        ItemsView = new (Folders);
+        TempItems = [];
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _folderLastIntractItemManager = folderLastIntractItemManager;        
         _sourceChoiceCommand = sourceChoiceCommand;
         _albamCreateCommand = albamCreateCommand;
         _folderContainerTypeManager = folderContainerTypeManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        ApplicationSettings = applicationSettings;
         _bookmarkManager = bookmarkManager;
         _albamRepository = albamRepository;
         _thumbnailManager = thumbnailManager;
@@ -151,7 +171,7 @@ public sealed partial class SourceStorageItemsPageViewModel
             }
             else
             {
-                //                    RecentlyItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                TempItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
             }
         });
 
@@ -267,16 +287,49 @@ public sealed partial class SourceStorageItemsPageViewModel
             })
             .RegisterTo(ct);
 
-        
         await base.OnNavigatedToAsync(parameters, ct);
+    }
+
+    public async void OpenTempItems()
+    {
+        await LoadingTempItemsAsync(default);
+    }
+
+    async Task LoadingTempItemsAsync(CancellationToken ct)
+    {
+        try
+        {
+            TempItems.Clear();
+            //if (ApplicationSettings.IsDisplayMostRecentlyUsedList)
+            {
+                var items = await _sourceStorageItemsRepository.GetTemporaryItems(ct)
+                    .Select(x => new StorageItemViewModel(new StorageItemImageSource(x.item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository))
+                    .ToListAsync(ct);
+                items.Sort(_comparison);
+                foreach (var item in items)
+                {
+                    TempItems.Add(item);
+                }
+            }
+        }
+        catch (AggregateException ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
     }
 
     void RemoveItem(string path)
     {
-        var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == path);
+        var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
         if (existInFolders != null)
         {
             Folders.Remove(existInFolders);
+        }
+
+        var existInTempItems = TempItems.FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
+        if (existInTempItems != null)
+        {
+            TempItems.Remove(existInTempItems);
         }
     }
 

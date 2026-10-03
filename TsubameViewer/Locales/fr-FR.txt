@@ -33,6 +33,9 @@ Import = Importer
 RefreshLatest = Actualiser la page
 Settings = Paramètres
 SourceStorageItemsPage = Mon dossier
+TokenListType.FutureAccessList = Dossiers enregistrés
+TokenListType.MostRecentlyUsedList = Historique d'accès
+IsDisplayMostRecentlyUsedList = Visualiser l'historique d'accès
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} Une extension est nécessaire pour afficher ce format d'image. Voulez-vous ouvrir le store ?
 
@@ -53,6 +56,8 @@ Notification_SourceStorageItemNotFound = Le chemin spécifié a été désenregi
 StorageItemDeleteConfirm_IsDeletePermanent = Supprimer complètement les fichiers et les dossiers.
 StorageItemDeleteConfirmTitleWithName = Voulez-vous supprimer les éléments suivants ? \ n {0}
 
+#### SaveImagesDialog
+SaveImagesToArchive = Enregistrer dans les archives
 
 #### App Update
 StorePackageUpdateState = État de la mise à jour du paquet
@@ -236,7 +241,7 @@ ZoomIn = Agrandir
 ZoomOut = Réduire
 IsEnableDoubleView = Affichage sur double page
 IsLeftBindingView = Tourner la page de droite
-IsLeftBindingView_Desc = Veuillez choisir le sens de lecture. Dans les mangas japonais, on tourne la page vers la gauche. 
+IsLeftBindingView_Desc = Veuillez choisir le sens de lecture. Dans les mangas japonais, on tourne la page vers la gauche.
 PageReadingOrder = Sens de lecture
 PageReadingOrder.Left = Tourner la page vers la gauche
 PageReadingOrder.Right = Tourner la page vers la droite
@@ -250,6 +255,7 @@ ImageViewerSettings.ScaleEffectSharpness = Acuité
 ImageViewerSettings.ScaleEffectSharpness_Desc = Vous pouvez définir le niveau de netteté des contours (zones de transition entre les couleurs). Si vous réglez ce paramètre sur 0 %, aucun traitement n'est appliqué et l'image apparaît floue ; si vous le réglez sur 100 %, les contours sont affichés de manière plus nette.
 ImageViewerSettings.ScaleEffectInterpolation = Types d'interpolation
 ImageViewerSettings.ScaleEffectInterpolation_Desc = Lors de la réduction d’une image, plusieurs pixels sont compressés en un seul pixel ; vous pouvez choisir la méthode de traitement. « HighQualityCubic » offre un rendu plus lisse. « MultiSampleLinear » offre un résultat équilibré, alliant une fluidité suffisante à la conservation de l’aspect de l’image d’origine.
+ImageViewerSettings.IsPlaySoundWhenReachingTheEnd = Il émet un son lorsqu'il franchit les points de départ et d'arrivée.
 CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
 CanvasImageInterpolation.Anisotropic = Anisotrope
 CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
@@ -258,6 +264,7 @@ CanvasImageInterpolation.Linear = Linéaire
 CanvasImageInterpolation.NearestNeighbor = Voisin le plus proche
 ImageViewer_GoNextPage = Aller à la page suivante
 ImageViewer_GoPrevPage = Aller à la page précédente
+SaveImage = Enregistrer sous
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = Effacer le style par la force

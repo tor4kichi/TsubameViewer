@@ -286,7 +286,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
         OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-        SecondaryWindowService secondaryWindowService
+        SecondaryWindowService secondaryWindowService,
+        SaveImageCommand saveImageCommand
         )
     {
         _messenger = messenger;
@@ -313,6 +314,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _secondaryWindowService = secondaryWindowService;
+        SaveImageCommand = saveImageCommand;
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
 
         ClearDisplayImages();
@@ -734,20 +736,20 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     {
                         requireRefresh = false;
                         var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType, ct)).Path;
-                            await ReloadItemsAsync(_imageCollectionContext, ct);
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
 
-                            try
-                            {
+                        try
+                        {
                             var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
-                                await ResetImageIndex(index >= 0 ? index : 0);
-                            }
-                            catch
+                            await ResetImageIndex(index >= 0 ? index : 0);
+                        }
+                        catch
+                        {
+                            if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
                             {
-                                if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
-                                {
-                                    await ResetImageIndex(0);
-                                }
+                                await ResetImageIndex(0);
                             }
+                        }
 
 
                         Debug.WriteLine("Images Updated. " + _currentImageSource.Path);
@@ -854,7 +856,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         if (imageCollectionContext is ArchiveImageCollectionContext archiveContext)
         {
             long time = TimeProvider.System.GetTimestamp();
-            for (int i = 0; i < await imageCollectionContext.GetImageFileCountAsync(ct); i++)
+            var imagesCount = await imageCollectionContext.GetImageFileCountAsync(ct);
+            for (int i = 0; i < imagesCount; i++)
             {
                 Images[i] = await imageCollectionContext.GetImageFileAtAsync(i, SelectedFileSortType, ct);
             }
@@ -1009,20 +1012,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
 
                 // 最後尾から先頭にジャンプした場合に音を鳴らす
-                if (isJumpHeadTail)
+                if (isJumpHeadTail && ImageViewerSettings.IsPlaySoundWhenReachingTheEnd)
                 {
                     ElementSoundPlayer.State = ElementSoundPlayerState.On;
-                    ElementSoundPlayer.Volume = 1.0;
+                    ElementSoundPlayer.Volume = 1;
                     ElementSoundPlayer.Play(ElementSoundKind.Invoke);
 
                     DispatcherQueue.GetForCurrentThread().TryEnqueue(async () =>
                     {
-                        await Task.Delay(500);
                         using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                         {
+                            await Task.Delay(250);
                             ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
                         }
-
                     });
                 }
 
@@ -1372,6 +1374,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
+    public SaveImageCommand SaveImageCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RefreshNavigationCommand RefreshCommand { get; }
 

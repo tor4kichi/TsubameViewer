@@ -33,6 +33,9 @@ Import = インポート
 RefreshLatest = ページを更新
 Settings = 設定
 SourceStorageItemsPage = Myフォルダ
+TokenListType.FutureAccessList = 登録フォルダ
+TokenListType.MostRecentlyUsedList = アクセス履歴
+IsDisplayMostRecentlyUsedList = アクセス履歴を表示する
 CollectionPage = コレクション
 OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
 
@@ -53,6 +56,8 @@ Notification_SourceStorageItemNotFound = 指定されたパスは登録解除済
 StorageItemDeleteConfirm_IsDeletePermanent = ファイル・フォルダを完全に削除する
 StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
 
+#### SaveImagesDialog
+SaveImagesToArchive = アーカイブに保存
 
 #### App Update
 StorePackageUpdateState = パッケージ更新の状態
@@ -250,6 +255,7 @@ ImageViewerSettings.ScaleEffectSharpness = シャープネス
 ImageViewerSettings.ScaleEffectSharpness_Desc = エッジ（色の境界部分）の鮮明に表示する度合いを指定できます。 0%は何も処理せずボカした表示になり、100%にすると境界がより鮮明に表示されます。
 ImageViewerSettings.ScaleEffectInterpolation = 補間処理の種類
 ImageViewerSettings.ScaleEffectInterpolation_Desc = 画像を縮小表示する際、複数ピクセルを１ピクセルに圧縮しますが、その処理方法を選べます。HighQualityCubicはより滑らかに見えます。MultiSampleLinearは十分な滑らかさと元の画像の印象が残るバランスがよいです。
+ImageViewerSettings.IsPlaySoundWhenReachingTheEnd = 始端と終端を跨いだ時に音を鳴らす
 CanvasImageInterpolation.HighQualityCubic = HighQualityCubic
 CanvasImageInterpolation.Anisotropic = Anisotropic
 CanvasImageInterpolation.MultiSampleLinear = MultiSampleLinear
@@ -258,6 +264,7 @@ CanvasImageInterpolation.Linear = Linear
 CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
 ImageViewer_GoNextPage = 次ページへ移動
 ImageViewer_GoPrevPage = 前ページへ移動
+SaveImage = 名前をつけて保存
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = スタイルを強制的にクリア

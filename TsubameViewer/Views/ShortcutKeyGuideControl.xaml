@@ -8,6 +8,7 @@
              xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
              xmlns:uwpControls="using:CommunityToolkit.WinUI.Controls"
              xmlns:ctwu="using:CommunityToolkit.WinUI"
+             xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
              mc:Ignorable="d"
     d:DesignHeight="300"
     d:DesignWidth="400">
@@ -25,17 +26,14 @@
               uwpControls:DockPanel.Dock="Top" />
       <ScrollViewer>
 
-        <ItemsControl x:Name="ShortcutKeyItemsControl"
+        <muxc:ItemsRepeater x:Name="ShortcutKeyItemsControl"
                       ItemsSource="{x:Bind ShortcutKeys, Mode=OneWay}"
                       DataContext="{x:Null}"
                       Margin="32 24 32 48">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Spacing="8"
-                          Orientation="Vertical" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
+          <muxc:ItemsRepeater.Layout>
+            <muxc:StackLayout Spacing="16" />
+          </muxc:ItemsRepeater.Layout>
+          <muxc:ItemsRepeater.ItemTemplate>
             <DataTemplate x:DataType="local:ShortcutKeyInfo">
               <Grid MinHeight="32">
                 <Grid.ColumnDefinitions>
@@ -43,7 +41,7 @@
                   <ColumnDefinition Width="1*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Label}"
+                <TextBlock Text="{x:Bind Label}"
                            Grid.Column="0"
                            TextWrapping="Wrap"
                            MaxWidth="320"
@@ -60,8 +58,8 @@
                            Grid.Column="2" />
               </Grid>
             </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+          </muxc:ItemsRepeater.ItemTemplate>
+        </muxc:ItemsRepeater>
       </ScrollViewer>
     </uwpControls:DockPanel>
   </Grid>

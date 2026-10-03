@@ -73,7 +73,11 @@ public sealed class SelectionContext : ObservableObject
     public void EndSelection()
     {
         IsSelectionModeEnabled = false;
-        SelectedItems.Clear();
+        foreach (var itemVM in SelectedItems)
+        {
+            itemVM.IsSelected = false;
+        }
+        SelectedItems.Clear();        
     }
 }
 
@@ -123,15 +127,21 @@ public sealed partial class ImageListupPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
-    Regex? _migemoQueryRegex;
+    readonly List<Regex> _migemoQueryRegexItems = [];
 
     public void Receive(StorageItemNotFoundMessage message)
     {
         var item = ImageFileItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
         if (item != null)
         {
-            ImageFileItems.Remove(item);            
-        }
+            ImageFileItems.Remove(item);
+            Selection.SelectedItems.Remove(item);            
+            FileItemsView.Refresh();
+            if (_imageCollectionContext is FolderImageCollectionContext imageCollection)
+            {
+                imageCollection.Context.DecrementImagesCountOnRemovedOuter();
+            }
+        }        
     }
 
     public void Receive(ImageSourceFavoriteChanged message)
@@ -172,6 +182,7 @@ public sealed partial class ImageListupPageViewModel
 
     public FileDeleteCommand FileDeleteCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
+    public SaveImagesToArchiveCommand SaveImagesToArchiveCommand { get; }
     public RangeObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
     public AdvancedCollectionView FileItemsView { get; }
@@ -266,7 +277,8 @@ public sealed partial class ImageListupPageViewModel
         OpenImageViewerCommand openImageViewerCommand,
         FileDeleteCommand fileDeleteCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
-        FavoriteToggleCommand favoriteToggleCommand
+        FavoriteToggleCommand favoriteToggleCommand,
+        SaveImagesToArchiveCommand saveImagesToArchiveCommand
         )
     {
         _messenger = messenger;
@@ -282,6 +294,7 @@ public sealed partial class ImageListupPageViewModel
         OpenImageViewerCommand = openImageViewerCommand;
         FileDeleteCommand = fileDeleteCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
+        SaveImagesToArchiveCommand = saveImagesToArchiveCommand;
         ImageFileItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
         FileItemsView.Filter = s =>
@@ -290,7 +303,7 @@ public sealed partial class ImageListupPageViewModel
             if (IsFavoriteFilteredDisplayEnabled && !itemVM.IsFavorite) { return false; }
             if (string.IsNullOrEmpty(itemVM.Name)) { return true; }
             if (string.IsNullOrWhiteSpace(_filterText)) { return true; }
-            if (_migemoQueryRegex?.IsMatch(itemVM.Name) == true) { return true; }
+            if (_migemoQueryRegexItems.All(x => x.IsMatch(itemVM.Name) == true)) { return true; }
             return itemVM.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
         };        
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
@@ -517,18 +530,17 @@ public sealed partial class ImageListupPageViewModel
                         }
                         s._filterQueryCts = new CancellationTokenSource();
                         var lastQueryCt = s._filterQueryCts.Token;
+                        s._migemoQueryRegexItems.Clear();
                         if (s._folderListingSettings.IsInPageSearchWithMigemo)
                         {
                             try
                             {
-                                s._migemoQueryRegex = MigemoService.Query(x);
+                                s._migemoQueryRegexItems.AddRange(
+                                    x.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(MigemoService.Query));
                             }
-                            catch
-                            {
-                                s._migemoQueryRegex = null;
-                            }
+                            catch { }
                         }
-                        else { s._migemoQueryRegex = null; }
 
                         if (s.NowLoadingItems) { return; }
                         s.FileItemsView.RefreshFilter(lastQueryCt);
@@ -551,7 +563,6 @@ public sealed partial class ImageListupPageViewModel
                                 && await folderContext.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
                             {
                                 s.RequireRefresh = true;
-                                s._messenger.SendShowTextNotificationMessage("ListupPage_DetectContentsChanged".Translate());
                             }
                         }
                     }, AwaitOperation.Sequential)

@@ -429,28 +429,36 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _playPauseToggleAnimationCts = null;
         }        
 
-        _mediaPlayer.Pause();
-        _audioPlayer.Pause();
-        _mouseCursorAutoHideTimer?.Stop();
-        _mouseCursorAutoHideTimer = null;
-        ShowMouseCursor();
-        _mediaPlayer.Source = null;
-        _audioPlayer.Source = null;
-
-        if (_windowContext.IsPrimary)
+        try
         {
-            d().FireAndForgetSafe();
+            _mediaPlayer?.Pause();
+            _audioPlayer.Pause();
+            _mouseCursorAutoHideTimer?.Stop();
+            _mouseCursorAutoHideTimer = null;
+            ShowMouseCursor();
+
+            if (_windowContext.IsPrimary)
+            {
+                d().FireAndForgetSafe();
+            }
+        }
+        finally
+        {
+            // 動画の破棄動作が重い場合に、UI要素が先にUnloadedになってしまうとアニメーションに失敗する
+            _mediaPlayer?.Source = null;
+            _audioPlayer.Source = null;
         }
 
         async Task d()
         {
             bool isRotate = _vm.PageSettings.IsPlayerRotateEnabled && _mediaPlayer.PlaybackSession.PlaybackRotation is MediaRotation.Clockwise90Degrees or MediaRotation.Clockwise270Degrees;
             bool isStretchAsFill = PlayerScale.ScaleX != 1;
-            if (_vm.MovieFile?.Path is { } itemPath
+            var imageContainer = PlayerContainer;
+            if (imageContainer .IsLoaded
+                && _vm.MovieFile?.Path is { } itemPath
                 && !isRotate
                 && !isStretchAsFill)
             {
-                var imageContainer = PlayerContainer;
                 RefreshPlayerContainerSize(_mediaPlayer, PlayerContainer, PageRoot);
                 var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
                 var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
@@ -580,7 +588,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         var insideControlUIRp = Observable.Merge(
                 ImageSelectorContainer.ObservePointerEntered().Select(x => true),
-                ImageSelectorContainer.ObservePointerExited().Select(x => false))
+                ImageSelectorContainer.ObservePointerExited().Select(x => false),
+                OpenPrevFileButton.ObservePointerEntered().Select(x => true),
+                OpenPrevFileButton.ObservePointerExited().Select(x => false),
+                OpenNextFileButton.ObservePointerEntered().Select(x => true),
+                OpenNextFileButton.ObservePointerExited().Select(x => false))
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside ControlUI: {x}"))
 #endif
@@ -600,7 +612,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 && PlayerState == MediaPlaybackState.Playing                
                 && !IsFlyoutOpen
                 && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed
-                && VideoEffectUIContainer.Visibility == Visibility.Collapsed)
+                && VideoEffectUIContainer.Visibility == Visibility.Collapsed
+                && _windowContext.IsActive)
             {
                 HideMouseCursor();  
             }
@@ -1569,7 +1582,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void HideMouseCursor()
     {
         if (!IsPointerInsideWindow()) { return; }
-
+        
         if (Window.Current.CoreWindow.PointerCursor != null)
         {
             _lastCursor = Window.Current.CoreWindow.PointerCursor;

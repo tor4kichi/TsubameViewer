@@ -635,7 +635,7 @@
                         IsEnabled="False"
                         Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}"
                         ctwu:FrameworkElementExtensions.Cursor="Hand" />
-                <TextBlock Text="{x:Bind SelectedCountDisplayText, Mode=OneWay}"
+                <TextBlock Text="{x:Bind _vm.Selection.SelectedItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='ImageSelection_SelectedCount'}"
                            VerticalAlignment="Center"
                            Margin="48 0" />
                 <TextBlock Text="{i18nExt:Localize Key=ImageListupPage_DragAndDrop_Unsupported}"
@@ -675,6 +675,22 @@
                   <KeyboardAccelerator Key="O" />
                 </AppBarButton.KeyboardAccelerators>
               </AppBarButton>
+              <AppBarButton x:Name="SaveImagesToFolderButton"
+                            Label="{i18nExt:Localize Key=SaveImagesToArchive}"
+                            Command="{x:Bind _vm.SaveImagesToArchiveCommand}"
+                            CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
+                            AccessKey="C"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}"
+                            ctwu:FrameworkElementExtensions.Cursor="Hand">
+                <AppBarButton.Icon>
+                  <SymbolIcon Symbol="Pictures" />
+                </AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="B" />
+                </AppBarButton.KeyboardAccelerators>
+              </AppBarButton>
+
               <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
                             Label="{i18nExt:Localize Key=Delete}"
                             Command="{x:Bind _vm.FileDeleteCommand}"

@@ -116,6 +116,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, _applicationSettings.ForceXboxAppearanceModeEnabled, (x, v) => x.ForceXboxAppearanceModeEnabled = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #endif
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsFullScreenOnAppLaunch".Translate(), _applicationSettings, _applicationSettings.IsFullScreenOnAppLaunch, (x, v) => x.IsFullScreenOnAppLaunch = v) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                    //new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsDisplayMostRecentlyUsedList".Translate(), _applicationSettings, _applicationSettings.IsDisplayMostRecentlyUsedList, (x, v) => x.IsDisplayMostRecentlyUsedList = v),
                 }
             },
             new SettingsGroupViewModel
@@ -158,6 +159,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         1.00,
                         0.01,
                         f => _imageViewerPageSettings.ScaleEffectSharpness = (float) f),
+                    new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("ImageViewerSettings.IsPlaySoundWhenReachingTheEnd".Translate(), _imageViewerPageSettings, _imageViewerPageSettings.IsPlaySoundWhenReachingTheEnd, (x, v) => x.IsPlaySoundWhenReachingTheEnd = v),
+
                 }
             },
             new SettingsGroupViewModel
@@ -264,14 +267,14 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         (x, v) => x.IsInPageSearchWithMigemo = v),                    
                 }
             },
-            new SettingsGroupViewModel
-            {
-                Label = "SourceFoldersSettings".Translate(),
-                Items =
-                {
-                    new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
-                }
-            },
+            //new SettingsGroupViewModel
+            //{
+            //    Label = "SourceFoldersSettings".Translate(),
+            //    Items =
+            //    {
+            //        new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
+            //    }
+            //},
             //new SettingsGroupViewModel
             //{
             //    Label = "OtherSettings".Translate(),

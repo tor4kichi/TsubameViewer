@@ -248,7 +248,7 @@ public sealed class SyncStorageCacheService :
         {
             var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
 
-            Debug.WriteLine($"除去対象のトークン {token}");
+            Debug.WriteLine($"除去対象のトークン {token.Token}");
             // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
             if (item is StorageFolder folder)
             {
@@ -275,7 +275,7 @@ public sealed class SyncStorageCacheService :
             }
 
             Debug.WriteLine($"StorageSourceから当該トークンを削除 {token}");
-            _storageItemsRepository.RemoveFolder(token);
+            _storageItemsRepository.RemoveFolder(token.Token);
             Debug.WriteLine($"全ての除去処理を完了しました {path}");
         }
         catch (Exception ex)

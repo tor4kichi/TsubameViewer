@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.WinUI.Helpers;
+using DryIoc;
 using R3;
 using R3.Extensions;
 using System;
@@ -247,6 +248,7 @@ public interface IWindowManagementAware : INotifyPropertyChanged
 {
     bool IsPrimary { get; }
     bool IsSecondary { get; }
+    bool IsActive { get; }
     bool TryEnterFullScreenMode();
     void ExitFullScreenMode();
     bool IsFullScreenMode { get; }
@@ -267,8 +269,17 @@ public sealed partial class PrimaryWindowFacade : ObservableObject, IWindowManag
     {
         _appView = appView;
         _titleBar = titleBar;
-        _titleBar.IsVisibleChanged += _titleBar_IsVisibleChanged;        
+        _titleBar.IsVisibleChanged += _titleBar_IsVisibleChanged;
+        Window.Current.Activated += Current_Activated;
     }
+
+    private void Current_Activated(object sender, Windows.UI.Core.WindowActivatedEventArgs e)
+    {
+        IsActive = e.WindowActivationState != Windows.UI.Core.CoreWindowActivationState.Deactivated;
+    }
+
+    [ObservableProperty]
+    bool _isActive = true;
 
     private void _titleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
     {
@@ -313,9 +324,11 @@ public sealed partial class SecondaryWindowItem : ObservableObject, IWindowManag
 
     public bool IsPrimary => false;
     public bool IsSecondary => true;
-    
+    public bool IsActive => true;
+
     [ObservableProperty]
     bool _isFullScreenMode = false;
+
     public bool TryEnterFullScreenMode()
     {
         var result = AppWindow.Presenter.RequestPresentation(AppWindowPresentationKind.FullScreen);

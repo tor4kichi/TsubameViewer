@@ -535,7 +535,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     private void FoldersAdaptiveGridView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
         e.Data.Properties.Add("MyCustomDroppedItems", e.Items.ToList());
-        FolderSelectionSplitView.IsPaneOpen = true;
     }
 
     async Task InitializeMoveToFolders(CancellationToken ct)

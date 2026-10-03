@@ -225,10 +225,8 @@
         <TextBlock Text="{x:Bind  Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
         <ItemsControl ItemsSource="{x:Bind  Items}"
                       ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
-                      HorizontalAlignment="Stretch"                      
-                      IsTabStop="False"
-                        >
-        </ItemsControl>
+                      HorizontalAlignment="Stretch"
+                      IsTabStop="False" />
       </StackPanel>
     </DataTemplate>
 
@@ -314,20 +312,17 @@
       <ScrollViewer>
         <StackPanel x:Name="ScrollViewerRootPanel" Padding="48 0 48 64">
           
-          <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
+          <winui:ItemsRepeater ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                         Margin="0 16"
-                        IsTabStop="False"
                         HorizontalAlignment="Stretch"
                         MaxWidth="600"
                         x:Name="SettingsItemsControl"
                       >
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="16" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-          </ItemsControl>
+            <winui:ItemsRepeater.Layout>
+              <winui:StackLayout Spacing="16" />
+            </winui:ItemsRepeater.Layout>
+          </winui:ItemsRepeater>
 
           <TextBlock Text="{i18Ext:Localize Key=AppInformation}"
                      Style="{StaticResource SubtitleTextBlockStyle}" />
