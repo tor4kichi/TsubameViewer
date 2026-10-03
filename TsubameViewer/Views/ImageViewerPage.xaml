@@ -722,6 +722,16 @@
                       <KeyboardAccelerator Key="T" />
                     </MenuFlyoutItem.KeyboardAccelerators>
                   </MenuFlyoutItem>
+                  <MenuFlyoutItem x:Name="Page1SaveImageButton"
+                                  AccessKey="S"
+                                  Text="{i18nExt:Localize Key=SaveImage}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}"
+                                  Command="{x:Bind _vm.SaveImageCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="S"
+                                           Modifiers="Control"/>
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
                   <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
                   <MenuFlyoutItem x:Name="Page1OpenWithExplorerButton"
                                   AccessKey="G"
@@ -804,6 +814,16 @@
                                   Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
                     <MenuFlyoutItem.KeyboardAccelerators>
                       <KeyboardAccelerator Key="T" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem x:Name="Page2SaveImageButton"
+                                  AccessKey="S"                                  
+                                  Text="{i18nExt:Localize Key=SaveImage}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}"
+                                  Command="{x:Bind _vm.SaveImageCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="S"
+                                           Modifiers="Control" />
                     </MenuFlyoutItem.KeyboardAccelerators>
                   </MenuFlyoutItem>
                   <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />

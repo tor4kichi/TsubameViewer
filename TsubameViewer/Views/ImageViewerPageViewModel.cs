@@ -286,7 +286,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
         OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-        SecondaryWindowService secondaryWindowService
+        SecondaryWindowService secondaryWindowService,
+        SaveImageCommand saveImageCommand
         )
     {
         _messenger = messenger;
@@ -313,6 +314,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _secondaryWindowService = secondaryWindowService;
+        SaveImageCommand = saveImageCommand;
         _windowContext = _secondaryWindowService.GetCurentFocusWindow();
 
         ClearDisplayImages();
@@ -1372,6 +1374,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
+    public SaveImageCommand SaveImageCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RefreshNavigationCommand RefreshCommand { get; }
 

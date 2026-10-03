@@ -262,6 +262,7 @@ CanvasImageInterpolation.Linear = Linear
 CanvasImageInterpolation.NearestNeighbor = NearestNeighbor
 ImageViewer_GoNextPage = 次ページへ移動
 ImageViewer_GoPrevPage = 前ページへ移動
+SaveImage = 名前をつけて保存
 
 #### EBookReaderPage
 IsForceResetStylingInHeadElement = スタイルを強制的にクリア
