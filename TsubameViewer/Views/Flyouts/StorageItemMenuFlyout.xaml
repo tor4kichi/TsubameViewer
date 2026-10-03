@@ -25,7 +25,12 @@
   <MenuFlyoutItem x:Name="ResetThumbnailImageMenuItem"
                   Text="{i18nExt:Localize Key=ResetThumbnailImage}" />
 
+  <MenuFlyoutItem x:Name="SaveImageMenuItem"
+                  Text="{i18nExt:Localize Key=SaveImage}" />
+  
   <MenuFlyoutItem x:Name="ToggleReadingFinishedStateItem" />
+
+  
   
   <MenuFlyoutSubItem x:Name="SelectItemsSubItem" Text="{i18nExt:Localize Key=SelectItems_ActionAs}">
     <MenuFlyoutItem x:Name="SelectedItems_AddFavariteImageMenuItem" />
