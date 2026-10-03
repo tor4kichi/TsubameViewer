@@ -44,6 +44,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();
         SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteToggleCommand>();
         SaveImageMenuItem.Command = Ioc.Default.GetService<SaveImageCommand>();
+        SaveArchiveDirectoryMenuItem.Command = Ioc.Default.GetService<SaveArchiveDirectoryToArchiveCommand>();
         StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
         AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
         RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
@@ -110,7 +111,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             ResetThumbnailImageMenuItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.EBook or Core.Models.StorageItemTypes.Movie).TrueToVisible();
 
             SaveImageMenuItem.CommandParameter = itemVM;
-            SaveImageMenuItem.Visibility = (!IsRootPage && (itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.AlbamImage)).TrueToVisible();            
+            SaveImageMenuItem.Visibility = (!IsRootPage && (itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.AlbamImage)).TrueToVisible();
+
+            SaveArchiveDirectoryMenuItem.CommandParameter = itemVM;
+            SaveArchiveDirectoryMenuItem.Visibility = (!IsRootPage && (itemVM.Type is Core.Models.StorageItemTypes.ArchiveFolder)).TrueToVisible();
 
             RemoveFromAccessListMenuItem.CommandParameter = itemVM;
             RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
@@ -156,6 +160,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             SaveImageMenuItem.CommandParameter = null;
             SaveImageMenuItem.Visibility = Visibility.Collapsed;
 
+            SaveArchiveDirectoryMenuItem.CommandParameter = itemVM;
+            SaveArchiveDirectoryMenuItem.Visibility = (!IsRootPage && (itemVM.Type is Core.Models.StorageItemTypes.ArchiveFolder)).TrueToVisible();
+
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
@@ -187,6 +194,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             SaveImageMenuItem.CommandParameter = itemVM;
             SaveImageMenuItem.Visibility = Visibility.Visible;
+
+            SaveArchiveDirectoryMenuItem.CommandParameter = null;
+            SaveArchiveDirectoryMenuItem.Visibility = Visibility.Collapsed;
 
             RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
 
@@ -220,6 +230,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             SaveImageMenuItem.CommandParameter = itemVM;
             SaveImageMenuItem.Visibility = Visibility.Collapsed;
+
+            SaveArchiveDirectoryMenuItem.CommandParameter = null;
+            SaveArchiveDirectoryMenuItem.Visibility = Visibility.Collapsed;
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;

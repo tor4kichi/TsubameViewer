@@ -190,6 +190,7 @@
     <Compile Include="ViewModels\PageNavigation\NavigationCompletedMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\PreNavigationNotifyMessage.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ResetThumbnailImageCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\SaveArchiveDirectoryToArchiveCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SaveImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SaveImagesToArchiveCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />

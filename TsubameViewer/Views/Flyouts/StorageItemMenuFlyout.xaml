@@ -27,7 +27,8 @@
 
   <MenuFlyoutItem x:Name="SaveImageMenuItem"
                   Text="{i18nExt:Localize Key=SaveImage}" />
-  
+  <MenuFlyoutItem x:Name="SaveArchiveDirectoryMenuItem"
+                  Text="{i18nExt:Localize Key=SaveImagesToArchive}" />
   <MenuFlyoutItem x:Name="ToggleReadingFinishedStateItem" />
 
   

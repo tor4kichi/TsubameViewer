@@ -87,6 +87,16 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
         return imageSource;
     }
 
+    public List<IImageSource> GetChildItems()
+    {
+        var childItems = _imageCollection.GetSubDirectories(_directoryToken)
+            .Select(token => (IImageSource)new ArchiveDirectoryImageSource(_imageCollection, token))
+            .ToList();
+
+        childItems.AddRange(_imageCollection.GetImagesFromDirectory(_directoryToken));
+        return childItems;
+    }
+
     public bool IsContainsImage()
     {
         return _directoryToken.FileIndexes.Length > 0;
