@@ -56,6 +56,8 @@ Notification_SourceStorageItemNotFound = Le chemin spécifié a été désenregi
 StorageItemDeleteConfirm_IsDeletePermanent = Supprimer complètement les fichiers et les dossiers.
 StorageItemDeleteConfirmTitleWithName = Voulez-vous supprimer les éléments suivants ? \ n {0}
 
+#### SaveImagesDialog
+SaveImagesToArchive = Enregistrer dans les archives
 
 #### App Update
 StorePackageUpdateState = État de la mise à jour du paquet

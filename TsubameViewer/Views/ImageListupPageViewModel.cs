@@ -182,6 +182,7 @@ public sealed partial class ImageListupPageViewModel
 
     public FileDeleteCommand FileDeleteCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
+    public SaveImagesToArchiveCommand SaveImagesToArchiveCommand { get; }
     public RangeObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
     public AdvancedCollectionView FileItemsView { get; }
@@ -276,7 +277,8 @@ public sealed partial class ImageListupPageViewModel
         OpenImageViewerCommand openImageViewerCommand,
         FileDeleteCommand fileDeleteCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
-        FavoriteToggleCommand favoriteToggleCommand
+        FavoriteToggleCommand favoriteToggleCommand,
+        SaveImagesToArchiveCommand saveImagesToArchiveCommand
         )
     {
         _messenger = messenger;
@@ -292,6 +294,7 @@ public sealed partial class ImageListupPageViewModel
         OpenImageViewerCommand = openImageViewerCommand;
         FileDeleteCommand = fileDeleteCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
+        SaveImagesToArchiveCommand = saveImagesToArchiveCommand;
         ImageFileItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
         FileItemsView.Filter = s =>

@@ -56,6 +56,8 @@ Notification_SourceStorageItemNotFound = 指定されたパスは登録解除済
 StorageItemDeleteConfirm_IsDeletePermanent = ファイル・フォルダを完全に削除する
 StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
 
+#### SaveImagesDialog
+SaveImagesToArchive = アーカイブに保存
 
 #### App Update
 StorePackageUpdateState = パッケージ更新の状態
