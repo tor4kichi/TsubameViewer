@@ -612,7 +612,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 && PlayerState == MediaPlaybackState.Playing                
                 && !IsFlyoutOpen
                 && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed
-                && VideoEffectUIContainer.Visibility == Visibility.Collapsed)
+                && VideoEffectUIContainer.Visibility == Visibility.Collapsed
+                && _windowContext.IsActive)
             {
                 HideMouseCursor();  
             }
@@ -1581,7 +1582,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void HideMouseCursor()
     {
         if (!IsPointerInsideWindow()) { return; }
-
+        
         if (Window.Current.CoreWindow.PointerCursor != null)
         {
             _lastCursor = Window.Current.CoreWindow.PointerCursor;
