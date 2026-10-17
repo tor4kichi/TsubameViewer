@@ -827,6 +827,16 @@ public sealed partial class ImageListupPageViewModel
                     }
                 }
 
+                // 初回読み込み時に確実に画像サイズが指定されるように
+                // こうしないと横幅いっぱいに表示される問題が生じる
+                if (imageCollectionContext is ArchiveImageCollectionContext)
+                {
+                    foreach (var itemVM in ImageFileItems)
+                    {
+                        await itemVM.EnsureImageSizeRatioAsync(ct);
+                    }
+                }
+
                 Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
                 NowLoadingItems = false;
             }
