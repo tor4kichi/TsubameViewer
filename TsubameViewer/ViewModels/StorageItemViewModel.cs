@@ -166,7 +166,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IStorageIte
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
-        ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
     }
 
     CancellationTokenSource? _manualCts;

@@ -773,14 +773,15 @@ public sealed class ThumbnailImageManager
 #endif
     }
 
-
-    readonly static QueryOptions _coverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByDate, SupportedFileTypesHelper.SupportedImageFileExtensions)
+    // Note: OrderByDateでは列挙できないフォルダがあるためOrderByNameを指定する
+    // https://learn.microsoft.com/ja-jp/uwp/api/windows.storage.search.commonfilequery?view=winrt-28000
+    readonly static QueryOptions _coverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions)
     {
         FolderDepth = FolderDepth.Deep,
         ApplicationSearchFilter = "System.FileName:*cover*"
     };
 
-    readonly static QueryOptions _allSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByDate, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
+    readonly static QueryOptions _allSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
 
     private async Task<StorageFile?> GetCoverThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
     {

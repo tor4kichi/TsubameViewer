@@ -241,8 +241,24 @@ sealed partial class App : Application
         });
     }
 
+    bool _hasHandledInitialActivation;
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        var isPrelaunch = args is LaunchActivatedEventArgs launchArgs
+                && launchArgs.PrelaunchActivated;
+
+        if (args is LaunchActivatedEventArgs && !isPrelaunch && _hasHandledInitialActivation)
+        {
+            Window.Current.Activate();
+            return;
+        }
+
+        if (!isPrelaunch)
+        {
+            _hasHandledInitialActivation = true;
+        }
+
         AsyncTaskErrorHandler.Handle(this, async (s) =>
         {
             await s.InitializeAsync();
@@ -287,7 +303,7 @@ sealed partial class App : Application
         {
             SystemInformation.Instance.TrackAppUse(activated);
         }
-        
+
         if (args is LaunchActivatedEventArgs launchActivatedEvent
             && launchActivatedEvent.PrelaunchActivated == false
             && !string.IsNullOrEmpty(launchActivatedEvent.Arguments)

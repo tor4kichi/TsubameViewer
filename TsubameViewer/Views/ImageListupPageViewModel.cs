@@ -415,10 +415,57 @@ public sealed partial class ImageListupPageViewModel
                 (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                 if (await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
-                    RequireRefresh = false;
+                    bool isDiffUpdate = RequireRefresh;                    
                     FilterText = "";
+                    if (isDiffUpdate && _imageCollectionContext is FolderImageCollectionContext col)
+                    {
+                        bool isDiffUpdateFailed = false;
+                        var sortType = SelectedFileSortType;
+                        Func<FolderStructureFileEntry, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry) =>
+                        {
+                            return new LazyCacheImageFileViewModel(col, sortType, entry, _messenger,
+                                        _sourceStorageItemsRepository,
+                                        _bookmarkManager,
+                                        _thumbnailManager,
+                                        _albamRepository,
+                                        Selection);
+                        };
 
-                    await ResetContentWithStorageItem(newPath, pageName, ct);                    
+                        using var lockReleaser = await _navigationLock.LockAsync(ct);
+                        NowLoadingItems = true;
+                        await Task.Delay(1);
+                        try
+                        {
+                            // Note: リネームを検知したいので同数チェックしない
+                            await col.Context.HandleDiffImages(
+                                (RangeObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                sortType,
+                                cacheImageViewModelFactory,
+                                (IStorageItemViewModel itemVM) => itemVM.Name,
+                                ct);
+
+                            HasFileItem = ImageFileItems.Any();
+                        }
+                        catch (OperationCanceledException) { }
+                        catch 
+                        {
+                            isDiffUpdateFailed = true;                            
+                        }
+                        finally
+                        {
+                            NowLoadingItems = false;
+                            RequireRefresh = false;
+                        }
+
+                        if (isDiffUpdateFailed)
+                        {
+                            await ResetContentWithStorageItem(newPath, pageName, ct);
+                        }
+                    }
+                    else
+                    {
+                        await ResetContentWithStorageItem(newPath, pageName, ct);
+                    }
                 }
                 else
                 {
@@ -777,6 +824,16 @@ public sealed partial class ImageListupPageViewModel
                     else
                     {
                         //itemVM.RestoreThumbnailLoadingTask(ct);
+                    }
+                }
+
+                // 初回読み込み時に確実に画像サイズが指定されるように
+                // こうしないと横幅いっぱいに表示される問題が生じる
+                if (imageCollectionContext is ArchiveImageCollectionContext)
+                {
+                    foreach (var itemVM in ImageFileItems)
+                    {
+                        await itemVM.EnsureImageSizeRatioAsync(ct);
                     }
                 }
 

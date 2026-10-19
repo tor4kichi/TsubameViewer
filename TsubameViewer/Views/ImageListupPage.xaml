@@ -824,7 +824,8 @@
                       Visibility="{x:Bind _vm.RequireRefresh, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
                       Style="{ThemeResource AccentButtonStyle}"
                       Margin="8 0 16 0"
-                      ctwu:FrameworkElementExtensions.Cursor="Hand">
+                      ctwu:FrameworkElementExtensions.Cursor="Hand"
+                      IsEnabled="{x:Bind _vm.NowLoadingItems, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}">
                 <StackPanel Orientation="Horizontal"
                             Spacing="4">
                   <SymbolIcon Symbol="Refresh"
@@ -1225,8 +1226,10 @@
             <StateTrigger IsActive="{Binding NowProcessing}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <!--
             <Setter Target="FileItemsContainer.Opacity"
                     Value="0.0" />
+            -->
             <Setter Target="FileSortButton.IsEnabled"
                     Value="False" />
           </VisualState.Setters>
