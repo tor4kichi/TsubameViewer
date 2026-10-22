@@ -664,7 +664,7 @@ public sealed partial class AppShell : UserControl
                     && (menuItemVM.Parameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out string menuItemEscapedPath) ?? false))
                 {
                     var (menuItemPath, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(menuItemEscapedPath));
-                    return parametersPath!.StartsWith(menuItemPath);
+                    return parametersPath!.Equals(menuItemPath, StringComparison.Ordinal);
                 }
                 else { return false; }
             }
