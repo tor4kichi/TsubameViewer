@@ -1315,7 +1315,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         try
         {
             var folder = await videoFile.GetParentAsync();
-            string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
+            string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus", ".weba"];
             var query = folder.CreateFileQueryWithOptions(
                 new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
             var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
