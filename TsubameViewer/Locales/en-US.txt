@@ -59,6 +59,7 @@ StorageItemDeleteConfirmTitleWithName = Do you want to delete the following item
 #### SaveImagesDialog
 SaveImagesToArchive = Save to Archive
 
+
 #### App Update
 StorePackageUpdateState = Package update status
 StorePackageUpdateState.Pending = Processing
@@ -167,6 +168,7 @@ MoveToFolder_Completed_Single = Move {0} to {1}
 MoveToFolder_Completed_Multi = Move {0} items to {1}
 MoveToFolder_ItemsMoveToSelectedFolder = Move to the selected folder
 MoveToFolder_ToggleSiblingFoldersDisplay = Destination folder
+MoveToFolder_Started_WithFolderName = Folder move has started
 ReadingState_ToggleToFinished = Mark as read
 ReadingState_ToggleToUnfinished = Mark as unread
 ReadingState_SetToFinished = Marked as read

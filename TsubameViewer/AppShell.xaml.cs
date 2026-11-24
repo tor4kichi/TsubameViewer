@@ -664,7 +664,7 @@ public sealed partial class AppShell : UserControl
                     && (menuItemVM.Parameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out string menuItemEscapedPath) ?? false))
                 {
                     var (menuItemPath, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(menuItemEscapedPath));
-                    return parametersPath!.StartsWith(menuItemPath);
+                    return parametersPath!.Equals(menuItemPath, StringComparison.Ordinal);
                 }
                 else { return false; }
             }
@@ -1790,7 +1790,13 @@ public sealed partial class AppShell : UserControl
                 if (storageItem is not StorageFolder hostFolder) { return; }
 
                 var messenger = Ioc.Default.GetRequiredService<IMessenger>();
-                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                messenger.SendShowTextNotificationMessage("MoveToFolder_Started_WithFolderName".Translate());
+                var storageItems = items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem).ToList();
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+                await _this.MoveItemsToAsync(hostFolder, storageItems, default);
                 messenger.SendShowTextNotificationMessage(items.Count == 1 
                     ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
                     : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
@@ -1825,7 +1831,7 @@ public sealed partial class AppShell : UserControl
             }
             else if (item is Windows.Storage.StorageFolder folder)
             {
-                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+                await MoveFolderToOhterFolderHelper.MoveAsync(folder, targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists, ct);
             }
         }
     }

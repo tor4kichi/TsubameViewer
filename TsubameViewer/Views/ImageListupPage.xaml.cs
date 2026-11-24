@@ -698,8 +698,13 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (hostFolder == null) { return; }
         if (_vm.Selection.SelectedItems is not { } items || items.Count == 0) { return; }
 
-
-        await MoveItemsToAsync(hostFolder, items.Select(x => x.Item.StorageItem), default);
+        var storageItems = items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem).ToList();
+        _messenger.SendShowTextNotificationMessage("MoveToFolder_Started_WithFolderName".Translate());
+        foreach (var item in items.Cast<IStorageItemViewModel>())
+        {
+            _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+        }
+        await MoveItemsToAsync(hostFolder, storageItems, default);
         _messenger.SendShowTextNotificationMessage(items.Count == 1
             ? "MoveToFolder_Completed_Single".Translate((items[0]).Name, hostFolder.Name)
             : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
@@ -925,7 +930,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             else if (item is Windows.Storage.StorageFolder folder)
             {
-                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+                await MoveFolderToOhterFolderHelper.MoveAsync(folder, targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists, ct);
             }
         }
     }

@@ -51,7 +51,7 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
             {
                 foreach (var item in items)
                 {
-                    if (item is not IStorageItemViewModel myItem)
+                    if (item is not IStorageItemViewModel)
                     {
                         System.Diagnostics.Debug.WriteLine($"処理できないドラッグされたアイテム: {item?.GetType().Name}");
                         e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
@@ -61,6 +61,13 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
                 if (hostUI.DataContext is IStorageItemViewModel hostUIItemVM
                     && hostUIItemVM.Item.StorageItem is Windows.Storage.StorageFolder hostFolder)
                 {
+                    if (!TsubameViewer.Views.FolderListupPage.CanMoveItemsToFolder(
+                        hostFolder, items.Cast<IStorageItemViewModel>()))
+                    {
+                        e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+                        return;
+                    }
+
                     e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
                     e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(hostFolder.Name);
                 }
@@ -80,8 +87,17 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
             if (hostUI.DataContext is IStorageItemViewModel hostUIItemVM
                 && hostUIItemVM.Item.StorageItem is Windows.Storage.StorageFolder hostFolder)
             {
+                var sourceItems = items.Cast<IStorageItemViewModel>().ToList();
+                if (!TsubameViewer.Views.FolderListupPage.CanMoveItemsToFolder(hostFolder, sourceItems)) { return; }
+
                 var messenger = Ioc.Default.GetRequiredService<IMessenger>();
-                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                var storageItems = items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem).ToList();
+                messenger.SendShowTextNotificationMessage("MoveToFolder_Started_WithFolderName".Translate());
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+                await _this.MoveItemsToAsync(hostFolder, storageItems, default);
                 messenger.SendShowTextNotificationMessage(items.Count == 1
                     ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
                     : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
@@ -116,7 +132,7 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
             }
             else if (item is Windows.Storage.StorageFolder folder)
             {
-                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+                await MoveFolderToOhterFolderHelper.MoveAsync(folder, targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists, ct);
             }
         }
     }

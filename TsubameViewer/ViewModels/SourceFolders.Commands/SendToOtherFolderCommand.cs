@@ -80,8 +80,8 @@ internal class SendToOtherFolderCommand : CommandBase
                 var oldPath = folder.Path;
                 var toFolder = (StorageFolder)await _sourceRepo.GetSourceStorageItemAsync(_entry);
                 try
-                {                    
-                    await folder.MoveAsync(toFolder, CreationCollisionOption.OpenIfExists, NameCollisionOption.FailIfExists);
+                {
+                    await MoveFolderToOhterFolderHelper.MoveAsync(folder, toFolder, CreationCollisionOption.OpenIfExists, NameCollisionOption.FailIfExists);
                 }
                 catch (Exception ex)
                 {
@@ -95,7 +95,7 @@ internal class SendToOtherFolderCommand : CommandBase
                             "Cancel".Translate()
                             )) { return; }
 
-                        await folder.MoveAsync(toFolder, CreationCollisionOption.OpenIfExists, NameCollisionOption.ReplaceExisting);
+                        await MoveFolderToOhterFolderHelper.MoveAsync(folder, toFolder, CreationCollisionOption.OpenIfExists, NameCollisionOption.ReplaceExisting);
                     }
                 }
                 Debug.WriteLine($"SendToOtherFolder {folder.Name} move to {toFolder.Name}");
