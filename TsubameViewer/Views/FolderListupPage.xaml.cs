@@ -569,15 +569,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     [ObservableProperty]
     ObservableCollection<StorageFolder>? _folders;
 
-    internal static bool IsSameFolder(StorageFolder sourceFolder, StorageFolder targetFolder)
-    {
-        return string.Equals(sourceFolder.Path, targetFolder.Path, StringComparison.OrdinalIgnoreCase);
-    }
-
     internal static bool CanMoveItemsToFolder(StorageFolder targetFolder, IEnumerable<IStorageItemViewModel> items)
     {
         return items.All(item => item.Item.StorageItem is not StorageFolder sourceFolder
-            || !IsSameFolder(sourceFolder, targetFolder));
+            || MoveFolderToOhterFolderHelper.CanMove(sourceFolder, targetFolder));
     }
 
     bool CanMoveToFolderSelectedItems(StorageFolder? folder)

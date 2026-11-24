@@ -79,6 +79,8 @@ internal class SendToOtherFolderCommand : CommandBase
             {
                 var oldPath = folder.Path;
                 var toFolder = (StorageFolder)await _sourceRepo.GetSourceStorageItemAsync(_entry);
+                if (!MoveFolderToOhterFolderHelper.CanMove(folder, toFolder)) { return; }
+
                 try
                 {
                     await MoveFolderToOhterFolderHelper.MoveAsync(folder, toFolder, CreationCollisionOption.OpenIfExists, NameCollisionOption.FailIfExists);
