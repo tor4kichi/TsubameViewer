@@ -59,6 +59,7 @@ StorageItemDeleteConfirmTitleWithName = 您要删除以下项目吗？ \n{0}
 #### SaveImagesDialog
 SaveImagesToArchive = 保存到存档
 
+
 #### App Update
 StorePackageUpdateState = 软件包更新状态
 StorePackageUpdateState.Pending = 加工
@@ -167,6 +168,7 @@ MoveToFolder_Completed_Single = 将 {0} 移至 {1}
 MoveToFolder_Completed_Multi = 将 {0} 个项目移至 {1}
 MoveToFolder_ItemsMoveToSelectedFolder = 移动到选定的文件夹
 MoveToFolder_ToggleSiblingFoldersDisplay = 目标文件夹
+MoveToFolder_Started_WithFolderName = 已开始移动文件夹
 ReadingState_ToggleToFinished = 标记为已读
 ReadingState_ToggleToUnfinished = 恢复为未读
 ReadingState_SetToFinished = 已标记为已读

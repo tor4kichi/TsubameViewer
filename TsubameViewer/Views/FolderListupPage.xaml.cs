@@ -569,6 +569,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     [ObservableProperty]
     ObservableCollection<StorageFolder>? _folders;
 
+    internal static bool IsSameFolder(StorageFolder sourceFolder, StorageFolder targetFolder)
+    {
+        return string.Equals(sourceFolder.Path, targetFolder.Path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static bool CanMoveItemsToFolder(StorageFolder targetFolder, IEnumerable<IStorageItemViewModel> items)
+    {
+        return items.All(item => item.Item.StorageItem is not StorageFolder sourceFolder
+            || !IsSameFolder(sourceFolder, targetFolder));
+    }
+
     bool CanMoveToFolderSelectedItems(StorageFolder? folder)
     {
         return folder != null;
@@ -581,7 +592,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         using var pooledItems = _vm.Selection.SelectedItems.AsValueEnumerable().ToArrayPool();
         var items = pooledItems.ArraySegment;
-        if (items.Count == 0) { return; }
+        if (items.Count == 0 || !CanMoveItemsToFolder(hostFolder, items)) { return; }
 
         await MoveItemsToAsync(hostFolder, items.Select(x => x.Item.StorageItem), default);
         _messenger.SendShowTextNotificationMessage(items.Count == 1
@@ -623,7 +634,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             {
                 foreach (var item in items)
                 {
-                    if (item is not IStorageItemViewModel myItem)
+                    if (item is not IStorageItemViewModel)
                     {
                         System.Diagnostics.Debug.WriteLine($"処理できないドラッグされたアイテム: {item?.GetType().Name}");
                         return;
@@ -632,6 +643,12 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
                 if (hostUI.DataContext is StorageFolder folderItem)
                 {
+                    if (!CanMoveItemsToFolder(folderItem, items.Cast<IStorageItemViewModel>()))
+                    {
+                        e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+                        return;
+                    }
+
                     e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
                     e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(folderItem.Name);
                 }
@@ -651,8 +668,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
             if (hostUI.DataContext is StorageFolder hostFolder)
             {
+                var sourceItems = items.Cast<IStorageItemViewModel>().ToList();
+                if (!CanMoveItemsToFolder(hostFolder, sourceItems)) { return; }
+
                 var messenger = Ioc.Default.GetRequiredService<IMessenger>();
-                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                messenger.SendShowTextNotificationMessage("MoveToFolder_Started_WithFolderName".Translate());
+                var storageItems = sourceItems.Select(x => x.Item.StorageItem).ToList();
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+                await _this.MoveItemsToAsync(hostFolder, storageItems, default);
                 messenger.SendShowTextNotificationMessage(items.Count == 1
                     ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
                     : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
@@ -686,7 +712,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
             else if (item is Windows.Storage.StorageFolder folder)
             {
-                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+                await MoveFolderToOhterFolderHelper.MoveAsync(folder, targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists, ct);
             }
         }
     }

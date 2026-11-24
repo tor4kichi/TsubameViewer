@@ -59,6 +59,7 @@ StorageItemDeleteConfirmTitleWithName = Voulez-vous supprimer les éléments sui
 #### SaveImagesDialog
 SaveImagesToArchive = Enregistrer dans les archives
 
+
 #### App Update
 StorePackageUpdateState = État de la mise à jour du paquet
 StorePackageUpdateState.Pending = Traitement
@@ -167,6 +168,7 @@ MoveToFolder_Completed_Single = Déplacer {0} vers {1}
 MoveToFolder_Completed_Multi = Déplacer {0} éléments vers {1}
 MoveToFolder_ItemsMoveToSelectedFolder = Déplacez-vous vers le dossier sélectionné
 MoveToFolder_ToggleSiblingFoldersDisplay = Dossier de destination
+MoveToFolder_Started_WithFolderName = Le déplacement du dossier a commencé
 ReadingState_ToggleToFinished = Marquer comme lu
 ReadingState_ToggleToUnfinished = Remettre en non lu
 ReadingState_SetToFinished = Marqué comme lu
