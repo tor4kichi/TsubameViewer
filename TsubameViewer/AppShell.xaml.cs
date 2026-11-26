@@ -1789,10 +1789,13 @@ public sealed partial class AppShell : UserControl
                 var (token, storageItem) = await _this._vm.SourceStorageItemsRepository.GetSourceStorageItem(path);
                 if (storageItem is not StorageFolder hostFolder) { return; }
 
+                var sourceItems = items.Cast<IStorageItemViewModel>().ToList();
+                if (!FolderListupPage.CanMoveItemsToFolder(hostFolder, sourceItems)) { return; }
+
                 var messenger = Ioc.Default.GetRequiredService<IMessenger>();
                 messenger.SendShowTextNotificationMessage("MoveToFolder_Started_WithFolderName".Translate());
-                var storageItems = items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem).ToList();
-                foreach (var item in items.Cast<IStorageItemViewModel>())
+                var storageItems = sourceItems.Select(x => x.Item.StorageItem).ToList();
+                foreach (var item in sourceItems)
                 {
                     messenger.Send(new StorageItemNotFoundMessage(item.Path));
                 }
@@ -1801,7 +1804,7 @@ public sealed partial class AppShell : UserControl
                     ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
                     : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
 
-                foreach (var item in items.Cast<IStorageItemViewModel>())
+                foreach (var item in sourceItems)
                 {
                     messenger.Send(new StorageItemNotFoundMessage(item.Path));
                 }

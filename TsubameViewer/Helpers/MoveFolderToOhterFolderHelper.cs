@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CommunityToolkit.Diagnostics;
+using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -9,6 +11,21 @@ namespace TsubameViewer.Helpers;
 internal static class MoveFolderToOhterFolderHelper
 {
     private const uint BatchSize = 1000;
+
+    public static bool CanMove(StorageFolder sourceFolder, StorageFolder destFolder)
+    {
+        Guard.IsNotNull(sourceFolder);
+        Guard.IsNotNull(destFolder);
+
+        var sourcePath = Path.GetFullPath(sourceFolder.Path);
+        var destPath = Path.GetFullPath(destFolder.Path);
+        var targetPath = Path.GetFullPath(Path.Combine(destPath, sourceFolder.Name));
+
+        // 移動先自体、または移動先に作る同名フォルダーが移動元と同じなら、自己移動になる。
+        return !string.Equals(sourcePath, destPath, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase)
+            && !IsDescendantPath(sourcePath, destPath);
+    }
 
     public static Task MoveAsync(
         this StorageFolder sourceFolder,
@@ -26,25 +43,13 @@ internal static class MoveFolderToOhterFolderHelper
         NameCollisionOption repFilesOpt,
         CancellationToken cancellationToken)
     {
-        if (sourceFolder == null) { throw new ArgumentNullException(nameof(sourceFolder)); }
-        if (destFolder == null) { throw new ArgumentNullException(nameof(destFolder)); }
+        Guard.IsNotNull(sourceFolder);
+        Guard.IsNotNull(destFolder);
+
         cancellationToken.ThrowIfCancellationRequested();
-
-        var sourcePath = sourceFolder.Path;
-        var destPath = destFolder.Path;
-
-        if (!string.IsNullOrEmpty(sourcePath)
-            && !string.IsNullOrEmpty(destPath)
-            && sourcePath.Equals(destPath, StringComparison.OrdinalIgnoreCase))
+        if (!CanMove(sourceFolder, destFolder))
         {
             return;
-        }
-
-        if (!string.IsNullOrEmpty(sourcePath)
-            && !string.IsNullOrEmpty(destPath)
-            && IsDescendantPath(sourcePath, destPath))
-        {
-            throw new InvalidOperationException("The destination folder cannot be inside the source folder.");
         }
 
         var movedFolder = await destFolder
@@ -55,6 +60,7 @@ internal static class MoveFolderToOhterFolderHelper
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            // Note: 各アイテムの移動でソース一覧が縮むため startIndex は 0 でよい。BatchSize で分割して移動する。
             var folders = await sourceFolder
                 .GetFoldersAsync(CommonFolderQuery.DefaultQuery, 0, BatchSize)
                 .AsTask(cancellationToken);
@@ -104,12 +110,14 @@ internal static class MoveFolderToOhterFolderHelper
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if ((await sourceFolder.GetItemsAsync(0, 1).AsTask(cancellationToken)).Count == 0)
+        if ((await sourceFolder.GetItemsAsync(0, 1).AsTask(cancellationToken)).Count != 0)
         {
-            await sourceFolder
-                .DeleteAsync(StorageDeleteOption.PermanentDelete)
-                .AsTask(cancellationToken);
+            throw new IOException($"The source folder '{sourceFolder.Path}' still contains items after the move.");
         }
+
+        await sourceFolder
+            .DeleteAsync(StorageDeleteOption.PermanentDelete)
+            .AsTask(cancellationToken);
     }
 
     private static bool IsDescendantPath(string sourcePath, string destPath)

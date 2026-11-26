@@ -698,7 +698,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (hostFolder == null) { return; }
         if (_vm.Selection.SelectedItems is not { } items || items.Count == 0) { return; }
 
-        var storageItems = items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem).ToList();
+        var sourceItems = items.Cast<IStorageItemViewModel>().ToList();
+        if (!FolderListupPage.CanMoveItemsToFolder(hostFolder, sourceItems)) { return; }
+
+        var storageItems = sourceItems.Select(x => x.Item.StorageItem).ToList();
         _messenger.SendShowTextNotificationMessage("MoveToFolder_Started_WithFolderName".Translate());
         foreach (var item in items.Cast<IStorageItemViewModel>())
         {
@@ -874,6 +877,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
                 if (hostUI.DataContext is StorageFolder folderItem)
                 {
+                    if (!FolderListupPage.CanMoveItemsToFolder(folderItem, items.Cast<IStorageItemViewModel>()))
+                    {
+                        e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+                        return;
+                    }
+
                     e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
                     e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(folderItem.Name);
                 }
@@ -893,8 +902,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             if (hostUI.DataContext is StorageFolder hostFolder)
             {
+                var sourceItems = items.Cast<IStorageItemViewModel>().ToList();
+                if (!FolderListupPage.CanMoveItemsToFolder(hostFolder, sourceItems)) { return; }
+
                 var messenger = Ioc.Default.GetRequiredService<IMessenger>();
-                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                await _this.MoveItemsToAsync(hostFolder, sourceItems.Select(x => x.Item.StorageItem), default);
                 messenger.SendShowTextNotificationMessage(items.Count == 1
                     ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
                     : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
