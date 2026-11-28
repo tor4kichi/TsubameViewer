@@ -676,7 +676,7 @@ public sealed partial class ImageListupPageViewModel
         await Task.Delay(1);
         try
         {
-            (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct);
+            (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct, skipSingleArchiveDirectories: false);
 
             Guard.IsNotNull(_currentImageSource);
             Guard.IsNotNull(_imageCollectionContext);
@@ -1088,7 +1088,10 @@ public sealed partial class ImageListupPageViewModel
         if (_currentImageSource != null)
         {
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.FolderOrContents);
-            _displaySettingsByPathRepository.SetParentFolderLastListupMode(Path.GetDirectoryName(_currentImageSource.Path), DefaultFolderListupMode.FolderOrContents);
+            if (DisplaySettingsByPathRepository.GetParentPath(_currentImageSource.Path) is { } parentPath)
+            {
+                _displaySettingsByPathRepository.SetParentFolderLastListupMode(parentPath, DefaultFolderListupMode.FolderOrContents);
+            }
         }
     }
 }

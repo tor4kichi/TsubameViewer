@@ -104,7 +104,7 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 
     public bool IsContainsSubDirectory()
     {
-        return _directoryToken.Children.Count >= 2;
+        return _directoryToken.Children.Count > 0;
     }
 
     public IArchiveEntry GetParentDirectoryEntry()

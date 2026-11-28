@@ -136,14 +136,21 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
         _imageEntryIndexSortWithDateTime = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
         _imageEntryIndexSortWithTitle = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _keyToIndex[x]).ToImmutableArray();
-        _fileByFolder = structure.FilesByFolder.Select(x => (x.Key, x.Value.Where(x => supportedFileIndexies.Contains(x)))).Where(x => x.Item2.Any()).ToImmutableSortedDictionary(x => x.Key, x => x.Item2.ToArray());        
+        _fileByFolder = structure.FilesByFolder
+            .GroupBy(x => NormalizeDirectoryPath(x.Key), StringComparer.Ordinal)
+            .Select(x => (Key: x.Key, Files: x.SelectMany(y => y.Value).Where(supportedFileIndexies.Contains).Distinct().ToArray()))
+            .Where(x => x.Files.Length > 0)
+            .ToImmutableSortedDictionary(x => x.Key, x => x.Files);
 
         _imagesCount = imagesCount;
         _imageSourcesCache = new IImageSource[structure.Items.Length];
         // コンストラクタ内（抜粋）: トークン作成 -> FileIndexes 設定 -> 親子リンク構築
         var keys = _archiveFileInnerStructure.FilesByFolder.Keys
-            .Select(k => _archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(k))
-            .OrderBy(k => k);
+            .Select(NormalizeDirectoryPath)
+            .Append(string.Empty)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(k => k.Length)
+            .ThenBy(k => k, StringComparer.Ordinal);
         
         // 各ディレクトリノードを作る（FileIndexes は fileByFolder から設定）
         foreach (var k in keys)
@@ -155,7 +162,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
 
             var parentToken = !string.IsNullOrEmpty(k) 
-                ? (_directoryMap.TryGetValue(Path.GetDirectoryName(k), out var token) 
+                ? (_directoryMap.TryGetValue(NormalizeDirectoryPath(Path.GetDirectoryName(k) ?? string.Empty), out var token)
                     ? token 
                     : null) 
                 : null;
@@ -171,14 +178,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         }
 
         // Root を作成（従来ロジックに合わせる）
-        if (_directoryMap.TryGetValue("", out var rootToken))
-        {
-            RootDirectoryToken = rootToken;
-        }
-        else
-        {
-            RootDirectoryToken = _directoryMap.First().Value;
-        }
+        RootDirectoryToken = _directoryMap[string.Empty];
         
 
         // 親子リンク作成（親がなければ Root の直下に割り当て）
@@ -241,6 +241,13 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
     public ArchiveDirectoryToken RootDirectoryToken { get; }
 
+    private string NormalizeDirectoryPath(string path)
+    {
+        return path.Replace(Path.DirectorySeparatorChar, _archiveFileInnerStructure.FolderPathSeparator)
+            .Replace(Path.AltDirectorySeparatorChar, _archiveFileInnerStructure.FolderPathSeparator)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
     public string Name => File.Name;
 
     public ArchiveDirectoryToken GetDirectoryTokenFromPath(string path)
@@ -248,6 +255,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         if (string.IsNullOrEmpty(path)) return RootDirectoryToken;
         if (RootDirectoryToken.Key.Equals(path, StringComparison.Ordinal)) return RootDirectoryToken;
 
+        path = NormalizeDirectoryPath(path);
         if (_directoryMap.TryGetValue(path, out var node)) return node;
 
         // 部分一致で最初に見つかったものを返す（従来のフォールバック）
@@ -260,6 +268,36 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
     {
         token ??= RootDirectoryToken;
         return token.Children;
+    }
+
+    public bool IsMatchingArchiveRootDirectory(ArchiveDirectoryToken token, string archiveName)
+    {
+        if (token.ParentToken != RootDirectoryToken) { return false; }
+        var directoryName = Path.GetFileName(token.Label);
+        return string.Equals(directoryName, archiveName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(directoryName, Path.GetFileNameWithoutExtension(archiveName), StringComparison.OrdinalIgnoreCase);
+    }
+
+    public bool HasOnlyMatchingRootDirectoryWithoutSubdirectories(string archiveName)
+    {
+        var root = RootDirectoryToken;
+        return root.Children.Count == 1
+            && IsMatchingArchiveRootDirectory(root.Children[0], archiveName)
+            && root.Children[0].Children.Count == 0
+            && (!_archiveFileInnerStructure.FilesByFolder.TryGetValue(string.Empty, out var files) || files.Length == 0);
+    }
+
+    public IEnumerable<ArchiveDirectoryToken> GetVisibleRootDirectories(string archiveName)
+    {
+        return RootDirectoryToken.Children.SelectMany(child =>
+            IsMatchingArchiveRootDirectory(child, archiveName) ? child.Children.AsEnumerable() : new[] { child });
+    }
+
+    public IEnumerable<ArchiveDirectoryToken> GetVisibleRootImageDirectories(string archiveName)
+    {
+        return RootDirectoryToken.Children
+            .Where(child => IsMatchingArchiveRootDirectory(child, archiveName))
+            .Prepend(RootDirectoryToken);
     }
 
     public IEnumerable<ArchiveDirectoryToken> GetLeafFolders()

@@ -571,8 +571,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     internal static bool CanMoveItemsToFolder(StorageFolder targetFolder, IEnumerable<IStorageItemViewModel> items)
     {
-        return items.All(item => item.Item.StorageItem is not StorageFolder sourceFolder
-            || MoveFolderToOhterFolderHelper.CanMove(sourceFolder, targetFolder));
+        return items.All(item => item.Item.FlattenAlbamItemInnerImageSource() is not IArchiveEntryImageSource
+            && (item.Item.StorageItem is not StorageFolder sourceFolder
+                || MoveFolderToOhterFolderHelper.CanMove(sourceFolder, targetFolder)));
     }
 
     bool CanMoveToFolderSelectedItems(StorageFolder? folder)

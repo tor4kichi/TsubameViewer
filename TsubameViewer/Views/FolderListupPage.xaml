@@ -285,6 +285,7 @@
                 <Button Content="{i18nExt:Localize Key=MoveToFolder_ToggleSiblingFoldersDisplay}"
                         x:Name="ToggleDisplaySiblingFoldersButton"
                         Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}"
+                        Visibility="{x:Bind _vm.IsFolderItemIsRawFolderAsVisible(_vm.CurrentFolderItem), Mode=OneWay}"
                         ctwu:FrameworkElementExtensions.Cursor="Hand" />
                 <TextBlock Text="{x:Bind _vm.SelectedCountDisplayText, Mode=OneWay}"
                            VerticalAlignment="Center" />
@@ -753,7 +754,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding CurrentFolderItem.StorageItemTypesIsFolder}" />
+            <StateTrigger IsActive="{Binding CurrentFolderItem.StorageItemTypesIsFolderOrArchive}" />
             <!--
             <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="{x:Bind models:StorageItemTypes.Folder}" />
               -->

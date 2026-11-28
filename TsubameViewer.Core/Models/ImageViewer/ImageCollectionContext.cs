@@ -1075,22 +1075,38 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
 {
     public ArchiveImageCollection ArchiveImageCollection { get; }
     public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
+    private readonly bool _flattenMatchingRootDirectory;
 
     public string Name => ArchiveImageCollection.Name;
 
     public StorageFile File => ArchiveImageCollection.File;
 
-    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken)
+    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, bool flattenMatchingRootDirectory = false)
     {
         ArchiveImageCollection = archiveImageCollection;
         ArchiveDirectoryToken = archiveDirectoryToken;
+        _flattenMatchingRootDirectory = flattenMatchingRootDirectory;
+    }
+
+    private IEnumerable<ArchiveDirectoryToken> GetVisibleDirectories()
+    {
+        return _flattenMatchingRootDirectory && ArchiveDirectoryToken.IsRoot
+            ? ArchiveImageCollection.GetVisibleRootDirectories(File.Name)
+            : ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken);
+    }
+
+    private IEnumerable<ArchiveDirectoryToken> GetVisibleImageDirectories()
+    {
+        return _flattenMatchingRootDirectory && ArchiveDirectoryToken.IsRoot
+            ? ArchiveImageCollection.GetVisibleRootImageDirectories(File.Name)
+            : new[] { ArchiveDirectoryToken };
     }
 
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {
         // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
         // アーカイブ内のアーカイブは対応しない
-        return ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
+        return GetVisibleDirectories()
             .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x))
             .ToAsyncEnumerable()
             ;
@@ -1110,17 +1126,17 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
 
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
     {
-        return ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).ToAsyncEnumerable();
+        return GetVisibleImageDirectories().SelectMany(ArchiveImageCollection.GetImagesFromDirectory).ToAsyncEnumerable();
     }
 
     public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
     {
-        return new(ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken).Any());
+        return new(GetVisibleDirectories().Any());
     }
 
     public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
     {
-        return new (ArchiveImageCollection.IsExistImageFromDirectory(ArchiveDirectoryToken));
+        return new (GetVisibleImageDirectories().Any(ArchiveImageCollection.IsExistImageFromDirectory));
     }
 
     public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)

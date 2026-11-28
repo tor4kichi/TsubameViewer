@@ -600,7 +600,7 @@ public sealed partial class FolderListupPageViewModel
 
         try
         {
-            (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct);
+            (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct, skipSingleArchiveDirectories: false);
 
             Guard.IsNotNull(_currentImageSource);
             Guard.IsNotNull(_imageCollectionContext);
@@ -614,14 +614,18 @@ public sealed partial class FolderListupPageViewModel
         }
         
         DisplayCurrentPath = _currentImageSource.Path;
+        if (_imageCollectionContext is ArchiveImageCollectionContext archiveContext && !archiveContext.ArchiveDirectoryToken.IsRoot)
+        {
+            DisplayCurrentPath = Path.Combine(archiveContext.File.Path, archiveContext.ArchiveDirectoryToken.DirectoryPath);
+        }
 
-        var settingPath = path;
+        var settingPath = _currentImageSource.Path;
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
         if (settings?.Sort != null)
         {
             DisplaySortTypeInheritancePath = null;
             SelectedFileSortType = settings.Sort.Value;            
-            SetSortAsyncUnsafe(SelectedFileSortType, path);
+            SetSortAsyncUnsafe(SelectedFileSortType, settingPath);
         }
         else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
             && parentSort.ChildItemDefaultSort != null
@@ -629,7 +633,7 @@ public sealed partial class FolderListupPageViewModel
         {
             DisplaySortTypeInheritancePath = parentSort.Path;
             SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
-            SetSortAsyncUnsafe(SelectedFileSortType, path);
+            SetSortAsyncUnsafe(SelectedFileSortType, settingPath);
         }
         else
         {
@@ -646,11 +650,11 @@ public sealed partial class FolderListupPageViewModel
             }
         }
 
-        var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path);
+        var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(settingPath);
         SelectedChildImagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
         SelectedChildFileSortType = parentSettings?.ChildItemDefaultSort;
 
-        var upStreamSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(path);
+        var upStreamSettings = _displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(settingPath);
         FolderItemDisplayWithLandscape = parentSettings?.FolderItemDisplayWithLandscape ?? upStreamSettings?.FolderItemDisplayWithLandscape ?? false;
 
         try
@@ -1046,7 +1050,10 @@ public sealed partial class FolderListupPageViewModel
         if (_currentImageSource != null)
         {
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.Images);
-            _displaySettingsByPathRepository.SetParentFolderLastListupMode(Path.GetDirectoryName(_currentImageSource.Path), DefaultFolderListupMode.Images);
+            if (DisplaySettingsByPathRepository.GetParentPath(_currentImageSource.Path) is { } parentPath)
+            {
+                _displaySettingsByPathRepository.SetParentFolderLastListupMode(parentPath, DefaultFolderListupMode.Images);
+            }
         }
     }
 }

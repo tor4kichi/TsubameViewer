@@ -97,53 +97,10 @@ public sealed class OpenSecondaryListupCommand : CommandBase
             catch { }
 
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type == StorageItemTypes.Archive)
+            if (type is StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)
             {
-                var imageCollectionManager = Ioc.Default.GetService<ImageCollectionManager>();
-                CancellationToken ct = CancellationToken.None;
-                var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
-                try
-                {
-                    if (await collectionContext.IsExistImageFileAsync(ct))
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
-                    }
-                    else
-                    {
-                        var leaves = await collectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);                      
-                        if (leaves.Count == 0)
-                        {
-                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
-                        }
-                        else if (leaves.Count == 1)
-                        {
-                            var leaf = leaves[0] as ArchiveDirectoryImageSource;
-                            var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
-                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
-                        }
-                        else
-                        {
-                            // 圧縮フォルダにスキップ可能なルートフォルダを含んでいる場合
-                            var distinct = leaves.Cast<IArchiveEntryImageSource>().Select(x => new string(x.EntryKey.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
-                            if (distinct.Count == 1)
-                            {
-                                var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
-                                var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                            }
-                            else
-                            {
-                                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                                var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    (collectionContext as IDisposable)?.Dispose();
-                }
+                var destination = await ArchiveListupNavigation.GetDestinationAsync(imageSource, _messenger, _displaySettingsByPathRepository, allowViewer: false);
+                await _messenger.NavigateAsync(destination, PageTransitionHelper.CreatePageParameter(imageSource));
             }
             else if (type == StorageItemTypes.Folder)
             {
@@ -195,26 +152,6 @@ public sealed class OpenSecondaryListupCommand : CommandBase
                 {
                     _displaySettingsByPathRepository.SetFolderAndArchiveSettings(folder.Path, currentListupMode);
                 }
-            }
-            else if (type == StorageItemTypes.ArchiveFolder)
-            {
-                if (imageSource is ArchiveDirectoryImageSource archiveFolderItem)
-                {
-                    if (archiveFolderItem.IsContainsSubDirectory())
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(archiveFolderItem);
-                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                    }
-                    else
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(archiveFolderItem);
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
-                    }
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }                    
             }
             else if (type == StorageItemTypes.EBook)
             {

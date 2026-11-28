@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using I18NPortable;
 using Microsoft.Xaml.Interactivity;
 using System;
@@ -13,6 +14,7 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -104,8 +106,7 @@ public sealed class OpenFolderItemCommand : CommandBase
 
             INavigationResult? viewerResult = null;
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type is StorageItemTypes.Image or StorageItemTypes.AlbamImage
-                or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)
+            if (type is StorageItemTypes.Image or StorageItemTypes.AlbamImage)
             {
                 if (_viewerSettings.IsViewerOpenWithSecondaryWindow)
                 {
@@ -115,6 +116,25 @@ public sealed class OpenFolderItemCommand : CommandBase
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     viewerResult = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                }
+            }
+            else if (type is StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)
+            {
+                var destination = await ArchiveListupNavigation.GetDestinationAsync(imageSource, _messenger, _displaySettingsByPathRepository, allowViewer: true);
+                if (destination == nameof(ImageViewerPage))
+                {
+                    if (_viewerSettings.IsViewerOpenWithSecondaryWindow)
+                    {
+                        await _secondaryWindowService.OpenViewerAsync(imageSource, false);
+                    }
+                    else
+                    {
+                        viewerResult = await _messenger.NavigateAsync(destination, PageTransitionHelper.CreatePageParameter(imageSource));
+                    }
+                }
+                else
+                {
+                    await _messenger.NavigateAsync(destination, PageTransitionHelper.CreatePageParameter(imageSource));
                 }
             }
             else if (type is StorageItemTypes.Albam)
@@ -236,6 +256,59 @@ public sealed class OpenFolderItemCommand : CommandBase
             {
                 _messenger.SendShowTextNotificationMessage("OpenImageViewer_Failed".Translate());
             }
+        }
+    }
+}
+
+internal static class ArchiveListupNavigation
+{
+    public static async System.Threading.Tasks.Task<string> GetDestinationAsync(
+        IImageSource imageSource, IMessenger messenger, DisplaySettingsByPathRepository settingsRepository, bool allowViewer)
+    {
+        var source = imageSource.FlattenAlbamItemInnerImageSource();
+        var (_, directory) = PageNavigationConstants.ParseStorageItemId(source.Path);
+        var manager = Ioc.Default.GetRequiredService<ImageCollectionManager>();
+        var context = await messenger.WorkWithBusyWallAsync(
+            ct => manager.GetArchiveImageCollectionContextAsync((StorageFile)source.StorageItem, directory, ct, skipSingleArchiveDirectories: false),
+            CancellationToken.None);
+        try
+        {
+            if (context is not ArchiveImageCollectionContext archiveContext)
+            {
+                return allowViewer ? nameof(ImageViewerPage) : nameof(ImageListupPage);
+            }
+
+            if (allowViewer && archiveContext.ArchiveDirectoryToken.IsRoot
+                && archiveContext.ArchiveImageCollection.HasOnlyMatchingRootDirectoryWithoutSubdirectories(archiveContext.File.Name))
+            {
+                return nameof(ImageViewerPage);
+            }
+
+            var parentSettings = settingsRepository.GetFileParentSettingsUpStreamToRoot(source.Path);
+            var openMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+            var hasImages = await context.IsExistImageFileAsync(CancellationToken.None);
+            if (allowViewer && openMode == DefaultFolderOrArchiveOpenMode.Viewer
+                && archiveContext.ArchiveImageCollection.IsExistImageFromDirectory(archiveContext.ArchiveDirectoryToken))
+            {
+                return nameof(ImageViewerPage);
+            }
+
+            var setting = settingsRepository.GetFolderAndArchiveSettings(source.Path);
+            var hasFolders = await context.IsExistFolderOrArchiveFileAsync(CancellationToken.None);
+            var listupMode = setting?.ListupMode
+                ?? ((parentSettings?.LastSelectedListupMode == DefaultFolderListupMode.Images && hasImages) || !hasFolders
+                    ? DefaultFolderListupMode.Images
+                    : DefaultFolderListupMode.FolderOrContents);
+            if (setting?.ListupMode == null)
+            {
+                settingsRepository.SetFolderAndArchiveSettings(source.Path, listupMode);
+            }
+
+            return listupMode == DefaultFolderListupMode.FolderOrContents ? nameof(FolderListupPage) : nameof(ImageListupPage);
+        }
+        finally
+        {
+            (context as IDisposable)?.Dispose();
         }
     }
 }

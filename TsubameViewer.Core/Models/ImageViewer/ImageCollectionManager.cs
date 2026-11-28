@@ -69,7 +69,7 @@ public sealed class ImageCollectionManager
         }
     }
 
-    public async Task<(IImageSource ImageSource, IImageCollectionContext ImageCollectionContext)> GetImageSourceAndContextAsync(string path, string? pageName, CancellationToken ct)
+    public async Task<(IImageSource ImageSource, IImageCollectionContext ImageCollectionContext)> GetImageSourceAndContextAsync(string path, string? pageName, CancellationToken ct, bool skipSingleArchiveDirectories = true)
     {
         IStorageItem? storageItem = null;
         foreach (var _ in Enumerable.Repeat(0, 10))
@@ -120,7 +120,7 @@ public sealed class ImageCollectionManager
             else if (file.IsSupportedMangaFile())
             {
                 // string.Emptyを渡すことでルートフォルダのフォルダ取得を行える
-                var imageCollectionContext = await GetArchiveImageCollectionContextAsync(file, pageName ?? string.Empty, ct);
+                var imageCollectionContext = await GetArchiveImageCollectionContextAsync(file, pageName ?? string.Empty, ct, skipSingleArchiveDirectories);
                 if (string.IsNullOrWhiteSpace(pageName))
                 {
                     // Mangaファイルが指定された場合
@@ -161,7 +161,7 @@ public sealed class ImageCollectionManager
         }
     }
 
-    public async Task<IImageCollectionContext> GetArchiveImageCollectionContextAsync(StorageFile file, string? archiveDirectoryPath, CancellationToken ct)
+    public async Task<IImageCollectionContext> GetArchiveImageCollectionContextAsync(StorageFile file, string? archiveDirectoryPath, CancellationToken ct, bool skipSingleArchiveDirectories = true)
     {
         Guard.IsTrue(file.IsSupportedMangaFile(), "file.IsSupportedMangaFile");
 
@@ -170,13 +170,13 @@ public sealed class ImageCollectionManager
         if (imageCollection is ArchiveImageCollection aic)
         {
             var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : aic.RootDirectoryToken;
-            while ((directoryToken?.Children.Count ?? 0) == 1)
+            while (skipSingleArchiveDirectories && directoryToken is not null && directoryToken.Children.Count == 1 && directoryToken.FileIndexes.Length == 0)
             {
                 directoryToken = directoryToken.Children[0];
             }
 
             directoryToken ??= aic.RootDirectoryToken;
-            return new ArchiveImageCollectionContext(aic, directoryToken);
+            return new ArchiveImageCollectionContext(aic, directoryToken, flattenMatchingRootDirectory: !skipSingleArchiveDirectories);
         }
         else if (imageCollection is PdfImageCollection pdfImageCollection)
         {

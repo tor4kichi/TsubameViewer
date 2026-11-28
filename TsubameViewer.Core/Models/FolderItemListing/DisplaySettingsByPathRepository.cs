@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using TsubameViewer.Core.Infrastructure;
+using TsubameViewer.Core.Models.Navigation;
 
 #nullable enable
 namespace TsubameViewer.Core.Models.FolderItemListing;
@@ -197,18 +198,34 @@ public sealed class DisplaySettingsByPathRepository
 
     public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsUpStreamToRoot(string path)
     {
-        path = Path.GetDirectoryName(path);
-        while (!string.IsNullOrEmpty(path))
+        string? parentPath = GetParentPath(path);
+        while (parentPath is { Length: > 0 })
         {
-            if (_internalChildFileRepository.FindById(path) is not null and var entry)
+            if (_internalChildFileRepository.FindById(parentPath) is not null and var entry)
             {
                 return entry;
             }
 
-            path = Path.GetDirectoryName(path);
+            parentPath = GetParentPath(parentPath);
         }
 
         return null;
+    }
+
+    public static string? GetParentPath(string path)
+    {
+        var (storagePath, pageName) = PageNavigationConstants.ParseStorageItemId(path);
+        if (!string.IsNullOrEmpty(pageName))
+        {
+            var parent = Path.GetDirectoryName(pageName.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (pageName.Contains(Path.AltDirectorySeparatorChar))
+            {
+                parent = parent?.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            return PageNavigationConstants.MakeStorageItemIdWithPage(storagePath, parent);
+        }
+
+        return Path.GetDirectoryName(storagePath);
     }
 
 

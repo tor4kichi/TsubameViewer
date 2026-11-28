@@ -97,6 +97,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IStorageIte
     
     public StorageItemTypes Type { get; }
     public bool StorageItemTypesIsFolder => Type is StorageItemTypes.Folder;
+    public bool StorageItemTypesIsFolderOrArchive => Type is StorageItemTypes.Folder or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder;
 
     [ObservableProperty]
     double _readParcentage;
