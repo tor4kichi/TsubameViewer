@@ -279,7 +279,7 @@ internal static class ArchiveListupNavigation
             }
 
             if (allowViewer && archiveContext.ArchiveDirectoryToken.IsRoot
-                && archiveContext.ArchiveImageCollection.HasOnlyMatchingRootDirectoryWithoutSubdirectories(archiveContext.File.Name))
+                && archiveContext.ArchiveImageCollection.GetSingleLeafDirectoryContainingAllFiles() is not null)
             {
                 return nameof(ImageViewerPage);
             }

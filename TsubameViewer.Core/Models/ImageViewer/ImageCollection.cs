@@ -270,34 +270,39 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         return token.Children;
     }
 
-    public bool IsMatchingArchiveRootDirectory(ArchiveDirectoryToken token, string archiveName)
+    public ArchiveDirectoryToken GetSingleLeafDirectoryContainingAllFiles()
     {
-        if (token.ParentToken != RootDirectoryToken) { return false; }
-        var directoryName = Path.GetFileName(token.Label);
-        return string.Equals(directoryName, archiveName, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(directoryName, Path.GetFileNameWithoutExtension(archiveName), StringComparison.OrdinalIgnoreCase);
+        if (_archiveFileInnerStructure.FileIndexies.Length == 0) { return null; }
+
+        var leaves = GetLeafFolders().Where(token => token != RootDirectoryToken).Take(2).ToArray();
+        if (leaves.Length != 1) { return null; }
+
+        var leaf = leaves[0];
+        return _archiveFileInnerStructure.FilesByFolder
+            .Where(folder => folder.Value.Length > 0)
+            .All(folder => string.Equals(NormalizeDirectoryPath(folder.Key), leaf.Key, StringComparison.Ordinal))
+            ? leaf
+            : null;
     }
 
-    public bool HasOnlyMatchingRootDirectoryWithoutSubdirectories(string archiveName)
+    public ArchiveDirectoryToken GetFolderListingRoot()
     {
-        var root = RootDirectoryToken;
-        return root.Children.Count == 1
-            && IsMatchingArchiveRootDirectory(root.Children[0], archiveName)
-            && root.Children[0].Children.Count == 0
-            && (!_archiveFileInnerStructure.FilesByFolder.TryGetValue(string.Empty, out var files) || files.Length == 0);
+        var directory = RootDirectoryToken;
+        while (directory.Children.Count == 1 && !ContainsFiles(directory))
+        {
+            var child = directory.Children[0];
+            if (child.Children.Count == 0 || ContainsFiles(child)) { break; }
+            directory = child;
+        }
+
+        return directory;
     }
 
-    public IEnumerable<ArchiveDirectoryToken> GetVisibleRootDirectories(string archiveName)
+    private bool ContainsFiles(ArchiveDirectoryToken directory)
     {
-        return RootDirectoryToken.Children.SelectMany(child =>
-            IsMatchingArchiveRootDirectory(child, archiveName) ? child.Children.AsEnumerable() : new[] { child });
-    }
-
-    public IEnumerable<ArchiveDirectoryToken> GetVisibleRootImageDirectories(string archiveName)
-    {
-        return RootDirectoryToken.Children
-            .Where(child => IsMatchingArchiveRootDirectory(child, archiveName))
-            .Prepend(RootDirectoryToken);
+        return _archiveFileInnerStructure.FilesByFolder.Any(folder =>
+            folder.Value.Length > 0
+            && string.Equals(NormalizeDirectoryPath(folder.Key), directory.Key, StringComparison.Ordinal));
     }
 
     public IEnumerable<ArchiveDirectoryToken> GetLeafFolders()

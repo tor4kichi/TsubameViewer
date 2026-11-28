@@ -57,61 +57,138 @@ namespace TsubameViewer.Core.Test
         }
 
         [TestMethod]
-        public void MatchingRootIsFlattenedWithoutHidingOtherItems()
+        public void SingleLeafContainingAllFilesIsSelectedRegardlessOfNamesOrDepth()
         {
             var collection = CreateCollection(new Dictionary<string, int[]>
             {
-                [""] = new[] { 0 },
-                ["Book"] = new[] { 1 },
-                ["Book/chapter"] = Array.Empty<int>(),
-                ["other"] = Array.Empty<int>(),
+                [""] = Array.Empty<int>(),
+                ["unrelated-name/"] = Array.Empty<int>(),
+                ["unrelated-name/chapter"] = Array.Empty<int>(),
+                ["unrelated-name/chapter/pages/"] = new[] { 0 },
+                ["unrelated-name/chapter/pages"] = new[] { 1 },
             });
-            var book = collection.GetDirectoryTokenFromPath("Book");
-            var chapter = collection.GetDirectoryTokenFromPath("Book/chapter");
-            var other = collection.GetDirectoryTokenFromPath("other");
+            Assert.AreSame(collection.GetDirectoryTokenFromPath("unrelated-name/chapter/pages"),
+                collection.GetSingleLeafDirectoryContainingAllFiles());
+            var context = new ArchiveImageCollectionContext(collection, collection.RootDirectoryToken, skipSingleLeafDirectory: true);
+            Assert.IsFalse(context.IsExistFolderOrArchiveFileAsync(default).Result);
+            Assert.IsTrue(context.IsExistImageFileAsync(default).Result);
 
-            Assert.IsTrue(collection.IsMatchingArchiveRootDirectory(book, "book.zip"));
-            Assert.IsFalse(collection.IsMatchingArchiveRootDirectory(chapter, "chapter.zip"));
-            CollectionAssert.AreEquivalent(new[] { chapter, other }, collection.GetVisibleRootDirectories("book.zip").ToArray());
-            CollectionAssert.AreEqual(new[] { collection.RootDirectoryToken, book }, collection.GetVisibleRootImageDirectories("book.zip").ToArray());
-            Assert.IsFalse(collection.HasOnlyMatchingRootDirectoryWithoutSubdirectories("book.zip"));
+            var unflattened = new ArchiveImageCollectionContext(collection, collection.RootDirectoryToken);
+            Assert.IsTrue(unflattened.IsExistFolderOrArchiveFileAsync(default).Result);
+            Assert.IsFalse(unflattened.IsExistImageFileAsync(default).Result);
         }
 
         [TestMethod]
-        public void OnlyMatchingRootRequiresNoOtherFilesOrSubdirectories()
+        public void SingleLeafWithFilesOutsideItIsNotSelected()
         {
-            var onlyBook = CreateCollection(new Dictionary<string, int[]>
+            var withRootFile = CreateCollection(new Dictionary<string, int[]>
             {
-                [""] = Array.Empty<int>(),
-                ["book/"] = new[] { 1 },
-            });
-            Assert.IsTrue(onlyBook.HasOnlyMatchingRootDirectoryWithoutSubdirectories("Book.zip"));
-            Assert.IsFalse(onlyBook.HasOnlyMatchingRootDirectoryWithoutSubdirectories("other.zip"));
-
-            var withSubdirectory = CreateCollection(new Dictionary<string, int[]>
-            {
-                [""] = Array.Empty<int>(),
+                [""] = new[] { 0 },
                 ["book"] = Array.Empty<int>(),
                 ["book/chapter"] = new[] { 1 },
             });
-            Assert.IsFalse(withSubdirectory.HasOnlyMatchingRootDirectoryWithoutSubdirectories("book.zip"));
-            CollectionAssert.AreEqual(new[] { withSubdirectory.GetDirectoryTokenFromPath("book/chapter") },
-                withSubdirectory.GetVisibleRootDirectories("book.zip").ToArray());
+            Assert.IsNull(withRootFile.GetSingleLeafDirectoryContainingAllFiles());
 
-            var withImagesAndSubdirectory = CreateCollection(new Dictionary<string, int[]>
+            var withIntermediateFile = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = Array.Empty<int>(),
+                ["book"] = new[] { 0 },
+                ["book/chapter"] = new[] { 1 },
+            });
+            Assert.IsNull(withIntermediateFile.GetSingleLeafDirectoryContainingAllFiles());
+        }
+
+        [TestMethod]
+        public void MultipleLeavesOrNoLeafFilesAreNotSelected()
+        {
+            var multipleLeaves = CreateCollection(new Dictionary<string, int[]>
             {
                 [""] = Array.Empty<int>(),
                 ["book"] = new[] { 1 },
-                ["book/chapter"] = Array.Empty<int>(),
+                ["empty"] = Array.Empty<int>(),
             });
-            Assert.IsFalse(withImagesAndSubdirectory.HasOnlyMatchingRootDirectoryWithoutSubdirectories("book.zip"));
+            Assert.IsNull(multipleLeaves.GetSingleLeafDirectoryContainingAllFiles());
+            var context = new ArchiveImageCollectionContext(multipleLeaves, multipleLeaves.RootDirectoryToken, skipSingleLeafDirectory: true);
+            Assert.IsTrue(context.IsExistFolderOrArchiveFileAsync(default).Result);
+            Assert.IsFalse(context.IsExistImageFileAsync(default).Result);
 
-            var withOtherFile = CreateCollection(new Dictionary<string, int[]>
+            var emptyLeaf = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = Array.Empty<int>(),
+                ["book"] = Array.Empty<int>(),
+            });
+            Assert.IsNull(emptyLeaf.GetSingleLeafDirectoryContainingAllFiles());
+
+            var noDirectory = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = new[] { 1 },
+            });
+            Assert.IsNull(noDirectory.GetSingleLeafDirectoryContainingAllFiles());
+        }
+
+        [TestMethod]
+        public void FolderListingSkipsEmptySingleChildAncestors()
+        {
+            var collection = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = Array.Empty<int>(),
+                ["wrapper/"] = Array.Empty<int>(),
+                ["wrapper/inner"] = Array.Empty<int>(),
+                ["wrapper/inner/chapter1"] = new[] { 0 },
+                ["wrapper/inner/chapter2"] = new[] { 1 },
+            });
+            var listingRoot = collection.GetFolderListingRoot();
+            Assert.AreSame(collection.GetDirectoryTokenFromPath("wrapper/inner"), listingRoot);
+            CollectionAssert.AreEquivalent(new[] { "wrapper/inner/chapter1", "wrapper/inner/chapter2" },
+                collection.GetSubDirectories(listingRoot).Select(token => token.Key).ToArray());
+
+            var context = new ArchiveImageCollectionContext(collection, collection.RootDirectoryToken, skipSingleLeafDirectory: true);
+            Assert.IsTrue(context.IsExistFolderOrArchiveFileAsync(default).Result);
+            Assert.IsFalse(context.IsExistImageFileAsync(default).Result);
+        }
+
+        [TestMethod]
+        public void FolderListingPreservesDirectoriesWithFilesOrMultipleRootChildren()
+        {
+            var withRootFile = CreateCollection(new Dictionary<string, int[]>
             {
                 [""] = new[] { 0 },
-                ["book"] = new[] { 1 },
+                ["wrapper"] = Array.Empty<int>(),
+                ["wrapper/chapter"] = new[] { 1 },
             });
-            Assert.IsFalse(withOtherFile.HasOnlyMatchingRootDirectoryWithoutSubdirectories("book.zip"));
+            Assert.AreSame(withRootFile.RootDirectoryToken, withRootFile.GetFolderListingRoot());
+
+            var withWrapperFile = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = Array.Empty<int>(),
+                ["wrapper/"] = new[] { 0 },
+                ["wrapper/chapter"] = new[] { 1 },
+            });
+            Assert.AreSame(withWrapperFile.RootDirectoryToken, withWrapperFile.GetFolderListingRoot());
+
+            var withMultipleRootChildren = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = Array.Empty<int>(),
+                ["wrapper"] = Array.Empty<int>(),
+                ["wrapper/chapter"] = new[] { 1 },
+                ["other"] = Array.Empty<int>(),
+            });
+            Assert.AreSame(withMultipleRootChildren.RootDirectoryToken, withMultipleRootChildren.GetFolderListingRoot());
+        }
+
+        [TestMethod]
+        public void FolderListingStopsBeforeAChildContainingFiles()
+        {
+            var collection = CreateCollection(new Dictionary<string, int[]>
+            {
+                [""] = Array.Empty<int>(),
+                ["wrapper"] = Array.Empty<int>(),
+                ["wrapper/inner"] = new[] { 0 },
+                ["wrapper/inner/chapter"] = new[] { 1 },
+            });
+            var listingRoot = collection.GetFolderListingRoot();
+            Assert.AreSame(collection.GetDirectoryTokenFromPath("wrapper"), listingRoot);
+            Assert.AreSame(collection.GetDirectoryTokenFromPath("wrapper/inner"), collection.GetSubDirectories(listingRoot).Single());
         }
 
         private static ArchiveImageCollection CreateCollection(Dictionary<string, int[]> filesByFolder)
@@ -119,8 +196,8 @@ namespace TsubameViewer.Core.Test
             var structure = new ArchiveFileInnerSturcture
             {
                 Items = new[] { "readme.txt", "book/page.jpg" },
-                FileIndexies = new[] { 0, 1 },
-                FileIndexiesSortWithDateTime = new[] { 0, 1 },
+                FileIndexies = filesByFolder.Values.SelectMany(x => x).Distinct().ToArray(),
+                FileIndexiesSortWithDateTime = filesByFolder.Values.SelectMany(x => x).Distinct().ToArray(),
                 FolderPathSeparator = '/',
                 DirectoryEntryIndex = new Dictionary<string, int>(),
                 FilesByFolder = filesByFolder,

@@ -170,13 +170,14 @@ public sealed class ImageCollectionManager
         if (imageCollection is ArchiveImageCollection aic)
         {
             var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : aic.RootDirectoryToken;
-            while (skipSingleArchiveDirectories && directoryToken is not null && directoryToken.Children.Count == 1 && directoryToken.FileIndexes.Length == 0)
+            if (skipSingleArchiveDirectories && directoryToken == aic.RootDirectoryToken
+                && aic.GetSingleLeafDirectoryContainingAllFiles() is { } leafDirectory)
             {
-                directoryToken = directoryToken.Children[0];
+                directoryToken = leafDirectory;
             }
 
             directoryToken ??= aic.RootDirectoryToken;
-            return new ArchiveImageCollectionContext(aic, directoryToken, flattenMatchingRootDirectory: !skipSingleArchiveDirectories);
+            return new ArchiveImageCollectionContext(aic, directoryToken, skipSingleLeafDirectory: !skipSingleArchiveDirectories);
         }
         else if (imageCollection is PdfImageCollection pdfImageCollection)
         {

@@ -1075,38 +1075,39 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
 {
     public ArchiveImageCollection ArchiveImageCollection { get; }
     public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
-    private readonly bool _flattenMatchingRootDirectory;
+    private readonly bool _skipSingleLeafDirectory;
 
     public string Name => ArchiveImageCollection.Name;
 
     public StorageFile File => ArchiveImageCollection.File;
 
-    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, bool flattenMatchingRootDirectory = false)
+    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, bool skipSingleLeafDirectory = false)
     {
         ArchiveImageCollection = archiveImageCollection;
         ArchiveDirectoryToken = archiveDirectoryToken;
-        _flattenMatchingRootDirectory = flattenMatchingRootDirectory;
+        _skipSingleLeafDirectory = skipSingleLeafDirectory;
     }
 
-    private IEnumerable<ArchiveDirectoryToken> GetVisibleDirectories()
+    private ArchiveDirectoryToken GetVisibleDirectory()
     {
-        return _flattenMatchingRootDirectory && ArchiveDirectoryToken.IsRoot
-            ? ArchiveImageCollection.GetVisibleRootDirectories(File.Name)
-            : ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken);
+        return _skipSingleLeafDirectory && ArchiveDirectoryToken.IsRoot
+            ? ArchiveImageCollection.GetSingleLeafDirectoryContainingAllFiles() ?? ArchiveDirectoryToken
+            : ArchiveDirectoryToken;
     }
 
-    private IEnumerable<ArchiveDirectoryToken> GetVisibleImageDirectories()
+    private ArchiveDirectoryToken GetVisibleFolderDirectory()
     {
-        return _flattenMatchingRootDirectory && ArchiveDirectoryToken.IsRoot
-            ? ArchiveImageCollection.GetVisibleRootImageDirectories(File.Name)
-            : new[] { ArchiveDirectoryToken };
+        var directory = GetVisibleDirectory();
+        return _skipSingleLeafDirectory && directory.IsRoot
+            ? ArchiveImageCollection.GetFolderListingRoot()
+            : directory;
     }
 
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {
         // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
         // アーカイブ内のアーカイブは対応しない
-        return GetVisibleDirectories()
+        return ArchiveImageCollection.GetSubDirectories(GetVisibleFolderDirectory())
             .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x))
             .ToAsyncEnumerable()
             ;
@@ -1126,17 +1127,17 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
 
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
     {
-        return GetVisibleImageDirectories().SelectMany(ArchiveImageCollection.GetImagesFromDirectory).ToAsyncEnumerable();
+        return ArchiveImageCollection.GetImagesFromDirectory(GetVisibleDirectory()).ToAsyncEnumerable();
     }
 
     public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
     {
-        return new(GetVisibleDirectories().Any());
+        return new(ArchiveImageCollection.GetSubDirectories(GetVisibleFolderDirectory()).Any());
     }
 
     public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
     {
-        return new (GetVisibleImageDirectories().Any(ArchiveImageCollection.IsExistImageFromDirectory));
+        return new (ArchiveImageCollection.IsExistImageFromDirectory(GetVisibleDirectory()));
     }
 
     public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
