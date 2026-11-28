@@ -9,13 +9,17 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.Web.WebView2.Core;
 using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models.EBook;
+using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using ZLinq;
 
 #nullable enable
@@ -66,7 +70,7 @@ public sealed partial class EPubRenderer : UserControl
     }
 
     public static readonly DependencyProperty PageBackgroundColorProperty =
-        DependencyProperty.Register("PageBackgroundColor", typeof(Color), typeof(EPubRenderer), new PropertyMetadata(Colors.Transparent));
+        DependencyProperty.Register("PageBackgroundColor", typeof(Color), typeof(EPubRenderer), new PropertyMetadata(Colors.Transparent, OnSomeStylePropertyChanged));
 
 
 
@@ -229,6 +233,8 @@ public sealed partial class EPubRenderer : UserControl
         async Task task(EPubRenderer _this, DependencyPropertyChangedEventArgs e)
         {
             using var _ = await _domUpdateLock.LockAsync(default);
+            await _this.EnsureWebViewInitializedAsync();
+            _this.AttachNavigationEvents();
 
             _this._sw.Restart();
             if (e.NewValue is XmlDocument newPageHtml)
@@ -283,6 +289,13 @@ public sealed partial class EPubRenderer : UserControl
         {
             sb.Append($"writing-mode: inherit !important;");
         }
+        var backgroundColor = PageBackgroundColor;
+        var themeColor = ((SolidColorBrush)PageBackground.Background).Color;
+        var alpha = backgroundColor.A;
+        var red = (backgroundColor.R * alpha + themeColor.R * (255 - alpha) + 127) / 255;
+        var green = (backgroundColor.G * alpha + themeColor.G * (255 - alpha) + 127) / 255;
+        var blue = (backgroundColor.B * alpha + themeColor.B * (255 - alpha) + 127) / 255;
+        sb.Append($"background-color: #{red:X2}{green:X2}{blue:X2} !important;");
         sb.Append("}");
 
         sb.Append("body, p, span, strong, small, h1, h2, h3, h4, h5, h6{");
@@ -379,9 +392,8 @@ public sealed partial class EPubRenderer : UserControl
 
         string ePubRendererCss = GetOrCreateEmbedStyleText();
 
-        //var xmlDoc = new XmlDocument();
         var xmlDoc = pageHtml;
-        
+
         var head = xmlDoc.DocumentElement["head"];
         var cssItems = new[] { ePubRendererCss };
         foreach (var css in cssItems)
@@ -448,21 +460,62 @@ public sealed partial class EPubRenderer : UserControl
         this.InitializeComponent();
 
         Loaded += EPubRenderer_Loaded;
-        Unloaded += EPubRenderer_Unloaded;            
+        Unloaded += EPubRenderer_Unloaded;
+        ActualThemeChanged += EPubRenderer_ActualThemeChanged;
+    }
+
+    void EPubRenderer_ActualThemeChanged(FrameworkElement sender, object args)
+    {
+        ResetEmbedStyleText();
+        if (_compositeDisposable != null && PageHtml != null)
+        {
+            ReloadPageHtml();
+        }
     }
 
 
 
     IDisposable? _compositeDisposable;
+    Task? _webViewInitializationTask;
+    bool _navigationEventsAttached;
 
-    void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
+    Task EnsureWebViewInitializedAsync()
     {
-        WebView.NavigationStarting -= WebView_NavigationStarting;
-        WebView.NavigationCompleted -= WebView_NavigationCompleted;
-        WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
+        return _webViewInitializationTask ??= InitializeWebViewAsync();
+    }
+
+    async Task InitializeWebViewAsync()
+    {
+        await WebView.EnsureCoreWebView2Async();
+        var coreWebView2 = WebView.CoreWebView2;
+        coreWebView2.AddWebResourceRequestedFilter("https://dummy.com/*", CoreWebView2WebResourceContext.All);
+        coreWebView2.WebResourceRequested += WebView_WebResourceRequested;
+    }
+
+    void AttachNavigationEvents()
+    {
+        if (_navigationEventsAttached) { return; }
+
         WebView.NavigationStarting += WebView_NavigationStarting;
         WebView.NavigationCompleted += WebView_NavigationCompleted;
-        WebView.DOMContentLoaded += WebView_DOMContentLoaded;
+        WebView.CoreWebView2.DOMContentLoaded += WebView_DOMContentLoaded;
+        _navigationEventsAttached = true;
+    }
+
+    void DetachNavigationEvents()
+    {
+        if (!_navigationEventsAttached) { return; }
+
+        WebView.NavigationStarting -= WebView_NavigationStarting;
+        WebView.NavigationCompleted -= WebView_NavigationCompleted;
+        WebView.CoreWebView2.DOMContentLoaded -= WebView_DOMContentLoaded;
+        _navigationEventsAttached = false;
+    }
+
+    async void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
+    {
+        await EnsureWebViewInitializedAsync();
+        AttachNavigationEvents();
 
         DisposableBuilder db = new();
         var dispatcher = Dispatcher;
@@ -476,17 +529,18 @@ public sealed partial class EPubRenderer : UserControl
             .DebounceFrame(1)
             .Where(x => !_isFirstContent)            
             .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
-            .ThrottleFirstFrame(3)
+            .ThrottleFirstFrame(5)
             .Where(x => !_isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
             .SubscribeAwait(async (args, ct) =>
             {
-                WebView.Refresh();
+                WebView.Reload();
             }, AwaitOperation.Sequential)
             .AddTo(ref db);
 
         new[]
         {
+            this.ObserveDependencyProperty(PageBackgroundColorProperty),
             this.ObserveDependencyProperty(FontSizeProperty),
             this.ObserveDependencyProperty(LetterSpacingInPixelProperty),
             this.ObserveDependencyProperty(LineHeightInNoUnitProperty),
@@ -508,35 +562,37 @@ public sealed partial class EPubRenderer : UserControl
 
     void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
     {
-        WebView.NavigationStarting -= WebView_NavigationStarting;
-        WebView.NavigationCompleted -= WebView_NavigationCompleted;
-        WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
+        DetachNavigationEvents();
 
         _compositeDisposable?.Dispose();
+        _compositeDisposable = null;
 
-        WebView.NavigateToString(string.Empty);
+        if (WebView.CoreWebView2 != null)
+        {
+            WebView.NavigateToString(string.Empty);
+        }
         _innerPageCount = 0;
         _innerCurrentPage = 0;
     }
 
 
 
-    void WebView_WebResourceRequested(WebView sender, WebViewWebResourceRequestedEventArgs args)
+    void WebView_WebResourceRequested(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
     {
-        WebResourceRequested?.Invoke(this, args);
+        WebResourceRequested?.Invoke(sender, args);
     }
 
-    public event EventHandler<WebViewWebResourceRequestedEventArgs>? WebResourceRequested;
+    public event TypedEventHandler<CoreWebView2, CoreWebView2WebResourceRequestedEventArgs>? WebResourceRequested;
 
 
 
 
-    void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+    void WebView_NavigationStarting(WebView2 sender, CoreWebView2NavigationStartingEventArgs args)
     {
         //using var _ = await _domUpdateLock.LockAsync(default);
     }
 
-    void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+    void WebView_NavigationCompleted(WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
     {
         d().FireAndForgetSafe(); 
         async Task d()
@@ -605,7 +661,7 @@ public sealed partial class EPubRenderer : UserControl
 
     public void Refresh()
     {
-        WebView.Refresh();
+        WebView.Reload();
     }
 
 
@@ -662,16 +718,25 @@ public sealed partial class EPubRenderer : UserControl
 
     // javascript のテンプレートリテラルを利用する場合は バッククオート ` で 文字列を囲み、変数は ${} で囲む
     // see@ https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Template_literals
-    // WebView は ES5 のため、let const などが使えない
-    // < や > を使うとパースエラーが発生する
 
     static void AppendGetWritingModeScript(StringBuilder sb)
     {
         sb.AppendLine(@"function GetWritingMode() { return window.getComputedStyle(document.body).getPropertyValue('writing-mode'); }");
     }
+    async Task<string> InvokeScriptAsync(string functionName, string[]? arguments)
+    {
+        var argumentsJson = JsonSerializer.Serialize(arguments ?? Array.Empty<string>());
+        var script = $"window[{JsonSerializer.Serialize(functionName)}].apply(window, {argumentsJson})";
+        var resultJson = await WebView.ExecuteScriptAsync(script);
+        using var result = JsonDocument.Parse(resultJson);
+        return result.RootElement.ValueKind == JsonValueKind.String
+            ? result.RootElement.GetString()!
+            : result.RootElement.ToString();
+    }
+
     async Task<string> GetWritingModeAsync()
     {
-        return await WebView.InvokeScriptAsync("GetWritingMode", null);
+        return await InvokeScriptAsync("GetWritingMode", null);
     }
 
     static void AppendSetVerticalBodyStyleScript(StringBuilder sb)
@@ -685,7 +750,7 @@ document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth
 
     async Task SetVerticalBodyStyleAsync(double webViewWidth, double height, int columnCount, double fontSize)
     {
-        await WebView.InvokeScriptAsync("SetVerticalBodyStyle", new [] { webViewWidth.ToString("F0"), height.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
+        await InvokeScriptAsync("SetVerticalBodyStyle", new [] { webViewWidth.ToString("F0"), height.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
     }
 
     static void AppendSetHorizontalBodyStyleScript(StringBuilder sb)
@@ -699,7 +764,7 @@ document.body.style = `overflow: hidden; max-width: ${webViewWidth}; max-height:
 
     async Task SetHorizontalBodyStyleAsync(double webViewWidth, double webViewHeight, int columnCount, double fontSize)
     {
-        await WebView.InvokeScriptAsync("SetHorizontalBodyStyle", new[] { webViewWidth.ToString("F0"), webViewHeight.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
+        await InvokeScriptAsync("SetHorizontalBodyStyle", new[] { webViewWidth.ToString("F0"), webViewHeight.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
     }
 
 
@@ -771,21 +836,22 @@ return JSON.stringify(Array.from(set));
     {
         sb.AppendLine(
 """            
-            function SetScrollPosition(scrollPositionString)
+            function SetScrollPosition(scrollPositionString, isVerticalString)
             {
-                let pos = parseInt(scrollPositionString);
-                window.scrollTo(pos, 0);
+                let pos = parseInt(scrollPositionString, 10);
+                let isVertical = JSON.parse(isVerticalString.toLowerCase());
+                window.scrollTo(isVertical ? 0 : pos, isVertical ? pos : 0);
             }
             """);
     }
     async Task<int[]> GetSizeListAsync(bool isVertical)
     {
-        var sizeList = await WebView.InvokeScriptAsync("GetSizeList", new[] { isVertical.ToString() });
+        var sizeList = await InvokeScriptAsync("GetSizeList", new[] { isVertical.ToString() });
         //Debug.WriteLine(sizeList);
         return JsonSerializer.Deserialize<int[]>(sizeList)!;        
     }
 
-    void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
+    void WebView_DOMContentLoaded(CoreWebView2 sender, CoreWebView2DOMContentLoadedEventArgs args)
     {
         if (PageHtml == null) { return; }
 #if DEBUG
@@ -833,7 +899,6 @@ return JSON.stringify(Array.from(set));
                 // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
                 // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
                 // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
-                //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
                 await SetVerticalBodyStyleAsync(
                     WebView.ActualWidth,
                     WebView.ActualHeight + 4,
@@ -843,7 +908,6 @@ return JSON.stringify(Array.from(set));
             else
             {
                 // Note: -8は下側と右側の見切れ対策
-                //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
                 await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 128, columnCount, FontSize);
             }
 
@@ -891,7 +955,7 @@ return JSON.stringify(Array.from(set));
                     _webViewScrollableSize = heroPageHeight;
 
                     // 1ページに収まってる場合は画像のみのページかどうかをチェックする
-                    var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
+                    var pCount = int.Parse(await InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
                     NowOnlyImageView = pCount <= 2;
                     if (NowOnlyImageView)
                     {
@@ -955,7 +1019,7 @@ return JSON.stringify(Array.from(set));
                 // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
                 if (!NowOnlyImageView)
                 {
-                    await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
+                    await InvokeScriptAsync("PushEmptyParagraph", []);
                 }
 
 #if DEBUG
@@ -1009,9 +1073,8 @@ return JSON.stringify(Array.from(set));
     {
         double position = _innerPageScrollPositions[_innerCurrentPage];
         Debug.WriteLine(position);
-        // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
         // +1してるのはColumn==1かつ縦書き表示時に画像が次ページの上部にはみ出て表示されないようにするため
-        await WebView.InvokeScriptAsync("SetScrollPosition", new[] { $"{position+1:F0}" });
+        await InvokeScriptAsync("SetScrollPosition", new[] { $"{position+1:F0}", IsVerticalLayout.ToString() });
 
 #if DEBUG
         //if (IsVerticalLayout)
@@ -1027,38 +1090,38 @@ return JSON.stringify(Array.from(set));
 
     async Task<double> GetScrollableWidth()
     {
-        var widthText = await WebView.InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollWidth, document.documentElement.scrollWidth,document.body.offsetWidth, document.documentElement.offsetWidth,document.body.clientWidth, document.documentElement.clientWidth).toString();" });
+        var widthText = await InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollWidth, document.documentElement.scrollWidth,document.body.offsetWidth, document.documentElement.offsetWidth,document.body.clientWidth, document.documentElement.clientWidth).toString();" });
         return double.TryParse(widthText, out var value) ? value : 0;
     }
 
     async Task<double> GetScrollableHeight()
     {
-        var heightText = await WebView.InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollHeight, document.documentElement.scrollHeight,document.body.offsetHeight, document.documentElement.offsetHeight,document.body.clientHeight, document.documentElement.clientHeight).toString();" });
+        var heightText = await InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollHeight, document.documentElement.scrollHeight,document.body.offsetHeight, document.documentElement.offsetHeight,document.body.clientHeight, document.documentElement.clientHeight).toString();" });
         return double.TryParse(heightText, out var value) ? value : 0;
     }
 
     async Task<double> GetPageWidth()
     {
-        var widthText = await WebView.InvokeScriptAsync("GetWindowWidth", []);
+        var widthText = await InvokeScriptAsync("GetWindowWidth", []);
         return double.TryParse(widthText, out var value) ? value : 0;
     }
 
     async Task<double> GetPageHeight()
     {
-        var heightText = await WebView.InvokeScriptAsync("GetWindowHeight", []);
+        var heightText = await InvokeScriptAsync("GetWindowHeight", []);
         return double.TryParse(heightText, out var value) ? value : 0;
     }
 
     async Task<double> GetScrollLeft()
     {
-        var XOffsetText = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
+        var XOffsetText = await InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
         return double.TryParse(XOffsetText, out var value) ? value : 0;
     }
 
     async Task<double> GetScrollTop()
     {
         // Note: writing-mode:vertical-rlが指定されてるとページオフセットの値が上下左右で入れ替わる挙動があるのでpageXOffsetから取得している
-        var scrollTop = await WebView.InvokeScriptAsync("eval", new[] { "window.pageYOffset.toString()" });
+        var scrollTop = await InvokeScriptAsync("eval", new[] { "window.pageYOffset.toString()" });
         return double.TryParse(scrollTop, out var value) ? value : 0;
     }
 

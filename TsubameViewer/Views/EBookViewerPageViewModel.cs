@@ -823,7 +823,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 {
                     if (imageSourceAttr.Value.EndsWith(image.Key, StringComparison.Ordinal))
                     {
-                        // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
+                        // WebView2のリソース要求イベントで解決するまで画像読み込みを遅延させる
                         /// <see cref="ResolveWebResourceRequest"/>
                         imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
                         break;
@@ -838,7 +838,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 {
                     if (imageSourceAttr.Value.EndsWith(image.Key, StringComparison.Ordinal))
                     {
-                        // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
+                        // WebView2のリソース要求イベントで解決するまで画像読み込みを遅延させる
                         /// <see cref="ResolveWebResourceRequest"/>
                         imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
                         break;
@@ -867,7 +867,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     const string _dummyReosurceRequestDomain = "https://dummy.com/";
     readonly object _lock = new object();
     StringBuilder _resourceSb = new();
-    public Stream? ResolveWebResourceRequest(Uri requestUri)
+    public IRandomAccessStream? ResolveWebResourceRequest(Uri requestUri)
     {
         if (CurrentBook == null) { return null; }
 
@@ -899,7 +899,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                         _navigationCt.ThrowIfCancellationRequested();
                     }
                     stream.Seek(0);
-                    return stream.AsStreamForRead();
+                    return stream;
                 }
             }
 
@@ -913,11 +913,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                         imageStream.CopyTo(stream.AsStreamForWrite());
                     }
                     stream.Seek(0);
-                    return stream.AsStreamForRead();
+                    return stream;
                 }
             }
 
-            return Stream.Null;
+            return new InMemoryRandomAccessStream();
         }
     }
 

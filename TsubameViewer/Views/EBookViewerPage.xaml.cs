@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI.Animations;
 using I18NPortable;
+using Microsoft.Web.WebView2.Core;
 using R3;
 using R3.Extensions;
 using System;
@@ -33,7 +34,6 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
-using Windows.Web.Http;
 using ZLinq;
 
 #nullable enable
@@ -172,17 +172,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         base.OnNavigatingFrom(e);
     }
     Core.AsyncLock _resourceReadLock = new Core.AsyncLock();
-    void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
+    void WebView_WebResourceRequested(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
-        var reqesutUri = e.Request.RequestUri;
-        using (var defferral = e.GetDeferral())
+        var requestUri = new Uri(e.Request.Uri);
+        using var deferral = e.GetDeferral();
+        var stream = _vm.ResolveWebResourceRequest(requestUri);
+        if (stream != null)
         {
-            var stream = _vm.ResolveWebResourceRequest(reqesutUri);
-            if (stream != null)
-            {
-                e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
-                e.Response.Content = new HttpStreamContent(stream.AsInputStream());
-            }
+            e.Response = sender.Environment.CreateWebResourceResponse(stream, 200, "OK", string.Empty);
         }
     }
 
